@@ -17,6 +17,11 @@ const APP_CONFIG = {
   logSheetName: "LOG_SISTEMA"
 };
 
+const FOLIO_CONFIG = {
+  SHEET_NAME: 'ANTONIA_VENTAS',
+  COLUMN_NAME: 'Folio'
+};
+
 // --- ESTRUCTURA ESTÁNDAR DE PROYECTOS (MODIFICADO) ---
 // Aquí definimos los sub-proyectos automáticos.
 // Se eliminó "PPC PROYECTO" y se agregaron los 3 específicos.
@@ -1504,4 +1509,61 @@ function instalarDisparador() {
 
   console.log(`Disparador instalado para '${funcionObjetivo}' (Diario 1am-2am).`);
   registrarLog("ADMIN", "CONFIG_TRIGGER", "Se instaló el disparador automático diario.");
+}
+
+function generarFolioAutomatico(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (e) {
+    console.error('Could not obtain lock after 30 seconds.');
+    return;
+  }
+
+  try {
+    const ss = e ? e.source : SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(FOLIO_CONFIG.SHEET_NAME);
+
+    if (!sheet) return;
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return;
+
+    const lastCol = sheet.getLastColumn();
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const folioIndex = headers.indexOf(FOLIO_CONFIG.COLUMN_NAME);
+
+    if (folioIndex === -1) {
+      console.error(`Column '${FOLIO_CONFIG.COLUMN_NAME}' not found in sheet '${FOLIO_CONFIG.SHEET_NAME}'`);
+      return;
+    }
+
+    const folioColNum = folioIndex + 1;
+    const targetCell = sheet.getRange(lastRow, folioColNum);
+    const targetValue = targetCell.getValue();
+
+    if (targetValue === "" || targetValue === null) {
+      let newFolio = 1;
+
+      if (lastRow > 2) {
+        const numRows = lastRow - 2;
+        if (numRows > 0) {
+            const previousValues = sheet.getRange(2, folioColNum, numRows, 1).getValues().flat();
+            const numbers = previousValues.filter(val => typeof val === 'number' && !isNaN(val));
+            if (numbers.length > 0) {
+              const maxVal = Math.max(...numbers);
+              newFolio = maxVal + 1;
+            }
+        }
+      }
+
+      targetCell.setValue(newFolio);
+      console.log(`Generated Folio: ${newFolio} for row ${lastRow}`);
+    }
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    lock.releaseLock();
+  }
 }
