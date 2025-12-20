@@ -1422,12 +1422,13 @@ function generateAppSheetId() {
  * AUTOMATIZACIÓN DIARIA: CONTADOR 'ANTONIA_VENTAS'
  * ======================================================================
  */
-function runDailyAntoniaVentasUpdate() {
+function incrementarContadorDias() {
+  const SHEET_NAME_COUNTER = "ANTONIA_VENTAS";
+
   try {
-    const sheetName = "ANTONIA_VENTAS";
-    const sheet = findSheetSmart(sheetName);
+    const sheet = findSheetSmart(SHEET_NAME_COUNTER);
     if (!sheet) {
-      console.warn("Hoja no encontrada: " + sheetName);
+      console.warn(`Hoja '${SHEET_NAME_COUNTER}' no encontrada.`);
       return;
     }
 
@@ -1435,79 +1436,72 @@ function runDailyAntoniaVentasUpdate() {
     const values = dataRange.getValues();
     if (values.length < 2) return; // Solo encabezados o vacía
 
-    const headerRowIndex = findHeaderRow(values);
-    if (headerRowIndex === -1) return;
-
-    const headers = values[headerRowIndex].map(h => String(h).toUpperCase().trim());
-
-    // Buscar índice de columna DIAS (o alias)
-    let diasIdx = -1;
-    // Prioridad: DIAS, luego alias
-    if (headers.includes("DIAS")) diasIdx = headers.indexOf("DIAS");
-    else if (headers.includes("DÍAS")) diasIdx = headers.indexOf("DÍAS");
-    else {
-        // Usar helper si está disponible o búsqueda manual de alias
-        const aliases = ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'];
-        for (let alias of aliases) {
-            const idx = headers.indexOf(alias);
-            if (idx > -1) {
-                diasIdx = idx;
-                break;
-            }
-        }
-    }
+    // Buscar exactamente el encabezado 'dias' en la fila 1 (índice 0)
+    // El requerimiento dice "encabezado 'dias' (fila 1)"
+    const headers = values[0];
+    const diasIdx = headers.indexOf("dias");
 
     if (diasIdx === -1) {
-       console.warn("Columna 'dias' no encontrada en " + sheetName);
+       console.warn(`Columna con encabezado exacto 'dias' no encontrada en la fila 1 de ${SHEET_NAME_COUNTER}.`);
        return;
     }
 
-    // Iterar y actualizar (en memoria)
-    const updates = [];
+    // Leer solo la columna de interés para optimizar, aunque ya tenemos 'values'.
+    // Trabajaremos sobre 'values' para construir el bloque de actualización.
+
+    const newColumnValues = [];
     let updatedCount = 0;
 
-    // values[i][diasIdx] -> fila absoluta = headerRowIndex + 1 + i (donde i empieza en 0 tras slice)
-    // Pero iteraremos values completos para mantener indices alineados con setValues si fuera necesario,
-    // aunque lo óptimo es mapear solo la columna o hacerlo por batch.
-    // Dado que Apps Script es lento celda por celda, mejor preparar toda la columna nueva.
-
-    // Opción: Leer toda la columna, procesar, escribir toda la columna.
-    // dataRange abarca todo.
-
-    const rows = values;
-    const newColumnValues = [];
-
-    for (let i = 0; i < rows.length; i++) {
-        if (i <= headerRowIndex) {
-            newColumnValues.push([rows[i][diasIdx]]); // Mantener header
+    // Recorrer filas a partir de la fila 2 (índice 1)
+    for (let i = 0; i < values.length; i++) {
+        if (i === 0) {
+            // Mantener encabezado
+            newColumnValues.push([values[i][diasIdx]]);
             continue;
         }
 
-        let currentVal = rows[i][diasIdx];
-        let newVal = currentVal;
+        let val = values[i][diasIdx];
 
-        // Lógica de incremento: solo si es numérico o vacío (asumiendo 0)
-        // El usuario pidió: [dias] + 1.
-        if (currentVal === "" || currentVal === null) currentVal = 0;
-
-        if (!isNaN(currentVal)) {
-            newVal = Number(currentVal) + 1;
+        // Lógica de negocio: Si es número, +1. Si vacío o no número, ignorar.
+        if (typeof val === 'number') {
+            val = val + 1;
             updatedCount++;
         }
 
-        newColumnValues.push([newVal]);
+        newColumnValues.push([val]);
     }
 
-    // Escribir de vuelta la columna
-    // range: (row, col, numRows, numCols)
-    // row 1, col diasIdx+1, length, 1
+    // Escribir en bloque (setValues)
     sheet.getRange(1, diasIdx + 1, newColumnValues.length, 1).setValues(newColumnValues);
 
-    registrarLog("SISTEMA", "AUTO_UPDATE", `Incremento diario 'dias' para ${updatedCount} filas en ${sheetName}`);
-    console.log(`Actualizadas ${updatedCount} filas en ${sheetName}`);
+    registrarLog("SISTEMA", "CONTADOR_DIARIO", `Se actualizaron ${updatedCount} filas en '${SHEET_NAME_COUNTER}'`);
+    console.log(`Proceso finalizado. Filas actualizadas: ${updatedCount}`);
 
   } catch (e) {
     console.error(e);
-    registrarLog("SISTEMA", "AUTO_ERROR", "Fallo runDailyAntoniaVentasUpdate: " + e.toString());
+    registrarLog("SISTEMA", "ERROR_CONTADOR", e.toString());
   }
+}
+
+function instalarDisparador() {
+  const funcionObjetivo = "incrementarContadorDias";
+
+  // Verificar si ya existe el disparador para evitar duplicados
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === funcionObjetivo) {
+      console.log(`El disparador para '${funcionObjetivo}' ya existe.`);
+      return;
+    }
+  }
+
+  // Crear nuevo disparador diario entre 1 am y 2 am
+  ScriptApp.newTrigger(funcionObjetivo)
+      .timeBased()
+      .everyDays(1)
+      .atHour(1) // 1 am
+      .create();
+
+  console.log(`Disparador instalado para '${funcionObjetivo}' (Diario 1am-2am).`);
+  registrarLog("ADMIN", "CONFIG_TRIGGER", "Se instaló el disparador automático diario.");
 }
