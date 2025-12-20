@@ -111,30 +111,6 @@
     .chip-select { cursor: pointer; padding: 6px 12px; border-radius: 20px; background: #f1f3f5; color: #495057; font-size: 11px; margin-right: 5px; margin-bottom: 5px; display: inline-block; border: 1px solid #dee2e6; transition: 0.2s; font-weight: 500; }
     .chip-select.active { background: #3699ff; color: white; border-color: #3699ff; box-shadow: 0 2px 5px rgba(54, 153, 255, 0.3); }
 
-    /* SALES CONTROL DASHBOARD (CHIPS) */
-    .chip-filter {
-      padding: 8px 16px;
-      background-color: #f1f3f5;
-      border-radius: 20px;
-      font-weight: 500;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 1px solid #dee2e6;
-      user-select: none;
-      display: inline-block;
-    }
-    .chip-filter:hover {
-      background-color: #e9ecef;
-      transform: translateY(-1px);
-    }
-    .chip-filter.active {
-      background-color: #0d6efd;
-      color: white;
-      border-color: #0d6efd;
-      box-shadow: 0 2px 4px rgba(13, 110, 253, 0.3);
-    }
-
     /* ESTILOS CASCADA PROYECTOS */
     .cascade-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; }
     .cascade-item { cursor: pointer; transition: all 0.2s; border-bottom: 1px solid #f0f2f5; position: relative; }
@@ -202,11 +178,6 @@
         <div class="nav-item" v-if="config.accessProjects" :class="{ active: currentView === 'PROJECTS' }" @click="currentView = 'PROJECTS'; currentDept = ''; currentModuleId = '';">
             <div class="nav-icon-col"><i class="fas fa-project-diagram"></i></div>
             <span class="nav-text">Proyectos</span>
-        </div>
-
-        <div class="nav-item" :class="{ active: currentView === 'SALES_CONTROL' }" @click="openSalesControlView">
-            <div class="nav-icon-col"><i class="fas fa-sliders-h"></i></div>
-            <span class="nav-text">Control de Ventas</span>
         </div>
         
         <div v-if="config.specialModules.length">
@@ -445,72 +416,6 @@
                    </tr>
                 </tbody>
              </table>
-          </div>
-        </div>
-
-        <!-- VISTA CONTROL DE VENTAS (DASHBOARD) -->
-        <div v-if="currentView === 'SALES_CONTROL'" class="h-100 d-flex flex-column" style="padding: 20px; overflow: hidden;">
-          <!-- Header -->
-          <div class="d-flex justify-content-between align-items-center mb-3">
-             <div class="d-flex align-items-center">
-                 <h4 class="fw-bold m-0 text-dark"><i class="fas fa-sliders-h me-2 text-primary"></i>CONTROL DE VENTAS</h4>
-                 <button class="btn btn-outline-primary btn-sm ms-3" @click="loadSalesControl" title="Actualizar"><i class="fas fa-sync-alt"></i></button>
-             </div>
-             <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
-          </div>
-
-          <!-- Filtro Vendedores (Chips) -->
-          <div class="card shadow-sm mb-3 border-0 flex-shrink-0">
-             <div class="card-header bg-white border-bottom fw-bold text-uppercase small text-muted">Filtro Vendedores</div>
-             <div class="card-body p-3">
-                <div class="d-flex flex-wrap gap-2">
-                   <div class="chip-filter" :class="{ active: salesControl.selectedVendor === null }" @click="toggleSalesVendor(null)">
-                      TODOS
-                   </div>
-                   <div v-for="v in salesUniqueVendors" :key="v" class="chip-filter" :class="{ active: salesControl.selectedVendor === v }" @click="toggleSalesVendor(v)">
-                      {{ v }}
-                   </div>
-                </div>
-                <div v-if="!salesUniqueVendors.length && !salesControl.isLoading" class="text-muted small fst-italic">No hay vendedores detectados.</div>
-             </div>
-          </div>
-
-          <!-- Lista de Ventas (Agrupada) -->
-          <div class="flex-fill overflow-auto bg-white border rounded shadow-sm">
-             <div v-if="salesControl.isLoading" class="p-5 text-center"><div class="spinner-border text-primary"></div></div>
-             <div v-else>
-                 <div v-if="!salesGroupedData.length" class="p-4 text-center text-muted">No hay datos para mostrar.</div>
-
-                 <div v-for="areaGroup in salesGroupedData" :key="areaGroup.area">
-                     <!-- Group Header Level 1: AREA -->
-                     <div class="p-2 bg-light border-bottom fw-bold text-primary sticky-top" style="z-index: 5;">
-                         <i class="fas fa-map-marker-alt me-2"></i>{{ areaGroup.area || 'SIN AREA' }}
-                     </div>
-
-                     <div v-for="clasiGroup in areaGroup.clasis" :key="clasiGroup.clasi">
-                         <!-- Group Header Level 2: CLASI -->
-                         <div class="p-1 px-4 bg-white border-bottom small fw-bold text-secondary">
-                             <i class="fas fa-tag me-2"></i>{{ clasiGroup.clasi || 'SIN CLASIFICACION' }}
-                         </div>
-
-                         <!-- Table -->
-                         <div class="table-responsive">
-                             <table class="table table-sm table-hover mb-0" style="font-size: 12px;">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th v-for="h in salesControl.headers" :key="h" style="white-space: nowrap;">{{ h }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(row, rIdx) in clasiGroup.rows" :key="rIdx">
-                                        <td v-for="h in salesControl.headers" :key="h" style="white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis;">{{ row[h] }}</td>
-                                    </tr>
-                                </tbody>
-                             </table>
-                         </div>
-                     </div>
-                 </div>
-             </div>
           </div>
         </div>
 
@@ -819,90 +724,6 @@
       // ECG (Electrocardiograma) STATE
       const ecgData = ref({});
       const ecgChartInstances = {};
-
-      // SALES CONTROL STATE
-      const salesControl = ref({ data: [], headers: [], isLoading: false, selectedVendor: null });
-
-      const loadSalesControl = () => {
-          salesControl.value.isLoading = true;
-          google.script.run.withSuccessHandler(res => {
-              salesControl.value.isLoading = false;
-              if (res.success) {
-                  salesControl.value.data = res.data;
-                  // Filter headers if necessary, or use all.
-                  salesControl.value.headers = res.headers;
-              } else {
-                  Swal.fire('Error', res.message, 'error');
-              }
-          }).apiFetchStaffTrackerData('ANTONIA_VENTAS');
-      };
-
-      const openSalesControlView = () => {
-          currentView.value = 'SALES_CONTROL';
-          currentDept.value = '';
-          currentModuleId.value = '';
-          loadSalesControl();
-      };
-
-      const toggleSalesVendor = (vendor) => {
-          salesControl.value.selectedVendor = vendor;
-      };
-
-      const salesUniqueVendors = computed(() => {
-          if (!salesControl.value.data.length) return [];
-          const vendors = new Set();
-          salesControl.value.data.forEach(row => {
-              // Find vendor column
-              const vKey = Object.keys(row).find(k => k.toUpperCase().includes('VENDEDOR'));
-              if (vKey && row[vKey]) {
-                  vendors.add(String(row[vKey]).trim());
-              }
-          });
-          return Array.from(vendors).sort();
-      });
-
-      const salesGroupedData = computed(() => {
-          let rows = salesControl.value.data;
-
-          // 1. Filter by Vendor
-          if (salesControl.value.selectedVendor) {
-              rows = rows.filter(row => {
-                  const vKey = Object.keys(row).find(k => k.toUpperCase().includes('VENDEDOR'));
-                  return vKey && String(row[vKey]).trim() === salesControl.value.selectedVendor;
-              });
-          }
-
-          // 2. Group by AREA then CLASI
-          const grouped = {};
-          rows.forEach(row => {
-              // Find AREA key (ALTA, AREA, DEPARTAMENTO) - logic from backend aliasing
-              const areaKey = Object.keys(row).find(k => ['AREA', 'ALTA', 'DEPARTAMENTO', 'ESPECIALIDAD'].includes(k.toUpperCase().trim()));
-              const area = areaKey ? (row[areaKey] || 'SIN AREA') : 'SIN AREA';
-
-              // Find CLASI key
-              const clasiKey = Object.keys(row).find(k => ['CLASI', 'CLASIFICACION'].includes(k.toUpperCase().trim()));
-              const clasi = clasiKey ? (row[clasiKey] || 'SIN CLASIFICACION') : 'SIN CLASIFICACION';
-
-              if (!grouped[area]) grouped[area] = {};
-              if (!grouped[area][clasi]) grouped[area][clasi] = [];
-              grouped[area][clasi].push(row);
-          });
-
-          // Transform to array
-          const result = Object.keys(grouped).sort().map(area => {
-              return {
-                  area: area,
-                  clasis: Object.keys(grouped[area]).sort().map(clasi => {
-                      return {
-                          clasi: clasi,
-                          rows: grouped[area][clasi]
-                      };
-                  })
-              };
-          });
-
-          return result;
-      });
 
       // KPI STATE
       const kpiData = ref({ ventas: [], tracker: [], isLoading: false });
@@ -1303,8 +1124,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
       
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, 
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData,
-      salesControl, loadSalesControl, openSalesControlView, toggleSalesVendor, salesUniqueVendors, salesGroupedData };
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
