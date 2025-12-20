@@ -85,7 +85,7 @@ function findHeaderRow(values) {
   return -1;
 }
 
-function logSystemEvent(user, action, details) {
+function registrarLog(user, action, details) {
   try {
     let sheet = SS.getSheetByName(APP_CONFIG.logSheetName);
     if (!sheet) {
@@ -101,11 +101,16 @@ function apiLogin(username, password) {
   const userKey = String(username).trim().toUpperCase();
   const user = USER_DB[userKey];
   if (user && user.pass === password) {
-    logSystemEvent(userKey, "LOGIN", `Acceso exitoso (${user.role})`);
+    registrarLog(userKey, "LOGIN", `Acceso exitoso (${user.role})`);
     return { success: true, role: user.role, name: user.label, username: userKey };
   }
-  logSystemEvent(userKey || "ANONIMO", "LOGIN_FAIL", "Credenciales incorrectas");
+  registrarLog(userKey || "ANONIMO", "LOGIN_FAIL", "Credenciales incorrectas");
   return { success: false, message: 'Usuario o contraseña incorrectos.' };
+}
+
+function apiLogout(username) {
+  registrarLog(username || "DESCONOCIDO", "LOGOUT", "Sesión cerrada");
+  return { success: true };
 }
 
 function getSystemConfig(role) {
@@ -734,13 +739,24 @@ function internalBatchUpdateTasks(sheetName, tasksArray) {
   }
 }
 
-function apiUpdatePPCV3(taskData) {
-  return internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, [taskData]);
+function apiUpdatePPCV3(taskData, username) {
+  const res = internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, [taskData]);
+  if(res.success) {
+      const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
+      registrarLog(username || "DESCONOCIDO", action, `Update PPCV3 ID: ${taskData['ID']||taskData['FOLIO']}`);
+  }
+  return res;
 }
 
-function internalUpdateTask(personName, taskData) {
+function internalUpdateTask(personName, taskData, username) {
     try {
         const res = internalBatchUpdateTasks(personName, [taskData]);
+
+        if (res.success && username) {
+             const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
+             registrarLog(username, action, `Update Task ID: ${taskData['ID']||taskData['FOLIO']} en ${personName}`);
+        }
+
         if (String(personName).toUpperCase() === "ANTONIA_VENTAS") {
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex; 
@@ -751,9 +767,9 @@ function internalUpdateTask(personName, taskData) {
                  if (vendedorName.toUpperCase() !== "ANTONIA_VENTAS") {
                      try { 
                         const vRes = internalBatchUpdateTasks(vendedorName, [distData]);
-                        if(!vRes.success) logSystemEvent("ANTONIA", "DIST_FAIL", "Fallo copia a " + vendedorName + ": " + vRes.message);
+                if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + vendedorName + ": " + vRes.message);
                      } catch(e){
-                        logSystemEvent("ANTONIA", "DIST_ERROR", e.toString());
+                registrarLog("ANTONIA", "DIST_ERROR", e.toString());
                      }
                  }
              }
@@ -763,8 +779,8 @@ function internalUpdateTask(personName, taskData) {
     } catch(e) { return {success:false, message:e.toString()}; }
 }
 
-function apiUpdateTask(personName, taskData) {
-  return internalUpdateTask(personName, taskData);
+function apiUpdateTask(personName, taskData, username) {
+  return internalUpdateTask(personName, taskData, username);
 }
 
 function apiFetchDrafts() {
@@ -820,7 +836,7 @@ function apiClearDrafts() {
   } catch(e) { return { success: false }; }
 }
 
-function apiSavePPCData(payload) {
+function apiSavePPCData(payload, username) {
   const lock = LockService.getScriptLock();
   if (lock.tryLock(20000)) { 
     try {
@@ -862,6 +878,9 @@ function apiSavePPCData(payload) {
           addTaskToSheet("ADMINISTRADOR", taskData);
           const responsables = String(item.responsable || "").split(",").map(s => s.trim()).filter(s => s);
           responsables.forEach(personName => { addTaskToSheet(personName, taskData); });
+
+          // LOG AUDIT TRAIL
+          registrarLog(username || item.createdBy || "DESCONOCIDO", "NUEVA TAREA", `ID: ${id}, Concepto: ${item.concepto}`);
       });
       if (rowsForPPC.length > 0) {
           const lastRow = sheetPPC.getLastRow();
@@ -1032,6 +1051,8 @@ function apiSaveSite(siteData) {
       // AUTOMATIZACIÓN: CREAR ESTRUCTURA ESTÁNDAR AUTOMÁTICAMENTE
       apiCreateStandardStructure(id, siteData.createdBy);
 
+      registrarLog(siteData.createdBy || "ANONIMO", "NUEVO SITIO", `Sitio: ${cleanName} (${id})`);
+
       return { success: true, id: id, message: "Sitio creado correctamente con estructura PPC completa." };
     } catch (e) {
       return { success: false, message: e.toString() };
@@ -1082,6 +1103,9 @@ function apiSaveSubProject(subProjectData) {
         subProjectData.createdBy ? subProjectData.createdBy.toUpperCase().trim() : "ANONIMO"
       ]);
       SpreadsheetApp.flush(); 
+
+      registrarLog(subProjectData.createdBy || "ANONIMO", "NUEVO SUBPROYECTO", `Subproyecto: ${cleanName} (${id})`);
+
       return { success: true, id: id, message: "Subproyecto agregado." };
     } catch (e) {
       return { success: false, message: e.toString() };
@@ -1222,7 +1246,7 @@ function apiFetchProjectTasks(projectName) {
 }
 
 // *** MODIFICADO PARA INCLUIR ETIQUETAS DE LOS NUEVOS PPCs ***
-function apiSaveProjectTask(taskData, projectName) {
+function apiSaveProjectTask(taskData, projectName, username) {
     try {
         const nameUpper = String(projectName).toUpperCase().trim();
         const tag = `[PROY: ${nameUpper}]`;
@@ -1234,7 +1258,11 @@ function apiSaveProjectTask(taskData, projectName) {
             taskData['COMENTARIOS'] = (coms + " " + tag).trim();
         }
         
-        return internalBatchUpdateTasks("ADMINISTRADOR", [taskData]);
+        const res = internalBatchUpdateTasks("ADMINISTRADOR", [taskData]);
+        if(res.success) {
+            registrarLog(username || "DESCONOCIDO", "ACTUALIZAR PROYECTO", `Proyecto: ${projectName}, ID: ${taskData['ID']||taskData['FOLIO']}`);
+        }
+        return res;
     } catch (e) {
         return { success: false, message: e.toString() };
     }
