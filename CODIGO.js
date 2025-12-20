@@ -1416,3 +1416,93 @@ function generateAppSheetId() {
   }
   return result;
 }
+
+/**
+ * ======================================================================
+ * AUTOMATIZACIÓN DE FOLIOS (APPSHEET)
+ * ======================================================================
+ * Instrucciones para el Trigger:
+ * 1. Ve a "Extensiones" > "Apps Script".
+ * 2. En el menú izquierdo, haz clic en el icono del reloj ("Activadores").
+ * 3. Haz clic en "Añadir activador" (botón azul abajo a la derecha).
+ * 4. Selecciona la función: generarFolioAutomatico.
+ * 5. Selecciona el despliegue: Principal (o Head).
+ * 6. Selecciona la fuente del evento: "De la hoja de cálculo".
+ * 7. Selecciona el tipo de evento: "Al cambiar" (On Change).
+ * 8. Guarda.
+ */
+
+const FOLIO_CONFIG = {
+  sheetName: 'ANTONIA_VENTAS', // Nombre exacto de la hoja
+  colName: 'Folio'             // Nombre exacto de la columna
+};
+
+function generarFolioAutomatico(e) {
+  // CRÍTICO: Lock para evitar duplicados (30 seg espera)
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (err) {
+    console.error('No se pudo obtener el bloqueo en 30s. Intenta de nuevo.');
+    return;
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(FOLIO_CONFIG.sheetName);
+
+    // Si no existe la hoja, salimos
+    if (!sheet) return;
+
+    // Detectar columna dinámicamente en fila 1
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 1) return;
+
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    const colIndex = headers.indexOf(FOLIO_CONFIG.colName) + 1; // 1-based index
+
+    if (colIndex === 0) {
+      console.error(`Columna "${FOLIO_CONFIG.colName}" no encontrada en la fila 1.`);
+      return;
+    }
+
+    // Identificar última fila con datos
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) return; // Solo encabezados o vacía
+
+    // Leer valor de la columna Folio en la última fila
+    const cell = sheet.getRange(lastRow, colIndex);
+    const val = cell.getValue();
+
+    // Si está vacío (AppSheet creó la fila pero no puso folio), generamos uno
+    if (val === "" || val === null) {
+      // Calcular MAX de los valores anteriores
+      // Leemos desde fila 2 hasta lastRow-1
+      let max = 0;
+      if (lastRow > 2) {
+        // Obtenemos todos los valores de la columna Folio
+        const rangeValues = sheet.getRange(2, colIndex, lastRow - 2, 1).getValues();
+
+        // Iteramos buscando el máximo numérico
+        for (let i = 0; i < rangeValues.length; i++) {
+          const v = rangeValues[i][0];
+          // Intentar convertir a número
+          const n = Number(v);
+          if (!isNaN(n) && n > max) {
+            max = n;
+          }
+        }
+      }
+
+      // Escribir nuevo folio
+      cell.setValue(max + 1);
+      console.log(`Folio generado para fila ${lastRow}: ${max + 1}`);
+    }
+
+  } catch (err) {
+    console.error('Error en generarFolioAutomatico: ' + err.toString());
+  } finally {
+    // Liberar bloqueo siempre
+    lock.releaseLock();
+  }
+}
