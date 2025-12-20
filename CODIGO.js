@@ -1416,3 +1416,98 @@ function generateAppSheetId() {
   }
   return result;
 }
+
+/*
+ * ======================================================================
+ * AUTOMATIZACIÓN DIARIA: CONTADOR 'ANTONIA_VENTAS'
+ * ======================================================================
+ */
+function runDailyAntoniaVentasUpdate() {
+  try {
+    const sheetName = "ANTONIA_VENTAS";
+    const sheet = findSheetSmart(sheetName);
+    if (!sheet) {
+      console.warn("Hoja no encontrada: " + sheetName);
+      return;
+    }
+
+    const dataRange = sheet.getDataRange();
+    const values = dataRange.getValues();
+    if (values.length < 2) return; // Solo encabezados o vacía
+
+    const headerRowIndex = findHeaderRow(values);
+    if (headerRowIndex === -1) return;
+
+    const headers = values[headerRowIndex].map(h => String(h).toUpperCase().trim());
+
+    // Buscar índice de columna DIAS (o alias)
+    let diasIdx = -1;
+    // Prioridad: DIAS, luego alias
+    if (headers.includes("DIAS")) diasIdx = headers.indexOf("DIAS");
+    else if (headers.includes("DÍAS")) diasIdx = headers.indexOf("DÍAS");
+    else {
+        // Usar helper si está disponible o búsqueda manual de alias
+        const aliases = ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'];
+        for (let alias of aliases) {
+            const idx = headers.indexOf(alias);
+            if (idx > -1) {
+                diasIdx = idx;
+                break;
+            }
+        }
+    }
+
+    if (diasIdx === -1) {
+       console.warn("Columna 'dias' no encontrada en " + sheetName);
+       return;
+    }
+
+    // Iterar y actualizar (en memoria)
+    const updates = [];
+    let updatedCount = 0;
+
+    // values[i][diasIdx] -> fila absoluta = headerRowIndex + 1 + i (donde i empieza en 0 tras slice)
+    // Pero iteraremos values completos para mantener indices alineados con setValues si fuera necesario,
+    // aunque lo óptimo es mapear solo la columna o hacerlo por batch.
+    // Dado que Apps Script es lento celda por celda, mejor preparar toda la columna nueva.
+
+    // Opción: Leer toda la columna, procesar, escribir toda la columna.
+    // dataRange abarca todo.
+
+    const rows = values;
+    const newColumnValues = [];
+
+    for (let i = 0; i < rows.length; i++) {
+        if (i <= headerRowIndex) {
+            newColumnValues.push([rows[i][diasIdx]]); // Mantener header
+            continue;
+        }
+
+        let currentVal = rows[i][diasIdx];
+        let newVal = currentVal;
+
+        // Lógica de incremento: solo si es numérico o vacío (asumiendo 0)
+        // El usuario pidió: [dias] + 1.
+        if (currentVal === "" || currentVal === null) currentVal = 0;
+
+        if (!isNaN(currentVal)) {
+            newVal = Number(currentVal) + 1;
+            updatedCount++;
+        }
+
+        newColumnValues.push([newVal]);
+    }
+
+    // Escribir de vuelta la columna
+    // range: (row, col, numRows, numCols)
+    // row 1, col diasIdx+1, length, 1
+    sheet.getRange(1, diasIdx + 1, newColumnValues.length, 1).setValues(newColumnValues);
+
+    registrarLog("SISTEMA", "AUTO_UPDATE", `Incremento diario 'dias' para ${updatedCount} filas en ${sheetName}`);
+    console.log(`Actualizadas ${updatedCount} filas en ${sheetName}`);
+
+  } catch (e) {
+    console.error(e);
+    registrarLog("SISTEMA", "AUTO_ERROR", "Fallo runDailyAntoniaVentasUpdate: " + e.toString());
+  }
+}
