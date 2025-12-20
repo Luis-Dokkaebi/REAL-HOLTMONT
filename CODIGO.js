@@ -758,6 +758,11 @@ function internalUpdateTask(personName, taskData, username) {
         }
 
         if (String(personName).toUpperCase() === "ANTONIA_VENTAS") {
+             // AUTO-INCREMENT FOLIO FOR ANTONIA VENTAS
+             if (!taskData['FOLIO'] && !taskData['ID']) {
+                 taskData['FOLIO'] = generateNextFolio("ANTONIA_VENTAS");
+             }
+
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex; 
 
@@ -1397,4 +1402,45 @@ function apiCreateStandardStructure(siteId, user) {
             createdBy: user || "SISTEMA"
         });
     });
+}
+
+/**
+ * GENERADOR DE FOLIOS SECUENCIALES (APP-SHEET STYLE)
+ * Busca el MAX(Folio) y suma 1.
+ */
+function generateNextFolio(sheetName) {
+  try {
+    const sheet = findSheetSmart(sheetName);
+    if (!sheet) return 1;
+
+    // Leer datos
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return 1; // Solo headers o vacío
+
+    // Buscar columna FOLIO o ID
+    const headerIdx = findHeaderRow(data);
+    if (headerIdx === -1) return 1;
+
+    const headers = data[headerIdx].map(h => String(h).toUpperCase().trim());
+    const folioIdx = headers.findIndex(h => h === "FOLIO" || h === "ID");
+
+    if (folioIdx === -1) return 1;
+
+    // Calcular MAX
+    let max = 0;
+    for (let i = headerIdx + 1; i < data.length; i++) {
+        const val = data[i][folioIdx];
+        if (typeof val === 'number') {
+            if (val > max) max = val;
+        } else if (val) {
+            // Intentar parsear si es string numérico
+            const parsed = parseFloat(val);
+            if (!isNaN(parsed) && parsed > max) max = parsed;
+        }
+    }
+    return max + 1;
+  } catch (e) {
+    console.error("Error generando folio: " + e.toString());
+    return 1;
+  }
 }
