@@ -1416,3 +1416,92 @@ function generateAppSheetId() {
   }
   return result;
 }
+
+/*
+ * ======================================================================
+ * AUTOMATIZACIÓN DIARIA: CONTADOR 'ANTONIA_VENTAS'
+ * ======================================================================
+ */
+function incrementarContadorDias() {
+  const SHEET_NAME_COUNTER = "ANTONIA_VENTAS";
+
+  try {
+    const sheet = findSheetSmart(SHEET_NAME_COUNTER);
+    if (!sheet) {
+      console.warn(`Hoja '${SHEET_NAME_COUNTER}' no encontrada.`);
+      return;
+    }
+
+    const dataRange = sheet.getDataRange();
+    const values = dataRange.getValues();
+    if (values.length < 2) return; // Solo encabezados o vacía
+
+    // Buscar exactamente el encabezado 'dias' en la fila 1 (índice 0)
+    // El requerimiento dice "encabezado 'dias' (fila 1)"
+    const headers = values[0];
+    const diasIdx = headers.indexOf("dias");
+
+    if (diasIdx === -1) {
+       console.warn(`Columna con encabezado exacto 'dias' no encontrada en la fila 1 de ${SHEET_NAME_COUNTER}.`);
+       return;
+    }
+
+    // Leer solo la columna de interés para optimizar, aunque ya tenemos 'values'.
+    // Trabajaremos sobre 'values' para construir el bloque de actualización.
+
+    const newColumnValues = [];
+    let updatedCount = 0;
+
+    // Recorrer filas a partir de la fila 2 (índice 1)
+    for (let i = 0; i < values.length; i++) {
+        if (i === 0) {
+            // Mantener encabezado
+            newColumnValues.push([values[i][diasIdx]]);
+            continue;
+        }
+
+        let val = values[i][diasIdx];
+
+        // Lógica de negocio: Si es número, +1. Si vacío o no número, ignorar.
+        if (typeof val === 'number') {
+            val = val + 1;
+            updatedCount++;
+        }
+
+        newColumnValues.push([val]);
+    }
+
+    // Escribir en bloque (setValues)
+    sheet.getRange(1, diasIdx + 1, newColumnValues.length, 1).setValues(newColumnValues);
+
+    registrarLog("SISTEMA", "CONTADOR_DIARIO", `Se actualizaron ${updatedCount} filas en '${SHEET_NAME_COUNTER}'`);
+    console.log(`Proceso finalizado. Filas actualizadas: ${updatedCount}`);
+
+  } catch (e) {
+    console.error(e);
+    registrarLog("SISTEMA", "ERROR_CONTADOR", e.toString());
+  }
+}
+
+function instalarDisparador() {
+  const funcionObjetivo = "incrementarContadorDias";
+
+  // Verificar si ya existe el disparador para evitar duplicados
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === funcionObjetivo) {
+      console.log(`El disparador para '${funcionObjetivo}' ya existe.`);
+      return;
+    }
+  }
+
+  // Crear nuevo disparador diario entre 1 am y 2 am
+  ScriptApp.newTrigger(funcionObjetivo)
+      .timeBased()
+      .everyDays(1)
+      .atHour(1) // 1 am
+      .create();
+
+  console.log(`Disparador instalado para '${funcionObjetivo}' (Diario 1am-2am).`);
+  registrarLog("ADMIN", "CONFIG_TRIGGER", "Se instaló el disparador automático diario.");
+}
