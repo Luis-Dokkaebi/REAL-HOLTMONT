@@ -758,11 +758,6 @@ function internalUpdateTask(personName, taskData, username) {
         }
 
         if (String(personName).toUpperCase() === "ANTONIA_VENTAS") {
-             // AUTO-INCREMENT FOLIO FOR ANTONIA VENTAS
-             if (!taskData['FOLIO'] && !taskData['ID']) {
-                 taskData['FOLIO'] = generateAppSheetId();
-             }
-
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex; 
 
@@ -1402,17 +1397,4 @@ function apiCreateStandardStructure(siteId, user) {
             createdBy: user || "SISTEMA"
         });
     });
-}
-
-/**
- * GENERADOR DE UNIQUEID (APP-SHEET STYLE)
- * Genera string alfanumérico de 8 caracteres.
- */
-function generateAppSheetId() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
 }
