@@ -697,6 +697,12 @@ function internalBatchUpdateTasks(sheetName, tasksArray) {
           }
           sheet.getRange(singleRowIndex + 1, 1, 1, finalMaxCols).setValues([singleRow]);
        } else {
+          // REMOVE FILTER IF EXISTS TO AVOID "HEADER MUST HAVE VALUE" ERROR
+          const existingFilter = sheet.getFilter();
+          if (existingFilter) {
+              try { existingFilter.remove(); } catch(e) {}
+          }
+
           if(values.length < dataRange.getNumRows()) sheet.clearContents();
           if(headerRowIndex < normalizedValues.length) {
               for(let c=0; c<normalizedValues[headerRowIndex].length; c++){
