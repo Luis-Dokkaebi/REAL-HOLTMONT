@@ -6,6 +6,7 @@
  * ======================================================================
  */
 
+var DEMO_MODE = true; // HOTFIX: MODO DEMO
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 // --- CONFIGURACIÓN ---
@@ -302,6 +303,28 @@ function generarDashboard() {
 
 /* KPI ANALYSIS ENGINE - NATIVE JS IMPLEMENTATION */
 function apiFetchTeamKPIData(username) {
+  // MOCK DATA INJECTION
+  if (DEMO_MODE) {
+      // Simulación para VENTAS
+      var dataVentasMock = [
+        ["Eduardo Manzanares", 25, 3.5],
+        ["Sebastian Padilla", 25, 2.8],
+        ["Ramiro Rodriguez", 28, 4.1]
+      ];
+      // Simulación para TRACKER
+      var dataTrackerMock = [
+        ["Judith Echavarria", 23, 1.5],
+        ["Eduardo Teran", 32, 2.0],
+        ["Angel Salinas", 26, 1.8]
+      ];
+
+      return {
+          success: true,
+          ventas: dataVentasMock.map(function(r) { return {name: r[0], volume: r[1], efficiency: r[2]}; }),
+          tracker: dataTrackerMock.map(function(r) { return {name: r[0], volume: r[1], efficiency: r[2]}; })
+      };
+  }
+
   // 4. Control de Acceso (Validación de Identidad)
   const user = USER_DB[String(username).toUpperCase().trim()];
   if (!user || user.role !== 'ADMIN') {
