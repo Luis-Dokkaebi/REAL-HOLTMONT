@@ -196,13 +196,13 @@
             </div>
         </div>
 
-        <!-- BOTÓN INSTRUCCIONES (Solo Antonia) -->
-        <div class="nav-item" v-if="currentUsername === 'ANTONIA_VENTAS'" :class="{ active: currentView === 'INSTRUCCIONES' }" @click="currentView = 'INSTRUCCIONES'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffc107; background: rgba(255, 193, 7, 0.1);">
-            <div class="nav-icon-col"><i class="fas fa-question-circle text-warning"></i></div>
-            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
-        </div>
-
         <div class="mt-auto">
+            <!-- BOTÓN INSTRUCCIONES (Solo Antonia) -->
+            <div class="nav-item" v-if="currentUsername === 'ANTONIA_VENTAS'" :class="{ active: currentView === 'INSTRUCCIONES' }" @click="currentView = 'INSTRUCCIONES'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffc107; background: rgba(255, 193, 7, 0.1);">
+                <div class="nav-icon-col"><i class="fas fa-question-circle text-warning"></i></div>
+                <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+            </div>
+
             <div class="p-3">
                 <button class="btn btn-outline-secondary w-100 btn-sm" @click="logout" :title="isCompact ? 'Salir' : ''">
                     <i class="fas fa-sign-out-alt" v-if="isCompact"></i>
