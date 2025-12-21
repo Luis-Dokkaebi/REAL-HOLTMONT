@@ -200,7 +200,7 @@ function getSystemConfig(role) {
       allDepartments: allDepts, 
       staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ], 
       directory: fullDirectory, 
-      specialModules: [ ppcModuleMaster, ecgModule ],
+      specialModules: [ ppcModuleMaster, ecgModule, kpiModule ],
       accessProjects: false 
   };
   
@@ -321,7 +321,11 @@ function apiFetchTeamKPIData(username) {
       return {
           success: true,
           ventas: dataVentasMock.map(function(r) { return {name: r[0], volume: r[1], efficiency: r[2]}; }),
-          tracker: dataTrackerMock.map(function(r) { return {name: r[0], volume: r[1], efficiency: r[2]}; })
+          tracker: dataTrackerMock.map(function(r) { return {name: r[0], volume: r[1], efficiency: r[2]}; }),
+          productivity: {
+             labels: ["16-Dic", "17-Dic", "18-Dic", "19-Dic"],
+             values: [2, 3, 3, 4]
+          }
       };
   }
 
