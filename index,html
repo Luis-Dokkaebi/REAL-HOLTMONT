@@ -208,6 +208,12 @@
             <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
         </div>
 
+        <!-- BOTÓN INSTRUCCIONES (Solo PPC_ADMIN JESUS_CANTU) -->
+        <div class="nav-item" v-if="currentRole === 'PPC_ADMIN'" :class="{ active: currentView === 'INSTRUCCIONES_PPC' }" @click="currentView = 'INSTRUCCIONES_PPC'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffc107; background: rgba(255, 193, 7, 0.1);">
+            <div class="nav-icon-col"><i class="fas fa-map-marked-alt text-warning"></i></div>
+            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+        </div>
+
         <div class="mt-auto">
             <div class="p-3">
                 <button class="btn btn-outline-secondary w-100 btn-sm" @click="logout" :title="isCompact ? 'Salir' : ''">
@@ -672,6 +678,95 @@
               <div class="card-body">
                   <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 3: GUARDAR Y ENVIAR</h5>
                   <p><i class="fas fa-save text-primary me-2"></i><strong>Acción:</strong> Proceder a GUARDAR la fila nueva que se acaba de crear para ser enviada al vendedor correspondiente.</p>
+              </div>
+          </div>
+      </div>
+
+      <!-- VISTA INSTRUCCIONES PPC_ADMIN (JESUS_CANTU) -->
+      <div v-if="currentView === 'INSTRUCCIONES_PPC'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:#f8f9fa; padding:20px; overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold m-0 text-primary"><i class="fas fa-map-marked-alt me-2"></i>TUTORIAL: CREAR Y EMITIR ACTIVIDAD</h4>
+              <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+          </div>
+
+          <div class="card shadow-sm border-0 mb-4" style="max-width: 900px; margin: 0 auto;">
+              <div class="card-body">
+                  <h5 class="fw-bold mb-4 border-bottom pb-2">GUÍA PASO A PASO</h5>
+
+                  <div class="row g-4">
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 1: ELEGIR DEPARTAMENTO</h6>
+                          <p class="small text-muted mb-0">Seleccione el departamento correspondiente para el envío de actividades.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 2: DESCRIPCIÓN</h6>
+                          <p class="small text-muted mb-0">Rellenar el campo de descripción de la actividad de forma clara.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 3: RESPONSABLE(S)</h6>
+                          <p class="small text-muted mb-0">Elegir responsable(s) a quien se asignará la actividad.</p>
+                          <div class="alert alert-warning py-1 px-2 mt-2 small d-inline-block mb-0">
+                              <i class="fas fa-exclamation-circle me-1"></i>NOTA: La fecha siempre será la fecha en la cual se está asignando la actividad en el calendario natural.
+                          </div>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 4: RELOJ</h6>
+                          <p class="small text-muted mb-0">Anotar el reloj (horas estimadas/días).</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 5: ARCHIVOS</h6>
+                          <p class="small text-muted mb-0">Agregar archivos adjuntos si es necesario para la actividad.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 6: COMENTARIOS</h6>
+                          <p class="small text-muted mb-0">Agregar comentarios adicionales de manera opcional.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 7: ICONO DE MÁS (+)</h6>
+                          <p class="small text-muted mb-0">Dar click al icono del mouse (botón +) para desplegar opciones.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 8: CLASIFICACIÓN</h6>
+                          <p class="small text-muted mb-0">Agregar la clasificación de la tarea (A, AA, AAA).</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 9: PRIORIDAD</h6>
+                          <p class="small text-muted mb-0">Establecer la prioridad de la actividad.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 10: RESTRICCIÓN</h6>
+                          <p class="small text-muted mb-0">Agregar restricción si es necesaria.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 11: FECHA RESPUESTA</h6>
+                          <p class="small text-muted mb-0">Detallar la fecha de respuesta esperada.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 12: AGREGAR A COLA</h6>
+                          <p class="small text-muted mb-0">Confirmar para agregar la actividad a la lista de envío.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 13: REPETIR</h6>
+                          <p class="small text-muted mb-0">Repetir el proceso cuantas veces sea necesario para todas las actividades.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-success">PASO 14: GUARDAR Y ENVIAR</h6>
+                          <p class="small text-muted mb-0">Guardar todo para ser enviado a los responsables, a sus tablas y al PPC Semanal.</p>
+                      </div>
+                  </div>
               </div>
           </div>
       </div>
