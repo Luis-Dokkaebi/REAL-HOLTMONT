@@ -197,9 +197,9 @@
         </div>
 
         <!-- BOTÓN INSTRUCCIONES (Solo Antonia) -->
-        <div class="nav-item" v-if="currentUsername === 'ANTONIA_VENTAS'" :class="{ active: currentView === 'INSTRUCCIONES' }" @click="currentView = 'INSTRUCCIONES'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffc107; background: rgba(255, 193, 7, 0.1);">
-            <div class="nav-icon-col"><i class="fas fa-question-circle text-warning"></i></div>
-            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+        <div class="nav-item" v-if="currentUsername === 'ANTONIA_VENTAS'" :class="{ active: currentView === 'INSTRUCCIONES' }" @click="currentView = 'INSTRUCCIONES'; currentDept = ''; currentModuleId = '';">
+            <div class="nav-icon-col"><i class="fas fa-question-circle"></i></div>
+            <span class="nav-text">INSTRUCCIONES</span>
         </div>
 
         <div class="mt-auto">
@@ -616,42 +616,39 @@
       <!-- VISTA INSTRUCCIONES -->
       <div v-if="currentView === 'INSTRUCCIONES'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:white; padding:20px; overflow-y:auto;">
           <div class="d-flex justify-content-between align-items-center mb-4">
-              <h4 class="fw-bold m-0 text-primary"><i class="fas fa-question-circle me-2"></i>TUTORIALES</h4>
+              <h4 class="fw-bold m-0 text-primary"><i class="fas fa-question-circle me-2"></i>GUÍA DE OPERACIÓN</h4>
               <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
           </div>
 
           <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
               <div class="card-body">
-                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 1: CREACIÓN DE REGISTRO</h5>
-                  <p><i class="fas fa-plus-circle text-success me-2"></i>Acción: Clic en <strong>"AÑADIR FILA"</strong>.</p>
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 1: AÑADIR FILA</h5>
+                  <ul class="list-group list-group-flush small mb-3">
+                      <li class="list-group-item border-0 px-0"><i class="fas fa-plus-circle text-success me-2"></i>Instrucción: Para crear una nueva fila en la tabla.</li>
+                  </ul>
                   <div class="alert alert-danger py-2 small fw-bold">
-                      <i class="fas fa-exclamation-triangle me-2"></i>NOTA IMPORTANTE: El FOLIO se genera AUTOMÁTICAMENTE al enviar. NO escribir en esa celda manualmente.
+                      <i class="fas fa-exclamation-triangle me-2"></i>NOTA CRÍTICA: EL FOLIO SE CREA DE MANERA AUTOMÁTICA EN LA TABLA DEL VENDEDOR AL SER ENVIADO. (No escribir manualmente).
                   </div>
               </div>
           </div>
 
           <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
               <div class="card-body">
-                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 2: LLENADO DE DATOS</h5>
-                  <p class="mb-2">Instrucción: Rellenar campos obligatorios.</p>
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 2: RELLENAR CAMPOS</h5>
                   <ul class="list-group list-group-flush small mb-3">
-                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Area</li>
-                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Cliente</li>
-                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Concepto</li>
-                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Clasificacion</li>
-                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Vendedor</li>
-                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Fecha Inicio</li>
+                      <li class="list-group-item border-0 px-0"><i class="fas fa-pen text-primary me-2"></i>Instrucción: Llenar los campos obligatorios.</li>
+                      <li class="list-group-item border-0 px-0"><strong>Campos:</strong> AREA, CLIENTE, CONCEPTO, CLASIFICACION, VENDEDOR, FECHA INICIO.</li>
                   </ul>
                   <div class="alert alert-info py-2 small">
-                      <i class="fas fa-info-circle me-2"></i>NOTA ADICIONAL: Se pueden adjuntar archivos en: Info Cliente, F2, Cotizacion, Time Out, Layout.
+                      <i class="fas fa-paperclip me-2"></i><strong>ARCHIVOS ADJUNTOS:</strong> Nota que se pueden adjuntar archivos para el vendedor en: INFO CLIENTE, F2, COTIZACION, TIME OUT, LAYOUT.
                   </div>
               </div>
           </div>
 
           <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
               <div class="card-body">
-                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 3: FINALIZAR</h5>
-                  <p><i class="fas fa-save text-primary me-2"></i>Acción: Clic en <strong>"GUARDAR"</strong> para enviar al vendedor correspondiente.</p>
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 3: GUARDAR Y ENVIAR</h5>
+                  <p class="mb-0"><i class="fas fa-save text-primary me-2"></i>Instrucción: Proceder a GUARDAR la fila nueva creada para que sea enviada automáticamente al vendedor correspondiente.</p>
               </div>
           </div>
       </div>
