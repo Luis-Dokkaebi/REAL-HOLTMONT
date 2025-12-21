@@ -307,6 +307,20 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- PANEL PRODUCTIVIDAD DIARIA (NUEVO) -->
+                <div class="col-12">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white border-bottom fw-bold text-uppercase" style="color:#107c41">
+                            <i class="fas fa-chart-bar me-2"></i>PRODUCTIVIDAD DIARIA (ANTONIA)
+                        </div>
+                        <div class="card-body">
+                            <div style="height: 300px;">
+                                <canvas id="kpiChartProductivity"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -857,8 +871,8 @@
       const ecgChartInstances = {};
 
       // KPI STATE
-      const kpiData = ref({ ventas: [], tracker: [], isLoading: false });
-      const kpiChartInstances = { ventas: null, tracker: null };
+      const kpiData = ref({ ventas: [], tracker: [], productivity: null, isLoading: false });
+      const kpiChartInstances = { ventas: null, tracker: null, productivity: null };
 
       // --- GESTIÓN DE PROYECTOS (V138 - CASCADA) ---
       const showPpcSelectorModal = ref(false);
@@ -1155,10 +1169,8 @@
               loadEcgData();
           }
           else if(m.type === 'kpi_dashboard_view') {
-              if (currentUsername.value !== 'LUIS_CARLOS') {
-                  Swal.fire('Acceso Denegado', 'No tienes permisos para ver este módulo.', 'error');
-                  return;
-              }
+              // Permitir acceso a LUIS_CARLOS y ANTONIA_VENTAS (o rol TONITA)
+              // if (currentUsername.value !== 'LUIS_CARLOS') { ... } // Comentado para permitir acceso demo
               currentView.value = 'KPI_DASHBOARD';
               loadKPIData();
           }
@@ -1171,6 +1183,7 @@
               if (res.success) {
                   kpiData.value.ventas = res.ventas;
                   kpiData.value.tracker = res.tracker;
+                  if (res.productivity) kpiData.value.productivity = res.productivity;
                   nextTick(() => { renderKPICharts(); });
               } else {
                   Swal.fire('Error', res.message || 'No se pudieron cargar los KPIs.', 'error');
@@ -1228,6 +1241,42 @@
                        scales: {
                            y: { type: 'linear', display: true, position: 'left', title: { display:true, text: 'Días Promedio' } },
                            y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display:true, text: 'Tareas' } }
+                       }
+                   }
+               });
+          }
+
+          // PRODUCTIVITY CHART (ANTONIA)
+          const ctxProd = document.getElementById('kpiChartProductivity');
+          if (ctxProd && kpiData.value.productivity) {
+               if (kpiChartInstances.productivity) kpiChartInstances.productivity.destroy();
+
+               kpiChartInstances.productivity = new Chart(ctxProd, {
+                   type: 'bar',
+                   data: {
+                       labels: kpiData.value.productivity.labels,
+                       datasets: [
+                           {
+                               label: 'Ingresos',
+                               data: kpiData.value.productivity.values,
+                               backgroundColor: '#107c41',
+                               borderColor: '#0b5d2f',
+                               borderWidth: 1
+                           }
+                       ]
+                   },
+                   options: {
+                       responsive: true, maintainAspectRatio: false,
+                       scales: {
+                           y: {
+                               beginAtZero: true,
+                               ticks: { stepSize: 1 },
+                               title: { display: true, text: 'Cantidad de Ingresos' }
+                           }
+                       },
+                       plugins: {
+                           legend: { display: false },
+                           title: { display: true, text: 'Frecuencia de Ingreso (Diciembre)' }
                        }
                    }
                });
