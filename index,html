@@ -197,9 +197,15 @@
         </div>
 
         <!-- BOTÓN INSTRUCCIONES (Solo Antonia) -->
-        <div class="nav-item" v-if="currentUsername === 'ANTONIA_VENTAS'" :class="{ active: currentView === 'INSTRUCCIONES' }" @click="currentView = 'INSTRUCCIONES'; currentDept = ''; currentModuleId = '';">
-            <div class="nav-icon-col"><i class="fas fa-question-circle"></i></div>
-            <span class="nav-text">INSTRUCCIONES</span>
+        <div class="nav-item" v-if="currentUsername === 'ANTONIA_VENTAS'" :class="{ active: currentView === 'INSTRUCCIONES' }" @click="currentView = 'INSTRUCCIONES'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffc107; background: rgba(255, 193, 7, 0.1);">
+            <div class="nav-icon-col"><i class="fas fa-question-circle text-warning"></i></div>
+            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+        </div>
+
+        <!-- BOTÓN INSTRUCCIONES (Solo Admin LUIS_CARLOS) -->
+        <div class="nav-item" v-if="currentRole === 'ADMIN'" :class="{ active: currentView === 'INSTRUCCIONES_ADMIN' }" @click="currentView = 'INSTRUCCIONES_ADMIN'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffd700; background: rgba(255, 215, 0, 0.05);">
+            <div class="nav-icon-col"><i class="fas fa-map text-warning"></i></div>
+            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
         </div>
 
         <div class="mt-auto">
@@ -613,42 +619,120 @@
       </div>
       <div v-if="['IFRAME', 'MODULE_TABS'].includes(currentView)" class="iframe-container"><div class="iframe-toolbar"><span class="fw-bold">{{ iframeTitle }}</span><button class="btn btn-sm btn-danger" @click="closeIframe">Cerrar</button></div><iframe :src="currentIframeUrl"></iframe></div>
 
-      <!-- VISTA INSTRUCCIONES -->
+      <!-- VISTA INSTRUCCIONES (ANTONIA) -->
       <div v-if="currentView === 'INSTRUCCIONES'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:white; padding:20px; overflow-y:auto;">
           <div class="d-flex justify-content-between align-items-center mb-4">
-              <h4 class="fw-bold m-0 text-primary"><i class="fas fa-question-circle me-2"></i>GUÍA DE OPERACIÓN</h4>
+              <h4 class="fw-bold m-0 text-primary"><i class="fas fa-question-circle me-2"></i>TUTORIALES</h4>
               <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
           </div>
 
           <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
               <div class="card-body">
-                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 1: AÑADIR FILA</h5>
-                  <ul class="list-group list-group-flush small mb-3">
-                      <li class="list-group-item border-0 px-0"><i class="fas fa-plus-circle text-success me-2"></i>Instrucción: Para crear una nueva fila en la tabla.</li>
-                  </ul>
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 1: CREACIÓN DE REGISTRO</h5>
+                  <p><i class="fas fa-plus-circle text-success me-2"></i>Acción: Clic en <strong>"AÑADIR FILA"</strong>.</p>
                   <div class="alert alert-danger py-2 small fw-bold">
-                      <i class="fas fa-exclamation-triangle me-2"></i>NOTA CRÍTICA: EL FOLIO SE CREA DE MANERA AUTOMÁTICA EN LA TABLA DEL VENDEDOR AL SER ENVIADO. (No escribir manualmente).
+                      <i class="fas fa-exclamation-triangle me-2"></i>NOTA IMPORTANTE: El FOLIO se genera AUTOMÁTICAMENTE al enviar. NO escribir en esa celda manualmente.
                   </div>
               </div>
           </div>
 
           <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
               <div class="card-body">
-                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 2: RELLENAR CAMPOS</h5>
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 2: LLENADO DE DATOS</h5>
+                  <p class="mb-2">Instrucción: Rellenar campos obligatorios.</p>
                   <ul class="list-group list-group-flush small mb-3">
-                      <li class="list-group-item border-0 px-0"><i class="fas fa-pen text-primary me-2"></i>Instrucción: Llenar los campos obligatorios.</li>
-                      <li class="list-group-item border-0 px-0"><strong>Campos:</strong> AREA, CLIENTE, CONCEPTO, CLASIFICACION, VENDEDOR, FECHA INICIO.</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Area</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Cliente</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Concepto</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Clasificacion</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Vendedor</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>Fecha Inicio</li>
                   </ul>
                   <div class="alert alert-info py-2 small">
-                      <i class="fas fa-paperclip me-2"></i><strong>ARCHIVOS ADJUNTOS:</strong> Nota que se pueden adjuntar archivos para el vendedor en: INFO CLIENTE, F2, COTIZACION, TIME OUT, LAYOUT.
+                      <i class="fas fa-info-circle me-2"></i>NOTA ADICIONAL: Se pueden adjuntar archivos en: Info Cliente, F2, Cotizacion, Time Out, Layout.
                   </div>
               </div>
           </div>
 
           <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
               <div class="card-body">
-                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 3: GUARDAR Y ENVIAR</h5>
-                  <p class="mb-0"><i class="fas fa-save text-primary me-2"></i>Instrucción: Proceder a GUARDAR la fila nueva creada para que sea enviada automáticamente al vendedor correspondiente.</p>
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 3: FINALIZAR</h5>
+                  <p><i class="fas fa-save text-primary me-2"></i>Acción: Clic en <strong>"GUARDAR"</strong> para enviar al vendedor correspondiente.</p>
+              </div>
+          </div>
+      </div>
+
+      <!-- VISTA INSTRUCCIONES ADMIN (LUIS_CARLOS) -->
+      <div v-if="currentView === 'INSTRUCCIONES_ADMIN'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:#f8f9fa; padding:20px; overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold m-0" style="color:#bfa15f;"><i class="fas fa-map me-2"></i>MAPA DE NAVEGACIÓN DEL ADMINISTRADOR</h4>
+              <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+          </div>
+
+          <div class="alert alert-secondary border-0 mb-4 shadow-sm">
+             <strong>INTRODUCCIÓN:</strong> Navegue entre las diferentes pestañas de su Dashboard para gestionar las siguientes áreas estratégicas:
+          </div>
+
+          <div class="row g-4">
+              <!-- 1. PPC MAESTRO -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #fd7e14 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#fd7e14"><i class="fas fa-tasks me-2"></i>1. PPC MAESTRO</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Asignación de tareas de manera DIARIA/SEMANAL.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 2. PLANEACIÓN SEMANAL -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #6f42c1 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#6f42c1"><i class="fas fa-calendar-alt me-2"></i>2. PLANEACIÓN SEMANAL</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización de la planeación interna.</li>
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-star text-warning me-2"></i><strong>Destacado:</strong> Incluye filtros por Semana, Departamentos y visualización de estatus de cumplimiento (Sí/No).</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 3. MONITOR TOÑITA -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #0dcaf0 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#0dcaf0"><i class="fas fa-eye me-2"></i>3. MONITOR TOÑITA</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Supervisión de actividades diarias realizadas por el perfil operativo (Toñita) y revisión de asignaciones a terceros.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 4. KPI -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #d63384 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#d63384"><i class="fas fa-chart-line me-2"></i>4. KPI</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización constante del rendimiento y métricas de los trabajadores.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 5. ÁREAS -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #20c997 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#20c997"><i class="fas fa-building me-2"></i>5. ÁREAS</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Monitorización de actividades desglosada específicamente por Usuario y Departamentos.</li>
+                          </ul>
+                      </div>
+                  </div>
               </div>
           </div>
       </div>
@@ -740,6 +824,7 @@
     setup() {
       // ESTADO GLOBAL
       const isLoggedIn = ref(false); const loginPass = ref(''); const loginUser = ref(''); const loggingIn = ref(false); const currentUser = ref(''); const currentUsername = ref('');
+      const currentRole = ref(''); // NUEVO: Estado para el rol del usuario
       const currentView = ref('DASHBOARD'); const currentDept = ref('');
       const config = ref({ departments: {}, staff: [], directory: [], specialModules: [] });
       const staffTracker = ref({ name: '', data: [], history: [], headers: [], isLoading: false, previousView: 'DEPT' });
@@ -972,7 +1057,7 @@
       };
 
       const handleErr = (e) => { loggingIn.value=false; isSubmitting.value=false; Swal.fire('Error',e.message,'error'); };
-      const doLogin = () => { if(!loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; loadConfig(res.role); loadCascadeTree(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiLogin(loginUser.value, loginPass.value); };
+      const doLogin = () => { if(!loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role); loadCascadeTree(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiLogin(loginUser.value, loginPass.value); };
       const loadConfig = (r) => { google.script.run.withSuccessHandler(d => { config.value=d; if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r); };
       const toggleSidebar = () => { isCompact.value = !isCompact.value; };
       const logout = () => { google.script.run.apiLogout(currentUsername.value); isLoggedIn.value=false; loginPass.value=''; loginUser.value=''; currentView.value='DASHBOARD'; };
@@ -1169,7 +1254,7 @@
       const formatDisplayDate = (val) => { if(!val) return ''; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{2}$/)) return val; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return val.replace(/\/(\d{4})$/, (m, y) => "/" + y.slice(-2)); return val; };
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
       
-      return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, 
+      return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, 
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData };
     }
   });
