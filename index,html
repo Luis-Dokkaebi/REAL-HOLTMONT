@@ -214,6 +214,12 @@
             <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
         </div>
 
+        <!-- BOTÓN INSTRUCCIONES (Solo JAIME_OLIVO / ADMIN_CONTROL) -->
+        <div class="nav-item" v-if="currentRole === 'ADMIN_CONTROL'" :class="{ active: currentView === 'INSTRUCCIONES_ADMIN_CONTROL' }" @click="currentView = 'INSTRUCCIONES_ADMIN_CONTROL'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffd700; background: rgba(255, 215, 0, 0.05);">
+            <div class="nav-icon-col"><i class="fas fa-map text-warning"></i></div>
+            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+        </div>
+
         <div class="mt-auto">
             <div class="p-3">
                 <button class="btn btn-outline-secondary w-100 btn-sm" @click="logout" :title="isCompact ? 'Salir' : ''">
@@ -911,6 +917,151 @@
                           <ul class="list-group list-group-flush small">
                               <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Monitorización de actividades desglosada específicamente por Usuario y Departamentos.</li>
                           </ul>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      <!-- VISTA INSTRUCCIONES JAIME_OLIVO (ADMIN_CONTROL) -->
+      <div v-if="currentView === 'INSTRUCCIONES_ADMIN_CONTROL'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:#f8f9fa; padding:20px; overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold m-0" style="color:#b38f00;"><i class="fas fa-map me-2" style="color:#ffd700;"></i>MAPA DE NAVEGACIÓN DEL ADMINISTRADOR</h4>
+              <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+          </div>
+
+          <div class="alert alert-secondary border-0 mb-4 shadow-sm" style="color:#333;">
+             <strong style="color:#b38f00;">INTRODUCCIÓN:</strong> Navegue entre las diferentes pestañas de su Dashboard para gestionar las siguientes áreas estratégicas:
+          </div>
+
+          <div class="row g-4 mb-5">
+              <!-- 1. PPC MAESTRO -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #fd7e14 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#fd7e14"><i class="fas fa-tasks me-2"></i>1. PPC MAESTRO</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Asignación de tareas de manera SEMANAL.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 2. PLANEACIÓN SEMANAL -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #6f42c1 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#6f42c1"><i class="fas fa-calendar-alt me-2"></i>2. PLANEACIÓN SEMANAL</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización de la planeación interna.</li>
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-star text-warning me-2"></i><strong>Destacado:</strong> Incluye filtros por Semana, Departamentos y visualización de estatus de cumplimiento (Sí/No).</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 3. MONITOR TOÑITA -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #0dcaf0 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#0dcaf0"><i class="fas fa-eye me-2"></i>3. MONITOR TOÑITA</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Supervisión de actividades diarias realizadas por el perfil operativo (Toñita) y revisión de asignaciones a terceros.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 4. KPI -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #d63384 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#d63384"><i class="fas fa-chart-line me-2"></i>4. KPI</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización constante del rendimiento y métricas de los trabajadores.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 5. ÁREAS -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #20c997 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#20c997"><i class="fas fa-building me-2"></i>5. ÁREAS</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Monitorización de actividades desglosada específicamente por Usuario y Departamentos.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <hr class="mb-5" style="border-top: 2px dashed #ccc;">
+
+          <h4 class="fw-bold mb-4 text-primary"><i class="fas fa-map-marked-alt me-2"></i>TUTORIAL: CREAR Y EMITIR ACTIVIDAD</h4>
+          <h5 class="text-secondary mb-4">--- APARTADO PPC ---</h5>
+
+          <div class="card shadow-sm border-0 mb-4" style="max-width: 900px; margin: 0 auto;">
+              <div class="card-body">
+                  <div class="row g-4">
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 1: ELEGIR DEPARTAMENTO PARA ENVIO DE ACTIVIDADES</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 2: RELLENAR EL CAMPO DE DESCRIPCION DE ACTIVIDAD</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 3: ELEGIR RESPONSABLE(S) DE LA ACTIVIDAD LA CUAL SERÁ ASIGNADA.</h6>
+                          <div class="alert alert-warning py-1 px-2 mt-2 small d-inline-block mb-0">
+                              NOTA(LA FECHA SIEMPRE SERÁ LA FECHA DE LA CUAL SE ESTÁ ASIGNANDO LA ACTIVIDAD EN EL CALENDARIO NATURAL)
+                          </div>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 4: ANOTAR EL RELOJ</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 5: AGREGAR ARCHIVOS (SI ES NECESARIO)</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 6: AGREGAR COMENTARIOS (DE MANERA OPCIONAL)</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 7: DAR CLICK AL ICONO DEL MOUSE</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 8: AGREGAR LA CLASIFICACION (A,AA,AAA)</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 9: AGREGAR LA PRIORIDAD</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 10: AGREGAR RESTRICCION (SI ES NECESARIA)</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 11: DETALLAR FECHA RESPUESTA</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PAS0 12: AGREGAR</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 13 REPETIR CUANTAS VECES SEA NECESARIO</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-success">PASO 14: GUARDAR TODO PARA SER ENVIADO A LOS RESPONSABLES A SUS TABLAS Y AL PPC SEMANAL.</h6>
                       </div>
                   </div>
               </div>
