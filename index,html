@@ -470,11 +470,23 @@
         </div>
 
         <div v-if="currentView === 'STAFF_TRACKER'" class="h-100 d-flex flex-column">
-          <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white border rounded">
+          <div class="d-flex bg-white px-3 pt-3 gap-2 align-items-end border-bottom">
+             <div class="cursor-pointer px-4 py-2 fw-bold"
+                  :class="activeTrackerTab === 'OPERATIVO' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                  @click="switchTrackerTab('OPERATIVO')">
+                  <i class="fas fa-tasks me-2"></i>OPERATIVO
+             </div>
+             <div class="cursor-pointer px-4 py-2 fw-bold"
+                  :class="activeTrackerTab === 'VENTAS' ? 'text-info border-bottom border-info border-3' : 'text-muted'"
+                  @click="switchTrackerTab('VENTAS')">
+                  <i class="fas fa-hand-holding-usd me-2"></i>VENTAS
+             </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white border rounded mt-2">
             <div class="d-flex align-items-center">
                 <button class="btn btn-light btn-sm border me-2" @click="goBackToDept"><i class="fas fa-arrow-left"></i></button>
                 <span class="small fw-bold me-2" :style="{color: currentDeptData.color || 'var(--primary)'}"><i class="fas fa-file-excel me-1"></i> {{ staffTracker.name }}</span>
-                <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="reloadStaffTracker" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
+                <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
                 <button class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
             </div>
             <div></div>
@@ -1159,6 +1171,8 @@
       const currentView = ref('DASHBOARD'); const currentDept = ref('');
       const config = ref({ departments: {}, staff: [], directory: [], specialModules: [] });
       const staffTracker = ref({ name: '', data: [], history: [], headers: [], isLoading: false, previousView: 'DEPT' });
+      const activeTrackerTab = ref('OPERATIVO');
+      const currentStaffName = ref('');
       const weeklyPlanData = ref({ headers: [], data: [], isLoading: false }); 
       const searchQuery = ref(''); const isCompact = ref(false); 
       const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
@@ -1601,8 +1615,50 @@
       };
       
       const closeIframe = () => currentView.value='DASHBOARD';
-      const openStaffTracker = (p) => { staffTracker.value.name=p.name; staffTracker.value.previousView=currentView.value; currentView.value='STAFF_TRACKER'; staffTracker.value.isLoading=true; google.script.run.withSuccessHandler(res => { staffTracker.value.isLoading=false; if(res.success){ staffTracker.value.data=res.data; staffTracker.value.history=res.history; staffTracker.value.headers=res.headers; } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiFetchStaffTrackerData(p.name); };
-      const reloadStaffTracker = () => openStaffTracker({name:staffTracker.value.name});
+
+      const openStaffTracker = (p) => {
+          currentStaffName.value = p.name;
+          activeTrackerTab.value = 'OPERATIVO';
+          staffTracker.value.previousView = currentView.value;
+          currentView.value = 'STAFF_TRACKER';
+          loadTrackerData();
+      };
+
+      const switchTrackerTab = (tab) => {
+          if (activeTrackerTab.value === tab) return;
+          activeTrackerTab.value = tab;
+          loadTrackerData();
+      };
+
+      const loadTrackerData = () => {
+          let sheetName = currentStaffName.value;
+          if (activeTrackerTab.value === 'VENTAS') {
+              sheetName = sheetName + " VENTAS";
+          }
+          staffTracker.value.name = sheetName;
+          staffTracker.value.isLoading = true;
+
+          google.script.run.withSuccessHandler(res => {
+              staffTracker.value.isLoading = false;
+              if (res.success) {
+                  staffTracker.value.data = res.data;
+                  staffTracker.value.history = res.history;
+                  staffTracker.value.headers = res.headers;
+              } else {
+                  if (res.message && res.message.includes("Falta hoja")) {
+                      staffTracker.value.data = [];
+                      staffTracker.value.history = [];
+                      staffTracker.value.headers = [];
+                      Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Vista vacía (Sin hoja)', showConfirmButton: false, timer: 2000 });
+                  } else {
+                      Swal.fire('Error', res.message, 'error');
+                  }
+              }
+          }).withFailureHandler(handleErr).apiFetchStaffTrackerData(sheetName);
+      };
+
+      const reloadStaffTracker = () => loadTrackerData();
+
       const addNewRow = () => { if(!staffTracker.value.headers.length) return; const row={_isNew:true}; staffTracker.value.headers.forEach(h => { if(isCol(h, ['DIAS','RELOJ'])) row[h]=0; else row[h]=""; }); staffTracker.value.data.unshift(row); };
       const saveRow = (row) => { Swal.showLoading(); google.script.run.withSuccessHandler(res => { Swal.close(); if(res.success){ row._isNew=false; if(res.moved){ reloadStaffTracker(); Swal.fire({icon: 'success', title: 'Archivado', text: 'Tarea movida a Realizadas (100%)', timer: 1500, showConfirmButton: false}); } else { Swal.fire({icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false}); } } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value); };
       const openCellUpload = (row, col) => { uploadingCell.value = {row, col}; cellFileInput.value.click(); };
@@ -1621,7 +1677,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
       
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, 
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData };
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };

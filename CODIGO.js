@@ -601,7 +601,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray) {
       const aliases = {
         'FECHA': ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA'],
         'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN'],
-        'RESPONSABLE': ['RESPONSABLE', 'INVOLUCRADOS'],
+        'RESPONSABLE': ['RESPONSABLE', 'INVOLUCRADOS', 'VENDEDOR'],
         'RELOJ': ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'],
         'ESTATUS': ['ESTATUS', 'STATUS'],
         'CUMPLIMIENTO': ['CUMPLIMIENTO', 'CUMPL.', 'CUMP'],
@@ -803,10 +803,21 @@ function internalUpdateTask(personName, taskData, username) {
                  const vendedorName = String(taskData[vendedorKey]).trim();
                  if (vendedorName.toUpperCase() !== "ANTONIA_VENTAS") {
                      try { 
-                        const vRes = internalBatchUpdateTasks(vendedorName, [distData]);
-                if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + vendedorName + ": " + vRes.message);
+                        // TRAFFIC SPLITTING: Si existe la hoja ventas y es tarea comercial (tiene VENDEDOR), usarla.
+                        let targetSheet = vendedorName;
+                        // El check anterior `if (vendedorKey ...)` ya garantiza que estamos en contexto de ventas.
+                        // Sin embargo, validamos explícitamente para mayor seguridad.
+                        if (vendedorKey && taskData[vendedorKey]) {
+                            const salesSheetName = vendedorName + " VENTAS";
+                            if (findSheetSmart(salesSheetName)) {
+                                targetSheet = salesSheetName;
+                            }
+                        }
+
+                        const vRes = internalBatchUpdateTasks(targetSheet, [distData]);
+                        if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + targetSheet + ": " + vRes.message);
                      } catch(e){
-                registrarLog("ANTONIA", "DIST_ERROR", e.toString());
+                        registrarLog("ANTONIA", "DIST_ERROR", e.toString());
                      }
                  }
              }
