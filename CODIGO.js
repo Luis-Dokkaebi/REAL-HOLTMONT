@@ -1605,3 +1605,103 @@ function generarFolioAutomatico(e) {
     lock.releaseLock();
   }
 }
+
+/**
+ * ======================================================================
+ * UNIT/INTEGRATION TEST: PPC MAESTRO SYNC
+ * ======================================================================
+ */
+function test_PPCMaestro_Sync_PPCV3() {
+  console.log("=== INICIO TEST: test_PPCMaestro_Sync_PPCV3 ===");
+
+  // 1. Mock Data
+  var mockPayload = [{
+    especialidad: "TEST_SPEC",
+    concepto: "TEST_CONCEPT_" + new Date().getTime(),
+    responsable: "TEST_USER_BOT",
+    horas: "5",
+    cumplimiento: "NO",
+    archivoUrl: "http://example.com",
+    comentarios: "Test Comment",
+    comentariosPrevios: "",
+    prioridad: "Alta",
+    riesgos: "Ninguno",
+    fechaRespuesta: "2025-01-01"
+  }];
+
+  var testUsername = "TEST_QA_ENGINEER";
+
+  console.log("1. Mock Data creado: ", mockPayload[0].concepto);
+
+  // 2. Invocation
+  console.log("2. Invocando apiSavePPCData...");
+  var result = apiSavePPCData(mockPayload, testUsername);
+
+  if (!result.success) {
+    console.error("❌ FAIL: apiSavePPCData devolvió error: " + result.message);
+    return;
+  }
+  console.log("✅ API Success: " + result.message);
+
+  // 3. Verification in PPCV3
+  console.log("3. Verificando hoja 'PPCV3'...");
+  var sheet = findSheetSmart(APP_CONFIG.ppcSheetName);
+  if (!sheet) {
+    console.error("❌ FAIL: No se encontró la hoja " + APP_CONFIG.ppcSheetName);
+    return;
+  }
+
+  var lastRow = sheet.getLastRow();
+  var lastRowValues = sheet.getRange(lastRow, 1, 1, sheet.getLastColumn()).getValues()[0];
+
+  // Mapeo basado en appendRow de apiSavePPCData:
+  // [ID, Especialidad, Descripción, Responsable, Fecha, Reloj, Cumplimiento, Archivo, Comentarios, Previos]
+  // Indices: 0:ID, 1:Esp, 2:Desc/Conc, 3:Resp
+
+  var actualId = lastRowValues[0];
+  var actualEspecialidad = lastRowValues[1];
+  var actualConcepto = lastRowValues[2];
+  var actualResponsable = lastRowValues[3];
+
+  console.log("   -> Fila insertada: " + JSON.stringify(lastRowValues));
+
+  // 4. Content Assertion
+  var fail = false;
+  if (actualConcepto !== mockPayload[0].concepto) {
+    console.error("❌ FAIL: Concepto no coincide. Esperado: " + mockPayload[0].concepto + ", Actual: " + actualConcepto);
+    fail = true;
+  } else {
+    console.log("✅ PASS: Concepto coincide.");
+  }
+
+  if (actualResponsable !== mockPayload[0].responsable) {
+    console.error("❌ FAIL: Responsable no coincide. Esperado: " + mockPayload[0].responsable + ", Actual: " + actualResponsable);
+    fail = true;
+  } else {
+    console.log("✅ PASS: Responsable coincide.");
+  }
+
+  // 5. ID Format Assertion
+  if (String(actualId).startsWith("PPC-")) {
+    console.log("✅ PASS: ID tiene formato correcto (" + actualId + ")");
+  } else {
+    console.error("❌ FAIL: ID con formato incorrecto: " + actualId);
+    fail = true;
+  }
+
+  // 6. Cleanup (Optional - Marking as DELETED for now to avoid actual deletion logic complexity in test or delete row)
+  // Let's delete the row to keep it clean if it was a success
+  if (!fail) {
+    console.log("6. Limpieza: Borrando fila de prueba...");
+    sheet.deleteRow(lastRow);
+    console.log("✅ PASS: Limpieza completada.");
+  } else {
+    console.log("⚠️ SKIP: Limpieza omitida debido a fallos para inspección manual.");
+  }
+
+  if (!fail) {
+    console.log("=== RESULTADO FINAL: [PASS] ===");
+  } else {
+    console.log("=== RESULTADO FINAL: [FAIL] ===");
+  }
+}
