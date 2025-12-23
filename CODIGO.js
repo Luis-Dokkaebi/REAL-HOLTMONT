@@ -1604,3 +1604,104 @@ function generarFolioAutomatico(e) {
     lock.releaseLock();
   }
 }
+
+/**
+ * TEST UNITARIO/INTEGRACIÓN: Verificación de Flujo de Guardado PPC Maestro -> PPCV3
+ * Objetivo: Validar que apiSavePPCData guarda correctamente en la hoja central y genera IDs.
+ */
+function test_PPCMaestro_Sync_PPCV3() {
+  console.log("=== INICIO TEST: test_PPCMaestro_Sync_PPCV3 ===");
+
+  // 1. MOCK DATA (Datos de prueba)
+  const testId = Math.floor(Math.random() * 1000);
+  const mockPayload = [{
+    especialidad: "TEST_QA",
+    concepto: `TAREA_PRUEBA_UNITARIA_${testId}`,
+    responsable: "TEST_USER_BOT",
+    horas: "1.0",
+    cumplimiento: "NO",
+    archivoUrl: "",
+    comentarios: "Prueba automatizada de QA",
+    comentariosPrevios: "",
+    prioridad: "Alta",
+    riesgos: "Ninguno",
+    fechaRespuesta: "2025-12-31"
+  }];
+
+  const testUser = "TEST_QA_AGENT";
+  console.log(`> Datos de prueba preparados. Concepto: ${mockPayload[0].concepto}`);
+
+  // 2. EJECUCIÓN (Invocar la función a probar)
+  try {
+    const result = apiSavePPCData(mockPayload, testUser);
+    console.log("> Resultado de apiSavePPCData:", result);
+
+    if (!result.success) {
+      console.error("❌ [FAIL] La función apiSavePPCData devolvió success: false");
+      return;
+    }
+  } catch (e) {
+    console.error("❌ [FAIL] Excepción al ejecutar apiSavePPCData: " + e.toString());
+    return;
+  }
+
+  // 3. VERIFICACIÓN (Assertions)
+  const sheetPPC = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(APP_CONFIG.ppcSheetName);
+  if (!sheetPPC) {
+    console.error(`❌ [FAIL] No se encontró la hoja '${APP_CONFIG.ppcSheetName}'`);
+    return;
+  }
+
+  const lastRow = sheetPPC.getLastRow();
+  if (lastRow < 2) {
+    console.error("❌ [FAIL] La hoja PPCV3 está vacía o solo tiene cabeceras.");
+    return;
+  }
+
+  // Estructura esperada en PPCV3 (basado en apiSavePPCData):
+  // [ID, Especialidad, Concepto, Responsable, Fecha, Reloj, Cumplimiento, Archivo, Comentarios, Previos]
+  // Indices (0-based): 0=ID, 1=Esp, 2=Concepto, 3=Resp
+  const lastRowValues = sheetPPC.getRange(lastRow, 1, 1, 10).getValues()[0];
+
+  const actualID = String(lastRowValues[0]);
+  const actualEspecialidad = String(lastRowValues[1]);
+  const actualConcepto = String(lastRowValues[2]);
+  const actualResponsable = String(lastRowValues[3]);
+
+  let checksPassed = true;
+
+  // Check 1: ID Generado
+  if (actualID.startsWith("PPC-")) {
+    console.log("✅ [PASS] ID generado correctamente: " + actualID);
+  } else {
+    console.error(`❌ [FAIL] Formato de ID incorrecto. Esperado 'PPC-...', recibido '${actualID}'`);
+    checksPassed = false;
+  }
+
+  // Check 2: Concepto coincide
+  if (actualConcepto === mockPayload[0].concepto) {
+    console.log("✅ [PASS] El concepto coincide: " + actualConcepto);
+  } else {
+    console.error(`❌ [FAIL] Discrepancia en Concepto. Esperado '${mockPayload[0].concepto}', recibido '${actualConcepto}'`);
+    checksPassed = false;
+  }
+
+  // Check 3: Responsable coincide
+  if (actualResponsable === mockPayload[0].responsable) {
+    console.log("✅ [PASS] El responsable coincide: " + actualResponsable);
+  } else {
+    console.error(`❌ [FAIL] Discrepancia en Responsable. Esperado '${mockPayload[0].responsable}', recibido '${actualResponsable}'`);
+    checksPassed = false;
+  }
+
+  // 4. LIMPIEZA OPCIONAL (Marcar fila)
+  // En lugar de borrar, vamos a marcar visualmente la fila de prueba para auditoría visual
+  if (checksPassed) {
+    sheetPPC.getRange(lastRow, 1, 1, 10).setBackground("#e6fffa"); // Verde claro menta
+    console.log("> Fila de prueba marcada con color verde claro.");
+    console.log("=== ✅ RESULTADO FINAL: TEST PASSED ===");
+  } else {
+    sheetPPC.getRange(lastRow, 1, 1, 10).setBackground("#ffe6e6"); // Rojo claro
+    console.log("=== ❌ RESULTADO FINAL: TEST FAILED ===");
+  }
+}
