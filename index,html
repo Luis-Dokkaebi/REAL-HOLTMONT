@@ -68,7 +68,24 @@
 
     /* LAYOUT & SIDEBAR */
     .app-wrapper { display: flex; height: 100vh; width: 100vw; }
-    .sidebar { width: var(--sidebar-w); background: var(--primary); color: #a2a3b7; display: flex; flex-direction: column; transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); position: relative; z-index: 1050; white-space: nowrap; overflow: hidden; flex-shrink: 0; }
+    .sidebar {
+        width: var(--sidebar-w);
+        background: var(--primary); /* Fallback */
+        background: color-mix(in srgb, var(--primary), transparent 15%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 5px 0 20px rgba(0,0,0,0.2);
+        color: #a2a3b7;
+        display: flex;
+        flex-direction: column;
+        transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+        z-index: 1050;
+        white-space: nowrap;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
     .sidebar.compact { width: var(--sidebar-mini); }
     .sidebar.compact:hover { width: var(--sidebar-w); box-shadow: 5px 0 15px rgba(0,0,0,0.3); }
 
@@ -91,8 +108,25 @@
     .login-overlay { position: fixed; inset: 0; background: var(--primary); z-index: 2000; display: flex; align-items: center; justify-content: center; }
     .login-card { background: #1c1c1c; padding: 40px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); color: #eee; position: relative; overflow: hidden; }
     .login-logo { max-width: 85%; height: auto; margin-bottom: 25px; mask-image: radial-gradient(ellipse at center, black 40%, transparent 100%); }
-    .dept-card, .staff-card { background: white; border-radius: 12px; box-shadow: 0 0 20px 0 rgba(0,0,0,0.03); padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
-    .dept-card:hover, .staff-card:hover { transform: translateY(-5px); border-color: var(--accent); }
+    .dept-card, .staff-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .dept-card:hover, .staff-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        border-color: var(--accent);
+        border-top-width: 8px !important;
+        filter: brightness(1.02);
+    }
     .chip-container { border: 1px solid #ccc; background: white; padding: 2px; display: flex; flex-wrap: wrap; gap: 2px; min-height: 100%; align-items: center; }
     .user-chip { background: #e8f0fe; border: 1px solid #d2e3fc; border-radius: 4px; padding: 0 4px; font-size: 11px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
     .file-input-hidden { display: none; } 
