@@ -590,7 +590,8 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         SpreadsheetApp.flush(); 
     }
 
-    const headers = values[headerRowIndex].map(h => String(h).toUpperCase().trim());
+    // FIX: HEADERS CON SALTOS DE LINEA
+    const headers = values[headerRowIndex].map(h => String(h).replace(/\n|\r/g, " ").toUpperCase().trim());
     const maxCols = values.reduce((max, r) => Math.max(max, r.length), 0);
     const totalColumns = Math.max(maxCols, headers.length);
 
@@ -600,7 +601,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       const k = key.toUpperCase().trim();
       if (colMap[k] !== undefined) return colMap[k];
       const aliases = {
-        'FECHA': ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA'],
+        'FECHA': ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA'],
         'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN'],
         'RESPONSABLE': ['RESPONSABLE', 'INVOLUCRADOS', 'VENDEDOR'],
         'RELOJ': ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'],
@@ -925,6 +926,7 @@ function apiSavePPCData(payload, activeUser) {
           const id = item.id || ("PPC-" + Math.floor(Math.random() * 1000000));
           const comentarios = item.comentarios || "";
 
+          // Mapeo Explícito para PPCV3
           const taskData = {
                  'FOLIO': id,
                  'CONCEPTO': item.concepto,
