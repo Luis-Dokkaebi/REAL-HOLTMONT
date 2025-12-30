@@ -590,8 +590,8 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         SpreadsheetApp.flush(); 
     }
 
-    // FIX: HEADERS CON SALTOS DE LINEA
-    const headers = values[headerRowIndex].map(h => String(h).replace(/\n|\r/g, " ").toUpperCase().trim());
+    // FIX: HEADERS CON SALTOS DE LINEA (NORMALIZACIÓN ROBUSTA)
+    const headers = values[headerRowIndex].map(h => String(h).toUpperCase().replace(/\n/g, ' ').replace(/\s+/g, ' ').trim());
     const maxCols = values.reduce((max, r) => Math.max(max, r.length), 0);
     const totalColumns = Math.max(maxCols, headers.length);
 
@@ -614,7 +614,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         'RIESGOS': ['RIESGO', 'RIESGOS'],
         'ARCHIVO': ['ARCHIVO', 'ARCHIVOS', 'CLIP', 'LINK'],
         'CLASIFICACION': ['CLASIFICACION', 'CLASI'],
-        'COMENTARIOS': ['COMENTARIOS', 'OBSERVACIONES', 'COMENTARIOS SEMANA EN CURSO', 'NOTAS'],
+        'COMENTARIOS': ['COMENTARIOS', 'COMENTARIOS SEMANA EN CURSO', 'OBSERVACIONES', 'NOTAS'],
         'PREVIOS': ['COMENTARIOS PREVIOS', 'PREVIOS', 'COMENTARIOS SEMANA PREVIA']
       };
       for (let main in aliases) {
