@@ -107,7 +107,14 @@
     /* COMPONENTES */
     .login-overlay {
         position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
-        background: radial-gradient(circle at center, #252525 0%, #000000 100%);
+        background: linear-gradient(-45deg, #000000, #1c1c1c, #2c3e50, #000000);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+    }
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
     .login-card {
         background-color: #1c1c1c;
@@ -226,7 +233,7 @@
 
 <div id="app">
   <div v-if="!isLoggedIn" class="login-overlay">
-    <div class="login-card">
+    <div class="login-card animate__animated animate__fadeInUp">
       <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" class="login-logo" alt="Logo">
       <h3 class="fw-bold mb-4">BIENVENIDO</h3>
       <p class="text-muted mb-4">Acceso Seguro</p>
