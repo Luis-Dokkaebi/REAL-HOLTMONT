@@ -554,11 +554,13 @@ function apiFetchSalesHistory() {
  * OPTIMIZACIÓN SCRIPTMASTER V153: PROTOCOLO ANTI-BLOQUEO (FILTROS)
  * ======================================================================
  */
-function internalBatchUpdateTasks(sheetName, tasksArray) {
+function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
   if (!tasksArray || tasksArray.length === 0) return { success: true };
   const lock = LockService.getScriptLock();
-  if (!lock.tryLock(10000)) {
-      return { success: false, message: "Hoja ocupada, intenta de nuevo."};
+  if (useOwnLock) {
+    if (!lock.tryLock(10000)) {
+        return { success: false, message: "Hoja ocupada, intenta de nuevo."};
+    }
   }
   
   try {
@@ -766,7 +768,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray) {
     console.error(e);
     return { success: false, message: e.toString() };
   } finally {
-    lock.releaseLock();
+    if (useOwnLock) lock.releaseLock();
   }
 }
 
@@ -883,9 +885,9 @@ function apiClearDrafts() {
   } catch(e) { return { success: false }; }
 }
 
-function apiSavePPCData(payload, username) {
+function apiSavePPCData(payload, activeUser) {
   const lock = LockService.getScriptLock();
-  if (lock.tryLock(20000)) { 
+  if (lock.tryLock(30000)) {
     try {
       const items = Array.isArray(payload) ? payload : [payload];
       
@@ -906,8 +908,9 @@ function apiSavePPCData(payload, username) {
           if (!tasksBySheet[key]) tasksBySheet[key] = [];
           tasksBySheet[key].push(task);
       };
+
       items.forEach(item => {
-          const id = "PPC-" + Math.floor(Math.random() * 100000);
+          const id = "PPC-" + Math.floor(Math.random() * 1000000);
           rowsForPPC.push([
              id, item.especialidad, item.concepto, item.responsable, fechaHoy, 
              item.horas, item.cumplimiento, item.archivoUrl, item.comentarios, item.comentariosPrevios || ""
@@ -918,24 +921,30 @@ function apiSavePPCData(payload, username) {
                  'ALTA': item.especialidad, 'INVOLUCRADOS': item.responsable, 'FECHA': fechaStr,
                  'RELOJ': item.horas, 'ESTATUS': "ASIGNADO", 'PRIORIDAD': item.prioridad || item.prioridades, 
                  'RESTRICCIONES': item.restricciones, 'RIESGOS': item.riesgos, 'FECHA_RESPUESTA': item.fechaRespuesta, 'AVANCE': "0%",
-                 'COMENTARIOS': item.comentarios, 
+                 'COMENTARIOS': item.comentarios || "",
                  'ARCHIVO': item.archivoUrl
           };
           
+          // 1. Respaldo Obligatorio en ADMINISTRADOR
           addTaskToSheet("ADMINISTRADOR", taskData);
+
+          // 2. Distribución a Staff (Responsables)
           const responsables = String(item.responsable || "").split(",").map(s => s.trim()).filter(s => s);
           responsables.forEach(personName => { addTaskToSheet(personName, taskData); });
 
-          // LOG AUDIT TRAIL
-          registrarLog(username || item.createdBy || "DESCONOCIDO", "NUEVA TAREA", `ID: ${id}, Concepto: ${item.concepto}`);
+          // 3. LOGGING DETALLADO
+          registrarLog(activeUser || "DESCONOCIDO", "GUARDADO_PPC", `ID: ${id} | Comentarios: ${item.comentarios || ""}`);
       });
+
+      // Guardar en PPC Maestro
       if (rowsForPPC.length > 0) {
           const lastRow = sheetPPC.getLastRow();
           sheetPPC.getRange(lastRow + 1, 1, rowsForPPC.length, rowsForPPC[0].length).setValues(rowsForPPC);
       }
 
+      // Procesar Distribución (Sin Lock Interno)
       for (const [targetSheet, tasks] of Object.entries(tasksBySheet)) {
-          internalBatchUpdateTasks(targetSheet, tasks);
+          internalBatchUpdateTasks(targetSheet, tasks, false);
       }
 
       return { success: true, message: "Procesado y Distribuido Correctamente." };
