@@ -758,27 +758,9 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
              if (r.length >= finalMaxCols) return r;
              return r.concat(new Array(finalMaxCols - r.length).fill(""));
         });
-
-        // MODIFICACIÓN: Lógica de Append para PPCV3 (Insertar al final)
-        if (sheetName === APP_CONFIG.ppcSheetName || sheetName === "PPCV3") {
-             const lastRow = sheet.getLastRow();
-             const startRow = lastRow + 1;
-
-             // 1. Escribir Datos al final
-             sheet.getRange(startRow, 1, normalizedAppend.length, finalMaxCols).setValues(normalizedAppend);
-
-             // 2. Copiar Formato de la fila anterior (si existen datos previos)
-             if (lastRow > headerRowIndex + 1) {
-                 const sourceRange = sheet.getRange(lastRow, 1, 1, finalMaxCols);
-                 const targetRange = sheet.getRange(startRow, 1, normalizedAppend.length, finalMaxCols);
-                 sourceRange.copyTo(targetRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
-             }
-        } else {
-             // Lógica Original (Insertar Arriba)
-             const insertPos = headerRowIndex + 2;
-             sheet.insertRowsBefore(insertPos, rowsToAppend.length);
-             sheet.getRange(insertPos, 1, normalizedAppend.length, finalMaxCols).setValues(normalizedAppend);
-        }
+        const insertPos = headerRowIndex + 2;
+        sheet.insertRowsBefore(insertPos, rowsToAppend.length);
+        sheet.getRange(insertPos, 1, normalizedAppend.length, finalMaxCols).setValues(normalizedAppend);
     }
     
     SpreadsheetApp.flush();
@@ -1130,26 +1112,7 @@ function apiFetchWeeklyPlanData() {
       
       return rowObj;
     }).filter(r => r["CONCEPTO"] || r["ID"] || r["FOLIO"]);
-
-    // MODIFICACION: Orden Ascendente por Fecha (Sin reverse)
-    // Usamos un parser seguro para fechas dd/mm/yy
-    const parseDateSafe = (d) => {
-        if (!d) return 0;
-        if (d instanceof Date) return d.getTime();
-        const s = String(d).trim();
-        if (s.includes('/')) {
-            const parts = s.split('/'); // dd/mm/yy
-            if (parts.length === 3) {
-                const y = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-                return new Date(y, parts[1] - 1, parts[0]).getTime();
-            }
-        }
-        return new Date(s).getTime();
-    };
-
-    result.sort((a, b) => parseDateSafe(a.FECHA) - parseDateSafe(b.FECHA));
-
-    return { success: true, headers: displayHeaders, data: result };
+    return { success: true, headers: displayHeaders, data: result.reverse() }; 
   } catch (e) {
     console.error(e);
     return { success: false, message: e.toString() };
