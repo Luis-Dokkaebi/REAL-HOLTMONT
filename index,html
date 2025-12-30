@@ -105,8 +105,58 @@
     .top-bar { height: 70px; background: white; border-bottom: 1px solid #eff2f5; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
     
     /* COMPONENTES */
-    .login-overlay { position: fixed; inset: 0; background: var(--primary); z-index: 2000; display: flex; align-items: center; justify-content: center; }
-    .login-card { background: #1c1c1c; padding: 40px; border-radius: 15px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); color: #eee; position: relative; overflow: hidden; }
+    .login-overlay {
+        position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
+        background: radial-gradient(circle at center, #252525 0%, #000000 100%);
+    }
+    .login-card {
+        background-color: #1c1c1c;
+        padding: 40px;
+        border-radius: 8px;
+        width: 100%; max-width: 400px; text-align: center;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        color: #eee; position: relative; overflow: hidden;
+    }
+    .login-card .form-control {
+        background-color: #141414;
+        border: 1px solid #333;
+        color: #bbb;
+    }
+    .login-card .form-control:focus {
+        background-color: #141414;
+        border-color: #555;
+        color: #fff;
+        box-shadow: none;
+    }
+    .login-card h3 {
+        color: #ffffff;
+        font-weight: 300 !important;
+        letter-spacing: 3px;
+    }
+    .login-card p {
+        color: #666 !important;
+    }
+    .login-card .btn-outline-light {
+        background: transparent;
+        border: 1px solid #fff;
+        color: #fff;
+        transition: all 0.3s;
+    }
+    .login-card .btn-outline-light:hover {
+        background: #fff;
+        color: #000;
+    }
+    .login-card .input-group .btn {
+        background-color: #141414;
+        border: 1px solid #333;
+        color: #666;
+        border-left: none;
+    }
+    .login-card .input-group .btn:hover {
+        background-color: #222;
+        color: #fff;
+    }
     .login-logo { max-width: 85%; height: auto; margin-bottom: 25px; mask-image: radial-gradient(ellipse at center, black 40%, transparent 100%); }
     .dept-card, .staff-card {
         background: rgba(255, 255, 255, 0.9);
@@ -184,12 +234,12 @@
           <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario">
           <div class="input-group">
               <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin">
-              <button class="btn btn-light border" type="button" @click="showPassword = !showPassword" title="Mostrar/Ocultar">
+              <button class="btn btn-outline-secondary" type="button" @click="showPassword = !showPassword" title="Mostrar/Ocultar">
                   <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
               </button>
           </div>
       </div>
-      <button class="btn btn-success w-100 fw-bold" @click="doLogin" :disabled="loggingIn">
+      <button class="btn btn-outline-light w-100 fw-bold" @click="doLogin" :disabled="loggingIn">
         <span v-if="loggingIn">Conectando...</span><span v-else>INICIAR SESIÓN</span>
       </button>
     </div>
