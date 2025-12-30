@@ -896,10 +896,12 @@ function apiSavePPCData(payload, activeUser) {
     try {
       const items = Array.isArray(payload) ? payload : [payload];
       
+      // 1. VERIFICACIÓN CRÍTICA DE PPCV3
       let sheetPPC = findSheetSmart(APP_CONFIG.ppcSheetName);
       if (!sheetPPC) { 
         sheetPPC = SS.insertSheet(APP_CONFIG.ppcSheetName);
-        sheetPPC.appendRow(["ID", "Especialidad", "Descripción", "Responsable", "Fecha", "Reloj", "Cumplimiento", "Archivo", "Comentarios", "Comentarios Previos"]);
+        // Standardize headers for robustness
+        sheetPPC.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA"]);
       }
       
       const fechaHoy = new Date();
@@ -913,14 +915,25 @@ function apiSavePPCData(payload, activeUser) {
           tasksBySheet[key].push(task);
       };
 
+      // PREPARAR DATOS
       items.forEach(item => {
-          const id = "PPC-" + Math.floor(Math.random() * 1000000);
+          // Use existing ID if provided (for updates/tests) or generate new
+          const id = item.id || ("PPC-" + Math.floor(Math.random() * 1000000));
 
           const taskData = {
-                 'FOLIO': id, 'CONCEPTO': item.concepto, 'CLASIFICACION': item.clasificacion || "Media", 
-                 'ALTA': item.especialidad, 'INVOLUCRADOS': item.responsable, 'FECHA': fechaStr,
-                 'RELOJ': item.horas, 'ESTATUS': "ASIGNADO", 'PRIORIDAD': item.prioridad || item.prioridades, 
-                 'RESTRICCIONES': item.restricciones, 'RIESGOS': item.riesgos, 'FECHA_RESPUESTA': item.fechaRespuesta, 'AVANCE': "0%",
+                 'FOLIO': id,
+                 'CONCEPTO': item.concepto,
+                 'CLASIFICACION': item.clasificacion || "Media",
+                 'ALTA': item.especialidad,
+                 'INVOLUCRADOS': item.responsable,
+                 'FECHA': fechaStr,
+                 'RELOJ': item.horas,
+                 'ESTATUS': "ASIGNADO",
+                 'PRIORIDAD': item.prioridad || item.prioridades,
+                 'RESTRICCIONES': item.restricciones,
+                 'RIESGOS': item.riesgos,
+                 'FECHA_RESPUESTA': item.fechaRespuesta,
+                 'AVANCE': "0%",
                  'COMENTARIOS': item.comentarios || "",
                  'ARCHIVO': item.archivoUrl,
                  'CUMPLIMIENTO': item.cumplimiento,
@@ -937,19 +950,38 @@ function apiSavePPCData(payload, activeUser) {
           const responsables = String(item.responsable || "").split(",").map(s => s.trim()).filter(s => s);
           responsables.forEach(personName => { addTaskToSheet(personName, taskData); });
 
-          // 3. LOGGING DETALLADO
+          // 3. LOGGING
           registrarLog(activeUser || "DESCONOCIDO", "GUARDADO_PPC", `ID: ${id} | Comentarios: ${item.comentarios || ""}`);
       });
 
-      // Procesar Distribución (Sin Lock Interno)
+      // EJECUCIÓN CON MANEJO DE ERRORES
+      let ppcResult = { success: true };
+
+      // Prioridad: Guardar en PPCV3
+      if (tasksBySheet[APP_CONFIG.ppcSheetName]) {
+          console.log("Intentando guardar en PPCV3: " + tasksBySheet[APP_CONFIG.ppcSheetName].length + " items.");
+          ppcResult = internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, tasksBySheet[APP_CONFIG.ppcSheetName], false);
+          if (!ppcResult.success) {
+              throw new Error("CRITICAL: Falló guardado en PPCV3. " + ppcResult.message);
+          }
+          delete tasksBySheet[APP_CONFIG.ppcSheetName]; // Remove so we don't process it again
+      }
+
+      // Procesar Distribución Restante (Best Effort)
       for (const [targetSheet, tasks] of Object.entries(tasksBySheet)) {
-          internalBatchUpdateTasks(targetSheet, tasks, false);
+          try {
+            const res = internalBatchUpdateTasks(targetSheet, tasks, false);
+            if (!res.success) console.warn(`Fallo secundario en ${targetSheet}: ${res.message}`);
+          } catch(err) {
+             console.warn(`Error en distribución a ${targetSheet}: ${err.toString()}`);
+          }
       }
 
       return { success: true, message: "Procesado y Distribuido Correctamente." };
     } catch (e) { 
         console.error(e);
-        return { success: false, message: e.toString() };
+        registrarLog(activeUser || "SYSTEM", "ERROR_CRITICO_PPC", e.toString());
+        return { success: false, message: "Error al guardar: " + e.toString() };
     } finally { lock.releaseLock(); }
   }
   return { success: false, message: "Sistema Ocupado, intenta de nuevo." };
@@ -1610,5 +1642,68 @@ function generarFolioAutomatico(e) {
     console.error(err);
   } finally {
     lock.releaseLock();
+  }
+}
+
+// ==========================================
+// _TEST_SUITE.js
+// ==========================================
+
+function test_SavePPCV3_Flow() {
+  console.log("🛠️ INICIANDO TEST: Persistencia en PPCV3");
+
+  // 1. Simular Payload
+  const testId = "TEST-" + new Date().getTime();
+  const payload = {
+    concepto: "TEST_AUTO_UNITARIO_" + testId,
+    especialidad: "PRUEBAS",
+    responsable: "JESUS_CANTU",
+    horas: "1",
+    prioridad: "Alta",
+    comentarios: "Prueba de integridad de datos",
+    // Explicit ID for verification
+    id: testId
+  };
+
+  const user = "JESUS_CANTU";
+
+  console.log("📋 Payload simulado:", payload);
+
+  // 2. Ejecutar Guardado
+  const result = apiSavePPCData(payload, user);
+
+  if (!result.success) {
+    console.error("❌ FALLO: La función apiSavePPCData retornó error.", result);
+    return;
+  }
+  console.log("✅ apiSavePPCData ejecutado con éxito.");
+
+  // 3. Verificación
+  const sheet = SS.getSheetByName(APP_CONFIG.ppcSheetName);
+  const data = sheet.getDataRange().getValues();
+
+  // Buscar el ID
+  let found = false;
+  let foundRowData = [];
+
+  // Asumimos que los headers están en alguna fila, usamos findHeaderRow o búsqueda bruta
+  // Búsqueda bruta del ID en toda la hoja para estar seguros
+  for (let i = 0; i < data.length; i++) {
+    const rowStr = data[i].join("|");
+    if (rowStr.includes(testId)) {
+      found = true;
+      foundRowData = data[i];
+      break;
+    }
+  }
+
+  if (found) {
+    console.log("✅ PRUEBA PASADA: Datos persistidos en PPCV3. ID encontrado: " + testId);
+    console.log("📄 Datos de fila:", foundRowData);
+  } else {
+    console.error("❌ FALLO: Datos no encontrados en PPCV3. El ID " + testId + " no aparece en la hoja.");
+    // Log last 5 rows for debug
+    console.log("🔍 Últimas 5 filas de la hoja:", data.slice(-5));
+    throw new Error("Persistencia fallida en PPCV3");
   }
 }
