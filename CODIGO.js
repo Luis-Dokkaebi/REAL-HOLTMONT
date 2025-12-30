@@ -774,6 +774,10 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
 }
 
 function apiUpdatePPCV3(taskData, username) {
+  // Ensure backward compatibility with sheet headers
+  if (taskData['COMENTARIOS SEMANA EN CURSO'] !== undefined) taskData['COMENTARIOS'] = taskData['COMENTARIOS SEMANA EN CURSO'];
+  if (taskData['COMENTARIOS SEMANA PREVIA'] !== undefined) taskData['COMENTARIOS PREVIOS'] = taskData['COMENTARIOS SEMANA PREVIA'];
+
   const res = internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, [taskData]);
   if(res.success) {
       const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
@@ -792,7 +796,7 @@ function internalUpdateTask(personName, taskData, username) {
         const res = internalBatchUpdateTasks(personName, [taskData]);
 
         if (res.success && username) {
-             const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
+             const action = (taskData['COMENTARIOS'] || taskData['comentarios'] || taskData['COMENTARIOS SEMANA EN CURSO']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
              registrarLog(username, action, `Update Task ID: ${taskData['ID']||taskData['FOLIO']} en ${personName}`);
         }
 
@@ -1047,8 +1051,8 @@ function apiFetchPPCData() {
       reloj: headers.findIndex(h => h.includes("RELOJ")),
       cump: headers.findIndex(h => h.includes("CUMPLIMIENTO")),
       arch: headers.findIndex(h => h.includes("ARCHIVO") || h.includes("CLIP")),
-      com: headers.findIndex(h => h.includes("COMENTARIOS") && h.includes("CURSO")),
-      prev: headers.findIndex(h => h.includes("COMENTARIOS") && h.includes("PREVIA"))
+      com: headers.findIndex(h => (h.includes("COMENTARIOS") && h.includes("CURSO")) || h === "COMENTARIOS"),
+      prev: headers.findIndex(h => (h.includes("COMENTARIOS") && h.includes("PREVIA")) || h.includes("PREVIOS"))
     };
 
     let dataRows = values.slice(headerIdx + 1);
@@ -1085,6 +1089,8 @@ function apiFetchWeeklyPlanData() {
         if (up.includes("RELOJ") || up.includes("HORAS")) return "RELOJ";
         if (up.includes("ARCHIV") || up.includes("CLIP")) return "ARCHIVO";
         if (up.includes("CUMPLIMIENTO")) return "CUMPLIMIENTO";
+        if (up === "COMENTARIOS") return "COMENTARIOS SEMANA EN CURSO";
+        if (up === "COMENTARIOS PREVIOS") return "COMENTARIOS SEMANA PREVIA";
         return up; 
     });
     const displayHeaders = ["SEMANA", ...mappedHeaders];
