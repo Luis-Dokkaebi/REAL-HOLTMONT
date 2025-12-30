@@ -892,6 +892,7 @@ function apiClearDrafts() {
 
 function apiSavePPCData(payload, activeUser) {
   const lock = LockService.getScriptLock();
+  // Esperar hasta 30 segundos para obtener el candado y evitar condiciones de carrera
   if (lock.tryLock(30000)) {
     try {
       const items = Array.isArray(payload) ? payload : [payload];
@@ -907,7 +908,10 @@ function apiSavePPCData(payload, activeUser) {
       const fechaHoy = new Date();
       const fechaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
       
+      // Estructuras para Batch Operations
       const tasksBySheet = {};
+      const logEntries = [];
+
       const addTaskToSheet = (sheetName, task) => {
           if (!sheetName) return;
           const key = sheetName.trim();
@@ -915,10 +919,11 @@ function apiSavePPCData(payload, activeUser) {
           tasksBySheet[key].push(task);
       };
 
-      // PREPARAR DATOS
+      // 2. PREPARACIÓN DE DATOS EN MEMORIA
       items.forEach(item => {
           // Use existing ID if provided (for updates/tests) or generate new
           const id = item.id || ("PPC-" + Math.floor(Math.random() * 1000000));
+          const comentarios = item.comentarios || "";
 
           const taskData = {
                  'FOLIO': id,
@@ -934,40 +939,39 @@ function apiSavePPCData(payload, activeUser) {
                  'RIESGOS': item.riesgos,
                  'FECHA_RESPUESTA': item.fechaRespuesta,
                  'AVANCE': "0%",
-                 'COMENTARIOS': item.comentarios || "",
+                 'COMENTARIOS': comentarios,
                  'ARCHIVO': item.archivoUrl,
                  'CUMPLIMIENTO': item.cumplimiento,
                  'COMENTARIOS PREVIOS': item.comentariosPrevios || ""
           };
           
-          // 0. Guardar en PPC Maestro (Usando lógica dinámica)
+          // A. Persistencia en PPC Maestro (PPCV3)
           addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
 
-          // 1. Respaldo Obligatorio en ADMINISTRADOR
+          // B. Respaldo Obligatorio en ADMINISTRADOR (Control)
           addTaskToSheet("ADMINISTRADOR", taskData);
 
-          // 2. Distribución a Staff (Responsables)
+          // C. Distribución al Staff (Tracker Personal)
           const responsables = String(item.responsable || "").split(",").map(s => s.trim()).filter(s => s);
           responsables.forEach(personName => { addTaskToSheet(personName, taskData); });
 
-          // 3. LOGGING
-          registrarLog(activeUser || "DESCONOCIDO", "GUARDADO_PPC", `ID: ${id} | Comentarios: ${item.comentarios || ""}`);
+          // D. Preparar Log (En Memoria)
+          logEntries.push([new Date(), activeUser || "DESCONOCIDO", "GUARDADO_PPC", `ID: ${id} | Comentarios: ${comentarios}`]);
       });
 
-      // EJECUCIÓN CON MANEJO DE ERRORES
-      let ppcResult = { success: true };
+      // 3. EJECUCIÓN DE ESCRITURA (BATCH)
 
-      // Prioridad: Guardar en PPCV3
+      // A. Guardado Crítico (PPCV3)
+      // Usamos useOwnLock = false porque ya tenemos el lock aquí.
       if (tasksBySheet[APP_CONFIG.ppcSheetName]) {
-          console.log("Intentando guardar en PPCV3: " + tasksBySheet[APP_CONFIG.ppcSheetName].length + " items.");
-          ppcResult = internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, tasksBySheet[APP_CONFIG.ppcSheetName], false);
+          const ppcResult = internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, tasksBySheet[APP_CONFIG.ppcSheetName], false);
           if (!ppcResult.success) {
               throw new Error("CRITICAL: Falló guardado en PPCV3. " + ppcResult.message);
           }
-          delete tasksBySheet[APP_CONFIG.ppcSheetName]; // Remove so we don't process it again
+          delete tasksBySheet[APP_CONFIG.ppcSheetName];
       }
 
-      // Procesar Distribución Restante (Best Effort)
+      // B. Distribución Secundaria (Staff / Admin)
       for (const [targetSheet, tasks] of Object.entries(tasksBySheet)) {
           try {
             const res = internalBatchUpdateTasks(targetSheet, tasks, false);
@@ -977,12 +981,30 @@ function apiSavePPCData(payload, activeUser) {
           }
       }
 
-      return { success: true, message: "Procesado y Distribuido Correctamente." };
+      // C. Escritura de Logs en Lote (Optimización V8)
+      if (logEntries.length > 0) {
+        try {
+            let sheetLog = SS.getSheetByName(APP_CONFIG.logSheetName);
+            if (!sheetLog) {
+              sheetLog = SS.insertSheet(APP_CONFIG.logSheetName);
+              sheetLog.appendRow(["FECHA", "USUARIO", "ACCION", "DETALLES"]);
+            }
+            const lastRow = sheetLog.getLastRow();
+            // batch write logs
+            sheetLog.getRange(lastRow + 1, 1, logEntries.length, 4).setValues(logEntries);
+        } catch(logErr) {
+            console.error("Error escribiendo logs: " + logErr.toString());
+        }
+      }
+
+      return { success: true, message: "Datos procesados y distribuidos correctamente." };
     } catch (e) { 
         console.error(e);
         registrarLog(activeUser || "SYSTEM", "ERROR_CRITICO_PPC", e.toString());
         return { success: false, message: "Error al guardar: " + e.toString() };
-    } finally { lock.releaseLock(); }
+    } finally {
+        lock.releaseLock();
+    }
   }
   return { success: false, message: "Sistema Ocupado, intenta de nuevo." };
 }
