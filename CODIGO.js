@@ -783,6 +783,11 @@ function apiUpdatePPCV3(taskData, username) {
 
 function internalUpdateTask(personName, taskData, username) {
     try {
+        // GUARD: PPCV3 Inmutabilidad (Solo modificable por Weekly Plan)
+        if (String(personName).trim().toUpperCase() === String(APP_CONFIG.ppcSheetName).trim().toUpperCase()) {
+            return { success: false, message: "Operación no permitida: PPCV3 es de solo lectura desde esta vista." };
+        }
+
         const res = internalBatchUpdateTasks(personName, [taskData]);
 
         if (res.success && username) {
@@ -900,7 +905,6 @@ function apiSavePPCData(payload, activeUser) {
       const fechaHoy = new Date();
       const fechaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
       
-      const rowsForPPC = [];
       const tasksBySheet = {};
       const addTaskToSheet = (sheetName, task) => {
           if (!sheetName) return;
@@ -911,10 +915,6 @@ function apiSavePPCData(payload, activeUser) {
 
       items.forEach(item => {
           const id = "PPC-" + Math.floor(Math.random() * 1000000);
-          rowsForPPC.push([
-             id, item.especialidad, item.concepto, item.responsable, fechaHoy, 
-             item.horas, item.cumplimiento, item.archivoUrl, item.comentarios, item.comentariosPrevios || ""
-          ]);
 
           const taskData = {
                  'FOLIO': id, 'CONCEPTO': item.concepto, 'CLASIFICACION': item.clasificacion || "Media", 
@@ -922,9 +922,14 @@ function apiSavePPCData(payload, activeUser) {
                  'RELOJ': item.horas, 'ESTATUS': "ASIGNADO", 'PRIORIDAD': item.prioridad || item.prioridades, 
                  'RESTRICCIONES': item.restricciones, 'RIESGOS': item.riesgos, 'FECHA_RESPUESTA': item.fechaRespuesta, 'AVANCE': "0%",
                  'COMENTARIOS': item.comentarios || "",
-                 'ARCHIVO': item.archivoUrl
+                 'ARCHIVO': item.archivoUrl,
+                 'CUMPLIMIENTO': item.cumplimiento,
+                 'COMENTARIOS PREVIOS': item.comentariosPrevios || ""
           };
           
+          // 0. Guardar en PPC Maestro (Usando lógica dinámica)
+          addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
+
           // 1. Respaldo Obligatorio en ADMINISTRADOR
           addTaskToSheet("ADMINISTRADOR", taskData);
 
@@ -935,12 +940,6 @@ function apiSavePPCData(payload, activeUser) {
           // 3. LOGGING DETALLADO
           registrarLog(activeUser || "DESCONOCIDO", "GUARDADO_PPC", `ID: ${id} | Comentarios: ${item.comentarios || ""}`);
       });
-
-      // Guardar en PPC Maestro
-      if (rowsForPPC.length > 0) {
-          const lastRow = sheetPPC.getLastRow();
-          sheetPPC.getRange(lastRow + 1, 1, rowsForPPC.length, rowsForPPC[0].length).setValues(rowsForPPC);
-      }
 
       // Procesar Distribución (Sin Lock Interno)
       for (const [targetSheet, tasks] of Object.entries(tasksBySheet)) {
