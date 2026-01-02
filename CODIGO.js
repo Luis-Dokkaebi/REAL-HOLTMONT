@@ -256,8 +256,8 @@ function getSystemConfig(role) {
       allDepartments: allDepts,
       staff: fullDirectory,
       directory: fullDirectory,
-      specialModules: [ woModule, ppcModuleWeekly ],
-      accessProjects: true
+      specialModules: [ woModule ],
+      accessProjects: false
     };
   }
 
@@ -929,6 +929,7 @@ function apiSavePPCData(payload, activeUser) {
       // Estructuras para Batch Operations
       const tasksBySheet = {};
       const logEntries = [];
+      const generatedIds = [];
 
       const addTaskToSheet = (sheetName, task) => {
           if (!sheetName) return;
@@ -948,6 +949,7 @@ function apiSavePPCData(payload, activeUser) {
                   id = "PPC-" + Math.floor(Math.random() * 1000000);
               }
           }
+          generatedIds.push(id);
           const comentarios = item.comentarios || "";
 
           // Mapeo Explícito para PPCV3
@@ -968,7 +970,12 @@ function apiSavePPCData(payload, activeUser) {
                  'COMENTARIOS': comentarios,
                  'ARCHIVO': item.archivoUrl,
                  'CUMPLIMIENTO': item.cumplimiento,
-                 'COMENTARIOS PREVIOS': item.comentariosPrevios || ""
+                 'COMENTARIOS PREVIOS': item.comentariosPrevios || "",
+                 'REQUISITOR': item.requisitor,
+                 'CONTACTO': item.contacto,
+                 'CELULAR': item.celular,
+                 'FECHA_COTIZACION': item.fechaCotizacion,
+                 'CLIENTE': item.cliente
           };
           
           // A. Persistencia en PPC Maestro (PPCV3)
@@ -1023,7 +1030,7 @@ function apiSavePPCData(payload, activeUser) {
         }
       }
 
-      return { success: true, message: "Datos procesados y distribuidos correctamente." };
+      return { success: true, message: "Datos procesados y distribuidos correctamente.", ids: generatedIds };
     } catch (e) { 
         console.error(e);
         registrarLog(activeUser || "SYSTEM", "ERROR_CRITICO_PPC", e.toString());
@@ -1781,5 +1788,34 @@ function test_SavePPCV3_Flow() {
     // Log last 5 rows for debug
     console.log("🔍 Últimas 5 filas de la hoja:", data.slice(-5));
     throw new Error("Persistencia fallida en PPCV3");
+  }
+}
+
+function test_WorkOrder_Generation() {
+  console.log("🛠️ INICIANDO TEST: Workorder ID Generation");
+  const user = "PREWORK_ORDER";
+  const payload = {
+      cliente: "MERCEDES BENZ",
+      especialidad: "ELECTROMECANICA",
+      concepto: "TEST WO",
+      responsable: "JUAN PEREZ",
+      // ...
+  };
+
+  // Call API
+  const res = apiSavePPCData(payload, user);
+
+  if (res.success && res.ids && res.ids.length > 0) {
+      const id = res.ids[0];
+      console.log("Generated ID:", id);
+      // Expected: Sequence(4) + ME + Space + ELECTROMECANICA + Space + Date(6)
+      // e.g. 0002ME ELECTROMECANICA 010126
+      if (id.match(/^\d{4}[A-Z]{2} .+ \d{6}$/)) {
+          console.log("✅ ID Format Correct");
+      } else {
+          console.error("❌ ID Format Incorrect:", id);
+      }
+  } else {
+      console.error("❌ Failed to save or generate ID", res);
   }
 }
