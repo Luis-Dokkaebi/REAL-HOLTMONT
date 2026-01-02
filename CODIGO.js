@@ -49,7 +49,8 @@ const USER_DB = {
   "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas" },
   "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza" },
   "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran" },
-  "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" }
+  "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" },
+  "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder" }
 };
 
 /* SERVICIO HTML */
@@ -245,6 +246,18 @@ function getSystemConfig(role) {
       directory: fullDirectory, 
       specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#20c997", type: "mirror_staff", target: "RAMIRO RODRIGUEZ" }],
       accessProjects: false 
+    };
+  }
+
+  if (role === 'WORKORDER_USER') {
+    const woModule = { ...ppcModuleMaster, label: "Workorder" };
+    return {
+      departments: allDepts,
+      allDepartments: allDepts,
+      staff: fullDirectory,
+      directory: fullDirectory,
+      specialModules: [ woModule, ppcModuleWeekly ],
+      accessProjects: true
     };
   }
 
@@ -927,7 +940,14 @@ function apiSavePPCData(payload, activeUser) {
       // 2. PREPARACIÓN DE DATOS EN MEMORIA
       items.forEach(item => {
           // Use existing ID if provided (for updates/tests) or generate new
-          const id = item.id || ("PPC-" + Math.floor(Math.random() * 1000000));
+          let id = item.id;
+          if (!id) {
+              if (activeUser === 'PREWORK_ORDER') {
+                  id = generateWorkOrderFolio(item.cliente, item.especialidad);
+              } else {
+                  id = "PPC-" + Math.floor(Math.random() * 1000000);
+              }
+          }
           const comentarios = item.comentarios || "";
 
           // Mapeo Explícito para PPCV3
@@ -1527,6 +1547,32 @@ function generateAppSheetId() {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+function generateWorkOrderFolio(clientName, deptName) {
+  try {
+      const props = PropertiesService.getScriptProperties();
+      // Incrementar secuencia
+      let seq = Number(props.getProperty('WORKORDER_SEQ') || 0) + 1;
+      props.setProperty('WORKORDER_SEQ', String(seq));
+
+      const seqStr = String(seq).padStart(4, '0');
+      const clientStr = (clientName || "XX").substring(0, 2).toUpperCase();
+
+      // Simplificar departamento si es necesario, o usar completo.
+      let deptStr = (deptName || "General").trim();
+
+      const date = new Date();
+      const d = String(date.getDate()).padStart(2, '0');
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const y = String(date.getFullYear()).slice(-2);
+      const dateStr = `${d}${m}${y}`;
+
+      return `${seqStr}${clientStr} ${deptStr} ${dateStr}`;
+  } catch(e) {
+      console.error(e);
+      return "WO-" + new Date().getTime();
+  }
 }
 
 /*
