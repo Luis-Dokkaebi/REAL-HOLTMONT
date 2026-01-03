@@ -1564,10 +1564,56 @@ function generateWorkOrderFolio(clientName, deptName) {
       props.setProperty('WORKORDER_SEQ', String(seq));
 
       const seqStr = String(seq).padStart(4, '0');
-      const clientStr = (clientName || "XX").substring(0, 2).toUpperCase();
 
-      // Simplificar departamento si es necesario, o usar completo.
-      let deptStr = (deptName || "General").trim();
+      // Abreviatura Cliente: Iniciales de las primeras 2 palabras o primeras 2 letras
+      const cleanClient = (clientName || "XX").toUpperCase().replace(/[^A-Z0-9]/g, ' ').trim();
+      const words = cleanClient.split(/\s+/).filter(w => w.length > 0);
+      let clientStr = "XX";
+      if (words.length >= 2) {
+          clientStr = words[0][0] + words[1][0];
+      } else if (words.length === 1) {
+          clientStr = words[0].substring(0, 2);
+      }
+
+      // Simplificar departamento
+      const rawDept = (deptName || "General").trim().toUpperCase();
+      const ABBR_MAP = {
+          "ELECTROMECANICA": "Electro",
+          "ELECTROMECÁNICA": "Electro",
+          "CONSTRUCCION": "Const",
+          "CONSTRUCCIÓN": "Const",
+          "MANTENIMIENTO": "Mtto",
+          "REMODELACION": "Remod",
+          "REMODELACIÓN": "Remod",
+          "REPARACION": "Repar",
+          "REPARACIÓN": "Repar",
+          "RECONFIGURACION": "Reconf",
+          "RECONFIGURACIÓN": "Reconf",
+          "POLIZA": "Poliza",
+          "PÓLIZA": "Poliza",
+          "INSPECCION": "Insp",
+          "INSPECCIÓN": "Insp",
+          "ADMINISTRACION": "Admin",
+          "ADMINISTRACIÓN": "Admin",
+          "MAQUINARIA": "Maq",
+          "DISEÑO": "Diseño",
+          "COMPRAS": "Compras",
+          "VENTAS": "Ventas",
+          "HVAC": "HVAC",
+          "SEGURIDAD": "EHS",
+          "EHS": "EHS"
+      };
+
+      let deptStr = ABBR_MAP[rawDept];
+
+      // Si no está en el mapa, intentar capitalizar primera letra y resto minúsculas
+      if (!deptStr) {
+          if (rawDept.length > 6) {
+              deptStr = rawDept.substring(0, 1) + rawDept.substring(1, 5).toLowerCase();
+          } else {
+              deptStr = rawDept.substring(0, 1) + rawDept.substring(1).toLowerCase();
+          }
+      }
 
       const date = new Date();
       const d = String(date.getDate()).padStart(2, '0');
