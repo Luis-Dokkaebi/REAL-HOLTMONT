@@ -1628,6 +1628,16 @@ function generateWorkOrderFolio(clientName, deptName) {
   }
 }
 
+function apiGetNextWorkOrderSeq() {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    let seq = Number(props.getProperty('WORKORDER_SEQ') || 0) + 1;
+    return String(seq).padStart(4, '0');
+  } catch(e) {
+    return "0000";
+  }
+}
+
 /*
  * ======================================================================
  * AUTOMATIZACIÓN DIARIA: CONTADOR 'ANTONIA_VENTAS'

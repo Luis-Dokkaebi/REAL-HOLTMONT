@@ -738,7 +738,7 @@
                     <!-- Folio Widget -->
                     <div class="bg-dark rounded px-3 py-2 border border-secondary">
                         <small class="d-block text-muted" style="font-size: 10px;">Folio</small>
-                        <span class="fw-bold">{{ currentWorkorderId || 'COT-2024-XXX' }}</span>
+                        <span class="fw-bold">{{ currentWorkorderId || workOrderFolioPreview }}</span>
                     </div>
                     <!-- Date Widget -->
                     <div class="bg-dark rounded px-3 py-2 border border-secondary">
@@ -1436,6 +1436,7 @@
       });
       const workorderTypes = ['Construcción', 'Remodelación', 'Reparación', 'Mantenimiento', 'Reconfiguración', 'Póliza', 'Inspección'];
       const currentWorkorderId = ref(null);
+      const nextWoSequence = ref('0000');
 
       const addWorkorderItem = () => {
           workorderData.value.items.push({ unidad: '', cantidad: 0, precio: 0, utilidad: 0 });
@@ -1776,6 +1777,7 @@
           else if(m.type==='ppc_native') {
               if (currentRole.value === 'WORKORDER_USER') {
                   currentView.value = 'WORKORDER_FORM';
+                  google.script.run.withSuccessHandler(s => nextWoSequence.value = s).apiGetNextWorkOrderSeq();
                   workorderData.value = {
                       cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
                       cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
@@ -2063,8 +2065,57 @@
       const formatDisplayDate = (val) => { if(!val) return ''; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{2}$/)) return val; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return val.replace(/\/(\d{4})$/, (m, y) => "/" + y.slice(-2)); return val; };
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
       
+      const workOrderFolioPreview = computed(() => {
+          const clientName = workorderData.value.cliente || "XX";
+          const deptName = workorderData.value.tipoTrabajo || "General";
+
+          // Client Abbreviation Logic
+          const cleanClient = clientName.toUpperCase().replace(/[^A-Z0-9]/g, ' ').trim();
+          const words = cleanClient.split(/\s+/).filter(w => w.length > 0);
+          let clientStr = "XX";
+          if (words.length >= 2) {
+             clientStr = words[0][0] + words[1][0];
+          } else if (words.length === 1) {
+             clientStr = words[0].substring(0, 2);
+          }
+
+          // Dept Abbreviation Logic
+          const rawDept = deptName.trim().toUpperCase();
+          const ABBR_MAP = {
+              "ELECTROMECANICA": "Electro", "ELECTROMECÁNICA": "Electro",
+              "CONSTRUCCION": "Const", "CONSTRUCCIÓN": "Const",
+              "MANTENIMIENTO": "Mtto",
+              "REMODELACION": "Remod", "REMODELACIÓN": "Remod",
+              "REPARACION": "Repar", "REPARACIÓN": "Repar",
+              "RECONFIGURACION": "Reconf", "RECONFIGURACIÓN": "Reconf",
+              "POLIZA": "Poliza", "PÓLIZA": "Poliza",
+              "INSPECCION": "Insp", "INSPECCIÓN": "Insp",
+              "ADMINISTRACION": "Admin", "ADMINISTRACIÓN": "Admin",
+              "MAQUINARIA": "Maq", "DISEÑO": "Diseño",
+              "COMPRAS": "Compras", "VENTAS": "Ventas",
+              "HVAC": "HVAC", "SEGURIDAD": "EHS", "EHS": "EHS"
+          };
+          let deptStr = ABBR_MAP[rawDept];
+          if (!deptStr) {
+             if (rawDept.length > 6) {
+                 deptStr = rawDept.substring(0, 1) + rawDept.substring(1, 5).toLowerCase();
+             } else {
+                 deptStr = rawDept.substring(0, 1) + rawDept.substring(1).toLowerCase();
+             }
+          }
+
+          // Date Logic
+          const date = new Date();
+          const d = String(date.getDate()).padStart(2, '0');
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const y = String(date.getFullYear()).slice(-2);
+          const dateStr = `${d}${m}${y}`;
+
+          return `${nextWoSequence.value}${clientStr} ${deptStr} ${dateStr}`;
+      });
+
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, 
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes };
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, workOrderFolioPreview };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
