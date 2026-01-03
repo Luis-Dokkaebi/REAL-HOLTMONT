@@ -222,6 +222,59 @@
     .ecg-canvas-container { flex: 1; position: relative; min-height: 200px; background: #050505; }
     .ecg-canvas-container::after { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(0, 50, 0, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 50, 0, 0.3) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; }
     @keyframes scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+    /* THEMES CONFIGURATION */
+    body.theme-light { --bg-body: #f3f6f9; --text-main: #333; --card-bg: #fff; --border-color: #dee2e6; }
+    body.theme-dark { --bg-body: #121212; --text-main: #e0e0e0; --card-bg: #1e1e1e; --primary: #000; --border-color: #333; }
+    body.theme-cyberpunk {
+        --bg-body: #050505;
+        --text-main: #00ff9d;
+        --card-bg: #0a0a0a;
+        --primary: #000;
+        --accent: #ff0099;
+        --border-color: #00ff9d;
+        font-family: 'Share Tech Mono', monospace;
+    }
+    /* THEME APPLICATORS */
+    body.theme-dark .content-wrapper { background: var(--bg-body) !important; }
+    body.theme-dark .sidebar { background: #000; border-right: 1px solid #333; }
+    body.theme-dark .card, body.theme-dark .dept-card, body.theme-dark .staff-card, body.theme-dark .dynamic-form-card {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    body.theme-dark .text-muted { color: #aaa !important; }
+    body.theme-dark .table-excel th { background-color: #333 !important; color: #fff; border-color: #555; }
+    body.theme-dark .table-excel td { border-color: #555 !important; color: #fff; }
+    body.theme-dark .form-control, body.theme-dark .form-select { background-color: #2c2c2c; border-color: #444; color: #fff; }
+
+    body.theme-cyberpunk .content-wrapper { background: var(--bg-body) !important; }
+    body.theme-cyberpunk .sidebar { background: rgba(0,0,0,0.9); border-right: 1px solid var(--border-color); box-shadow: 0 0 15px rgba(0, 255, 157, 0.2); }
+    body.theme-cyberpunk .nav-item.active { color: var(--text-main); text-shadow: 0 0 5px var(--text-main); background: rgba(0, 255, 157, 0.1); }
+    body.theme-cyberpunk .card, body.theme-cyberpunk .dept-card, body.theme-cyberpunk .staff-card, body.theme-cyberpunk .dynamic-form-card {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-main) !important;
+        box-shadow: 0 0 10px rgba(0, 255, 157, 0.1);
+    }
+    body.theme-cyberpunk .card-header { background-color: #001a10 !important; border-bottom: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+    body.theme-cyberpunk .form-control, body.theme-cyberpunk .form-select, body.theme-cyberpunk .excel-input {
+        background-color: #000 !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-main) !important;
+        font-family: 'Share Tech Mono', monospace;
+    }
+    body.theme-cyberpunk .btn-primary {
+        background-color: #000; border: 1px solid var(--border-color); color: var(--text-main);
+        box-shadow: 0 0 5px var(--text-main);
+    }
+    body.theme-cyberpunk .btn-primary:hover {
+        background-color: var(--text-main); color: #000;
+    }
+    body.theme-cyberpunk .text-muted { color: #008f00 !important; }
+    body.theme-cyberpunk .fw-bold { text-shadow: 0 0 2px currentColor; }
+    body.theme-cyberpunk .table-excel th { background-color: #000; color: #0f0; border-color: #0f0; }
+    body.theme-cyberpunk .table-excel td { background-color: #000; color: #0f0; border-color: #0f0; }
   </style>
 </head>
 <body>
@@ -308,6 +361,10 @@
 
         <div class="mt-auto">
             <div class="p-3">
+                <button class="btn btn-outline-secondary w-100 btn-sm mb-2" @click="toggleTheme" :title="isCompact ? currentTheme : 'Cambiar Tema'">
+                    <i class="fas" :class="{'fa-sun': currentTheme==='light', 'fa-moon': currentTheme==='dark', 'fa-robot': currentTheme==='cyberpunk'}"></i>
+                    <span v-if="!isCompact" class="ms-2">TEMA: {{ currentTheme.toUpperCase() }}</span>
+                </button>
                 <button class="btn btn-outline-secondary w-100 btn-sm" @click="logout" :title="isCompact ? 'Salir' : ''">
                     <i class="fas fa-sign-out-alt" v-if="isCompact"></i>
                     <span v-else>Salir</span>
@@ -317,7 +374,7 @@
       </div>
     </aside>
 
-    <main class="content-wrapper" :class="{'dark-mode': currentView === 'WORKORDER_FORM'}">
+    <main class="content-wrapper">
       <div class="top-bar" v-if="currentView !== 'WORKORDER_FORM'">
         <h6 class="m-0 fw-bold text-secondary">{{ pageTitle }}</h6>
         <span class="badge bg-light text-dark border">{{ currentUser }}</span>
@@ -731,7 +788,7 @@
           </div>
         </div>
 
-        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="background:#f3f6f9; overflow-y:auto;">
+        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="overflow-y:auto;">
             <!-- HEADER -->
             <div class="d-flex justify-content-between align-items-center px-4 py-3" style="background: #1c1c1c; color: white;">
                 <div class="d-flex align-items-center">
@@ -1290,6 +1347,21 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- FINANCIAMIENTO (FOOTER) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
+                         <span class="fw-bold text-muted">Financiamiento disponible con:</span>
+                         <div class="d-flex gap-2">
+                             <button class="btn btn-light border fw-bold text-dark d-flex align-items-center shadow-sm" style="min-width: 120px; justify-content: center;">
+                                 <i class="fas fa-building me-2 text-secondary"></i> SEPSA
+                             </button>
+                             <button class="btn btn-danger fw-bold text-white shadow-sm" style="min-width: 120px; background-color: #ec0000; border: none;">
+                                 SANTANDER
+                             </button>
+                         </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1836,6 +1908,7 @@
       const weeklyPlanData = ref({ headers: [], data: [], isLoading: false });
       const searchQuery = ref(''); const isCompact = ref(false);
       const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
+      const currentTheme = ref('light');
 
       const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'' });
       const isSubmitting = ref(false);
@@ -2236,6 +2309,16 @@
       const doLogin = () => { if(!loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role); loadCascadeTree(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiLogin(loginUser.value, loginPass.value); };
       const loadConfig = (r) => { google.script.run.withSuccessHandler(d => { config.value=d; if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r); };
       const toggleSidebar = () => { isCompact.value = !isCompact.value; };
+      const toggleTheme = () => {
+          if (currentTheme.value === 'light') currentTheme.value = 'dark';
+          else if (currentTheme.value === 'dark') currentTheme.value = 'cyberpunk';
+          else currentTheme.value = 'light';
+      };
+      watch(currentTheme, (val) => {
+          document.body.classList.remove('theme-light', 'theme-dark', 'theme-cyberpunk');
+          document.body.classList.add('theme-' + val);
+      }, { immediate: true });
+
       const logout = () => { google.script.run.apiLogout(currentUsername.value); isLoggedIn.value=false; loginPass.value=''; loginUser.value=''; currentView.value='DASHBOARD'; };
       const goHome = () => { currentView.value='DASHBOARD'; currentDept.value=''; currentModuleId.value=''; };
       const selectDept = (k) => { currentDept.value=k; currentView.value='DEPT'; searchQuery.value=''; currentModuleId.value=''; };
@@ -2621,7 +2704,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
       laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
       requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
