@@ -255,7 +255,7 @@ function getSystemConfig(role) {
       departments: {},
       allDepartments: allDepts,
       staff: [],
-      directory: [],
+      directory: fullDirectory,
       specialModules: [ woModule ],
       accessProjects: false
     };

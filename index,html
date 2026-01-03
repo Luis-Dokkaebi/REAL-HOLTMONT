@@ -737,17 +737,17 @@
                 <div class="d-flex gap-3 align-items-center">
                     <!-- Folio Widget -->
                     <div class="bg-dark rounded px-3 py-2 border border-secondary">
-                        <small class="d-block text-muted" style="font-size: 10px;">Folio</small>
-                        <span class="fw-bold">{{ currentWorkorderId || 'COT-2024-XXX' }}</span>
+                        <small class="d-block text-white" style="font-size: 10px;">FOLIO</small>
+                        <span class="fw-bold text-white">{{ currentWorkorderId || 'COT-2024-XXX' }}</span>
                     </div>
                     <!-- Date Widget -->
                     <div class="bg-dark rounded px-3 py-2 border border-secondary">
-                        <small class="d-block text-muted" style="font-size: 10px;">Fecha</small>
-                        <span class="fw-bold">{{ new Date().toLocaleDateString() }}</span>
+                        <small class="d-block text-white" style="font-size: 10px;">FECHA</small>
+                        <span class="fw-bold text-white">{{ new Date().toLocaleDateString() }}</span>
                     </div>
                     <!-- Delivery Date Widget -->
                     <div class="bg-dark rounded px-3 py-2 border border-secondary">
-                        <small class="d-block text-muted" style="font-size: 10px;">Fecha de Entrega</small>
+                        <small class="d-block text-white" style="font-size: 10px;">FECHA DE ENTREGA</small>
                         <input type="date" v-model="workorderData.fechaEntrega" class="bg-transparent border-0 text-white p-0 fw-bold" style="font-size: 13px; width: 110px;">
                     </div>
                     <!-- Priority -->
@@ -771,24 +771,24 @@
                             <div class="card-body">
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="small text-muted fw-bold mb-1">Nombre de la Empresa</label>
+                                        <label class="small text-muted fw-bold mb-1">Nombre de Cliente</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-light"><i class="fas fa-industry text-muted"></i></span>
                                             <input v-model="workorderData.cliente" class="form-control" placeholder="Ej: Corning Optical...">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="small text-muted fw-bold mb-1">Planta</label>
+                                        <label class="small text-muted fw-bold mb-1">Requisitor</label>
                                         <div class="input-group input-group-sm">
-                                            <span class="input-group-text bg-light"><i class="fas fa-map-marker-alt text-muted"></i></span>
-                                            <input v-model="workorderData.planta" class="form-control" placeholder="Ej: Planta Reynosa">
+                                            <span class="input-group-text bg-light"><i class="fas fa-user-tie text-muted"></i></span>
+                                            <input v-model="workorderData.newRequisitor" class="form-control" placeholder="Nombre requisitor">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="small text-muted fw-bold mb-1">Contacto</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-light"><i class="fas fa-user text-muted"></i></span>
-                                            <input v-model="workorderData.requisitor" class="form-control" placeholder="Nombre contacto">
+                                            <input v-model="workorderData.contactName" class="form-control" placeholder="Nombre contacto">
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -826,6 +826,16 @@
                                     </button>
                                 </div>
 
+                                <h6 class="fw-bold text-primary mb-2 small"><i class="fas fa-building me-2"></i>Departamento / Área (Folio)</h6>
+                                <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <button v-for="(dept, key) in (config.allDepartments || config.departments)" :key="key"
+                                        class="btn btn-sm fw-bold px-3"
+                                        :class="workorderData.departamento === key ? 'btn-success' : 'btn-light text-muted border'"
+                                        @click="workorderData.departamento = key">
+                                        <i class="fas fa-check me-1" v-if="workorderData.departamento === key"></i> {{ dept.label }}
+                                    </button>
+                                </div>
+
                                 <hr class="border-light my-3">
 
                                 <div class="row g-3 align-items-end">
@@ -833,7 +843,10 @@
                                         <label class="small text-muted fw-bold mb-1">Elaboró (Responsable Interno)</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-light"><i class="fas fa-user-tag text-muted"></i></span>
-                                            <input v-model="workorderData.cotizador" class="form-control" placeholder="Tu nombre...">
+                                            <select v-model="workorderData.cotizador" class="form-select">
+                                                <option value="" disabled>Selecciona tu nombre...</option>
+                                                <option v-for="p in (config.directory || config.staff)" :key="p.name" :value="p.name">{{ p.name }}</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -1430,7 +1443,7 @@
       
       // WORKORDER STATE
       const workorderData = ref({
-          cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+          cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
           cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
           prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
       });
@@ -1777,7 +1790,7 @@
               if (currentRole.value === 'WORKORDER_USER') {
                   currentView.value = 'WORKORDER_FORM';
                   workorderData.value = {
-                      cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                      cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
                       cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
                       prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
                   };
@@ -1981,7 +1994,7 @@
                      Swal.fire({ icon:'success', title: 'Workorder Completa', text: `Folio: ${currentWorkorderId.value} actualizado con detalles.`, timer: 2000, showConfirmButton: false });
                      showExtraModal.value = false;
                      workorderData.value = {
-                         cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                         cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
                          cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
                          prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
                      };
@@ -2011,16 +2024,21 @@
         conceptoStr += `\n[TIPO: ${workorderData.value.tipoTrabajo || 'N/A'}]`;
         if (workorderData.value.tiempoEstimado) conceptoStr += ` [TIEMPO: ${workorderData.value.tiempoEstimado}]`;
 
-        const fullClientName = workorderData.value.planta
-            ? `${workorderData.value.cliente} - ${workorderData.value.planta}`
-            : workorderData.value.cliente;
+        const fullClientName = workorderData.value.cliente;
+
+        const fullRequisitor = workorderData.value.newRequisitor
+            ? `${workorderData.value.newRequisitor} (${workorderData.value.contactName || ''})`
+            : (workorderData.value.contactName || '');
+
+        // Use selected Department for Especialidad (Folio generation), fallback to Tipo if missing
+        const spec = workorderData.value.departamento || workorderData.value.tipoTrabajo;
 
         const payload = {
             cliente: fullClientName,
-            especialidad: workorderData.value.tipoTrabajo, // Mapping Type to Area/Especialidad
+            especialidad: spec, // Mapping Department to Area/Especialidad for Folio
             concepto: conceptoStr,
             responsable: workorderData.value.cotizador,
-            requisitor: workorderData.value.requisitor,
+            requisitor: fullRequisitor,
             contacto: workorderData.value.contacto,
             celular: workorderData.value.celular,
             prioridad: workorderData.value.prioridad,
@@ -2042,7 +2060,7 @@
                     }).then(() => {
                         // Reset Form
                         workorderData.value = {
-                            cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                            cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
                             cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
                             prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
                         };
