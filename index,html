@@ -20,7 +20,9 @@
     body { font-family: 'Roboto', sans-serif; background: var(--bg-body); margin: 0; overflow: hidden; font-size: 13px; }
     
     .content-wrapper { flex: 1; display: flex; flex-direction: column; background: var(--bg-body); overflow: hidden; position: relative; transition: margin-left 0.3s; }
+    .content-wrapper.dark-mode { background: #111 !important; }
     .view-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 20px; width: 100%; box-sizing: border-box; }
+    .view-area.no-padding { padding: 0 !important; }
 
     /* TABLA EXCEL AVANZADA */
     .excel-container { 
@@ -315,13 +317,13 @@
       </div>
     </aside>
 
-    <main class="content-wrapper">
-      <div class="top-bar">
+    <main class="content-wrapper" :class="{'dark-mode': currentView === 'WORKORDER_FORM'}">
+      <div class="top-bar" v-if="currentView !== 'WORKORDER_FORM'">
         <h6 class="m-0 fw-bold text-secondary">{{ pageTitle }}</h6>
         <span class="badge bg-light text-dark border">{{ currentUser }}</span>
       </div>
 
-      <div class="view-area" v-if="!['IFRAME', 'MODULE_TABS'].includes(currentView)">
+      <div class="view-area" :class="{'no-padding': currentView === 'WORKORDER_FORM'}" v-if="!['IFRAME', 'MODULE_TABS'].includes(currentView)">
         
         <div v-if="currentView === 'DASHBOARD'" class="row g-3">
           <div class="col-md-4 col-lg-3" v-for="mod in config.specialModules" :key="mod.id">
@@ -722,62 +724,70 @@
           </div>
         </div>
 
-        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="background:#111; padding:20px; overflow-y:auto; color: #ddd;">
-            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary pb-3">
+        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="background:#111; padding:30px; overflow-y:auto; color: #ddd;">
+            <div class="d-flex justify-content-between align-items-center mb-5 border-bottom border-secondary pb-3">
                 <div class="d-flex align-items-center">
-                    <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" style="height:40px; margin-right:15px; filter: brightness(0) invert(1);">
+                    <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" style="height:50px; margin-right:20px; filter: brightness(0) invert(1);">
                     <div>
-                        <h4 class="fw-bold m-0 text-white" style="letter-spacing: 5px; font-family: 'Share Tech Mono', monospace;">PRE WORK ORDER</h4>
+                        <h3 class="fw-bold m-0 text-white" style="letter-spacing: 5px; font-family: 'Share Tech Mono', monospace;">PRE WORK ORDER</h3>
                     </div>
                 </div>
                 <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
             </div>
 
             <div class="card shadow-sm border-0 mb-4" style="background: #1c1c1c; border: 1px solid #333; color: #ccc;">
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="row g-3">
                          <div class="col-md-2">
-                            <label class="form-label small fw-bold text-secondary"><i class="far fa-calendar-alt me-1"></i>1. FECHA</label>
+                            <label class="form-label small fw-bold text-secondary text-uppercase">1. Fecha</label>
                             <input type="text" class="form-control bg-dark text-white border-secondary" :value="new Date().toLocaleDateString()" readonly disabled>
                          </div>
-                         <div class="col-md-3">
-                            <label class="form-label small fw-bold text-secondary"><i class="far fa-user me-1"></i>2. CLIENTE</label>
+                         <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">2. Cliente</label>
                             <input v-model="workorderData.cliente" class="form-control bg-dark text-white border-secondary" placeholder="Nombre del cliente">
                          </div>
                          <div class="col-md-3">
-                            <label class="form-label small fw-bold text-secondary"><i class="far fa-user-circle me-1"></i>3. REQUISITOR</label>
+                            <label class="form-label small fw-bold text-secondary text-uppercase">3. Requisitor</label>
                             <input v-model="workorderData.requisitor" class="form-control bg-dark text-white border-secondary" placeholder="Nombre del requisitor">
                          </div>
-                         <div class="col-md-2">
-                            <label class="form-label small fw-bold text-secondary"><i class="far fa-envelope me-1"></i>4. CONTACTO: CORREO</label>
+                         <div class="col-md-3">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">4. Contacto</label>
                             <input v-model="workorderData.contacto" type="email" class="form-control bg-dark text-white border-secondary" placeholder="correo@ejemplo.com">
                          </div>
-                         <div class="col-md-2">
-                            <label class="form-label small fw-bold text-secondary"><i class="far fa-clock me-1"></i>5. FECHA DE ENTREGA</label>
+
+                         <div class="col-md-3">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">5. Fecha de Entrega</label>
                             <input v-model="workorderData.fechaEntrega" type="date" class="form-control bg-dark text-white border-secondary">
+                         </div>
+                         <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">6. Departamento (Destino)</label>
+                            <select v-model="workorderData.departamento" class="form-select bg-dark text-white border-secondary">
+                                <option value="" disabled>Seleccionar...</option>
+                                <option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option>
+                            </select>
                          </div>
                     </div>
                 </div>
             </div>
 
             <div class="card shadow-sm border-0" style="background: #1c1c1c; border: 1px solid #333; color: #ccc;">
-                <div class="card-body">
-                    <h5 class="mb-4 text-white" style="border-left: 3px solid #ccc; padding-left: 10px; font-weight: 300;">COTIZACIÓN PRELIMINAR</h5>
+                <div class="card-body p-4">
+                    <h5 class="mb-4 text-white" style="border-left: 4px solid #0d6efd; padding-left: 15px; font-weight: 400; letter-spacing: 1px;">COTIZACIÓN PRELIMINAR</h5>
 
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-secondary d-block mb-2">TIPO DE TRABAJO</label>
+                        <label class="form-label small fw-bold text-secondary d-block mb-2 text-uppercase">Tipo de Trabajo</label>
                         <div class="d-flex flex-wrap gap-2">
                             <button v-for="type in workorderTypes" :key="type"
-                                class="btn btn-sm border-secondary text-white"
-                                :class="workorderData.departamento === type ? 'btn-secondary' : 'btn-outline-secondary'"
-                                @click="workorderData.departamento = type">
+                                class="btn btn-sm text-white"
+                                :class="workorderData.tipoTrabajo === type ? 'btn-primary' : 'btn-outline-secondary'"
+                                @click="workorderData.tipoTrabajo = type">
                                 {{ type }}
                             </button>
                         </div>
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label small fw-bold text-secondary">ELABORÓ</label>
+                        <label class="form-label small fw-bold text-secondary text-uppercase">Elaboró</label>
                         <input v-model="workorderData.cotizador" class="form-control bg-dark text-white border-secondary" placeholder="Nombre de quien elabora" style="max-width: 400px;">
                     </div>
 
@@ -1382,7 +1392,7 @@
       // WORKORDER STATE
       const workorderData = ref({
           cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
-          cotizador: '', departamento: '', fechaEntrega: '', tiempoEstimado: '', items: []
+          cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: []
       });
       const workorderTypes = ['Construcción', 'Remodelación', 'Reparación', 'Mantenimiento', 'Reconfiguración', 'Póliza', 'Inspección'];
       const currentWorkorderId = ref(null);
@@ -1955,7 +1965,7 @@
         if(fEnt) { const parts = fEnt.split('-'); if(parts.length === 3) fEnt = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; }
 
         // Construct Rich Description (CONCEPTO)
-        let conceptoStr = `[TIPO: ${workorderData.value.departamento}] [TIEMPO: ${workorderData.value.tiempoEstimado || 'N/A'}]`;
+        let conceptoStr = `[TIPO: ${workorderData.value.tipoTrabajo || 'N/A'}] [TIEMPO: ${workorderData.value.tiempoEstimado || 'N/A'}]`;
         if (workorderData.value.items.length > 0) {
             conceptoStr += '\nITEMS:';
             workorderData.value.items.forEach(it => {

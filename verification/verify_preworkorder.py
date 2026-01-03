@@ -7,8 +7,10 @@ def run(playwright):
     page = browser.new_page()
 
     cwd = os.getcwd()
+    # We assume index.html exists (copied from index,html)
     page.goto(f"file://{cwd}/index.html")
 
+    # Mock Google Apps Script environment
     page.evaluate("""
         window.google = {
             script: {
@@ -52,6 +54,11 @@ def run(playwright):
                             },
                             apiFetchCascadeTree: function() {
                                 successCallback({ success: true, data: [] });
+                            },
+                            apiSavePPCData: function(payload) {
+                                setTimeout(() => {
+                                    successCallback({ success: true, ids: ['WO-TEST-123'] });
+                                }, 500);
                             }
                         };
                     },
@@ -61,34 +68,50 @@ def run(playwright):
         };
     """)
 
+    # Login
     page.fill('input[placeholder="Usuario"]', 'PREWORK_ORDER')
     page.fill('input[placeholder="Contraseña..."]', 'anypass')
     page.click('button:has-text("INICIAR SESIÓN")')
 
     try:
+        # Wait for Sidebar Item
         page.wait_for_selector('text=Pre Work Order', timeout=5000)
         page.click('text=Pre Work Order')
-        page.wait_for_selector('h4:has-text("PRE WORK ORDER")', timeout=5000)
 
-        # Click add line
+        # Wait for the main H3 header of the new design
+        # "PRE WORK ORDER"
+        page.wait_for_selector('h3:has-text("PRE WORK ORDER")', timeout=10000)
+
+        # Interact with Type of Work buttons
+        page.click('button:has-text("Construcción")')
+
+        # Add an item line
         page.click('text=Agregar línea')
 
-        # Wait for input
-        page.wait_for_selector('table input[placeholder="m², ml, pza..."]', timeout=2000)
+        # Wait for table inputs to appear
+        page.wait_for_selector('table input[placeholder="m², ml, pza..."]', timeout=5000)
+
+        # Fill table row
+        # There are multiple inputs.
+        # 1. Unidad (text)
+        # 2. Cantidad (number)
+        # 3. Precio (number)
+        # 4. Utilidad (number)
 
         page.fill('table input[placeholder="m², ml, pza..."]', 'm2')
-        page.fill('table input[type="number"]', '10')
-        # For the third input (Precio), we need to be specific as there are multiple number inputs in row
-        # Row has: Unidad, Cantidad(number), Precio(number), Total(text), Utilidad(number), Subtotal(text)
-        # 1st number input is Cantidad. 2nd number input is Precio. 3rd is Utilidad.
 
         inputs = page.locator('table input[type="number"]')
-        inputs.nth(0).fill('10') # Cantidad
-        inputs.nth(1).fill('100') # Precio
-        inputs.nth(2).fill('50') # Utilidad
+        # nth(0) -> Cantidad
+        # nth(1) -> Precio
+        # nth(2) -> Utilidad
 
+        inputs.nth(0).fill('10')
+        inputs.nth(1).fill('100')
+        inputs.nth(2).fill('50')
+
+        # Take verification screenshot
         page.screenshot(path="verification/pre_work_order.png", full_page=True)
-        print("Screenshot taken")
+        print("Screenshot taken successfully")
 
     except Exception as e:
         print(f"Error: {e}")
