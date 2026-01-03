@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Holtmont V158 - ScriptMaster Edition</title>
-  
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-  
+
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -18,15 +18,15 @@
     /* VARIABLES Y ESTILOS GLOBALES */
     :root { --sidebar-w: 260px; --sidebar-mini: 65px; --primary: #1c1c1c; --accent: #3699ff; --bg-body: #f3f6f9; }
     body { font-family: 'Roboto', sans-serif; background: var(--bg-body); margin: 0; overflow: hidden; font-size: 13px; }
-    
+
     .content-wrapper { flex: 1; display: flex; flex-direction: column; background: var(--bg-body); overflow: hidden; position: relative; transition: margin-left 0.3s; }
     .content-wrapper.dark-mode { background: #111 !important; }
     .view-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 20px; width: 100%; box-sizing: border-box; }
     .view-area.no-padding { padding: 0 !important; }
 
     /* TABLA EXCEL AVANZADA */
-    .excel-container { 
-        flex: 1; overflow: auto; background: white; border: 1px solid #999; 
+    .excel-container {
+        flex: 1; overflow: auto; background: white; border: 1px solid #999;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%;
         scrollbar-width: thin; scrollbar-color: #a0a0a0 #f1f1f1;
     }
@@ -36,20 +36,20 @@
     .excel-container::-webkit-scrollbar-thumb:hover { background: #555; }
 
     .table-excel { width: max-content; min-width: 100%; border-collapse: collapse; background-color: #fff; table-layout: fixed; }
-    .table-excel th { 
-        background-color: #e6e6e6; color: #000; font-weight: 700; text-align: center; 
-        border: 1px solid #999; padding: 8px 4px; font-size: 12px; 
-        position: sticky; top: 0; z-index: 20; white-space: nowrap; box-shadow: 0 1px 0 #999; 
+    .table-excel th {
+        background-color: #e6e6e6; color: #000; font-weight: 700; text-align: center;
+        border: 1px solid #999; padding: 8px 4px; font-size: 12px;
+        position: sticky; top: 0; z-index: 20; white-space: nowrap; box-shadow: 0 1px 0 #999;
     }
-    .table-excel td { border: 1px solid #b2b2b2 !important; padding: 0; margin: 0; height: 30px; vertical-align: middle; position: relative; } 
-    
-    .excel-input { 
-        width: 100%; min-height: 28px; height: 100%; border: none; padding: 4px 6px; outline: none; 
-        font-size: 12px; background: transparent; display: block; font-family: inherit; 
-        line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: clip; 
+    .table-excel td { border: 1px solid #b2b2b2 !important; padding: 0; margin: 0; height: 30px; vertical-align: middle; position: relative; }
+
+    .excel-input {
+        width: 100%; min-height: 28px; height: 100%; border: none; padding: 4px 6px; outline: none;
+        font-size: 12px; background: transparent; display: block; font-family: inherit;
+        line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: clip;
     }
     .excel-input:focus { outline: 2px solid #107c41; outline-offset: -2px; z-index: 2; position: relative; background: white; }
-    .input-row { background-color: #f8f9fa; border-bottom: 2px solid #107c41; } 
+    .input-row { background-color: #f8f9fa; border-bottom: 2px solid #107c41; }
     .row-num { background-color: #e6e6e6; text-align: center; color: #333; font-weight: bold; width: 40px; border-right: 3px solid #ccc !important; }
 
     /* MINI DASHBOARD & KPI */
@@ -95,7 +95,7 @@
     .menu { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 0; }
     .nav-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; color: #a2a3b7; transition: 0.2s; height: 45px; }
     .nav-item:hover { color: white; background: rgba(255,255,255,0.03); }
-    .nav-item.active { background: #1b1b29; color: var(--accent); } 
+    .nav-item.active { background: #1b1b29; color: var(--accent); }
     .nav-icon-col { width: 25px; text-align: center; margin-right: 15px; display: flex; justify-content: center; }
     .nav-text { transition: opacity 0.2s; opacity: 1; }
     .sidebar.compact:not(:hover) .nav-text, .sidebar.compact:not(:hover) .brand-text, .sidebar.compact:not(:hover) .section-title { opacity: 0; pointer-events: none; display: none; }
@@ -105,7 +105,7 @@
     .sidebar.compact:not(:hover) .btn-toggle-sidebar { margin: 0; }
     .section-title { padding: 15px 20px 5px; font-size: 0.7rem; color: #555; font-weight: bold; white-space: nowrap; }
     .top-bar { height: 70px; background: white; border-bottom: 1px solid #eff2f5; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
-    
+
     /* COMPONENTES */
     .login-overlay {
         position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
@@ -181,13 +181,13 @@
     }
     .chip-container { border: 1px solid #ccc; background: white; padding: 2px; display: flex; flex-wrap: wrap; gap: 2px; min-height: 100%; align-items: center; }
     .user-chip { background: #e8f0fe; border: 1px solid #d2e3fc; border-radius: 4px; padding: 0 4px; font-size: 11px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
-    .file-input-hidden { display: none; } 
+    .file-input-hidden { display: none; }
     .btn-attach { border: 1px solid #ccc; background: #f8f9fa; color: #666; padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; }
     .btn-attach.has-file { background: #d4edda; color: #155724; border-color: #c3e6cb; }
     .iframe-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; display: flex; flex-direction: column; }
     .iframe-toolbar { height: 45px; background: #333; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
     iframe { flex: 1; width: 100%; border: none; }
-    
+
     /* MODAL */
     .custom-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; display: flex; align-items: center; justify-content: center; }
     .custom-modal { background: white; width: 400px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden; }
@@ -260,12 +260,12 @@
             <div class="nav-icon-col"><i class="fas fa-th"></i></div>
             <span class="nav-text">Dashboard</span>
         </div>
-        
+
         <div class="nav-item" v-if="config.accessProjects" :class="{ active: currentView === 'PROJECTS' }" @click="currentView = 'PROJECTS'; currentDept = ''; currentModuleId = '';">
             <div class="nav-icon-col"><i class="fas fa-project-diagram"></i></div>
             <span class="nav-text">Proyectos</span>
         </div>
-        
+
         <div v-if="config.specialModules.length">
             <div class="section-title">ACCIONES</div>
             <div class="nav-item" v-for="m in config.specialModules" @click="openModule(m)" :class="{ active: currentModuleId === m.id }" :style="{ borderRight: currentModuleId === m.id ? '3px solid ' + m.color : '3px solid transparent' }">
@@ -324,7 +324,7 @@
       </div>
 
       <div class="view-area" :class="{'no-padding': currentView === 'WORKORDER_FORM'}" v-if="!['IFRAME', 'MODULE_TABS'].includes(currentView)">
-        
+
         <div v-if="currentView === 'DASHBOARD'" class="row g-3">
           <div class="col-md-4 col-lg-3" v-for="mod in config.specialModules" :key="mod.id">
             <div class="dept-card" @click="openModule(mod)" :style="{borderTop: '4px solid '+mod.color}">
@@ -443,7 +443,7 @@
                     <button class="btn btn-outline-secondary btn-sm" @click="goHome">CERRAR</button>
                 </div>
             </div>
-            
+
             <div class="ecg-grid">
                 <div v-for="(data, personName) in ecgData" :key="personName" class="ecg-card">
                     <div class="ecg-header">
@@ -495,8 +495,8 @@
                               <button class="btn btn-sm btn-outline-primary py-0 px-2 border-0" @click.stop="openProjectTask(sub)" title="Asignar Tarea a este Proyecto"><i class="fas fa-clipboard-check"></i></button>
                           </div>
                           <div class="cascade-children" :class="{show: sub.expanded}">
-                               <div v-for="(folder, fIdx) in projectSubFolders" :key="fIdx" 
-                                    class="cascade-item cascade-folder" 
+                               <div v-for="(folder, fIdx) in projectSubFolders" :key="fIdx"
+                                    class="cascade-item cascade-folder"
                                     @click.stop="openFolderContent(folder, sub.name)">
                                    <i class="fas" :class="folder.icon" :style="{color: folder.color}"></i>
                                    <span>{{ folder.name }}</span>
@@ -666,7 +666,7 @@
             </div>
             <div class="d-flex mb-3 align-items-end justify-content-start">
             <div class="excel-container" style="height: auto; max-height: 250px; overflow: auto; flex:none; width: fit-content; border:none; box-shadow:none;">
-                <table class="table-excel mini-table" style="background: white; border: 1px solid #999;"> 
+                <table class="table-excel mini-table" style="background: white; border: 1px solid #999;">
                     <thead><tr><th style="min-width:140px">ESPECIALIDAD</th><th style="width:50px">TOTAL</th><th style="width:50px" class="bg-success text-white">SI</th><th style="width:50px" class="bg-danger text-white">NO</th><th style="width:70px">PROMEDIO</th></tr></thead>
                     <tbody><tr v-for="(s, i) in weeklyStats" :key="i" :class="{'total-row': s.isTotal}"><td class="text-start ps-2 fw-bold" style="font-size:11px">{{ s.label }}</td><td class="text-center">{{ s.total }}</td><td class="text-center text-success fw-bold">{{ s.si }}</td><td class="text-center text-danger">{{ s.no }}</td><td class="text-center fw-bold text-primary">{{ s.avg }}</td></tr></tbody>
                 </table>
@@ -1390,15 +1390,15 @@
       const staffTracker = ref({ name: '', data: [], history: [], headers: [], isLoading: false, previousView: 'DEPT' });
       const activeTrackerTab = ref('OPERATIVO');
       const currentStaffName = ref('');
-      const weeklyPlanData = ref({ headers: [], data: [], isLoading: false }); 
-      const searchQuery = ref(''); const isCompact = ref(false); 
+      const weeklyPlanData = ref({ headers: [], data: [], isLoading: false });
+      const searchQuery = ref(''); const isCompact = ref(false);
       const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
-      
-      const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'' }); 
+
+      const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'' });
       const isSubmitting = ref(false);
-      const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]); 
-      const ppcExistingData = ref([]); 
-      
+      const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
+      const ppcExistingData = ref([]);
+
       // WORKORDER STATE
       const workorderData = ref({
           cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
@@ -1418,16 +1418,16 @@
       };
 
       const isUploadingFile = ref(false); const uploadSuccess = ref(false); const fileInput = ref(null);
-      const currentIframeUrl = ref(''); const iframeTitle = ref(''); 
+      const currentIframeUrl = ref(''); const iframeTitle = ref('');
       const showExtraModal = ref(false);
       const extraData = ref({ restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' });
       const priorityOpts = ['URGENTE', 'MEDIA', 'BAJA']; const riskOpts = ['ALTO', 'BAJO', 'CATASTROFICO'];
       const cellFileInput = ref(null); const uploadingCell = ref({row:null, col:null});
       const dynamicPpc = ref({ especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' });
 
-      const selectedWeek = ref(''); 
+      const selectedWeek = ref('');
       const currentModuleId = ref('');
-      
+
       const AVATAR_MAP = {
         "ANTONIA_VENTAS": "https://lh3.googleusercontent.com/d/1y6o5FyEGpkHPTPoYHJ5a3IJEpgeAdOMB",
         "EDUARDO TERAN": "https://lh3.googleusercontent.com/d/1RlUv7Z2LFeiaAqkm859Khg0gfIWWipJq",
@@ -1468,10 +1468,10 @@
       const showSubProjectModal = ref(false);
       const currentTargetSite = ref({});
       const newSubProject = ref({ name: '', type: 'OBRA CIVIL', createdBy: '' });
-      
+
       // *** MODIFICADO: ESTRUCTURA DE CARPETAS CON NUEVOS PPCs ***
       const projectSubFolders = ref([
-          { name: "PPC INTERNO", icon: "fa-tasks", color: "#fd7e14", bg: "#fff4de" }, 
+          { name: "PPC INTERNO", icon: "fa-tasks", color: "#fd7e14", bg: "#fff4de" },
           { name: "PPC PREOPERATIVO", icon: "fa-tasks", color: "#fd7e14", bg: "#fff4de" },
           { name: "PPC CLIENTE", icon: "fa-tasks", color: "#fd7e14", bg: "#fff4de" },
           { name: "DOCUMENTOS", icon: "fa-file-alt", color: "#3699ff", bg: "#e1f0ff" },
@@ -1484,25 +1484,25 @@
       const projectTasks = ref({ data: [], headers: [], isLoading: false });
 
       const toggleExpand = (item) => { item.expanded = !item.expanded; };
-      
+
       // *** MODIFICADO: ABRIR CONTENIDO CON ETIQUETADO DINÁMICO ***
       const openFolderContent = (folder, projectName) => {
           if (folder.name.includes("PPC")) {
              // ETIQUETA DINÁMICA: "NAVE PPC INTERNO", "AMPLIACION PPC CLIENTE", etc.
              const compoundName = `${projectName} ${folder.name}`;
-             currentPpcProject.value = { name: compoundName }; 
+             currentPpcProject.value = { name: compoundName };
              currentView.value = 'PROJECT_TASKS_VIEW';
              loadProjectTasks(compoundName);
           } else {
              Swal.fire({ title: `${folder.name} (${projectName})`, text: 'Carpeta vacía por el momento.', icon: 'info', iconColor: folder.color, confirmButtonColor: folder.color });
           }
       };
-      
+
       const loadProjectTasks = (projectName) => {
           projectTasks.value.isLoading = true;
           google.script.run.withSuccessHandler(res => {
               projectTasks.value.isLoading = false;
-              if (res.success) { projectTasks.value.data = res.data; projectTasks.value.headers = res.headers; } 
+              if (res.success) { projectTasks.value.data = res.data; projectTasks.value.headers = res.headers; }
               else { Swal.fire('Error', res.message, 'error'); }
           }).apiFetchProjectTasks(projectName);
       };
@@ -1514,7 +1514,7 @@
           Swal.showLoading();
           google.script.run.withSuccessHandler(res => {
               Swal.close();
-              if (res.success) { row._isNew = false; if(res.moved) { refreshProjectTasks(); Swal.fire({ icon: 'success', title: 'Archivado', timer: 1000, showConfirmButton: false }); } else { Swal.fire({ icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false }); refreshProjectTasks(); } } 
+              if (res.success) { row._isNew = false; if(res.moved) { refreshProjectTasks(); Swal.fire({ icon: 'success', title: 'Archivado', timer: 1000, showConfirmButton: false }); } else { Swal.fire({ icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false }); refreshProjectTasks(); } }
               else { Swal.fire('Error', res.message, 'error'); }
           }).apiSaveProjectTask(JSON.parse(JSON.stringify(row)), currentPpcProject.value.name, currentUsername.value);
       };
@@ -1557,7 +1557,7 @@
           google.script.run.withSuccessHandler(res => {
               if (res.success) {
                   Swal.fire({ icon: 'success', title: 'Subproyecto Agregado', timer: 1500, showConfirmButton: false });
-                  showSubProjectModal.value = false; 
+                  showSubProjectModal.value = false;
                   google.script.run.withSuccessHandler(treeRes => { isSubmitting.value = false; if(treeRes.success) { activeProjectsList.value = treeRes.data; const updatedSite = activeProjectsList.value.find(s => s.id === currentTargetSite.value.id); if(updatedSite) updatedSite.expanded = true; } }).apiFetchCascadeTree();
               } else { isSubmitting.value = false; Swal.fire('Error', res.message, 'error'); }
           }).apiSaveSubProject({ parentId: currentTargetSite.value.id, name: newSubProject.value.name, type: newSubProject.value.type, createdBy: newSubProject.value.createdBy });
@@ -1591,12 +1591,12 @@
       const availableWeeks = computed(() => { const allWeeks = weeklyPlanData.value.data.map(i => i.SEMANA).filter(w => w && w !== '-'); return [...new Set(allWeeks)].sort((a,b) => b - a); });
       const availableSpecialties = computed(() => [...new Set(weeklyPlanData.value.data.map(r => r.ESPECIALIDAD).filter(x => x))].sort());
 
-      const filteredWeeklyData = computed(() => { 
+      const filteredWeeklyData = computed(() => {
           let data = weeklyPlanData.value.data;
           if (selectedWeek.value) { data = data.filter(r => String(r.SEMANA) == String(selectedWeek.value)); }
           if (filterSpecialty.value) { data = data.filter(r => String(r.ESPECIALIDAD).trim() === String(filterSpecialty.value).trim()); }
           if (filterCompliance.value) { data = data.filter(r => String(r.CUMPLIMIENTO).toUpperCase().trim() === String(filterCompliance.value).toUpperCase().trim()); }
-          return data; 
+          return data;
       });
 
       const weeklyStats = computed(() => {
@@ -1616,31 +1616,31 @@
       const getColumnStyle = (h) => {
           const up = String(h).toUpperCase().trim(); let w = '120px'; let fs = '12px'; let pad = '8px 4px'; let align = 'left';
           if (up === 'CONCEPTO' || up.includes('DESCRIP')) { w = (staffTracker.value.name === 'ANTONIA_VENTAS') ? '600px' : '380px'; }
-          else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; } 
-          else if (isCol(h, ['ID', 'FOLIO'])) { w = '40px'; fs = '10px'; align = 'center'; } 
+          else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
+          else if (isCol(h, ['ID', 'FOLIO'])) { w = '40px'; fs = '10px'; align = 'center'; }
           else if (up.includes('CUMPLIMIENTO')) { w = '50px'; align = 'center'; fs = '11px'; }
           else if (up.includes('ARCHIVO') || up.includes('CLIP')) { w = '40px'; align = 'center'; }
           else if (up === 'SEMANA') { w = '50px'; align = 'center'; }
           else if (up === 'HORA') { w = '50px'; fs = '10px'; }
           else if (up === 'FECHA ESTIMADA DE FIN' || up === 'FECHA DE ENTREGA') { w = '75px'; fs = '10px'; }
           else if (up === 'HORA ESTIMADA DE FIN') { w = '60px'; fs = '10px'; }
-          else if (up.includes('PRIORIDAD')) { w = '70px'; fs = '10px'; } 
+          else if (up.includes('PRIORIDAD')) { w = '70px'; fs = '10px'; }
           else if (up.includes('RIESGO')) { w = '70px'; fs = '10px'; }
-          else if (up === 'REQUISITOR') { w = '90px'; fs = '11px'; } 
-          else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; } 
+          else if (up === 'REQUISITOR') { w = '90px'; fs = '11px'; }
+          else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; }
           else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('AVANCE')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (isCol(h, ['ESTATUS','STATUS'])) { w = '65px'; fs = '10px'; pad = '8px 1px'; }
-          else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; } 
-          else if (up === 'F2') { w = '35px'; fs = '10px'; align='center'; } 
-          else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; } 
-          else if (up.includes('TIMEOUT') || up.includes('TIME OUT')) { w = '70px'; fs = '10px'; align='center'; } 
-          else if (up.includes('LAYOUT') || up.includes('TIMELINE')) { w = '70px'; fs = '10px'; align='center'; } 
-          else if (up.includes('VENDEDOR')) { w = '50px'; fs = '10px'; align='center'; } 
+          else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; }
+          else if (up === 'F2') { w = '35px'; fs = '10px'; align='center'; }
+          else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; }
+          else if (up.includes('TIMEOUT') || up.includes('TIME OUT')) { w = '70px'; fs = '10px'; align='center'; }
+          else if (up.includes('LAYOUT') || up.includes('TIMELINE')) { w = '70px'; fs = '10px'; align='center'; }
+          else if (up.includes('VENDEDOR')) { w = '50px'; fs = '10px'; align='center'; }
           else if (up === 'CLIENTE') w = '100px';
           return { width: w, fontSize: fs, padding: pad, textAlign: align, overflow: 'hidden', textOverflow: 'ellipsis' };
       };
-      
+
       const getHeaderLabel = (h) => { const up = String(h).toUpperCase().trim(); if (up === 'CLASIFICACION') return 'CLASI'; if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN'; if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN'; return h; };
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
       const getTrafficStyle = (row) => { const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); const d = parseInt(row['DIAS']||row['RELOJ']||0); if (isNaN(d)) return {}; if(t==='A') return d>=3?{backgroundColor:'#e74c3c',color:'white'}:(d===2?{backgroundColor:'#f1c40f',color:'black'}:{backgroundColor:'#2ecc71',color:'white'}); if(t==='AA') return d>=7?{backgroundColor:'#e74c3c',color:'white'}:(d>=4?{backgroundColor:'#f1c40f',color:'black'}:{backgroundColor:'#2ecc71',color:'white'}); if(t==='AAA') return d>=30?{backgroundColor:'#e74c3c',color:'white'}:(d>=11?{backgroundColor:'#f1c40f',color:'black'}:{backgroundColor:'#2ecc71',color:'white'}); return {}; };
@@ -1660,7 +1660,7 @@
       const goHome = () => { currentView.value='DASHBOARD'; currentDept.value=''; currentModuleId.value=''; };
       const selectDept = (k) => { currentDept.value=k; currentView.value='DEPT'; searchQuery.value=''; currentModuleId.value=''; };
       const goBackToDept = () => currentView.value=staffTracker.value.previousView;
-      
+
       const loadWeeklyPlan = () => { weeklyPlanData.value.isLoading = true; google.script.run.withSuccessHandler(res => { weeklyPlanData.value.isLoading = false; if(res.success){ weeklyPlanData.value.headers = res.headers; weeklyPlanData.value.data = res.data; selectedWeek.value = ''; } else Swal.fire('Error', res.message, 'error'); }).apiFetchWeeklyPlanData(); };
       const savePPCV3Row = (row) => { const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }); Toast.fire({ icon: 'info', title: 'Guardando...' }); google.script.run.withSuccessHandler(res => { if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' }); else Swal.fire('Error', res.message, 'error'); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value); };
 
@@ -1692,7 +1692,7 @@
               const dataPoints = ecgData.value[personName];
               const labels = dataPoints.map(d => d.displayDate);
               const values = dataPoints.map(d => d.pulse);
-              
+
               let borderColor = '#00ff00';
               if(personName.includes("SEBASTIAN")) borderColor = '#00ccff';
               if(personName.includes("EDUARDO")) borderColor = '#ff9900';
@@ -1706,7 +1706,7 @@
                           data: values,
                           borderColor: borderColor,
                           borderWidth: 2,
-                          tension: 0.1, 
+                          tension: 0.1,
                           pointRadius: 3,
                           pointBackgroundColor: '#fff'
                       }]
@@ -1715,9 +1715,9 @@
                       responsive: true,
                       maintainAspectRatio: false,
                       scales: {
-                          x: { display: false }, 
-                          y: { 
-                              display: true, 
+                          x: { display: false },
+                          y: {
+                              display: true,
                               grid: { color: '#222' },
                               ticks: { color: '#555', callback: (v) => v > 5 ? 'VENDIDA' : (v < 0 ? 'PERDIDA' : '') }
                           }
@@ -1740,8 +1740,8 @@
           });
       };
 
-      const openModule = (m) => { 
-          currentModuleId.value = m.id; currentDept.value = ''; 
+      const openModule = (m) => {
+          currentModuleId.value = m.id; currentDept.value = '';
           if(m.type==='mirror_staff') { openStaffTracker({name:m.target}); }
           else if(m.type==='ppc_native') {
               if (currentRole.value === 'WORKORDER_USER') {
@@ -1876,7 +1876,7 @@
                });
           }
       };
-      
+
       const closeIframe = () => currentView.value='DASHBOARD';
 
       const openStaffTracker = (p) => {
@@ -2032,8 +2032,8 @@
       const toIsoDate = (val) => { if (!val) return ''; const parts = String(val).split('/'); if (parts.length === 3) { let y = parts[2]; if (y.length === 2) y = '20' + y; return `${y}-${parts[1]}-${parts[0]}`; } return ''; };
       const formatDisplayDate = (val) => { if(!val) return ''; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{2}$/)) return val; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return val.replace(/\/(\d{4})$/, (m, y) => "/" + y.slice(-2)); return val; };
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
-      
-      return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, 
+
+      return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes };
     }
   });
