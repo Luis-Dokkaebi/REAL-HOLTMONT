@@ -899,17 +899,16 @@
                          <!-- Cotizacion Preliminar -->
                          <div class="row mb-4 align-items-center">
                              <div class="col-md-3"><label class="fw-bold">COTIZACION PRELIMINAR:</label></div>
-                             <div class="col-md-6"><input v-model="vehicleData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
-                             <div class="col-md-3"><small class="text-muted fst-italic">Instr: se iria a sistema de Cotizaciones en automático</small></div>
+                             <div class="col-md-9"><input v-model="vehicleData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
                          </div>
-
+                         
                          <!-- Control Vehiculo Header -->
                          <div class="bg-dark text-white p-2 fw-bold mb-3 small">
                              Control de Vehículo, Tiempo de Cotización, Horarios, Gasolina, Cuidado de Vehículo, Evaluación Conducción
                          </div>
 
                          <div class="row">
-                             <div class="col-md-8">
+                             <div class="col-12">
                                  <table class="table table-bordered table-sm small align-middle">
                                      <tbody>
                                          <tr>
@@ -922,22 +921,28 @@
                                          <tr>
                                              <td class="fw-bold bg-light">Vehículo Holtmont</td>
                                              <td><input v-model="vehicleData.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
-                                             <td class="fw-bold bg-light">Foto Odómetro Salida</td>
-                                             <td><input v-model="vehicleData.fotoOdometro" class="form-control form-control-sm border-0 bg-transparent" placeholder="xxxxx"></td>
+                                             <td class="fw-bold bg-light">FOTO ODOMETRO</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
                                              <td><input v-model="vehicleData.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
                                          </tr>
                                          <tr>
                                              <td class="fw-bold bg-light">Evaluación de Manejo</td>
                                              <td><input v-model="vehicleData.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
-                                             <td class="fw-bold bg-light">Foto indicador antes</td>
-                                             <td><input class="form-control form-control-sm border-0 bg-transparent" type="file"></td>
+                                             <td class="fw-bold bg-light">FOTO DE INDICADOR ANTES DE LLENAR GASOLINA</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
                                              <td class="fw-bold bg-light">Hora llegada (GPS)</td>
                                          </tr>
                                          <tr>
                                              <td class="fw-bold bg-light">Multas</td>
                                              <td><input v-model="vehicleData.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
-                                             <td class="fw-bold bg-light">Foto tanque despues</td>
-                                             <td><input class="form-control form-control-sm border-0 bg-transparent" type="file"></td>
+                                             <td class="fw-bold bg-light">FOTO INDICADOR DESPUES</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
                                              <td><input v-model="vehicleData.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
                                          </tr>
                                          <tr>
@@ -951,15 +956,6 @@
                                      </tbody>
                                  </table>
                              </div>
-                             <div class="col-md-4">
-                                 <div class="alert alert-warning">
-                                     <h6 class="fw-bold"><i class="fas fa-lightbulb me-2"></i>NUEVO a desarrollar</h6>
-                                     <p class="small mb-0">Lógica el control de los vehículo. Esto va generar un costo que se va ir a la integracion del costo de ir dando a un levantamiento, se requiere controlar los robos de partes, gasolina , tiempo perdidos y rendimientos , se generarían bonos por buen manejos ( Teoría de la Economía Conductual )</p>
-                                 </div>
-                             </div>
-                         </div>
-                         <div class="text-center mt-2">
-                             <small class="text-danger fw-bold fst-italic">esto para evitar que lo traigan chocado o con daños hay que saber como sale y como llega</small>
                          </div>
                     </div>
                 </div>
