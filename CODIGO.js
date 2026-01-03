@@ -975,7 +975,8 @@ function apiSavePPCData(payload, activeUser) {
                  'CONTACTO': item.contacto,
                  'CELULAR': item.celular,
                  'FECHA_COTIZACION': item.fechaCotizacion,
-                 'CLIENTE': item.cliente
+                 'CLIENTE': item.cliente,
+                 'TRABAJO': item.TRABAJO
           };
           
           // A. Persistencia en PPC Maestro (PPCV3)
