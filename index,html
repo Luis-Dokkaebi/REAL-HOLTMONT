@@ -20,7 +20,9 @@
     body { font-family: 'Roboto', sans-serif; background: var(--bg-body); margin: 0; overflow: hidden; font-size: 13px; }
     
     .content-wrapper { flex: 1; display: flex; flex-direction: column; background: var(--bg-body); overflow: hidden; position: relative; transition: margin-left 0.3s; }
+    .content-wrapper.dark-mode { background: #111 !important; }
     .view-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 20px; width: 100%; box-sizing: border-box; }
+    .view-area.no-padding { padding: 0 !important; }
 
     /* TABLA EXCEL AVANZADA */
     .excel-container { 
@@ -315,13 +317,13 @@
       </div>
     </aside>
 
-    <main class="content-wrapper">
-      <div class="top-bar">
+    <main class="content-wrapper" :class="{'dark-mode': currentView === 'WORKORDER_FORM'}">
+      <div class="top-bar" v-if="currentView !== 'WORKORDER_FORM'">
         <h6 class="m-0 fw-bold text-secondary">{{ pageTitle }}</h6>
         <span class="badge bg-light text-dark border">{{ currentUser }}</span>
       </div>
 
-      <div class="view-area" v-if="!['IFRAME', 'MODULE_TABS'].includes(currentView)">
+      <div class="view-area" :class="{'no-padding': currentView === 'WORKORDER_FORM'}" v-if="!['IFRAME', 'MODULE_TABS'].includes(currentView)">
         
         <div v-if="currentView === 'DASHBOARD'" class="row g-3">
           <div class="col-md-4 col-lg-3" v-for="mod in config.specialModules" :key="mod.id">
@@ -722,67 +724,116 @@
           </div>
         </div>
 
-        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="background:white; padding:20px; overflow-y:auto;">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h4 class="fw-bold m-0 text-primary"><i class="fas fa-file-invoice me-2"></i>WORKORDER</h4>
-                <button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button>
+        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="background:#111; padding:30px; overflow-y:auto; color: #ddd;">
+            <div class="d-flex justify-content-between align-items-center mb-5 border-bottom border-secondary pb-3">
+                <div class="d-flex align-items-center">
+                    <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" style="height:50px; margin-right:20px; filter: brightness(0) invert(1);">
+                    <div>
+                        <h3 class="fw-bold m-0 text-white" style="letter-spacing: 5px; font-family: 'Share Tech Mono', monospace;">PRE WORK ORDER</h3>
+                    </div>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
             </div>
 
-            <div class="card shadow-sm border-0" style="max-width: 800px; margin: 0 auto;">
-                <div class="card-body">
+            <div class="card shadow-sm border-0 mb-4" style="background: #1c1c1c; border: 1px solid #333; color: #ccc;">
+                <div class="card-body p-4">
                     <div class="row g-3">
-                         <div class="col-12">
-                            <label class="form-label small fw-bold">FECHA</label>
-                            <input type="text" class="form-control" :value="new Date().toLocaleDateString()" readonly disabled style="background:#f0f0f0;">
+                         <div class="col-md-2">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">1. Fecha</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" :value="new Date().toLocaleDateString()" readonly disabled>
                          </div>
-                         <div class="col-12">
-                            <label class="form-label small fw-bold">CLIENTE (2 Iniciales para Folio)</label>
-                            <input v-model="workorderData.cliente" class="form-control" placeholder="Ej: MERCEDES BENZ">
+                         <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">2. Cliente</label>
+                            <input v-model="workorderData.cliente" class="form-control bg-dark text-white border-secondary" placeholder="Nombre del cliente">
                          </div>
-                         <div class="col-md-6">
-                            <label class="form-label small fw-bold">REQUISITOR</label>
-                            <input v-model="workorderData.requisitor" class="form-control">
+                         <div class="col-md-3">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">3. Requisitor</label>
+                            <input v-model="workorderData.requisitor" class="form-control bg-dark text-white border-secondary" placeholder="Nombre del requisitor">
                          </div>
-                         <div class="col-md-6">
-                            <label class="form-label small fw-bold">CONTACTO (Correo)</label>
-                            <input v-model="workorderData.contacto" type="email" class="form-control">
-                         </div>
-                         <div class="col-md-6">
-                            <label class="form-label small fw-bold">CELULAR</label>
-                            <input v-model="workorderData.celular" type="number" class="form-control">
-                         </div>
-                         <div class="col-md-6">
-                            <label class="form-label small fw-bold">FECHA DE COTIZACION</label>
-                            <input v-model="workorderData.fechaCotizacion" type="date" class="form-control">
-                         </div>
-                         <div class="col-12">
-                            <label class="form-label small fw-bold">NUMERO DE PROYECTO DE CLIENTE O RFQ</label>
-                            <input v-model="workorderData.proyecto" class="form-control">
+                         <div class="col-md-3">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">4. Contacto</label>
+                            <input v-model="workorderData.contacto" type="email" class="form-control bg-dark text-white border-secondary" placeholder="correo@ejemplo.com">
                          </div>
 
-                         <div class="col-md-6">
-                            <label class="form-label small fw-bold">COTIZADOR</label>
-                             <div class="dynamic-input" style="min-height:38px; display:flex; flex-wrap:wrap; gap:5px; align-items:center;" @click="$refs.woChip.focus()">
-                                <span v-if="workorderData.cotizador" class="user-chip">{{workorderData.cotizador}} <i class="fas fa-times ms-2 text-secondary" style="cursor:pointer" @click.stop="workorderData.cotizador = ''"></i></span>
-                                <input ref="woChip" v-model="staffSearch" style="background:transparent; border:none; color:#333; outline:none; min-width:60px;" placeholder="Buscar..." v-if="!workorderData.cotizador">
-                            </div>
-                            <ul class="list-group position-absolute shadow" style="z-index:100; max-height:150px; overflow:auto; width:300px; margin-top:5px;" v-if="staffSearch && !workorderData.cotizador">
-                                <li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" style="cursor:pointer;" @click="workorderData.cotizador = p.name; staffSearch = '';">{{p.name}}</li>
-                            </ul>
+                         <div class="col-md-3">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">5. Fecha de Entrega</label>
+                            <input v-model="workorderData.fechaEntrega" type="date" class="form-control bg-dark text-white border-secondary">
                          </div>
-
-                         <div class="col-md-6">
-                            <label class="form-label small fw-bold">DEPARTAMENTO</label>
-                            <select v-model="workorderData.departamento" class="form-select">
+                         <div class="col-md-4">
+                            <label class="form-label small fw-bold text-secondary text-uppercase">6. Departamento (Destino)</label>
+                            <select v-model="workorderData.departamento" class="form-select bg-dark text-white border-secondary">
                                 <option value="" disabled>Seleccionar...</option>
                                 <option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option>
                             </select>
                          </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="mt-4 text-end">
-                        <button class="btn btn-primary fw-bold px-4" @click="saveWorkOrder" :disabled="isSubmitting">
-                            <i class="fas fa-save me-2"></i> GUARDAR Y GENERAR FOLIO
+            <div class="card shadow-sm border-0" style="background: #1c1c1c; border: 1px solid #333; color: #ccc;">
+                <div class="card-body p-4">
+                    <h5 class="mb-4 text-white" style="border-left: 4px solid #0d6efd; padding-left: 15px; font-weight: 400; letter-spacing: 1px;">COTIZACIÓN PRELIMINAR</h5>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary d-block mb-2 text-uppercase">Tipo de Trabajo</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button v-for="type in workorderTypes" :key="type"
+                                class="btn btn-sm text-white"
+                                :class="workorderData.tipoTrabajo === type ? 'btn-primary' : 'btn-outline-secondary'"
+                                @click="workorderData.tipoTrabajo = type">
+                                {{ type }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary text-uppercase">Elaboró</label>
+                        <input v-model="workorderData.cotizador" class="form-control bg-dark text-white border-secondary" placeholder="Nombre de quien elabora" style="max-width: 400px;">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary mb-2">DESCRIPCIÓN DEL TRABAJO A REALIZAR</label>
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover table-bordered border-secondary align-middle">
+                                <thead>
+                                    <tr class="text-secondary small text-uppercase">
+                                        <th>UNIDAD</th>
+                                        <th style="width: 100px;">CANTIDAD</th>
+                                        <th style="width: 150px;">PRECIOS UNITARIOS</th>
+                                        <th style="width: 120px;">TOTAL</th>
+                                        <th style="width: 120px;">UTILIDAD</th>
+                                        <th style="width: 120px;">SUBTOTAL</th>
+                                        <th style="width: 50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in workorderData.items" :key="idx">
+                                        <td><input v-model="item.unidad" class="form-control form-control-sm bg-dark text-white border-0" placeholder="m², ml, pza..."></td>
+                                        <td><input v-model.number="item.cantidad" type="number" class="form-control form-control-sm bg-dark text-white border-0"></td>
+                                        <td><input v-model.number="item.precio" type="number" class="form-control form-control-sm bg-dark text-white border-0" placeholder="$0.00"></td>
+                                        <td class="text-white">{{ formatCurrency(item.cantidad * item.precio) }}</td>
+                                        <td><input v-model.number="item.utilidad" type="number" class="form-control form-control-sm bg-dark text-white border-0" placeholder="$0"></td>
+                                        <td class="text-white fw-bold">{{ formatCurrency((item.cantidad * item.precio) + item.utilidad) }}</td>
+                                        <td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer;" @click="removeWorkorderItem(idx)"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-link text-white text-decoration-none p-0" @click="addWorkorderItem"><i class="fas fa-plus me-1"></i> Agregar línea</button>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary mb-2">PROGRAMA DEL PROYECTO</label>
+                        <div class="d-flex align-items-center gap-2">
+                             <span class="text-white small">Tiempo Estimado:</span>
+                             <input v-model="workorderData.tiempoEstimado" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Ej: 2 semanas" style="max-width: 200px;">
+                        </div>
+                    </div>
+
+                    <div class="mt-5 text-end border-top border-secondary pt-3">
+                        <button class="btn btn-light fw-bold px-4" @click="saveWorkOrder" :disabled="isSubmitting">
+                            <span v-if="isSubmitting"><i class="fas fa-spinner fa-spin me-2"></i> Procesando...</span>
+                            <span v-else><i class="fas fa-save me-2"></i> GUARDAR Y GENERAR FOLIO</span>
                         </button>
                     </div>
                 </div>
@@ -1339,8 +1390,22 @@
       const ppcExistingData = ref([]); 
       
       // WORKORDER STATE
-      const workorderData = ref({ cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '', cotizador: '', departamento: '' });
+      const workorderData = ref({
+          cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+          cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: []
+      });
+      const workorderTypes = ['Construcción', 'Remodelación', 'Reparación', 'Mantenimiento', 'Reconfiguración', 'Póliza', 'Inspección'];
       const currentWorkorderId = ref(null);
+
+      const addWorkorderItem = () => {
+          workorderData.value.items.push({ unidad: '', cantidad: 0, precio: 0, utilidad: 0 });
+      };
+      const removeWorkorderItem = (idx) => {
+          workorderData.value.items.splice(idx, 1);
+      };
+      const formatCurrency = (val) => {
+          return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+      };
 
       const isUploadingFile = ref(false); const uploadSuccess = ref(false); const fileInput = ref(null);
       const currentIframeUrl = ref(''); const iframeTitle = ref(''); 
@@ -1671,7 +1736,10 @@
           else if(m.type==='ppc_native') {
               if (currentRole.value === 'WORKORDER_USER') {
                   currentView.value = 'WORKORDER_FORM';
-                  workorderData.value = { cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '', cotizador: '', departamento: '' };
+                  workorderData.value = {
+                      cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                      cotizador: '', departamento: '', fechaEntrega: '', tiempoEstimado: '', items: []
+                  };
               } else {
                   currentView.value='PPC_FORM';
                   google.script.run.withSuccessHandler(res => { if(res.success) ppcExistingData.value = res.data; }).apiFetchPPCData();
@@ -1871,7 +1939,10 @@
                  if(res.success) {
                      Swal.fire({ icon:'success', title: 'Workorder Completa', text: `Folio: ${currentWorkorderId.value} actualizado con detalles.`, timer: 2000, showConfirmButton: false });
                      showExtraModal.value = false;
-                     workorderData.value = { cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '', cotizador: '', departamento: '' };
+                     workorderData.value = {
+                         cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                         cotizador: '', departamento: '', fechaEntrega: '', tiempoEstimado: '', items: []
+                     };
                      currentWorkorderId.value = null;
                  } else {
                      Swal.fire('Error', res.message, 'error');
@@ -1886,21 +1957,33 @@
 
       const saveWorkOrder = () => {
         if(!workorderData.value.cliente || !workorderData.value.departamento || !workorderData.value.cotizador) {
-            return Swal.fire('Faltan datos obligatorios', 'Cliente, Departamento y Cotizador son requeridos.', 'warning');
+            return Swal.fire('Faltan datos obligatorios', 'Cliente, Tipo de Trabajo y quien Elaboró son requeridos.', 'warning');
         }
         isSubmitting.value = true;
-        let fCot = workorderData.value.fechaCotizacion;
-        if(fCot) { const parts = fCot.split('-'); if(parts.length === 3) fCot = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; }
+
+        let fEnt = workorderData.value.fechaEntrega;
+        if(fEnt) { const parts = fEnt.split('-'); if(parts.length === 3) fEnt = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; }
+
+        // Construct Rich Description (CONCEPTO)
+        let conceptoStr = `[TIPO: ${workorderData.value.tipoTrabajo || 'N/A'}] [TIEMPO: ${workorderData.value.tiempoEstimado || 'N/A'}]`;
+        if (workorderData.value.items.length > 0) {
+            conceptoStr += '\nITEMS:';
+            workorderData.value.items.forEach(it => {
+               const total = (it.cantidad||0) * (it.precio||0);
+               const sub = total + (it.utilidad||0);
+               conceptoStr += `\n- ${it.unidad} (x${it.cantidad}): $${it.precio} | Tot: $${total} (+U:$${it.utilidad}) = $${sub}`;
+            });
+        }
 
         const payload = {
             cliente: workorderData.value.cliente,
             especialidad: workorderData.value.departamento,
-            concepto: workorderData.value.proyecto || 'Workorder',
+            concepto: conceptoStr,
             responsable: workorderData.value.cotizador,
             requisitor: workorderData.value.requisitor,
             contacto: workorderData.value.contacto,
-            celular: workorderData.value.celular,
-            fechaCotizacion: fCot,
+            // celular: workorderData.value.celular,
+            fechaRespuesta: fEnt, // Mapped to Fecha Entrega
             comentarios: '',
             horas: 0,
             cumplimiento: 'NO'
@@ -1910,11 +1993,21 @@
             isSubmitting.value = false;
             if(res.success) {
                 if (res.ids && res.ids.length > 0) {
-                    currentWorkorderId.value = res.ids[0];
-                    extraData.value = { restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' };
-                    showExtraModal.value = true;
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Pre Work Order Guardada',
+                        text: `Folio Generado: ${res.ids[0]}`,
+                        confirmButtonText: 'Aceptar'
+                    }).then(() => {
+                        // Reset Form
+                        workorderData.value = {
+                            cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                            cotizador: '', departamento: '', fechaEntrega: '', tiempoEstimado: '', items: []
+                        };
+                        currentWorkorderId.value = null;
+                    });
                 } else {
-                    Swal.fire('Guardado', 'Workorder guardada pero no se recibió el Folio.', 'success');
+                    Swal.fire('Guardado', 'Pre Work Order guardada.', 'success');
                 }
             } else {
                 Swal.fire('Error', res.message, 'error');
@@ -1929,7 +2022,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
       
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, 
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId };
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };

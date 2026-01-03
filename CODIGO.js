@@ -250,12 +250,12 @@ function getSystemConfig(role) {
   }
 
   if (role === 'WORKORDER_USER') {
-    const woModule = { ...ppcModuleMaster, label: "Workorder" };
+    const woModule = { ...ppcModuleMaster, label: "Pre Work Order" };
     return {
-      departments: allDepts,
+      departments: {},
       allDepartments: allDepts,
-      staff: fullDirectory,
-      directory: fullDirectory,
+      staff: [],
+      directory: [],
       specialModules: [ woModule ],
       accessProjects: false
     };
