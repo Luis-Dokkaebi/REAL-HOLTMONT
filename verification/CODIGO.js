@@ -11,10 +11,10 @@ const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 // --- CONFIGURACIÓN ---
 const APP_CONFIG = {
-  folderIdUploads: "", 
-  ppcSheetName: "PPCV3",          
-  draftSheetName: "PPC_BORRADOR", 
-  salesSheetName: "Datos",        
+  folderIdUploads: "",
+  ppcSheetName: "PPCV3",
+  draftSheetName: "PPC_BORRADOR",
+  salesSheetName: "Datos",
   logSheetName: "LOG_SISTEMA"
 };
 
@@ -78,12 +78,12 @@ function findHeaderRow(values) {
   for (let i = 0; i < Math.min(100, values.length); i++) {
     const rowStr = values[i].map(c => String(c).toUpperCase().replace(/\n/g, " ").replace(/\s+/g, " ").trim()).join("|");
     if (rowStr.includes("ID_SITIO") || rowStr.includes("ID_PROYECTO")) return i;
-    if (rowStr.includes("FOLIO") && rowStr.includes("CONCEPTO") && 
+    if (rowStr.includes("FOLIO") && rowStr.includes("CONCEPTO") &&
        (rowStr.includes("ALTA") || rowStr.includes("AVANCE") || rowStr.includes("STATUS") || rowStr.includes("FECHA"))) {
       return i;
     }
     if (rowStr.includes("ID") && rowStr.includes("RESPONSABLE")) return i;
-    if ((rowStr.includes("FOLIO") || rowStr.includes("ID")) && 
+    if ((rowStr.includes("FOLIO") || rowStr.includes("ID")) &&
         (rowStr.includes("DESCRIPCI") || rowStr.includes("RESPONSABLE") || rowStr.includes("CONCEPTO"))) {
       return i;
     }
@@ -122,7 +122,7 @@ function apiLogout(username) {
 
 function getSystemConfig(role) {
   const fullDirectory = [
-    { name: "ANTONIA_VENTAS", dept: "VENTAS" }, 
+    { name: "ANTONIA_VENTAS", dept: "VENTAS" },
     { name: "JUDITH ECHAVARRIA", dept: "VENTAS" },
     { name: "EDUARDO MANZANARES", dept: "VENTAS" },
     { name: "RAMIRO RODRIGUEZ", dept: "VENTAS" },
@@ -143,7 +143,7 @@ function getSystemConfig(role) {
     { name: "DANIELA CASTRO", dept: "ADMINISTRACION" },
     { name: "EDUARDO BENITEZ", dept: "ADMINISTRACION" },
     { name: "ANTONIO CABRERA", dept: "ADMINISTRACION" },
-    { name: "ADMINISTRADOR", dept: "ADMINISTRACION" }, 
+    { name: "ADMINISTRADOR", dept: "ADMINISTRACION" },
     { name: "EDUARDO MANZANARES", dept: "HVAC" },
     { name: "JUAN JOSE SANCHEZ", dept: "HVAC" },
     { name: "SELENE BALDONADO", dept: "HVAC" },
@@ -168,7 +168,7 @@ function getSystemConfig(role) {
     { name: "GISELA DOMINGUEZ", dept: "COMPRAS" },
     { name: "VANESSA DE LARA", dept: "COMPRAS" },
     { name: "NELSON MALDONADO", dept: "COMPRAS" },
-    { name: "VICTOR ALMACEN", dept: "COMPRAS" }, 
+    { name: "VICTOR ALMACEN", dept: "COMPRAS" },
     { name: "DIMAS RAMOS", dept: "EHS" },
     { name: "CITLALI GOMEZ", dept: "EHS" },
     { name: "AIMEE RAMIREZ", dept: "EHS" },
@@ -196,56 +196,56 @@ function getSystemConfig(role) {
   // const ecgModule = { id: "ECG_SALES", label: "Monitor Vivos", icon: "fa-heartbeat", color: "#d63384", type: "ecg_dashboard" };
   const kpiModule = { id: "KPI_DASHBOARD", label: "KPI Performance", icon: "fa-chart-line", color: "#d63384", type: "kpi_dashboard_view" };
 
-  if (role === 'TONITA') return { 
-      departments: { "VENTAS": allDepts["VENTAS"] }, 
-      allDepartments: allDepts, 
-      staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ], 
-      directory: fullDirectory, 
+  if (role === 'TONITA') return {
+      departments: { "VENTAS": allDepts["VENTAS"] },
+      allDepartments: allDepts,
+      staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ],
+      directory: fullDirectory,
       specialModules: [ ppcModuleMaster ],
-      accessProjects: false 
+      accessProjects: false
   };
-  
+
   if (role === 'ANGEL_USER') {
     return {
       departments: { "DISEÑO": allDepts["DISEÑO"], "VENTAS": allDepts["VENTAS"] },
-      allDepartments: allDepts, 
-      staff: [ { name: "ANGEL SALINAS", dept: "DISEÑO" } ], 
-      directory: fullDirectory, 
+      allDepartments: allDepts,
+      staff: [ { name: "ANGEL SALINAS", dept: "DISEÑO" } ],
+      directory: fullDirectory,
       specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "ANGEL SALINAS" }],
-      accessProjects: false 
+      accessProjects: false
     };
   }
 
   if (role === 'TERESA_USER') {
     return {
       departments: { "CONSTRUCCION": allDepts["CONSTRUCCION"] },
-      allDepartments: allDepts, 
-      staff: [ { name: "TERESA GARZA", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
+      allDepartments: allDepts,
+      staff: [ { name: "TERESA GARZA", dept: "CONSTRUCCION" } ],
+      directory: fullDirectory,
       specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#e83e8c", type: "mirror_staff", target: "TERESA GARZA" }],
-      accessProjects: false 
+      accessProjects: false
     };
   }
 
   if (role === 'EDUARDO_USER') {
     return {
       departments: { "CONSTRUCCION": allDepts["CONSTRUCCION"] },
-      allDepartments: allDepts, 
-      staff: [ { name: "EDUARDO TERAN", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
+      allDepartments: allDepts,
+      staff: [ { name: "EDUARDO TERAN", dept: "CONSTRUCCION" } ],
+      directory: fullDirectory,
       specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO TERAN" }],
-      accessProjects: false 
+      accessProjects: false
     };
   }
 
   if (role === 'RAMIRO_USER') {
     return {
       departments: { "CONSTRUCCION": allDepts["CONSTRUCCION"] },
-      allDepartments: allDepts, 
-      staff: [ { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
+      allDepartments: allDepts,
+      staff: [ { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION" } ],
+      directory: fullDirectory,
       specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#20c997", type: "mirror_staff", target: "RAMIRO RODRIGUEZ" }],
-      accessProjects: false 
+      accessProjects: false
     };
   }
 
@@ -262,16 +262,16 @@ function getSystemConfig(role) {
   }
 
   const ppcModules = [ ppcModuleMaster, ppcModuleWeekly ];
-  
-  if (role === 'PPC_ADMIN') return { 
-      departments: {}, 
-      allDepartments: allDepts, 
-      staff: [], 
-      directory: fullDirectory, 
+
+  if (role === 'PPC_ADMIN') return {
+      departments: {},
+      allDepartments: allDepts,
+      staff: [],
+      directory: fullDirectory,
       specialModules: ppcModules,
-      accessProjects: true 
+      accessProjects: true
   };
-  
+
   if (role === 'ADMIN_CONTROL') {
     return {
       departments: allDepts, allDepartments: allDepts, staff: fullDirectory, directory: fullDirectory,
@@ -281,7 +281,7 @@ function getSystemConfig(role) {
         { id: "MIRROR_TONITA", label: "Monitor Toñita", icon: "fa-eye", color: "#0dcaf0", type: "mirror_staff", target: "ANTONIA_VENTAS" },
         { id: "ADMIN_TRACKER", label: "Control", icon: "fa-clipboard-list", color: "#6f42c1", type: "mirror_staff", target: "ADMINISTRADOR" }
       ],
-      accessProjects: true 
+      accessProjects: true
     };
   }
 
@@ -294,7 +294,7 @@ function getSystemConfig(role) {
   return {
     departments: allDepts, allDepartments: allDepts, staff: fullDirectory, directory: fullDirectory,
     specialModules: defaultModules,
-    accessProjects: true 
+    accessProjects: true
   };
 }
 
@@ -485,7 +485,7 @@ function internalFetchSheetData(sheetName) {
         if (val instanceof Date) {
            if (val.getFullYear() < 1900) val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "HH:mm");
            else {
-              if (!sortDate) sortDate = val; 
+              if (!sortDate) sortDate = val;
               val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
            }
         } else if (typeof val === 'string') {
@@ -501,17 +501,17 @@ function internalFetchSheetData(sheetName) {
         if (isReadingHistory) historyTasks.push(rowObj); else activeTasks.push(rowObj);
       }
     }
-    
+
     const dateSorter = (a, b) => {
       const dA = a['_sortDate'] instanceof Date ? a['_sortDate'].getTime() : 0;
       const dB = b['_sortDate'] instanceof Date ? b['_sortDate'].getTime() : 0;
       return dB - dA;
     };
-    return { 
-      success: true, 
-      data: activeTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest), 
-      history: historyTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest), 
-      headers: cleanHeaders 
+    return {
+      success: true,
+      data: activeTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest),
+      history: historyTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest),
+      headers: cleanHeaders
     };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
@@ -526,7 +526,7 @@ function apiFetchSalesHistory() {
     if (!dataRes.success) return dataRes;
     const allData = [...dataRes.data, ...dataRes.history];
     const grouped = {};
-    
+
     allData.forEach(row => {
         const vendedorKey = Object.keys(row).find(k => k.toUpperCase().includes("VENDEDOR"));
         const clienteKey = Object.keys(row).find(k => k.toUpperCase().includes("CLIENTE"));
@@ -537,7 +537,7 @@ function apiFetchSalesHistory() {
         if (vendedorKey && row[vendedorKey]) {
             const name = String(row[vendedorKey]).trim().toUpperCase();
             if (!grouped[name]) grouped[name] = [];
-            
+
             let pulse = 0;
             const status = String(row[statusKey] || "").toUpperCase();
             if (status.includes("VENDIDA") || status.includes("APROBADA") || status.includes("GANADA")) pulse = 10;
@@ -575,14 +575,14 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         return { success: false, message: "Hoja ocupada, intenta de nuevo."};
     }
   }
-  
+
   try {
     const sheet = findSheetSmart(sheetName);
     if (!sheet) return { success: false, message: "Hoja no encontrada: " + sheetName };
     const dataRange = sheet.getDataRange();
     let values = dataRange.getValues();
     if (values.length === 0) return { success: false, message: "Hoja vacía" };
-    
+
     const headerRowIndex = findHeaderRow(values);
     if (headerRowIndex === -1) return { success: false, message: "Sin cabeceras válidas" };
     // 1. SANITIZAR HEADERS Y ELIMINAR FILTROS ROTOS (FIX CRÍTICO)
@@ -597,10 +597,10 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     if (headersChanged) {
         const existingFilter = sheet.getFilter();
         if (existingFilter) {
-            try { existingFilter.remove(); } catch(e) {} 
+            try { existingFilter.remove(); } catch(e) {}
         }
         sheet.getRange(headerRowIndex + 1, 1, 1, values[headerRowIndex].length).setValues([values[headerRowIndex]]);
-        SpreadsheetApp.flush(); 
+        SpreadsheetApp.flush();
     }
 
     // FIX: HEADERS CON SALTOS DE LINEA (NORMALIZACIÓN ROBUSTA)
@@ -645,9 +645,9 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     // 2. Procesar Tareas
     tasksArray.forEach(task => {
       let rowIndex = -1;
-      
+
       if (task._rowIndex) {
-        rowIndex = parseInt(task._rowIndex) - 1; 
+        rowIndex = parseInt(task._rowIndex) - 1;
       } else {
         const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase();
         if (tFolio && folioIdx > -1) {
@@ -666,7 +666,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         });
         singleRowIndex = rowIndex;
         modified = true;
-      } 
+      }
       else {
           const newRow = new Array(totalColumns).fill("");
           Object.keys(task).forEach(key => {
@@ -688,8 +688,8 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     if (avanceIdx > -1) {
         let separatorIndex = -1;
         for(let i=0; i<values.length; i++) {
-            if(String(values[i][0]).toUpperCase().includes("TAREAS REALIZADAS") || 
-               String(values[i].join("|")).toUpperCase().includes("TAREAS REALIZADAS")) { 
+            if(String(values[i][0]).toUpperCase().includes("TAREAS REALIZADAS") ||
+               String(values[i].join("|")).toUpperCase().includes("TAREAS REALIZADAS")) {
                 separatorIndex = i;
                 break;
             }
@@ -709,7 +709,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
 
         const newActiveRows = [];
         const movedRows = [];
-        
+
         activeRows.forEach(row => {
             const val = String(row[avanceIdx] || "").trim();
             const isComplete = val === "100" || val === "100%" || val === "1.0" || val === "1";
@@ -723,12 +723,12 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         if (rowsMoved || (rowsToAppend.length > 0 && separatorIndex === -1)) {
             if (separatorRow.length === 0) {
                 const sep = new Array(totalColumns).fill("");
-                const titleCol = totalColumns > 2 ? 2 : 0; 
+                const titleCol = totalColumns > 2 ? 2 : 0;
                 sep[titleCol] = "TAREAS REALIZADAS";
                 separatorRow = [sep];
             }
             values = [ ...headerAndTop, ...rowsToAppend, ...newActiveRows, ...separatorRow, ...movedRows, ...historyRows ];
-            rowsToAppend = []; 
+            rowsToAppend = [];
             modified = true;
             singleRowIndex = -1;
         }
@@ -775,7 +775,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         sheet.insertRowsBefore(insertPos, rowsToAppend.length);
         sheet.getRange(insertPos, 1, normalizedAppend.length, finalMaxCols).setValues(normalizedAppend);
     }
-    
+
     SpreadsheetApp.flush();
     return { success: true, moved: rowsMoved };
   } catch (e) {
@@ -820,13 +820,13 @@ function internalUpdateTask(personName, taskData, username) {
              }
 
              const distData = JSON.parse(JSON.stringify(taskData));
-             delete distData._rowIndex; 
+             delete distData._rowIndex;
 
              const vendedorKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
              if (vendedorKey && taskData[vendedorKey]) {
                  const vendedorName = String(taskData[vendedorKey]).trim();
                  if (vendedorName.toUpperCase() !== "ANTONIA_VENTAS") {
-                     try { 
+                     try {
                         // TRAFFIC SPLITTING: Si existe la hoja ventas y es tarea comercial (tiene VENDEDOR), usarla.
                         let targetSheet = vendedorName;
                         // El check anterior `if (vendedorKey ...)` ya garantiza que estamos en contexto de ventas.
@@ -860,13 +860,13 @@ function apiFetchDrafts() {
     const sheet = findSheetSmart(APP_CONFIG.draftSheetName);
     if (!sheet) return { success: true, data: [] };
     const rows = sheet.getDataRange().getValues();
-    if (rows.length < 1) return { success: true, data: [] }; 
+    if (rows.length < 1) return { success: true, data: [] };
     const startRow = (rows[0][0] === "ESPECIALIDAD") ? 1 : 0;
     const drafts = rows.slice(startRow).map(r => ({
       especialidad: r[0], concepto: r[1], responsable: r[2], horas: r[3], cumplimiento: r[4],
-      archivoUrl: r[5], comentarios: r[6], comentariosPrevios: r[7], 
-      prioridades: r[8], riesgos: r[9], restricciones: r[10], fechaRespuesta: r[11], 
-      clasificacion: r[12], fechaAlta: r[13] 
+      archivoUrl: r[5], comentarios: r[6], comentariosPrevios: r[7],
+      prioridades: r[8], riesgos: r[9], restricciones: r[10], fechaRespuesta: r[11],
+      clasificacion: r[12], fechaAlta: r[13]
     })).filter(d => d.concepto);
     return { success: true, data: drafts };
   } catch(e) { return { success: false, message: e.toString() };
@@ -885,8 +885,8 @@ function apiSyncDrafts(drafts) {
         const rows = drafts.map(d => [
           d.especialidad || "", d.concepto || "", d.responsable || "", d.horas || "", d.cumplimiento || "NO",
           d.archivoUrl || "", d.comentarios || "", d.comentariosPrevios || "",
-          d.prioridades || "", d.riesgos || "", d.restricciones || "", d.fechaRespuesta || "", 
-          d.clasificacion || "", d.fechaAlta || new Date() 
+          d.prioridades || "", d.riesgos || "", d.restricciones || "", d.fechaRespuesta || "",
+          d.clasificacion || "", d.fechaAlta || new Date()
         ]);
         sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
         sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
@@ -914,18 +914,18 @@ function apiSavePPCData(payload, activeUser) {
   if (lock.tryLock(30000)) {
     try {
       const items = Array.isArray(payload) ? payload : [payload];
-      
+
       // 1. VERIFICACIÓN CRÍTICA DE PPCV3
       let sheetPPC = findSheetSmart(APP_CONFIG.ppcSheetName);
-      if (!sheetPPC) { 
+      if (!sheetPPC) {
         sheetPPC = SS.insertSheet(APP_CONFIG.ppcSheetName);
         // Standardize headers for robustness
         sheetPPC.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA"]);
       }
-      
+
       const fechaHoy = new Date();
       const fechaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
-      
+
       // Estructuras para Batch Operations
       const tasksBySheet = {};
       const logEntries = [];
@@ -977,7 +977,7 @@ function apiSavePPCData(payload, activeUser) {
                  'FECHA_COTIZACION': item.fechaCotizacion,
                  'CLIENTE': item.cliente
           };
-          
+
           // A. Persistencia en PPC Maestro (PPCV3)
           addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
 
@@ -1031,7 +1031,7 @@ function apiSavePPCData(payload, activeUser) {
       }
 
       return { success: true, message: "Datos procesados y distribuidos correctamente.", ids: generatedIds };
-    } catch (e) { 
+    } catch (e) {
         console.error(e);
         registrarLog(activeUser || "SYSTEM", "ERROR_CRITICO_PPC", e.toString());
         return { success: false, message: "Error al guardar: " + e.toString() };
@@ -1047,7 +1047,7 @@ function uploadFileToDrive(data, type, name) {
     const folderId = APP_CONFIG.folderIdUploads;
     let folder;
     if (folderId && folderId.trim() !== "") { try { folder = DriveApp.getFolderById(folderId); } catch(e) { folder = DriveApp.getRootFolder();
-    } } 
+    } }
     else { folder = DriveApp.getRootFolder();
     }
     const blob = Utilities.newBlob(Utilities.base64Decode(data.split(',')[1]), type, name);
@@ -1058,8 +1058,8 @@ function uploadFileToDrive(data, type, name) {
   }
 }
 
-function apiFetchPPCData() { 
-  try { 
+function apiFetchPPCData() {
+  try {
     const s = findSheetSmart(APP_CONFIG.ppcSheetName);
     if(!s) return {success:true,data:[]};
     const range = s.getDataRange();
@@ -1072,7 +1072,7 @@ function apiFetchPPCData() {
     const colMap = {
       id: headers.findIndex(h => h.includes("ID") || h.includes("FOLIO")),
       esp: headers.findIndex(h => h.includes("ESPECIALIDAD")),
-      con: headers.findIndex(h => h.includes("DESCRIPCI") || h.includes("CONCEPTO")), 
+      con: headers.findIndex(h => h.includes("DESCRIPCI") || h.includes("CONCEPTO")),
       resp: headers.findIndex(h => h.includes("RESPONSABLE") || h.includes("INVOLUCRADOS")),
       fecha: headers.findIndex(h => h.includes("FECHA") || h.includes("ALTA")),
       reloj: headers.findIndex(h => h.includes("RELOJ")),
@@ -1093,8 +1093,8 @@ function apiFetchPPCData() {
         comentariosPrevios: getVal(colMap.prev)
       };
     }).filter(x => x.concepto).reverse();
-    return { success: true, data: resultData }; 
-  } catch(e){ return {success:false, message: e.toString()} } 
+    return { success: true, data: resultData };
+  } catch(e){ return {success:false, message: e.toString()} }
 }
 
 function apiFetchWeeklyPlanData() {
@@ -1106,11 +1106,11 @@ function apiFetchWeeklyPlanData() {
     const headerRowIdx = findHeaderRow(data);
     if (headerRowIdx === -1) return { success: false, message: "Cabeceras no encontradas en PPCV3." };
     const originalHeaders = data[headerRowIdx].map(h => String(h).trim());
-    
+
     const mappedHeaders = originalHeaders.map(h => {
         const up = h.toUpperCase();
         if (up.includes("ESPECIALIDAD") || up.includes("AREA") || up.includes("DEPARTAMENTO")) return "ESPECIALIDAD";
-        if (up.includes("DESCRIPCI") || up.includes("CONCEPTO")) return "CONCEPTO"; 
+        if (up.includes("DESCRIPCI") || up.includes("CONCEPTO")) return "CONCEPTO";
         if (up.includes("INVOLUCRADOS") || up.includes("RESPONSABLE")) return "RESPONSABLE";
         if (up.includes("ALTA") || up.includes("FECHA")) return "FECHA";
         if (up.includes("RELOJ") || up.includes("HORAS")) return "RELOJ";
@@ -1118,7 +1118,7 @@ function apiFetchWeeklyPlanData() {
         if (up.includes("CUMPLIMIENTO")) return "CUMPLIMIENTO";
         if (up === "COMENTARIOS") return "COMENTARIOS SEMANA EN CURSO";
         if (up === "COMENTARIOS PREVIOS") return "COMENTARIOS SEMANA PREVIA";
-        return up; 
+        return up;
     });
     const displayHeaders = ["SEMANA", ...mappedHeaders];
     const rows = data.slice(headerRowIdx + 1);
@@ -1136,16 +1136,16 @@ function apiFetchWeeklyPlanData() {
       if (fechaVal) {
         let dateObj = null;
         if (String(fechaVal).includes("/")) {
-          const parts = String(fechaVal).split("/"); 
+          const parts = String(fechaVal).split("/");
           if(parts.length === 3) dateObj = new Date(parts[2], parts[1]-1, parts[0]);
         } else if (fechaVal instanceof Date) { dateObj = fechaVal; } else { dateObj = new Date(fechaVal); }
-        if (dateObj && !isNaN(dateObj.getTime())) semanaNum = getWeekNumber(dateObj); 
+        if (dateObj && !isNaN(dateObj.getTime())) semanaNum = getWeekNumber(dateObj);
       }
       rowObj["SEMANA"] = semanaNum;
-      
+
       return rowObj;
     }).filter(r => r["CONCEPTO"] || r["ID"] || r["FOLIO"]);
-    return { success: true, headers: displayHeaders, data: result.reverse() }; 
+    return { success: true, headers: displayHeaders, data: result.reverse() };
   } catch (e) {
     console.error(e);
     return { success: false, message: e.toString() };
@@ -1170,7 +1170,7 @@ function apiSaveSite(siteData) {
         sheet = SS.insertSheet("DB_SITIOS");
         sheet.appendRow(["ID_SITIO", "NOMBRE", "CLIENTE", "TIPO", "ESTATUS", "FECHA_CREACION", "CREADO_POR"]);
       }
-      
+
       const data = sheet.getDataRange().getValues();
       const cleanName = siteData.name.toUpperCase().trim();
       const nameColIdx = data.length > 0 ? data[0].indexOf("NOMBRE") : 1;
@@ -1185,12 +1185,12 @@ function apiSaveSite(siteData) {
         id,
         cleanName,
         siteData.client.toUpperCase().trim(),
-        siteData.type || "CLIENTE", 
+        siteData.type || "CLIENTE",
         "ACTIVO",
         new Date(),
         siteData.createdBy ? siteData.createdBy.toUpperCase().trim() : "ANONIMO"
       ]);
-      SpreadsheetApp.flush(); 
+      SpreadsheetApp.flush();
 
       // AUTOMATIZACIÓN: CREAR ESTRUCTURA ESTÁNDAR AUTOMÁTICAMENTE
       apiCreateStandardStructure(id, siteData.createdBy);
@@ -1217,10 +1217,10 @@ function apiSaveSubProject(subProjectData) {
         sheet = SS.insertSheet("DB_PROYECTOS");
         sheet.appendRow(["ID_PROYECTO", "ID_SITIO", "NOMBRE_SUBPROYECTO", "TIPO", "ESTATUS", "FECHA_CREACION", "CREADO_POR"]);
       }
-      
+
       const cleanName = subProjectData.name.toUpperCase().trim();
       const data = sheet.getDataRange().getValues();
-      let idSitioIdx = 1; 
+      let idSitioIdx = 1;
       let nameIdx = 2;
       const headerRow = findHeaderRow(data);
       if (headerRow > -1) {
@@ -1230,7 +1230,7 @@ function apiSaveSubProject(subProjectData) {
       }
 
       for(let i=1; i<data.length; i++) {
-          if (data[i][idSitioIdx] == subProjectData.parentId && 
+          if (data[i][idSitioIdx] == subProjectData.parentId &&
               String(data[i][nameIdx]).toUpperCase().trim() === cleanName) {
               return { success: false, message: "Ya existe ese subproyecto en este sitio."};
           }
@@ -1241,12 +1241,12 @@ function apiSaveSubProject(subProjectData) {
         id,
         subProjectData.parentId,
         cleanName,
-        subProjectData.type || "GENERAL", 
+        subProjectData.type || "GENERAL",
         "ACTIVO",
         new Date(),
         subProjectData.createdBy ? subProjectData.createdBy.toUpperCase().trim() : "ANONIMO"
       ]);
-      SpreadsheetApp.flush(); 
+      SpreadsheetApp.flush();
 
       registrarLog(subProjectData.createdBy || "ANONIMO", "NUEVO SUBPROYECTO", `Subproyecto: ${cleanName} (${id})`);
 
@@ -1356,7 +1356,7 @@ function apiFetchProjectTasks(projectName) {
 
     const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
     const projectTag = `[PROY: ${String(projectName).toUpperCase().trim()}]`;
-    
+
     // Indices clave
     let colIdx = {
        concepto: headers.indexOf("CONCEPTO"),
@@ -1394,14 +1394,14 @@ function apiSaveProjectTask(taskData, projectName, username) {
     try {
         const nameUpper = String(projectName).toUpperCase().trim();
         const tag = `[PROY: ${nameUpper}]`;
-        
+
         let coms = taskData['COMENTARIOS'] || "";
-        
+
         // Verificamos si ya tiene la etiqueta para no duplicar
         if (!String(coms).toUpperCase().includes(tag)) {
             taskData['COMENTARIOS'] = (coms + " " + tag).trim();
         }
-        
+
         const res = internalBatchUpdateTasks("ADMINISTRADOR", [taskData]);
         if(res.success) {
             registrarLog(username || "DESCONOCIDO", "ACTUALIZAR PROYECTO", `Proyecto: ${projectName}, ID: ${taskData['ID']||taskData['FOLIO']}`);
@@ -1434,7 +1434,7 @@ function cmdRealizarAlta() {
   const sheet = SS.getActiveSheet();
   const row = sheet.getActiveRange().getRow();
   const ui = SpreadsheetApp.getUi();
-  
+
   const dataRange = sheet.getDataRange();
   const values = dataRange.getValues();
   const headerIdx = findHeaderRow(values);
@@ -1464,12 +1464,12 @@ function cmdRealizarAlta() {
   }
 
   SS.toast("Guardando y distribuyendo tarea...", "Holtmont", 5);
-  
+
   const currentSheetName = sheet.getName();
   taskObj['ESTATUS'] = taskObj['ESTATUS'] || 'ASIGNADO';
   const involucrados = taskObj["INVOLUCRADOS"] || taskObj["RESPONSABLE"] || "";
   const listaInv = String(involucrados).split(",").map(s => s.trim()).filter(s => s);
-  
+
   internalBatchUpdateTasks("ADMINISTRADOR", [taskObj]);
   listaInv.forEach(nombre => {
     internalBatchUpdateTasks(nombre, [taskObj]);
@@ -1499,7 +1499,7 @@ function cmdActualizar() {
 
   const headers = values[headerIdx].map(h => String(h).toUpperCase().trim());
   const rowData = values[row - 1];
-  const taskObj = { _rowIndex: row }; 
+  const taskObj = { _rowIndex: row };
 
   headers.forEach((h, i) => {
     if (h) taskObj[h] = rowData[i];
@@ -1532,8 +1532,8 @@ function apiCreateStandardStructure(siteId, user) {
     STANDARD_PROJECT_STRUCTURE.forEach(name => {
         // Determinamos el tipo para que el Front sepa cómo dibujarlo
         let tipo = "GENERAL";
-        if (name.includes("PPC")) tipo = "PPC_MASTER"; 
-        
+        if (name.includes("PPC")) tipo = "PPC_MASTER";
+
         apiSaveSubProject({
             parentId: siteId,
             name: name,
