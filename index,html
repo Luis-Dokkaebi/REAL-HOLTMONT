@@ -724,118 +724,157 @@
           </div>
         </div>
 
-        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="background:#111; padding:30px; overflow-y:auto; color: #ddd;">
-            <div class="d-flex justify-content-between align-items-center mb-5 border-bottom border-secondary pb-3">
+        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="background:#f3f6f9; overflow-y:auto;">
+            <!-- HEADER -->
+            <div class="d-flex justify-content-between align-items-center px-4 py-3" style="background: #1c1c1c; color: white;">
                 <div class="d-flex align-items-center">
-                    <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" style="height:50px; margin-right:20px; filter: brightness(0) invert(1);">
+                    <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" style="height:40px; margin-right:15px; filter: brightness(0) invert(1);">
                     <div>
-                        <h3 class="fw-bold m-0 text-white" style="letter-spacing: 5px; font-family: 'Share Tech Mono', monospace;">PRE WORK ORDER</h3>
+                        <h4 class="fw-bold m-0" style="font-family: 'Roboto', sans-serif;">Holtmont Services</h4>
+                        <small style="letter-spacing: 2px; opacity: 0.7;">PRE WORK ORDER</small>
                     </div>
                 </div>
-                <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
-            </div>
-
-            <div class="card shadow-sm border-0 mb-4" style="background: #1c1c1c; border: 1px solid #333; color: #ccc;">
-                <div class="card-body p-4">
-                    <div class="row g-3">
-                         <div class="col-md-2">
-                            <label class="form-label small fw-bold text-secondary text-uppercase">1. Fecha</label>
-                            <input type="text" class="form-control bg-dark text-white border-secondary" :value="new Date().toLocaleDateString()" readonly disabled>
-                         </div>
-                         <div class="col-md-4">
-                            <label class="form-label small fw-bold text-secondary text-uppercase">2. Cliente</label>
-                            <input v-model="workorderData.cliente" class="form-control bg-dark text-white border-secondary" placeholder="Nombre del cliente">
-                         </div>
-                         <div class="col-md-3">
-                            <label class="form-label small fw-bold text-secondary text-uppercase">3. Requisitor</label>
-                            <input v-model="workorderData.requisitor" class="form-control bg-dark text-white border-secondary" placeholder="Nombre del requisitor">
-                         </div>
-                         <div class="col-md-3">
-                            <label class="form-label small fw-bold text-secondary text-uppercase">4. Contacto</label>
-                            <input v-model="workorderData.contacto" type="email" class="form-control bg-dark text-white border-secondary" placeholder="correo@ejemplo.com">
-                         </div>
-
-                         <div class="col-md-3">
-                            <label class="form-label small fw-bold text-secondary text-uppercase">5. Fecha de Entrega</label>
-                            <input v-model="workorderData.fechaEntrega" type="date" class="form-control bg-dark text-white border-secondary">
-                         </div>
-                         <div class="col-md-4">
-                            <label class="form-label small fw-bold text-secondary text-uppercase">6. Departamento (Destino)</label>
-                            <select v-model="workorderData.departamento" class="form-select bg-dark text-white border-secondary">
-                                <option value="" disabled>Seleccionar...</option>
-                                <option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option>
-                            </select>
-                         </div>
+                <div class="d-flex gap-3 align-items-center">
+                    <!-- Folio Widget -->
+                    <div class="bg-dark rounded px-3 py-2 border border-secondary">
+                        <small class="d-block text-muted" style="font-size: 10px;">Folio</small>
+                        <span class="fw-bold">{{ currentWorkorderId || 'COT-2024-XXX' }}</span>
                     </div>
+                    <!-- Date Widget -->
+                    <div class="bg-dark rounded px-3 py-2 border border-secondary">
+                        <small class="d-block text-muted" style="font-size: 10px;">Fecha</small>
+                        <span class="fw-bold">{{ new Date().toLocaleDateString() }}</span>
+                    </div>
+                    <!-- Delivery Date Widget -->
+                    <div class="bg-dark rounded px-3 py-2 border border-secondary">
+                        <small class="d-block text-muted" style="font-size: 10px;">Fecha de Entrega</small>
+                        <input type="date" v-model="workorderData.fechaEntrega" class="bg-transparent border-0 text-white p-0 fw-bold" style="font-size: 13px; width: 110px;">
+                    </div>
+                    <!-- Priority -->
+                    <select v-model="workorderData.prioridad" class="btn btn-success fw-bold border-0" :class="{'bg-danger': workorderData.prioridad.includes('Alta'), 'bg-warning text-dark': workorderData.prioridad.includes('Media')}">
+                        <option value="AAA - Alta Prioridad">AAA - Alta Prioridad</option>
+                        <option value="AA - Media Prioridad">AA - Media Prioridad</option>
+                        <option value="A - Baja Prioridad">A - Baja Prioridad</option>
+                    </select>
+                    <button class="btn btn-outline-secondary btn-sm ms-2" @click="goHome">Cerrar</button>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0" style="background: #1c1c1c; border: 1px solid #333; color: #ccc;">
-                <div class="card-body p-4">
-                    <h5 class="mb-4 text-white" style="border-left: 4px solid #0d6efd; padding-left: 15px; font-weight: 400; letter-spacing: 1px;">COTIZACIÓN PRELIMINAR</h5>
-
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-secondary d-block mb-2 text-uppercase">Tipo de Trabajo</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            <button v-for="type in workorderTypes" :key="type"
-                                class="btn btn-sm text-white"
-                                :class="workorderData.tipoTrabajo === type ? 'btn-primary' : 'btn-outline-secondary'"
-                                @click="workorderData.tipoTrabajo = type">
-                                {{ type }}
-                            </button>
+            <div class="p-4" style="max-width: 1400px; margin: 0 auto; width: 100%;">
+                <div class="row g-4">
+                    <!-- LEFT COL: CLIENT INFO -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-building me-2"></i>Información del Cliente</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Nombre de la Empresa</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-industry text-muted"></i></span>
+                                            <input v-model="workorderData.cliente" class="form-control" placeholder="Ej: Corning Optical...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Planta</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-map-marker-alt text-muted"></i></span>
+                                            <input v-model="workorderData.planta" class="form-control" placeholder="Ej: Planta Reynosa">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Contacto</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-user text-muted"></i></span>
+                                            <input v-model="workorderData.requisitor" class="form-control" placeholder="Nombre contacto">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Correo Electrónico</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-envelope text-muted"></i></span>
+                                            <input v-model="workorderData.contacto" class="form-control" placeholder="email@empresa.com">
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="small text-muted fw-bold mb-1">Teléfono</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-phone text-muted"></i></span>
+                                            <input v-model="workorderData.celular" class="form-control" placeholder="+52 ...">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-secondary text-uppercase">Elaboró</label>
-                        <input v-model="workorderData.cotizador" class="form-control bg-dark text-white border-secondary" placeholder="Nombre de quien elabora" style="max-width: 400px;">
-                    </div>
+                    <!-- RIGHT COL: WORK TYPE -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-tools me-2"></i>Tipo de Trabajo</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <button v-for="type in workorderTypes" :key="type"
+                                        class="btn btn-sm fw-bold px-3"
+                                        :class="workorderData.tipoTrabajo === type ? 'btn-primary' : 'btn-light text-muted border'"
+                                        @click="workorderData.tipoTrabajo = type">
+                                        <i class="fas fa-check me-1" v-if="workorderData.tipoTrabajo === type"></i> {{ type }}
+                                    </button>
+                                </div>
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-secondary mb-2">DESCRIPCIÓN DEL TRABAJO A REALIZAR</label>
-                        <div class="table-responsive">
-                            <table class="table table-dark table-hover table-bordered border-secondary align-middle">
-                                <thead>
-                                    <tr class="text-secondary small text-uppercase">
-                                        <th>UNIDAD</th>
-                                        <th style="width: 100px;">CANTIDAD</th>
-                                        <th style="width: 150px;">PRECIOS UNITARIOS</th>
-                                        <th style="width: 120px;">TOTAL</th>
-                                        <th style="width: 120px;">UTILIDAD</th>
-                                        <th style="width: 120px;">SUBTOTAL</th>
-                                        <th style="width: 50px;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(item, idx) in workorderData.items" :key="idx">
-                                        <td><input v-model="item.unidad" class="form-control form-control-sm bg-dark text-white border-0" placeholder="m², ml, pza..."></td>
-                                        <td><input v-model.number="item.cantidad" type="number" class="form-control form-control-sm bg-dark text-white border-0"></td>
-                                        <td><input v-model.number="item.precio" type="number" class="form-control form-control-sm bg-dark text-white border-0" placeholder="$0.00"></td>
-                                        <td class="text-white">{{ formatCurrency(item.cantidad * item.precio) }}</td>
-                                        <td><input v-model.number="item.utilidad" type="number" class="form-control form-control-sm bg-dark text-white border-0" placeholder="$0"></td>
-                                        <td class="text-white fw-bold">{{ formatCurrency((item.cantidad * item.precio) + item.utilidad) }}</td>
-                                        <td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer;" @click="removeWorkorderItem(idx)"></i></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <button class="btn btn-link text-white text-decoration-none p-0" @click="addWorkorderItem"><i class="fas fa-plus me-1"></i> Agregar línea</button>
-                    </div>
+                                <hr class="border-light my-3">
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-secondary mb-2">PROGRAMA DEL PROYECTO</label>
-                        <div class="d-flex align-items-center gap-2">
-                             <span class="text-white small">Tiempo Estimado:</span>
-                             <input v-model="workorderData.tiempoEstimado" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Ej: 2 semanas" style="max-width: 200px;">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="small text-muted fw-bold mb-1">Elaboró (Responsable Interno)</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-user-tag text-muted"></i></span>
+                                            <input v-model="workorderData.cotizador" class="form-control" placeholder="Tu nombre...">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="small text-muted fw-bold mb-1">Tiempo Estimado</label>
+                                        <input v-model="workorderData.tiempoEstimado" class="form-control form-control-sm" placeholder="Ej: 2 semanas">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="mt-5 text-end border-top border-secondary pt-3">
-                        <button class="btn btn-light fw-bold px-4" @click="saveWorkOrder" :disabled="isSubmitting">
-                            <span v-if="isSubmitting"><i class="fas fa-spinner fa-spin me-2"></i> Procesando...</span>
-                            <span v-else><i class="fas fa-save me-2"></i> GUARDAR Y GENERAR FOLIO</span>
-                        </button>
+                    <!-- BOTTOM: DESCRIPTION & MEDIA -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 d-flex justify-content-between">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-align-left me-2"></i>Descripción del Trabajo a Realizar</h6>
+                            </div>
+                            <div class="card-body position-relative">
+                                <textarea v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3" rows="5" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
+                                <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" title="Organizar con IA (Simulado)">
+                                    <i class="fas fa-magic"></i>
+                                </button>
+                            </div>
+                            <div class="card-footer bg-white border-top-0 pb-3">
+                                <h6 class="small fw-bold text-muted mb-2">Archivos Multimedia</h6>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-secondary btn-sm border-dashed" @click="openFileDialog">
+                                        <i class="fas" :class="uploadSuccess ? 'fa-check text-success' : 'fa-cloud-upload-alt'"></i> {{ uploadSuccess ? 'Archivo Cargado' : 'Subir Archivos' }}
+                                    </button>
+                                    <input type="file" ref="fileInput" class="file-input-hidden" @change="handleFileSelect">
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+
+                <div class="mt-4 text-end">
+                    <button class="btn btn-primary px-5 fw-bold shadow" @click="saveWorkOrder" :disabled="isSubmitting">
+                        <span v-if="isSubmitting"><i class="fas fa-spinner fa-spin me-2"></i> Procesando...</span>
+                        <span v-else><i class="fas fa-paper-plane me-2"></i> GUARDAR Y GENERAR FOLIO</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -1391,8 +1430,9 @@
       
       // WORKORDER STATE
       const workorderData = ref({
-          cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
-          cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: []
+          cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+          cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+          prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
       });
       const workorderTypes = ['Construcción', 'Remodelación', 'Reparación', 'Mantenimiento', 'Reconfiguración', 'Póliza', 'Inspección'];
       const currentWorkorderId = ref(null);
@@ -1737,8 +1777,9 @@
               if (currentRole.value === 'WORKORDER_USER') {
                   currentView.value = 'WORKORDER_FORM';
                   workorderData.value = {
-                      cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
-                      cotizador: '', departamento: '', fechaEntrega: '', tiempoEstimado: '', items: []
+                      cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                      cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+                      prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
                   };
               } else {
                   currentView.value='PPC_FORM';
@@ -1940,8 +1981,9 @@
                      Swal.fire({ icon:'success', title: 'Workorder Completa', text: `Folio: ${currentWorkorderId.value} actualizado con detalles.`, timer: 2000, showConfirmButton: false });
                      showExtraModal.value = false;
                      workorderData.value = {
-                         cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
-                         cotizador: '', departamento: '', fechaEntrega: '', tiempoEstimado: '', items: []
+                         cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                         cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+                         prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
                      };
                      currentWorkorderId.value = null;
                  } else {
@@ -1956,7 +1998,7 @@
       const syncQueueToBackend = () => { google.script.run.apiSyncDrafts(JSON.parse(JSON.stringify(activityQueue.value))); };
 
       const saveWorkOrder = () => {
-        if(!workorderData.value.cliente || !workorderData.value.departamento || !workorderData.value.cotizador) {
+        if(!workorderData.value.cliente || !workorderData.value.tipoTrabajo || !workorderData.value.cotizador) {
             return Swal.fire('Faltan datos obligatorios', 'Cliente, Tipo de Trabajo y quien Elaboró son requeridos.', 'warning');
         }
         isSubmitting.value = true;
@@ -1965,24 +2007,23 @@
         if(fEnt) { const parts = fEnt.split('-'); if(parts.length === 3) fEnt = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; }
 
         // Construct Rich Description (CONCEPTO)
-        let conceptoStr = `[TIPO: ${workorderData.value.tipoTrabajo || 'N/A'}] [TIEMPO: ${workorderData.value.tiempoEstimado || 'N/A'}]`;
-        if (workorderData.value.items.length > 0) {
-            conceptoStr += '\nITEMS:';
-            workorderData.value.items.forEach(it => {
-               const total = (it.cantidad||0) * (it.precio||0);
-               const sub = total + (it.utilidad||0);
-               conceptoStr += `\n- ${it.unidad} (x${it.cantidad}): $${it.precio} | Tot: $${total} (+U:$${it.utilidad}) = $${sub}`;
-            });
-        }
+        let conceptoStr = workorderData.value.conceptoDesc || '';
+        conceptoStr += `\n[TIPO: ${workorderData.value.tipoTrabajo || 'N/A'}]`;
+        if (workorderData.value.tiempoEstimado) conceptoStr += ` [TIEMPO: ${workorderData.value.tiempoEstimado}]`;
+
+        const fullClientName = workorderData.value.planta
+            ? `${workorderData.value.cliente} - ${workorderData.value.planta}`
+            : workorderData.value.cliente;
 
         const payload = {
-            cliente: workorderData.value.cliente,
-            especialidad: workorderData.value.departamento,
+            cliente: fullClientName,
+            especialidad: workorderData.value.tipoTrabajo, // Mapping Type to Area/Especialidad
             concepto: conceptoStr,
             responsable: workorderData.value.cotizador,
             requisitor: workorderData.value.requisitor,
             contacto: workorderData.value.contacto,
-            // celular: workorderData.value.celular,
+            celular: workorderData.value.celular,
+            prioridad: workorderData.value.prioridad,
             fechaRespuesta: fEnt, // Mapped to Fecha Entrega
             comentarios: '',
             horas: 0,
@@ -2001,8 +2042,9 @@
                     }).then(() => {
                         // Reset Form
                         workorderData.value = {
-                            cliente: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
-                            cotizador: '', departamento: '', fechaEntrega: '', tiempoEstimado: '', items: []
+                            cliente: '', planta: '', requisitor: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                            cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+                            prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
                         };
                         currentWorkorderId.value = null;
                     });
