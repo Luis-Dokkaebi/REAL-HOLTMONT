@@ -429,6 +429,171 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- HERRAMIENTAS REQUERIDAS (NUEVO) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #fd7e14 !important;">
+                        <h6 class="fw-bold mb-0" style="color: #e67e22;">HERRAMIENTAS REQUERIDAS</h6>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fw-bold text-dark">Total: {{ formatCurrency(toolsTotal) }}</span>
+                            <button class="btn btn-primary btn-sm fw-bold" @click="addToolItem"><i class="fas fa-plus"></i> Agregar</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0 small align-middle bg-white">
+                                <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                    <tr>
+                                        <th style="width: 80px;" class="text-center">Cantidad</th>
+                                        <th style="width: 80px;" class="text-center">Unidad</th>
+                                        <th>Descripción</th>
+                                        <th style="width: 120px;" class="text-end">Costo Unitario</th>
+                                        <th style="width: 120px;" class="text-end">Total</th>
+                                        <th style="width: 40px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
+                                        <td><input type="number" v-model="item.quantity" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
+                                        <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="-"></td>
+                                        <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent" placeholder="-"></td>
+                                        <td><input type="number" v-model="item.cost" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end" placeholder="0.00"></td>
+                                        <td class="fw-bold text-end">{{ formatCurrency(item.total) }}</td>
+                                        <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeToolItem(idx)"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EQUIPOS ESPECIALES Y ACCESORIOS (NUEVO) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #dc3545 !important;">
+                        <h6 class="fw-bold mb-0 text-danger text-uppercase">EQUIPOS ESPECIALES Y ACCESORIOS</h6>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fw-bold text-dark">Total: {{ formatCurrency(specialEquipTotal) }}</span>
+                            <button class="btn btn-primary btn-sm fw-bold" @click="addSpecialEquipItem"><i class="fas fa-plus"></i> Agregar</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0 small align-middle bg-white">
+                                <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                    <tr>
+                                        <th style="width: 80px;" class="text-center">CANTIDAD</th>
+                                        <th style="width: 80px;" class="text-center">UNIDAD</th>
+                                        <th style="width: 120px;">TIPO</th>
+                                        <th>DESCRIPCIÓN</th>
+                                        <th style="width: 150px;">ESPECIFICACIONES</th>
+                                        <th style="width: 60px;" class="text-center">DÍAS</th>
+                                        <th style="width: 60px;" class="text-center">HORAS</th>
+                                        <th style="width: 100px;" class="text-end">COSTO UNITARIO</th>
+                                        <th style="width: 100px;" class="text-end">TOTAL</th>
+                                        <th style="width: 40px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in specialEquipment.items" :key="idx">
+                                        <td><input type="number" v-model="item.quantity" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="1"></td>
+                                        <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="unidad"></td>
+                                        <td><input v-model="item.type" class="form-control form-control-sm border-0 bg-transparent" placeholder="-"></td>
+                                        <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent" placeholder="-"></td>
+                                        <td><input v-model="item.spec" class="form-control form-control-sm border-0 bg-transparent" placeholder="-"></td>
+                                        <td><input type="number" v-model="item.days" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
+                                        <td><input type="number" v-model="item.hours" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
+                                        <td><input type="number" v-model="item.cost" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end" placeholder="0"></td>
+                                        <td class="fw-bold text-end">{{ formatCurrency(item.total) }}</td>
+                                        <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeSpecialEquipItem(idx)"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- COSTOS ADICIONALES (INSUMOS, VIATICOS, TRANSPORTE) -->
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-primary mb-3 text-uppercase small" style="color: #009688 !important;">INSUMOS</h6>
+                                <input type="number" v-model="additionalCosts.insumos" class="form-control fw-bold" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-primary mb-3 text-uppercase small" style="color: #009688 !important;">VIÁTICOS</h6>
+                                <input type="number" v-model="additionalCosts.viaticos" class="form-control fw-bold" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-primary mb-3 text-uppercase small" style="color: #0d6efd !important;">TRANSPORTE DE EQUIPO Y PERSONAL</h6>
+                                <input type="number" v-model="additionalCosts.transporte" class="form-control fw-bold" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPIs DASHBOARD -->
+                <div class="card border-0 shadow-sm mt-4" style="background: #f8f9fa;">
+                    <div class="card-header bg-transparent border-0 pt-3 ps-3">
+                        <h6 class="fw-bold mb-0 text-primary"><i class="fas fa-chart-line me-2"></i>KPIs DASHBOARD</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3 mb-4">
+                            <!-- MATERIALES -->
+                            <div class="col-md-3">
+                                <div class="p-3 text-white rounded shadow-sm h-100" style="background: #0d6efd;">
+                                    <div class="small fw-bold text-uppercase mb-1" style="opacity: 0.8; font-size: 10px;">MATERIALES</div>
+                                    <div class="fw-bold fs-4">{{ formatCurrency(materialsTotal) }}</div>
+                                </div>
+                            </div>
+                            <!-- MANO DE OBRA -->
+                            <div class="col-md-3">
+                                <div class="p-3 text-white rounded shadow-sm h-100" style="background: #107c41;">
+                                    <div class="small fw-bold text-uppercase mb-1" style="opacity: 0.8; font-size: 10px;">MANO DE OBRA</div>
+                                    <div class="fw-bold fs-4">{{ formatCurrency(laborTotal) }}</div>
+                                </div>
+                            </div>
+                            <!-- HERRAMIENTAS -->
+                            <div class="col-md-3">
+                                <div class="p-3 text-white rounded shadow-sm h-100" style="background: #fd7e14;">
+                                    <div class="small fw-bold text-uppercase mb-1" style="opacity: 0.8; font-size: 10px;">HERRAMIENTAS</div>
+                                    <div class="fw-bold fs-4">{{ formatCurrency(toolsTotal) }}</div>
+                                </div>
+                            </div>
+                            <!-- EQUIPO ESPECIAL -->
+                            <div class="col-md-3">
+                                <div class="p-3 text-white rounded shadow-sm h-100" style="background: #a855f7;">
+                                    <div class="small fw-bold text-uppercase mb-1" style="opacity: 0.8; font-size: 10px;">EQUIPO ESPECIAL</div>
+                                    <div class="fw-bold fs-4">{{ formatCurrency(specialEquipTotal) }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TOTALES FINALES -->
+                        <div class="bg-white rounded p-3 shadow-sm">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-bold text-muted">Subtotal</span>
+                                <span class="fw-bold fs-5">{{ formatCurrency(dashboardSubtotal) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: #fff9db;">
+                                <span class="fw-bold text-dark">Utilidad (20%)</span>
+                                <span class="fw-bold fs-5 text-dark">{{ formatCurrency(dashboardUtility) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center p-3 rounded text-white mt-3" style="background: #6610f2;">
+                                <span class="fw-bold text-uppercase">TOTAL DEL PROYECTO</span>
+                                <span class="fw-bold fs-3">{{ formatCurrency(dashboardTotal) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1677,6 +1842,29 @@
       const updateMaterialRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.cost)||0); };
       const materialsTotal = computed(() => requiredMaterials.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
 
+      // NEW TABLES & DASHBOARD LOGIC
+      const toolsRequired = ref({ items: [{ quantity: '', unit: '', description: '', cost: '', total: 0 }] });
+      const addToolItem = () => toolsRequired.value.items.push({ quantity: '', unit: '', description: '', cost: '', total: 0 });
+      const removeToolItem = (idx) => toolsRequired.value.items.splice(idx, 1);
+      const updateToolRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.cost)||0); };
+      const toolsTotal = computed(() => toolsRequired.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+
+      const specialEquipment = ref({ items: [{ quantity: '1', unit: 'unidad', type: '', description: '', spec: '', days: '1', hours: '0', cost: '', total: 0 }] });
+      const addSpecialEquipItem = () => specialEquipment.value.items.push({ quantity: '1', unit: 'unidad', type: '', description: '', spec: '', days: '1', hours: '0', cost: '', total: 0 });
+      const removeSpecialEquipItem = (idx) => specialEquipment.value.items.splice(idx, 1);
+      const updateSpecialEquipRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.days)||0) * (parseFloat(item.cost)||0); };
+      const specialEquipTotal = computed(() => specialEquipment.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+
+      const additionalCosts = ref({ insumos: 0, viaticos: 0, transporte: 0 });
+
+      const laborTotal = computed(() => projectProgram.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+      const dashboardSubtotal = computed(() => {
+          return materialsTotal.value + laborTotal.value + toolsTotal.value + specialEquipTotal.value +
+                 (parseFloat(additionalCosts.value.insumos)||0) + (parseFloat(additionalCosts.value.viaticos)||0) + (parseFloat(additionalCosts.value.transporte)||0);
+      });
+      const dashboardUtility = computed(() => dashboardSubtotal.value * 0.20);
+      const dashboardTotal = computed(() => dashboardSubtotal.value + dashboardUtility.value);
+
       const selectedWeek = ref('');
       const currentModuleId = ref('');
 
@@ -2321,7 +2509,10 @@
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData,
-      projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal, requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal };
+      projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal, requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
+      toolsRequired, addToolItem, removeToolItem, updateToolRowTotal, toolsTotal,
+      specialEquipment, addSpecialEquipItem, removeSpecialEquipItem, updateSpecialEquipRowTotal, specialEquipTotal,
+      additionalCosts, laborTotal, dashboardSubtotal, dashboardUtility, dashboardTotal };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
