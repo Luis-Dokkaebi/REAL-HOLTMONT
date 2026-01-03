@@ -890,6 +890,76 @@
                     </button>
                 </div>
 
+                <!-- PROTOTYPE SECTION -->
+                <div class="card border-0 shadow-sm mt-5">
+                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3">
+                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>PROTOTIPO: Control de Vehículo y Cotización</h6>
+                    </div>
+                    <div class="card-body">
+                         <!-- Cotizacion Preliminar -->
+                         <div class="row mb-4 align-items-center">
+                             <div class="col-md-3"><label class="fw-bold">COTIZACION PRELIMINAR:</label></div>
+                             <div class="col-md-9"><input v-model="vehicleData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
+                         </div>
+
+                         <!-- Control Vehiculo Header -->
+                         <div class="bg-dark text-white p-2 fw-bold mb-3 small">
+                             Control de Vehículo, Tiempo de Cotización, Horarios, Gasolina, Cuidado de Vehículo, Evaluación Conducción
+                         </div>
+
+                         <div class="row">
+                             <div class="col-12">
+                                 <table class="table table-bordered table-sm small align-middle">
+                                     <tbody>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Chofer Holtmont</td>
+                                             <td><input v-model="vehicleData.chofer" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td class="fw-bold bg-light">Gasolina</td>
+                                             <td><input v-model="vehicleData.gasolina" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="20 lts"></td>
+                                             <td class="fw-bold bg-light">Hora salida (GPS)</td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Vehículo Holtmont</td>
+                                             <td><input v-model="vehicleData.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td class="fw-bold bg-light">FOTO ODOMETRO</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td><input v-model="vehicleData.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Evaluación de Manejo</td>
+                                             <td><input v-model="vehicleData.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
+                                             <td class="fw-bold bg-light">FOTO DE INDICADOR ANTES DE LLENAR GASOLINA</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td class="fw-bold bg-light">Hora llegada (GPS)</td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Multas</td>
+                                             <td><input v-model="vehicleData.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
+                                             <td class="fw-bold bg-light">FOTO INDICADOR DESPUES</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td><input v-model="vehicleData.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Verificación de Ruta</td>
+                                             <td colspan="4"><input v-model="vehicleData.ruta" class="form-control form-control-sm border-0 bg-transparent" placeholder="de Oficina a Planta"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Verificación Vehículo</td>
+                                             <td colspan="4"><input v-model="vehicleData.verifVehiculo" class="form-control form-control-sm border-0 bg-transparent" placeholder="con Video"></td>
+                                         </tr>
+                                     </tbody>
+                                 </table>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+
                 <!-- PROGRAMA DEL PROYECTO (NUEVO PROTOTIPO) -->
                 <div class="card border-0 shadow-sm mt-5">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
@@ -971,76 +1041,6 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                </div>
-
-                <!-- PROTOTYPE SECTION -->
-                <div class="card border-0 shadow-sm mt-5">
-                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3">
-                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>PROTOTIPO: Control de Vehículo y Cotización</h6>
-                    </div>
-                    <div class="card-body">
-                         <!-- Cotizacion Preliminar -->
-                         <div class="row mb-4 align-items-center">
-                             <div class="col-md-3"><label class="fw-bold">COTIZACION PRELIMINAR:</label></div>
-                             <div class="col-md-9"><input v-model="vehicleData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
-                         </div>
-
-                         <!-- Control Vehiculo Header -->
-                         <div class="bg-dark text-white p-2 fw-bold mb-3 small">
-                             Control de Vehículo, Tiempo de Cotización, Horarios, Gasolina, Cuidado de Vehículo, Evaluación Conducción
-                         </div>
-
-                         <div class="row">
-                             <div class="col-12">
-                                 <table class="table table-bordered table-sm small align-middle">
-                                     <tbody>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Chofer Holtmont</td>
-                                             <td><input v-model="vehicleData.chofer" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
-                                             <td class="fw-bold bg-light">Gasolina</td>
-                                             <td><input v-model="vehicleData.gasolina" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="20 lts"></td>
-                                             <td class="fw-bold bg-light">Hora salida (GPS)</td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Vehículo Holtmont</td>
-                                             <td><input v-model="vehicleData.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
-                                             <td class="fw-bold bg-light">FOTO ODOMETRO</td>
-                                             <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
-                                             </td>
-                                             <td><input v-model="vehicleData.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Evaluación de Manejo</td>
-                                             <td><input v-model="vehicleData.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
-                                             <td class="fw-bold bg-light">FOTO DE INDICADOR ANTES DE LLENAR GASOLINA</td>
-                                             <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
-                                             </td>
-                                             <td class="fw-bold bg-light">Hora llegada (GPS)</td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Multas</td>
-                                             <td><input v-model="vehicleData.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
-                                             <td class="fw-bold bg-light">FOTO INDICADOR DESPUES</td>
-                                             <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
-                                             </td>
-                                             <td><input v-model="vehicleData.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Verificación de Ruta</td>
-                                             <td colspan="4"><input v-model="vehicleData.ruta" class="form-control form-control-sm border-0 bg-transparent" placeholder="de Oficina a Planta"></td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Verificación Vehículo</td>
-                                             <td colspan="4"><input v-model="vehicleData.verifVehiculo" class="form-control form-control-sm border-0 bg-transparent" placeholder="con Video"></td>
-                                         </tr>
-                                     </tbody>
-                                 </table>
-                             </div>
-                         </div>
                     </div>
                 </div>
             </div>
