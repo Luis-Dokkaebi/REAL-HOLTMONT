@@ -889,6 +889,80 @@
                         <span v-else><i class="fas fa-paper-plane me-2"></i> GUARDAR Y GENERAR FOLIO</span>
                     </button>
                 </div>
+
+                <!-- PROTOTYPE SECTION -->
+                <div class="card border-0 shadow-sm mt-5">
+                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3">
+                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>PROTOTIPO: Control de Vehículo y Cotización</h6>
+                    </div>
+                    <div class="card-body">
+                         <!-- Cotizacion Preliminar -->
+                         <div class="row mb-4 align-items-center">
+                             <div class="col-md-3"><label class="fw-bold">COTIZACION PRELIMINAR:</label></div>
+                             <div class="col-md-6"><input v-model="vehicleData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
+                             <div class="col-md-3"><small class="text-muted fst-italic">Instr: se iria a sistema de Cotizaciones en automático</small></div>
+                         </div>
+
+                         <!-- Control Vehiculo Header -->
+                         <div class="bg-dark text-white p-2 fw-bold mb-3 small">
+                             Control de Vehículo, Tiempo de Cotización, Horarios, Gasolina, Cuidado de Vehículo, Evaluación Conducción
+                         </div>
+
+                         <div class="row">
+                             <div class="col-md-8">
+                                 <table class="table table-bordered table-sm small align-middle">
+                                     <tbody>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Chofer Holtmont</td>
+                                             <td><input v-model="vehicleData.chofer" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td class="fw-bold bg-light">Gasolina</td>
+                                             <td><input v-model="vehicleData.gasolina" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="20 lts"></td>
+                                             <td class="fw-bold bg-light">Hora salida (GPS)</td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Vehículo Holtmont</td>
+                                             <td><input v-model="vehicleData.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td class="fw-bold bg-light">Foto Odómetro Salida</td>
+                                             <td><input v-model="vehicleData.fotoOdometro" class="form-control form-control-sm border-0 bg-transparent" placeholder="xxxxx"></td>
+                                             <td><input v-model="vehicleData.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Evaluación de Manejo</td>
+                                             <td><input v-model="vehicleData.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
+                                             <td class="fw-bold bg-light">Foto indicador antes</td>
+                                             <td><input class="form-control form-control-sm border-0 bg-transparent" type="file"></td>
+                                             <td class="fw-bold bg-light">Hora llegada (GPS)</td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Multas</td>
+                                             <td><input v-model="vehicleData.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
+                                             <td class="fw-bold bg-light">Foto tanque despues</td>
+                                             <td><input class="form-control form-control-sm border-0 bg-transparent" type="file"></td>
+                                             <td><input v-model="vehicleData.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Verificación de Ruta</td>
+                                             <td colspan="4"><input v-model="vehicleData.ruta" class="form-control form-control-sm border-0 bg-transparent" placeholder="de Oficina a Planta"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Verificación Vehículo</td>
+                                             <td colspan="4"><input v-model="vehicleData.verifVehiculo" class="form-control form-control-sm border-0 bg-transparent" placeholder="con Video"></td>
+                                         </tr>
+                                     </tbody>
+                                 </table>
+                             </div>
+                             <div class="col-md-4">
+                                 <div class="alert alert-warning">
+                                     <h6 class="fw-bold"><i class="fas fa-lightbulb me-2"></i>NUEVO a desarrollar</h6>
+                                     <p class="small mb-0">Lógica el control de los vehículo. Esto va generar un costo que se va ir a la integracion del costo de ir dando a un levantamiento, se requiere controlar los robos de partes, gasolina , tiempo perdidos y rendimientos , se generarían bonos por buen manejos ( Teoría de la Economía Conductual )</p>
+                                 </div>
+                             </div>
+                         </div>
+                         <div class="text-center mt-2">
+                             <small class="text-danger fw-bold fst-italic">esto para evitar que lo traigan chocado o con daños hay que saber como sale y como llega</small>
+                         </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1509,6 +1583,7 @@
       const priorityOpts = ['URGENTE', 'MEDIA', 'BAJA']; const riskOpts = ['ALTO', 'BAJO', 'CATASTROFICO'];
       const cellFileInput = ref(null); const uploadingCell = ref({row:null, col:null});
       const dynamicPpc = ref({ especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' });
+      const vehicleData = ref({});
 
       const selectedWeek = ref(''); 
       const currentModuleId = ref('');
@@ -2115,7 +2190,8 @@
             fechaRespuesta: fEnt, // Mapped to Fecha Entrega
             comentarios: '',
             horas: 0,
-            cumplimiento: 'NO'
+            cumplimiento: 'NO',
+            TRABAJO: workorderData.value.tipoTrabajo
         };
 
         google.script.run.withSuccessHandler(res => {
@@ -2152,7 +2228,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
       
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, 
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio };
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
