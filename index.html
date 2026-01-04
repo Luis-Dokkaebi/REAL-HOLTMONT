@@ -316,6 +316,14 @@
         border-radius: 4px;
         margin-top: 4px;
     }
+
+    /* ESTILOS NUEVOS MANO DE OBRA (User Request) */
+    .card-summary-blue { background: #e1f5fe; color: #0277bd; border: none; }
+    .card-summary-green { background: #e8f5e9; color: #2e7d32; border: none; }
+    .card-summary-orange { background: #fff3e0; color: #ef6c00; border: none; }
+    .card-summary-purple { background: #f3e5f5; color: #7b1fa2; border: none; }
+    .card-factor { background: #f8f9fa; border: 1px solid #e9ecef; }
+    .total-mo-badge { background: #0d6efd; color: white; border-radius: 8px; padding: 8px 15px; font-weight: bold; font-size: 1.1rem; display: block; text-align: center; }
   </style>
 </head>
 <body>
@@ -1358,78 +1366,106 @@
                     </div>
                 </div>
 
-                <!-- MANO DE OBRA (NUEVO) -->
+                <!-- MANO DE OBRA (NUEVO DISEÑO) -->
                 <div class="card border-0 shadow-sm mt-4">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #107c41 !important;">
                          <h6 class="fw-bold mb-0 text-primary text-uppercase">MANO DE OBRA</h6>
                          <div class="d-flex align-items-center gap-3">
-                            <span class="fw-bold text-dark">Total: {{ formatCurrency(laborTotal) }}</span>
-                            <button class="btn btn-primary btn-sm fw-bold" @click="addLaborItem"><i class="fas fa-plus"></i> Agregar</button>
+                            <button class="btn btn-light btn-sm border" @click="addLaborItem"><i class="fas fa-user-plus text-muted"></i> invite collaborators</button>
                          </div>
                     </div>
                     <div class="card-body p-0">
-                        <div class="logic-card m-2">
-                            <div class="logic-header"><span class="logic-icon">💡</span> LÓGICA DE LAS HORAS Y SUELDOS</div>
-                            <div class="logic-content">Es muy importante ya que hay muchos trabajos de fin de semana o turno de noche los cuales se deben agregar costos u horas extra.</div>
-                        </div>
                         <div class="table-responsive">
-                            <table class="table table-bordered mb-0 small align-middle bg-white">
-                                <thead class="table-light text-muted text-uppercase" style="font-size: 10px;">
-                                    <tr>
-                                        <th style="width:40px" class="text-center">No.</th>
-                                        <th>CATEGORÍA</th>
-                                        <th class="text-center">SALARIO SEMANAL</th>
-                                        <th class="text-center">PERSONAL</th>
-                                        <th class="text-center">SEMANAS</th>
-                                        <th class="text-center">HORAS EXTRA</th>
-                                        <th class="text-center">HORARIO NOCTURNO</th>
-                                        <th class="text-center">TRABAJO FIN DE SEMANA</th>
-                                        <th class="text-center">OTROS</th>
-                                        <th class="text-end">TOTAL</th>
-                                        <th style="width:40px"></th>
-                                    </tr>
-                                </thead>
+                            <table class="table table-borderless mb-0 small align-middle bg-white">
                                 <tbody>
-                                    <tr v-for="(item, idx) in laborTable.items" :key="idx">
-                                        <td class="text-center fw-bold">{{ idx + 1 }}</td>
-                                        <td><input v-model="item.category" class="form-control form-control-sm border-0 bg-transparent" placeholder="Puesto"></td>
-                                        <td><input type="number" v-model="item.salary" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                        <td><input type="number" v-model="item.personnel" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                        <td><input type="number" v-model="item.weeks" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                        <td><input type="number" v-model="item.overtime" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                        <td><input type="number" v-model="item.night" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                        <td><input type="number" v-model="item.weekend" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                        <td><input type="number" v-model="item.others" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                        <td class="fw-bold text-end">{{ formatCurrency(item.total) }}</td>
-                                        <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeLaborItem(idx)"></i></td>
+                                    <tr v-for="(item, idx) in laborTable.items" :key="idx" class="border-bottom">
+                                        <td class="text-center text-muted" style="width:30px">{{ idx + 1 }}</td>
+                                        <td style="width: 50px;"><input type="number" v-model="item.personnel" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 text-center fw-bold bg-light" placeholder="#" title="Cantidad de Personal"></td>
+                                        <td><input v-model="item.category" class="form-control form-control-sm border-0 fw-bold" placeholder="Puesto"></td>
+                                        <td class="text-end"><input type="number" v-model="item.salary" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 text-end" placeholder="$0"></td>
+                                        <td class="fw-bold text-end" style="font-size: 1.1em;">{{ formatCurrency(item.total) }}</td>
+                                        <td class="text-center" style="width:30px"><i class="fas fa-times text-muted small" style="cursor: pointer;" @click="removeLaborItem(idx)"></i></td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <div class="p-3 bg-light">
+
+                        <div class="p-4 bg-white">
+                            <!-- SUMMARY CARDS -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <div class="card-summary-blue p-3 rounded h-100">
+                                        <div class="small text-muted mb-1"><i class="fas fa-users me-1"></i> Total Personal</div>
+                                        <div class="fs-2 fw-bold text-primary">{{ totalPersonnel }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-summary-green p-3 rounded h-100">
+                                        <div class="small text-muted mb-1"><i class="fas fa-dollar-sign me-1"></i> Costo Semanal Cuadrilla</div>
+                                        <div class="fs-3 fw-bold text-success">{{ formatCurrency(crewWeeklyCost) }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-summary-orange p-3 rounded h-100">
+                                        <div class="small text-muted mb-1"><i class="fas fa-clock me-1"></i> 6% Herr. y EPP</div>
+                                        <div class="fs-3 fw-bold text-warning" style="color: #ef6c00 !important;">{{ formatCurrency(overheadEPP) }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card-summary-purple p-3 rounded h-100">
+                                        <div class="small text-muted mb-1"><i class="fas fa-wallet me-1"></i> Costo Neto x Semana</div>
+                                        <div class="fs-3 fw-bold" style="color: #7b1fa2;">{{ formatCurrency(weeklyNetCost) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- INPUTS ROW -->
+                            <div class="row g-3 align-items-end mb-4">
+                                <div class="col-md-3">
+                                    <label class="small text-muted mb-1">Semanas Requeridas</label>
+                                    <input type="number" v-model="laborWeeks" class="form-control bg-light border-0 fw-bold">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small text-muted mb-1">Horas Requeridas</label>
+                                    <input :value="totalLaborHours" class="form-control bg-light border-0 fw-bold" readonly>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small text-muted mb-1">Costo por Hora</label>
+                                    <input :value="formatCurrency(crewHourlyRate).replace('$','')" class="form-control bg-light border-0 fw-bold" readonly>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="small text-primary fw-bold mb-1">Total M.O.</label>
+                                    <div class="total-mo-badge shadow-sm">{{ formatCurrency(laborTotal) }}</div>
+                                </div>
+                            </div>
+
+                            <!-- EXTRA COSTS CARDS -->
                             <div class="row g-3">
-                                <div class="col-md-3">
-                                    <div class="p-3 bg-white border rounded shadow-sm h-100">
-                                        <div class="small fw-bold text-uppercase text-primary mb-1">TOTAL DE PERSONAL</div>
-                                        <div class="fs-4 fw-bold text-dark">{{ totalPersonnel }}</div>
+                                <div class="col-md-4">
+                                    <div class="card-factor p-3 rounded h-100">
+                                        <div class="d-flex align-items-center mb-2 text-warning">
+                                            <i class="far fa-clock me-2"></i> <span class="fw-bold text-dark">Horas Extras</span>
+                                        </div>
+                                        <input type="number" v-model="workorderData.laborParams.extraHours" class="form-control bg-white mb-2" placeholder="0">
+                                        <small class="text-muted">Factor: 2x</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="p-3 bg-white border rounded shadow-sm h-100" style="border-left: 4px solid #28a745 !important;">
-                                        <div class="small fw-bold text-uppercase text-success mb-1">COSTO POR SEMANA DE CUADRILLA</div>
-                                        <div class="fs-4 fw-bold text-success">{{ formatCurrency(costPerWeekCrew) }}</div>
+                                <div class="col-md-4">
+                                    <div class="card-factor p-3 rounded h-100">
+                                        <div class="d-flex align-items-center mb-2 text-primary">
+                                            <i class="far fa-moon me-2"></i> <span class="fw-bold text-dark">Nocturno</span>
+                                        </div>
+                                        <input type="number" v-model="workorderData.laborParams.nightHours" class="form-control bg-white mb-2" placeholder="0">
+                                        <small class="text-muted">Factor: 1.35x</small>
                                     </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="p-3 bg-white border rounded shadow-sm h-100" style="border-left: 4px solid #fd7e14 !important;">
-                                        <div class="small fw-bold text-uppercase text-warning mb-1" style="color:#fd7e14 !important">SEMANAS REQUERIDAS</div>
-                                        <div class="fs-4 fw-bold text-warning" style="color:#fd7e14 !important">{{ weeksRequired }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="p-3 bg-white border rounded shadow-sm h-100" style="border-left: 4px solid #6f42c1 !important;">
-                                        <div class="small fw-bold text-uppercase text-primary mb-1" style="color:#6f42c1 !important">TOTAL MANO DE OBRA</div>
-                                        <div class="fs-4 fw-bold text-primary" style="color:#6f42c1 !important">{{ formatCurrency(laborTotal) }}</div>
+                                <div class="col-md-4">
+                                    <div class="card-factor p-3 rounded h-100">
+                                        <div class="d-flex align-items-center mb-2 text-danger">
+                                            <i class="far fa-calendar me-2"></i> <span class="fw-bold text-dark">Fin de Semana</span>
+                                        </div>
+                                        <input type="number" v-model="workorderData.laborParams.weekendHours" class="form-control bg-white mb-2" placeholder="0">
+                                        <small class="text-muted">Factor: 2x</small>
                                     </div>
                                 </div>
                             </div>
@@ -1710,27 +1746,31 @@
                             </div>
                         </div>
 
-                        <!-- TOTALES FINALES -->
-                        <div class="bg-white rounded p-3 shadow-sm">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-muted">Subtotal</span>
-                                <span class="fw-bold fs-5">{{ formatCurrency(dashboardSubtotal) }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mb-2 p-2 rounded" style="background: #fff9db;">
-                                <span class="fw-bold text-dark">Utilidad (20%)</span>
-                                <span class="fw-bold fs-5 text-dark">{{ formatCurrency(dashboardUtility) }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center p-3 rounded text-white mt-3" style="background: #6610f2;">
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="fw-bold text-uppercase">TOTAL COTIZACIÓN</span>
-                                    <span class="fw-bold fs-3">{{ formatCurrency(dashboardTotal) }}</span>
+                        <!-- TOTALS FOOTER (NUEVO DISEÑO) -->
+                        <div class="mt-5 p-4 rounded shadow-sm" style="background: #f0f4f8;">
+                            <div class="row align-items-center">
+                                <!-- Subtotal -->
+                                <div class="col-md-3 border-end">
+                                    <div class="text-muted small mb-1"><i class="far fa-list-alt"></i> Subtotal</div>
+                                    <div class="fs-4 fw-bold text-dark">{{ formatCurrency(dashboardSubtotal) }} MXN</div>
                                 </div>
-                                <div class="d-flex gap-2">
-                                     <button class="btn btn-light fw-bold" style="color: #6610f2;" @click="saveWorkOrder" :disabled="isSubmitting">
-                                        <i class="fas fa-save me-1"></i> Guardar Borrador
+                                <!-- Utilidad -->
+                                <div class="col-md-3 border-end">
+                                    <div class="text-muted small mb-1"><i class="fas fa-chart-line"></i> Utilidad (P1) 15%</div>
+                                    <div class="fs-4 fw-bold text-success">+{{ formatCurrency(dashboardUtility) }} MXN</div>
+                                </div>
+                                <!-- Total -->
+                                <div class="col-md-3">
+                                    <div class="text-primary small fw-bold mb-1">$ TOTAL COTIZACIÓN</div>
+                                    <div class="fs-3 fw-bold text-primary">{{ formatCurrency(dashboardTotal) }} MXN</div>
+                                </div>
+                                <!-- Buttons -->
+                                <div class="col-md-3 text-end">
+                                     <button class="btn btn-outline-secondary fw-bold me-2" @click="saveWorkOrder" :disabled="isSubmitting">
+                                        <i class="far fa-save me-1"></i> Guardar Borrador
                                      </button>
-                                     <button class="btn btn-info fw-bold text-white border-white" @click="saveWorkOrder" :disabled="isSubmitting">
-                                        <i class="fas fa-paper-plane me-1"></i> Generar Cotización
+                                     <button class="btn btn-primary fw-bold" style="background-color: #0d6efd;" @click="saveWorkOrder" :disabled="isSubmitting">
+                                        <i class="fas fa-dollar-sign me-1"></i> Generar Cotización
                                      </button>
                                 </div>
                             </div>
@@ -2426,35 +2466,42 @@
       const removeProjectItem = (idx) => projectProgram.value.items.splice(idx, 1);
       const updateProjectRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.price)||0); };
 
-      // MANO DE OBRA STATE
-      const laborTable = ref({ items: [{ category: 'Albañil', salary: '1200', personnel: '1', weeks: '1', overtime: '0', night: '0', weekend: '0', others: '0', total: 1200 }] });
-      const addLaborItem = () => laborTable.value.items.push({ category: '', salary: '', personnel: '', weeks: '', overtime: '0', night: '0', weekend: '0', others: '0', total: 0 });
+      // MANO DE OBRA STATE (UPDATED DESIGN)
+      const laborTable = ref({ items: [{ category: 'Ayudante General', salary: '2800', personnel: '1', total: 2800 }] });
+      const addLaborItem = () => laborTable.value.items.push({ category: '', salary: '', personnel: '', total: 0 });
       const removeLaborItem = (idx) => laborTable.value.items.splice(idx, 1);
       const updateLaborRowTotal = (item) => {
-           const salary = parseFloat(item.salary) || 0;
-           const personnel = parseFloat(item.personnel) || 0;
-           const weeks = parseFloat(item.weeks) || 0;
-           const overtime = parseFloat(item.overtime) || 0; // Hours
-           const night = parseFloat(item.night) || 0; // Hours
-           const weekend = parseFloat(item.weekend) || 0; // Hours
-           const others = parseFloat(item.others) || 0; // Money
-
-           const base = salary * personnel * weeks;
-           // Assumption: Weekly salary based on 40 hours. Overtime 1.5x, Night/Weekend 2.0x
-           const hourlyRate = salary / 40;
-           const extraCost = (overtime * hourlyRate * 1.5) + (night * hourlyRate * 2) + (weekend * hourlyRate * 2);
-           item.total = base + extraCost + others;
+           item.total = (parseFloat(item.salary)||0) * (parseFloat(item.personnel)||0);
       };
       // Initial calculation for default item
       updateLaborRowTotal(laborTable.value.items[0]);
 
-      const laborTableTotal = computed(() => laborTable.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
       const totalPersonnel = computed(() => laborTable.value.items.reduce((acc, item) => acc + (parseFloat(item.personnel)||0), 0));
-      const costPerWeekCrew = computed(() => laborTable.value.items.reduce((acc, item) => acc + ((parseFloat(item.salary)||0) * (parseFloat(item.personnel)||0)), 0));
-      const weeksRequired = computed(() => {
-          const max = Math.max(...laborTable.value.items.map(i => parseFloat(i.weeks)||0));
-          return max === -Infinity ? 0 : max;
+      const crewWeeklyCost = computed(() => laborTable.value.items.reduce((acc, item) => acc + ((parseFloat(item.salary)||0) * (parseFloat(item.personnel)||0)), 0));
+      const overheadEPP = computed(() => crewWeeklyCost.value * 0.06);
+      const weeklyNetCost = computed(() => crewWeeklyCost.value + overheadEPP.value);
+
+      const laborWeeks = computed({
+          get: () => workorderData.value.laborParams ? workorderData.value.laborParams.weeks : 1,
+          set: (v) => { if(workorderData.value.laborParams) workorderData.value.laborParams.weeks = v; }
       });
+
+      // Assuming 48 hours per week standard
+      const totalLaborHours = computed(() => (parseFloat(laborWeeks.value)||0) * 48);
+      const crewHourlyRate = computed(() => 48 > 0 ? (weeklyNetCost.value / 48) : 0);
+
+      const laborBaseTotal = computed(() => weeklyNetCost.value * (parseFloat(laborWeeks.value)||0));
+
+      const laborExtrasTotal = computed(() => {
+          if(!workorderData.value.laborParams) return 0;
+          const p = workorderData.value.laborParams;
+          const rate = crewHourlyRate.value;
+          return ((parseFloat(p.extraHours)||0) * rate * 2) +
+                 ((parseFloat(p.nightHours)||0) * rate * 1.35) +
+                 ((parseFloat(p.weekendHours)||0) * rate * 2);
+      });
+
+      const laborTotal = computed(() => laborBaseTotal.value + laborExtrasTotal.value);
 
       const requiredMaterials = ref({ items: [{
           quantity: '', unit: '', type: '', description: '', cost: '', spec: '', total: 0,
@@ -2529,12 +2576,12 @@
       const additionalCosts = ref({ insumos: 0, viaticos: 0, transporte: 0 });
 
       // const laborTotal = computed(() => projectProgram.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
-      const laborTotal = computed(() => laborTableTotal.value); // Use new Labor Table
+      // laborTotal is now defined above
       const dashboardSubtotal = computed(() => {
           return materialsTotal.value + laborTotal.value + toolsTotal.value + specialEquipTotal.value +
                  (parseFloat(additionalCosts.value.insumos)||0) + (parseFloat(additionalCosts.value.viaticos)||0) + (parseFloat(additionalCosts.value.transporte)||0);
       });
-      const dashboardUtility = computed(() => dashboardSubtotal.value * 0.20);
+      const dashboardUtility = computed(() => dashboardSubtotal.value * 0.15); // Changed to 15% per design
       const dashboardTotal = computed(() => dashboardSubtotal.value + dashboardUtility.value);
 
       const selectedFinancing = ref(null); // Financing toggle state
@@ -2904,7 +2951,8 @@
                       checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
                       restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
                       files: [],
-                      designValidation: { items: [{ diseno: [], maquinados: [], dibujos: [] }] }
+                      designValidation: { items: [{ diseno: [], maquinados: [], dibujos: [] }] },
+                      laborParams: { weeks: 3, extraHours: 0, nightHours: 0, weekendHours: 0 }
                   };
               } else {
                   currentView.value='PPC_FORM';
@@ -3159,6 +3207,15 @@
         conceptoStr += `\n[TIPO: ${workorderData.value.tipoTrabajo || 'N/A'}]`;
         if (workorderData.value.tiempoEstimado) conceptoStr += ` [TIEMPO: ${workorderData.value.tiempoEstimado}]`;
 
+        // Serialize Labor Data
+        const lp = workorderData.value.laborParams || {};
+        conceptoStr += `\n\n[MANO DE OBRA DETALLE]`;
+        conceptoStr += `\nSemanas: ${lp.weeks || 0}`;
+        conceptoStr += `\nHoras Extra: ${lp.extraHours || 0}`;
+        conceptoStr += `\nNocturno: ${lp.nightHours || 0}`;
+        conceptoStr += `\nFin de Semana: ${lp.weekendHours || 0}`;
+        conceptoStr += `\nTotal MO: ${formatCurrency(laborTotal.value)}`;
+
         // Serialize Vehicle Control Data
         const vCtrl = vehicleControlData.value;
         if (Object.keys(vCtrl).length > 0) {
@@ -3260,9 +3317,10 @@
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, showWorkOrderLogic, triggerUpload,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
-      laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
+      laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, totalPersonnel, crewWeeklyCost, overheadEPP, weeklyNetCost, laborWeeks, totalLaborHours, crewHourlyRate, laborBaseTotal, laborExtrasTotal,
       requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
       toolsRequired, addToolItem, removeToolItem, updateToolRowTotal, toolsTotal,
+      designValidation: workorderData.value.designValidation, addDesignRow, removeDesignRow, triggerDesignUpload, handleDesignFileSelect, designFileInput,
       specialEquipment, addSpecialEquipItem, removeSpecialEquipItem, updateSpecialEquipRowTotal, specialEquipTotal,
       additionalCosts, laborTotal, dashboardSubtotal, dashboardUtility, dashboardTotal,
       selectedFinancing };
