@@ -1044,6 +1044,11 @@
                                         <label class="small fw-bold text-muted">Especificidad Trabajo</label>
                                         <input v-model="workorderData.restricciones.especificidad" class="form-control" placeholder="Detalles específicos...">
                                     </div>
+                                    <div class="col-12">
+                                        <div class="alert alert-light border small text-muted p-2 mt-2">
+                                            <strong class="text-danger">Lógica de restricciones:</strong> se requiere que el cotizador pueda tener una guía rápida que le permita preguntar al cliente puntos clave que afectan el costo de la cotización.
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1054,6 +1059,9 @@
                                 <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DOCUMENTACIÓN Y HERRAMIENTAS</h6>
                             </div>
                             <div class="card-body">
+                                <div class="alert alert-light border small text-muted p-2 mb-3">
+                                    <strong class="text-danger">Lógica de Botones:</strong> se requiere que los cotizadores puedan de forma ordenada capturar foto ordenadas con una Tablet, videos, también que puedan rallar la fotos para tomar notas muy visuales así como también puedan hacer layout dibujado digital, así como también archivar planos y los alcances del proyecto.
+                                </div>
                                 <div class="d-flex flex-wrap gap-3">
                                     <button class="btn btn-outline-dark" @click="triggerUpload('FOTOS')"><i class="fas fa-camera me-2"></i>FOTOS</button>
                                     <button class="btn btn-outline-dark" @click="triggerUpload('VIDEOS')"><i class="fas fa-video me-2"></i>VIDEOS</button>
@@ -1062,8 +1070,14 @@
 
                                     <div class="vr mx-2"></div>
 
-                                    <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
-                                    <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
+                                    <div class="d-flex flex-column">
+                                        <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
+                                        <small class="text-danger fst-italic mt-1" style="font-size: 0.7rem; max-width: 200px;">Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
+                                        <small class="text-danger fst-italic mt-1" style="font-size: 0.7rem; max-width: 200px;">Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
+                                    </div>
                                 </div>
                                 <div v-if="workorderData.files && workorderData.files.length" class="mt-3">
                                     <h6 class="small fw-bold text-muted">Archivos Adjuntos:</h6>
@@ -1191,6 +1205,14 @@
                                     </select>
                                 </div>
 
+                                <!-- Responsable Column -->
+                                <div style="width: 140px;">
+                                    <select v-model="item.responsable" class="form-select form-select-sm" style="font-size: 0.8rem;">
+                                        <option value="">Responsable...</option>
+                                        <option v-for="p in (config.directory || config.staff)" :key="p.name" :value="p.name">{{ p.name }}</option>
+                                    </select>
+                                </div>
+
                                 <!-- New Columns requested by user -->
                                 <input v-model="item.unit" class="form-control form-control-sm" placeholder="Unidad" style="width: 70px;">
                                 <input type="number" v-model="item.quantity" @input="updateProjectRowTotal(item)" class="form-control form-control-sm" placeholder="Cant" style="width: 70px;">
@@ -1308,6 +1330,9 @@
                          </div>
                     </div>
                     <div class="card-body p-0">
+                        <div class="alert alert-light border small text-muted p-2 m-2">
+                            <strong class="text-danger">Lógica de las horas y sueldos:</strong> es muy importante ya que hay muchos trabajos de fin de semana o turno de noche los cuales se deben agregar costos u horas extra.
+                        </div>
                         <div class="table-responsive">
                             <table class="table table-bordered mb-0 small align-middle bg-white">
                                 <thead class="table-light text-muted text-uppercase" style="font-size: 10px;">
@@ -2256,8 +2281,8 @@
       const showWorkOrderLogic = ref(true); // Logic display state
 
       // PROTOTYPES STATE
-      const projectProgram = ref({ timeEstimated: 1, timeUnit: 'dias', items: [{ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 }] });
-      const addProjectItem = () => projectProgram.value.items.push({ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 });
+      const projectProgram = ref({ timeEstimated: 1, timeUnit: 'dias', items: [{ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: '' }] });
+      const addProjectItem = () => projectProgram.value.items.push({ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: '' });
       const removeProjectItem = (idx) => projectProgram.value.items.splice(idx, 1);
       const updateProjectRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.price)||0); };
 
