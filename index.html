@@ -1398,6 +1398,86 @@
                     </div>
                 </div>
 
+                <!-- DISEÑO / MAQUINADOS / DIBUJOS (NUEVO) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
+                         <h6 class="fw-bold mb-0 text-dark text-uppercase">DISEÑO / MAQUINADOS / DIBUJOS</h6>
+                         <div class="d-flex align-items-center gap-3">
+                            <button class="btn btn-primary btn-sm fw-bold" @click="addDesignRow"><i class="fas fa-plus"></i> Agregar</button>
+                         </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="alert alert-light border small text-muted p-2 m-2">
+                            <strong class="text-danger">Instrucción:</strong> En la work order se requiere cargar archivos de planos para que el residente siempre tenga los correctos.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0 small align-middle bg-white">
+                                <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                    <tr>
+                                        <th class="text-center" style="width: 33%;">DISEÑO</th>
+                                        <th class="text-center" style="width: 33%;">MAQUINADOS</th>
+                                        <th class="text-center" style="width: 33%;">DIBUJOS</th>
+                                        <th style="width: 40px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in workorderData.designValidation.items" :key="idx">
+                                        <!-- DISEÑO -->
+                                        <td class="align-top p-2">
+                                            <div class="d-flex gap-1 mb-2 justify-content-center flex-wrap">
+                                                <button class="btn btn-sm btn-outline-danger py-1 px-2 d-flex align-items-center gap-1" title="Subir Video" @click="triggerDesignUpload(idx, 'diseno', 'VIDEO')"><i class="fas fa-video"></i> Videos</button>
+                                                <button class="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1" title="Subir Foto" @click="triggerDesignUpload(idx, 'diseno', 'FOTO')"><i class="fas fa-image"></i> Fotos</button>
+                                                <button class="btn btn-sm btn-outline-primary py-1 px-2 d-flex align-items-center gap-1" title="Subir Plano" @click="triggerDesignUpload(idx, 'diseno', 'PLANO')"><i class="fas fa-file-alt"></i> Planos</button>
+                                            </div>
+                                            <div class="d-flex flex-column gap-1">
+                                                <div v-for="(f, fIdx) in item.diseno" :key="fIdx" class="d-flex align-items-center justify-content-between bg-light border rounded px-2 py-1">
+                                                    <a :href="f.url" target="_blank" class="text-decoration-none text-truncate small" :title="f.name" style="max-width: 150px;">
+                                                        <i class="fas" :class="{'fa-video text-danger': f.type==='VIDEO', 'fa-image text-success': f.type==='FOTO', 'fa-file-alt text-primary': f.type==='PLANO'}"></i> {{ f.name }}
+                                                    </a>
+                                                    <i class="fas fa-times text-danger small" style="cursor:pointer" @click="item.diseno.splice(fIdx, 1)"></i>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <!-- MAQUINADOS -->
+                                        <td class="align-top p-2">
+                                            <div class="d-flex gap-1 mb-2 justify-content-center flex-wrap">
+                                                <button class="btn btn-sm btn-outline-danger py-1 px-2 d-flex align-items-center gap-1" title="Subir Video" @click="triggerDesignUpload(idx, 'maquinados', 'VIDEO')"><i class="fas fa-video"></i> Videos</button>
+                                                <button class="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1" title="Subir Foto" @click="triggerDesignUpload(idx, 'maquinados', 'FOTO')"><i class="fas fa-image"></i> Fotos</button>
+                                                <button class="btn btn-sm btn-outline-primary py-1 px-2 d-flex align-items-center gap-1" title="Subir Plano" @click="triggerDesignUpload(idx, 'maquinados', 'PLANO')"><i class="fas fa-file-alt"></i> Planos</button>
+                                            </div>
+                                             <div class="d-flex flex-column gap-1">
+                                                <div v-for="(f, fIdx) in item.maquinados" :key="fIdx" class="d-flex align-items-center justify-content-between bg-light border rounded px-2 py-1">
+                                                    <a :href="f.url" target="_blank" class="text-decoration-none text-truncate small" :title="f.name" style="max-width: 150px;">
+                                                        <i class="fas" :class="{'fa-video text-danger': f.type==='VIDEO', 'fa-image text-success': f.type==='FOTO', 'fa-file-alt text-primary': f.type==='PLANO'}"></i> {{ f.name }}
+                                                    </a>
+                                                    <i class="fas fa-times text-danger small" style="cursor:pointer" @click="item.maquinados.splice(fIdx, 1)"></i>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <!-- DIBUJOS -->
+                                        <td class="align-top p-2">
+                                            <div class="d-flex gap-1 mb-2 justify-content-center flex-wrap">
+                                                <button class="btn btn-sm btn-outline-danger py-1 px-2 d-flex align-items-center gap-1" title="Subir Video" @click="triggerDesignUpload(idx, 'dibujos', 'VIDEO')"><i class="fas fa-video"></i> Videos</button>
+                                                <button class="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1" title="Subir Foto" @click="triggerDesignUpload(idx, 'dibujos', 'FOTO')"><i class="fas fa-image"></i> Fotos</button>
+                                                <button class="btn btn-sm btn-outline-primary py-1 px-2 d-flex align-items-center gap-1" title="Subir Plano" @click="triggerDesignUpload(idx, 'dibujos', 'PLANO')"><i class="fas fa-file-alt"></i> Planos</button>
+                                            </div>
+                                             <div class="d-flex flex-column gap-1">
+                                                <div v-for="(f, fIdx) in item.dibujos" :key="fIdx" class="d-flex align-items-center justify-content-between bg-light border rounded px-2 py-1">
+                                                    <a :href="f.url" target="_blank" class="text-decoration-none text-truncate small" :title="f.name" style="max-width: 150px;">
+                                                        <i class="fas" :class="{'fa-video text-danger': f.type==='VIDEO', 'fa-image text-success': f.type==='FOTO', 'fa-file-alt text-primary': f.type==='PLANO'}"></i> {{ f.name }}
+                                                    </a>
+                                                    <i class="fas fa-times text-danger small" style="cursor:pointer" @click="item.dibujos.splice(fIdx, 1)"></i>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center align-middle"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeDesignRow(idx)"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- HERRAMIENTAS REQUERIDAS & PAPA CALIENTE -->
                 <div class="row g-4 mt-4">
                     <!-- HERRAMIENTAS REQUERIDAS -->
@@ -2075,6 +2155,7 @@
   </div>
 
   <input type="file" ref="cellFileInput" class="file-input-hidden" @change="handleCellFile">
+  <input type="file" ref="designFileInput" class="file-input-hidden" @change="handleDesignFileSelect">
 
   <div v-if="showExtraModal" class="custom-modal-overlay">
       <div class="custom-modal">
@@ -2195,7 +2276,8 @@
           prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
           checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
           restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
-          files: []
+          files: [],
+          designValidation: { items: [{ diseno: [], maquinados: [], dibujos: [] }] }
       });
       const workorderTypes = ['Construcción', 'Remodelación', 'Reparación', 'Mantenimiento', 'Reconfiguración', 'Póliza', 'Inspección'];
       const currentWorkorderId = ref(null);
@@ -2340,6 +2422,45 @@
       const removeToolItem = (idx) => toolsRequired.value.items.splice(idx, 1);
       const updateToolRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.cost)||0); };
       const toolsTotal = computed(() => toolsRequired.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+
+      // DESIGN VALIDATION LOGIC
+      const designUploadContext = ref({ row: null, col: '', type: '' });
+      const designFileInput = ref(null);
+      const addDesignRow = () => {
+          if(!workorderData.value.designValidation) workorderData.value.designValidation = { items: [] };
+          workorderData.value.designValidation.items.push({ diseno: [], maquinados: [], dibujos: [] });
+      };
+      const removeDesignRow = (idx) => workorderData.value.designValidation.items.splice(idx, 1);
+      const triggerDesignUpload = (idx, col, type) => {
+          designUploadContext.value = { row: idx, col: col, type: type };
+          designFileInput.value.click();
+      };
+      const handleDesignFileSelect = (e) => {
+          const file = e.target.files[0];
+          if(!file) return;
+          isUploadingFile.value = true;
+          const r = new FileReader();
+          r.onload = (ev) => {
+              google.script.run.withSuccessHandler(res => {
+                  isUploadingFile.value = false;
+                  if(res.success){
+                      const ctx = designUploadContext.value;
+                      if (workorderData.value.designValidation.items[ctx.row]) {
+                          workorderData.value.designValidation.items[ctx.row][ctx.col].push({
+                              url: res.fileUrl,
+                              type: ctx.type,
+                              name: file.name
+                          });
+                      }
+                      Swal.fire('Archivo Subido', '', 'success');
+                  } else {
+                      Swal.fire('Error', res.message, 'error');
+                  }
+                  e.target.value = null;
+              }).uploadFileToDrive(ev.target.result, file.type, file.name);
+          };
+          r.readAsDataURL(file);
+      };
 
       const specialEquipment = ref({ items: [{ quantity: '1', unit: 'unidad', type: '', description: '', spec: '', days: '1', hours: '0', cost: '', total: 0 }] });
       const addSpecialEquipItem = () => specialEquipment.value.items.push({ quantity: '1', unit: 'unidad', type: '', description: '', spec: '', days: '1', hours: '0', cost: '', total: 0 });
@@ -2723,7 +2844,8 @@
                       prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
                       checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
                       restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
-                      files: []
+                      files: [],
+                      designValidation: { items: [{ diseno: [], maquinados: [], dibujos: [] }] }
                   };
               } else {
                   currentView.value='PPC_FORM';
@@ -2987,6 +3109,20 @@
         // Use selected Department for Especialidad (Folio generation), fallback to Tipo if missing
         const spec = workorderData.value.departamento || workorderData.value.tipoTrabajo;
 
+        // Collect Design Files
+        const designFiles = [];
+        if (workorderData.value.designValidation && workorderData.value.designValidation.items) {
+            workorderData.value.designValidation.items.forEach(item => {
+                ['diseno', 'maquinados', 'dibujos'].forEach(col => {
+                    if (item[col]) {
+                        item[col].forEach(f => {
+                             designFiles.push(`[${col.toUpperCase()}-${f.type}] ${f.url}`);
+                        });
+                    }
+                });
+            });
+        }
+
         const payload = {
             cliente: fullClientName,
             especialidad: spec, // Mapping Department to Area/Especialidad for Folio
@@ -3002,7 +3138,7 @@
                 .filter(([k, v]) => v)
                 .map(([k, v]) => `[${k.toUpperCase()}: ${v}]`)
                 .join(' '),
-            archivoUrl: workorderData.value.files.join('\n'),
+            archivoUrl: [...workorderData.value.files, ...designFiles].join('\n'),
             horas: 0,
             cumplimiento: 'NO',
             TRABAJO: workorderData.value.tipoTrabajo
@@ -3025,7 +3161,8 @@
                             prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
                       checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
                       restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
-                      files: []
+                      files: [],
+                      designValidation: { items: [{ diseno: [], maquinados: [], dibujos: [] }] }
                         };
                         currentWorkorderId.value = null;
                     });
