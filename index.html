@@ -1146,7 +1146,7 @@
                          <!-- Cotizacion Preliminar -->
                          <div class="row mb-4 align-items-center">
                              <div class="col-md-3"><label class="fw-bold">COTIZACION PRELIMINAR:</label></div>
-                             <div class="col-md-9"><input v-model="vehicleData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
+                             <div class="col-md-9"><input v-model="vehicleControlData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
                          </div>
 
                          <!-- Control Vehiculo Header -->
@@ -1165,45 +1165,45 @@
                                      <tbody>
                                          <tr>
                                              <td class="fw-bold bg-light">Chofer Holtmont</td>
-                                             <td><input v-model="vehicleData.chofer" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td><input v-model="vehicleControlData.chofer" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
                                              <td class="fw-bold bg-light">Gasolina</td>
-                                             <td><input v-model="vehicleData.gasolina" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="20 lts"></td>
+                                             <td><input v-model="vehicleControlData.gasolina" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="20 lts"></td>
                                              <td class="fw-bold bg-light">Hora salida (GPS)</td>
                                          </tr>
                                          <tr>
                                              <td class="fw-bold bg-light">Vehículo Holtmont</td>
-                                             <td><input v-model="vehicleData.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td><input v-model="vehicleControlData.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
                                              <td class="fw-bold bg-light">FOTO ODOMETRO</td>
                                              <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_ODOMETRO')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
                                              </td>
-                                             <td><input v-model="vehicleData.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
+                                             <td><input v-model="vehicleControlData.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
                                          </tr>
                                          <tr>
                                              <td class="fw-bold bg-light">Evaluación de Manejo</td>
-                                             <td><input v-model="vehicleData.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
+                                             <td><input v-model="vehicleControlData.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
                                              <td class="fw-bold bg-light">FOTO DE INDICADOR ANTES DE LLENAR GASOLINA</td>
                                              <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_ANTES_GASOLINA')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
                                              </td>
                                              <td class="fw-bold bg-light">Hora llegada (GPS)</td>
                                          </tr>
                                          <tr>
                                              <td class="fw-bold bg-light">Multas</td>
-                                             <td><input v-model="vehicleData.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
+                                             <td><input v-model="vehicleControlData.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
                                              <td class="fw-bold bg-light">FOTO INDICADOR DESPUES</td>
                                              <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="openFileDialog"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_DESPUES_GASOLINA')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
                                              </td>
-                                             <td><input v-model="vehicleData.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
+                                             <td><input v-model="vehicleControlData.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
                                          </tr>
                                          <tr>
                                              <td class="fw-bold bg-light">Verificación de Ruta</td>
-                                             <td colspan="4"><input v-model="vehicleData.ruta" class="form-control form-control-sm border-0 bg-transparent" placeholder="de Oficina a Planta"></td>
+                                             <td colspan="4"><input v-model="vehicleControlData.ruta" class="form-control form-control-sm border-0 bg-transparent" placeholder="de Oficina a Planta"></td>
                                          </tr>
                                          <tr>
                                              <td class="fw-bold bg-light">Verificación Vehículo</td>
-                                             <td colspan="4"><input v-model="vehicleData.verifVehiculo" class="form-control form-control-sm border-0 bg-transparent" placeholder="con Video"></td>
+                                             <td colspan="4"><input v-model="vehicleControlData.verifVehiculo" class="form-control form-control-sm border-0 bg-transparent" placeholder="con Video"></td>
                                          </tr>
                                      </tbody>
                                  </table>
@@ -2417,6 +2417,7 @@
       const cellFileInput = ref(null); const uploadingCell = ref({row:null, col:null});
       const dynamicPpc = ref({ especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' });
       const vehicleData = ref({});
+      const vehicleControlData = ref({}); // Decoupled data for duplicated section
       const showWorkOrderLogic = ref(true); // Logic display state
 
       // PROTOTYPES STATE
@@ -3158,6 +3159,22 @@
         conceptoStr += `\n[TIPO: ${workorderData.value.tipoTrabajo || 'N/A'}]`;
         if (workorderData.value.tiempoEstimado) conceptoStr += ` [TIEMPO: ${workorderData.value.tiempoEstimado}]`;
 
+        // Serialize Vehicle Control Data
+        const vCtrl = vehicleControlData.value;
+        if (Object.keys(vCtrl).length > 0) {
+            conceptoStr += `\n\n[CONTROL VEHICULO]`;
+            if (vCtrl.cotizacion) conceptoStr += `\nCotización: ${vCtrl.cotizacion}`;
+            if (vCtrl.chofer) conceptoStr += `\nChofer: ${vCtrl.chofer}`;
+            if (vCtrl.vehiculo) conceptoStr += `\nVehiculo: ${vCtrl.vehiculo}`;
+            if (vCtrl.gasolina) conceptoStr += `\nGasolina: ${vCtrl.gasolina}`;
+            if (vCtrl.horaSalida) conceptoStr += `\nHora Salida: ${vCtrl.horaSalida}`;
+            if (vCtrl.evaluacion) conceptoStr += `\nEvaluación: ${vCtrl.evaluacion}`;
+            if (vCtrl.multas) conceptoStr += `\nMultas: ${vCtrl.multas}`;
+            if (vCtrl.horaLlegada) conceptoStr += `\nHora Llegada: ${vCtrl.horaLlegada}`;
+            if (vCtrl.ruta) conceptoStr += `\nRuta: ${vCtrl.ruta}`;
+            if (vCtrl.verifVehiculo) conceptoStr += `\nVerificación: ${vCtrl.verifVehiculo}`;
+        }
+
         const fullClientName = workorderData.value.cliente;
 
         const fullRequisitor = workorderData.value.newRequisitor
@@ -3240,7 +3257,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, showWorkOrderLogic, triggerUpload,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, showWorkOrderLogic, triggerUpload,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
       laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
