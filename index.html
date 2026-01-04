@@ -1093,13 +1093,6 @@
                     </div>
                 </div>
 
-                <div class="mt-4 text-end">
-                    <button class="btn btn-primary px-5 fw-bold shadow" @click="saveWorkOrder" :disabled="isSubmitting">
-                        <span v-if="isSubmitting"><i class="fas fa-spinner fa-spin me-2"></i> Procesando...</span>
-                        <span v-else><i class="fas fa-paper-plane me-2"></i> GUARDAR Y GENERAR FOLIO</span>
-                    </button>
-                </div>
-
                 <!-- PROTOTYPE SECTION -->
                 <div class="card border-0 shadow-sm mt-5">
                     <div class="card-header bg-dark text-white border-0 pt-3 ps-3">
@@ -1681,8 +1674,18 @@
                                 <span class="fw-bold fs-5 text-dark">{{ formatCurrency(dashboardUtility) }}</span>
                             </div>
                             <div class="d-flex justify-content-between align-items-center p-3 rounded text-white mt-3" style="background: #6610f2;">
-                                <span class="fw-bold text-uppercase">TOTAL DEL PROYECTO</span>
-                                <span class="fw-bold fs-3">{{ formatCurrency(dashboardTotal) }}</span>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fw-bold text-uppercase">TOTAL COTIZACIÓN</span>
+                                    <span class="fw-bold fs-3">{{ formatCurrency(dashboardTotal) }}</span>
+                                </div>
+                                <div class="d-flex gap-2">
+                                     <button class="btn btn-light fw-bold" style="color: #6610f2;" @click="saveWorkOrder" :disabled="isSubmitting">
+                                        <i class="fas fa-save me-1"></i> Guardar Borrador
+                                     </button>
+                                     <button class="btn btn-info fw-bold text-white border-white" @click="saveWorkOrder" :disabled="isSubmitting">
+                                        <i class="fas fa-paper-plane me-1"></i> Generar Cotización
+                                     </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1693,12 +1696,19 @@
                     <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3">
                          <span class="fw-bold text-muted">Financiamiento disponible con:</span>
                          <div class="d-flex gap-2">
-                             <button class="btn btn-light border fw-bold text-dark d-flex align-items-center shadow-sm" style="min-width: 120px; justify-content: center;">
-                                 <i class="fas fa-building me-2 text-secondary"></i> SEPSA
-                             </button>
-                             <button class="btn btn-danger fw-bold text-white shadow-sm" style="min-width: 120px; background-color: #ec0000; border: none;">
-                                 SANTANDER
-                             </button>
+                             <div class="d-flex flex-column align-items-center gap-1">
+                                 <button class="btn btn-light border fw-bold text-dark d-flex align-items-center shadow-sm" style="min-width: 120px; justify-content: center;" @click="selectedFinancing = selectedFinancing === 'SEPSA' ? null : 'SEPSA'">
+                                     <i class="fas fa-building me-2 text-secondary"></i> SEPSA
+                                 </button>
+                                 <div v-if="selectedFinancing === 'SEPSA'" class="fw-bold text-dark animate__animated animate__fadeInDown small">{{ formatCurrency(dashboardTotal * 2) }}</div>
+                             </div>
+
+                             <div class="d-flex flex-column align-items-center gap-1">
+                                 <button class="btn btn-danger fw-bold text-white shadow-sm" style="min-width: 120px; background-color: #ec0000; border: none;" @click="selectedFinancing = selectedFinancing === 'SANTANDER' ? null : 'SANTANDER'">
+                                     SANTANDER
+                                 </button>
+                                 <div v-if="selectedFinancing === 'SANTANDER'" class="fw-bold text-danger animate__animated animate__fadeInDown small">{{ formatCurrency(dashboardTotal * 2.5) }}</div>
+                             </div>
                          </div>
                     </div>
                 </div>
@@ -2479,6 +2489,7 @@
       const dashboardUtility = computed(() => dashboardSubtotal.value * 0.20);
       const dashboardTotal = computed(() => dashboardSubtotal.value + dashboardUtility.value);
 
+      const selectedFinancing = ref(null); // Financing toggle state
       const selectedWeek = ref('');
       const currentModuleId = ref('');
 
@@ -3189,7 +3200,8 @@
       requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
       toolsRequired, addToolItem, removeToolItem, updateToolRowTotal, toolsTotal,
       specialEquipment, addSpecialEquipItem, removeSpecialEquipItem, updateSpecialEquipRowTotal, specialEquipTotal,
-      additionalCosts, laborTotal, dashboardSubtotal, dashboardUtility, dashboardTotal };
+      additionalCosts, laborTotal, dashboardSubtotal, dashboardUtility, dashboardTotal,
+      selectedFinancing };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
