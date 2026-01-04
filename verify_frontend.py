@@ -1,117 +1,102 @@
-import os
 from playwright.sync_api import sync_playwright
+import os
 
-def run(playwright):
-    browser = playwright.chromium.launch(headless=True)
-    page = browser.new_page()
+def run():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-    # Mock google.script.run
-    page.add_init_script("""
-        window.google = {
-            script: {
-                run: {
-                    withSuccessHandler: function(successCallback) {
-                        const clone = Object.assign({}, this);
-                        clone.successCallback = successCallback;
-                        return clone;
-                    },
-                    withFailureHandler: function(failureCallback) {
-                        const clone = Object.assign({}, this);
-                        clone.failureCallback = failureCallback;
-                        return clone;
-                    },
-                    apiLogin: function(u, p) {
-                        setTimeout(() => {
-                            if (this.successCallback) {
-                                this.successCallback({
-                                    success: true,
-                                    name: 'Prework User',
-                                    username: 'PREWORK_ORDER',
-                                    role: 'WORKORDER_USER'
-                                });
-                            }
-                        }, 100);
-                    },
-                    getSystemConfig: function(role) {
-                        setTimeout(() => {
-                            if (this.successCallback) {
-                                this.successCallback({
-                                    departments: { 'Electro': { label: 'Electromecánica', color: '#007bff', icon: 'fa-bolt' } },
-                                    staff: [],
-                                    directory: [{name: 'Test Staff', dept: 'Electro'}],
-                                    specialModules: [
-                                        { id: 'WORKORDER', label: 'Orden de Trabajo', type: 'ppc_native', icon: 'fa-clipboard-list', color: '#ff0000' }
-                                    ],
-                                    accessProjects: false
-                                });
-                            }
-                        }, 100);
-                    },
-                    apiGetNextWorkOrderSeq: function() {
-                        setTimeout(() => { if (this.successCallback) this.successCallback('1001'); }, 100);
-                    },
-                    apiFetchPPCData: function() {
-                        setTimeout(() => { if (this.successCallback) this.successCallback({ success: true, data: [] }); }, 100);
-                    },
-                    apiLogout: function() {}
+        # Determine the absolute path to index.html
+        cwd = os.getcwd()
+        file_path = f"file://{cwd}/index.html"
+
+        # Mock window.google.script.run
+        page.add_init_script("""
+            window.google = {
+                script: {
+                    run: {
+                        withSuccessHandler: function(success) {
+                            return {
+                                withFailureHandler: function(failure) {
+                                    return {
+                                        apiLogin: function(u, p) {
+                                            success({
+                                                success: true,
+                                                name: 'TEST_USER',
+                                                username: 'PREWORK_ORDER',
+                                                role: 'WORKORDER_USER'
+                                            });
+                                        },
+                                        getSystemConfig: function(role) {
+                                            success({
+                                                departments: {},
+                                                staff: [],
+                                                directory: [],
+                                                specialModules: [
+                                                    { id: 'PPC_MASTER', type: 'ppc_native', label: 'Workorder Module', icon: 'fa-clipboard', color: '#ff0000' }
+                                                ]
+                                            });
+                                        },
+                                        apiGetNextWorkOrderSeq: function() {
+                                            success('0001');
+                                        },
+                                        apiSavePPCData: function() {
+                                            success({ success: true, ids: ['MOCK-ID'] });
+                                        },
+                                        apiFetchCascadeTree: function() {
+                                            success({ success: true, data: [] });
+                                        }
+                                    };
+                                },
+                                getSystemConfig: function(role) {
+                                    // Duplicate just in case
+                                    success({
+                                        departments: {},
+                                        staff: [],
+                                        directory: [],
+                                        specialModules: [
+                                            { id: 'PPC_MASTER', type: 'ppc_native', label: 'Workorder Module', icon: 'fa-clipboard', color: '#ff0000' }
+                                        ]
+                                    });
+                                },
+                                apiGetNextWorkOrderSeq: function() { success('0001'); },
+                                apiFetchCascadeTree: function() { success({ success: true, data: [] }); }
+                            };
+                        },
+                        apiLogout: function() {},
+                        apiFetchPPCData: function() {}
+                    }
                 }
-            }
-        };
-    """)
+            };
+        """)
 
-    # Load local file
-    cwd = os.getcwd()
-    page.goto(f"file://{cwd}/index.html")
+        page.goto(file_path)
 
-    # Login Flow
-    page.fill("input[placeholder='Usuario']", "PREWORK_ORDER")
-    page.fill("input[placeholder='Contraseña...']", "12345")
-    page.click("button:has-text('INICIAR SESIÓN')")
+        # Login
+        page.fill('input[placeholder="Usuario"]', 'PREWORK_ORDER')
+        page.fill('input[placeholder="Contraseña..."]', 'dummy')
+        page.click('button:has-text("INICIAR SESIÓN")')
 
-    # Wait for Dashboard and Click Module
-    page.wait_for_selector("text=Orden de Trabajo")
-    page.click("text=Orden de Trabajo")
+        # Wait for Dashboard Module Card
+        page.wait_for_selector('div.dept-card h6:has-text("Workorder Module")')
 
-    # Wait for Workorder Form
-    page.wait_for_selector(".content-wrapper")
-    # Verify we are in WORKORDER_FORM view (check for Folio widget)
-    page.wait_for_selector("text=FOLIO", timeout=5000)
+        # Click the module to open WORKORDER_FORM
+        page.click('div.dept-card h6:has-text("Workorder Module")')
 
-    # Scroll to bottom to see Financing
-    # The scrollable container is inside view-area > div
-    # In my code: <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="overflow-y:auto;">
-    # So we need to find that div and scroll it.
+        # Wait for form to load
+        page.wait_for_timeout(1000)
 
-    # We can try scrolling the last div that has overflow-y auto
-    page.evaluate("""
-        const containers = document.querySelectorAll('div[style*="overflow-y:auto"]');
-        if(containers.length > 0) {
-            const container = containers[containers.length - 1];
-            container.scrollTop = container.scrollHeight;
-        }
-    """)
+        # Scroll to the target section "MATERIALES REQUERIDOS"
+        target_locator = page.locator('h6:has-text("Compra de Material Programa Papa Caliente")')
+        target_locator.scroll_into_view_if_needed()
 
-    page.wait_for_timeout(1000)
+        # Add a material item
+        page.click('div.card-header:has-text("MATERIALES REQUERIDOS") button:has-text("Agregar")')
 
-    # Screenshot Light Mode
-    page.screenshot(path="verification_light.png")
-    print("Screenshot Light Mode taken.")
+        page.wait_for_timeout(500)
 
-    # Toggle Theme -> Dark
-    # Button in sidebar
-    page.click("button[title*='Tema']")
-    page.wait_for_timeout(500)
-    page.screenshot(path="verification_dark.png")
-    print("Screenshot Dark Mode taken.")
-
-    # Toggle Theme -> Cyberpunk
-    page.click("button[title*='Tema']")
-    page.wait_for_timeout(500)
-    page.screenshot(path="verification_cyberpunk.png")
-    print("Screenshot Cyberpunk Mode taken.")
-
-    browser.close()
+        page.screenshot(path="verification_tables.png", full_page=True)
+        browser.close()
 
 if __name__ == "__main__":
-    with sync_playwright() as playwright:
-        run(playwright)
+    run()
