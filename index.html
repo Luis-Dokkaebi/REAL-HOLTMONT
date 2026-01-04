@@ -1347,39 +1347,84 @@
                     </div>
                 </div>
 
-                <!-- HERRAMIENTAS REQUERIDAS (NUEVO) -->
-                <div class="card border-0 shadow-sm mt-4">
-                    <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #fd7e14 !important;">
-                        <h6 class="fw-bold mb-0" style="color: #e67e22;">HERRAMIENTAS REQUERIDAS</h6>
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="fw-bold text-dark">Total: {{ formatCurrency(toolsTotal) }}</span>
-                            <button class="btn btn-primary btn-sm fw-bold" @click="addToolItem"><i class="fas fa-plus"></i> Agregar</button>
+                <!-- HERRAMIENTAS REQUERIDAS & PAPA CALIENTE -->
+                <div class="row g-4 mt-4">
+                    <!-- HERRAMIENTAS REQUERIDAS -->
+                    <div class="col-xl-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #fd7e14 !important;">
+                                <h6 class="fw-bold mb-0" style="color: #e67e22;">HERRAMIENTAS REQUERIDAS</h6>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fw-bold text-dark">Total: {{ formatCurrency(toolsTotal) }}</span>
+                                    <button class="btn btn-primary btn-sm fw-bold" @click="addToolItem"><i class="fas fa-plus"></i> Agregar</button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered mb-0 small align-middle bg-white">
+                                        <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                            <tr>
+                                                <th style="width: 80px;" class="text-center">Cantidad</th>
+                                                <th style="width: 80px;" class="text-center">Unidad</th>
+                                                <th>Descripción</th>
+                                                <th style="width: 120px;" class="text-end">Costo Unitario</th>
+                                                <th style="width: 120px;" class="text-end">Total</th>
+                                                <th style="width: 40px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
+                                                <td><input type="number" v-model="item.quantity" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
+                                                <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="-"></td>
+                                                <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent" placeholder="-"></td>
+                                                <td><input type="number" v-model="item.cost" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end" placeholder="0.00"></td>
+                                                <td class="fw-bold text-end">{{ formatCurrency(item.total) }}</td>
+                                                <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeToolItem(idx)"></i></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-bordered mb-0 small align-middle bg-white">
-                                <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
-                                    <tr>
-                                        <th style="width: 80px;" class="text-center">Cantidad</th>
-                                        <th style="width: 80px;" class="text-center">Unidad</th>
-                                        <th>Descripción</th>
-                                        <th style="width: 120px;" class="text-end">Costo Unitario</th>
-                                        <th style="width: 120px;" class="text-end">Total</th>
-                                        <th style="width: 40px;"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
-                                        <td><input type="number" v-model="item.quantity" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                        <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="-"></td>
-                                        <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent" placeholder="-"></td>
-                                        <td><input type="number" v-model="item.cost" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end" placeholder="0.00"></td>
-                                        <td class="fw-bold text-end">{{ formatCurrency(item.total) }}</td>
-                                        <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeToolItem(idx)"></i></td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                    <!-- COMPRA DE HERRAMIENTA PROGRAMA PAPA CALIENTE -->
+                    <div class="col-xl-6">
+                        <div class="card border-0 shadow-sm h-100">
+                             <div class="card-header bg-light border-0 pt-3 ps-3 pe-3" style="border-top: 4px solid #d63384 !important;">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-fire me-2 text-danger"></i>Compra de Herramienta Programa Papa Caliente</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive h-100">
+                                    <table class="table table-bordered mb-0 small align-middle bg-white h-100">
+                                        <thead class="table-light text-center" style="font-size: 10px;">
+                                            <tr class="fw-bold">
+                                                <th>Cesar Garcia</th>
+                                                <th>Gisela</th>
+                                                <th>Victor</th>
+                                                <th>Balu</th>
+                                                <th>Cesar Garcia</th>
+                                            </tr>
+                                            <tr class="text-muted text-uppercase">
+                                                <th>Residente</th>
+                                                <th>Controller</th>
+                                                <th>Almacen</th>
+                                                <th>Logistica</th>
+                                                <th>Residente</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
+                                                <td><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
+                                                <td><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
+                                                <td><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
+                                                <td><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
+                                                <td><input v-model="item.papaCaliente.residenteFin" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2203,8 +2248,14 @@
       const materialsTotal = computed(() => requiredMaterials.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
 
       // NEW TABLES & DASHBOARD LOGIC
-      const toolsRequired = ref({ items: [{ quantity: '', unit: '', description: '', cost: '', total: 0 }] });
-      const addToolItem = () => toolsRequired.value.items.push({ quantity: '', unit: '', description: '', cost: '', total: 0 });
+      const toolsRequired = ref({ items: [{
+          quantity: '', unit: '', description: '', cost: '', total: 0,
+          papaCaliente: { residente: '', controller: '', almacen: '', logistica: '', residenteFin: '' }
+      }] });
+      const addToolItem = () => toolsRequired.value.items.push({
+          quantity: '', unit: '', description: '', cost: '', total: 0,
+          papaCaliente: { residente: '', controller: '', almacen: '', logistica: '', residenteFin: '' }
+      });
       const removeToolItem = (idx) => toolsRequired.value.items.splice(idx, 1);
       const updateToolRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.cost)||0); };
       const toolsTotal = computed(() => toolsRequired.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
