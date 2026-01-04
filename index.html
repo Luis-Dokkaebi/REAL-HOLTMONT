@@ -956,14 +956,30 @@
                     <!-- BOTTOM: DESCRIPTION & MEDIA -->
                     <div class="col-12">
                         <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-light border-0 pt-3 ps-3 d-flex justify-content-between">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
                                 <h6 class="fw-bold text-primary mb-0"><i class="fas fa-align-left me-2"></i>Descripción del Trabajo a Realizar</h6>
+                                <button v-if="!showWorkOrderLogic" @click="showWorkOrderLogic = true" class="btn btn-sm btn-outline-info" title="Mostrar Ayuda"><i class="fas fa-info-circle"></i></button>
                             </div>
-                            <div class="card-body position-relative">
-                                <textarea v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3" rows="5" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
-                                <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" title="Organizar con IA (Simulado)">
-                                    <i class="fas fa-magic"></i>
-                                </button>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div :class="showWorkOrderLogic ? 'col-md-8' : 'col-12'">
+                                         <div class="position-relative h-100">
+                                            <textarea v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
+                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" title="Organizar con IA (Simulado)">
+                                                <i class="fas fa-magic"></i>
+                                            </button>
+                                         </div>
+                                    </div>
+                                    <div class="col-md-4" v-if="showWorkOrderLogic">
+                                        <div class="alert alert-info border-0 shadow-sm h-100 position-relative fade show" style="font-size: 0.85rem; background-color: #e3f2fd; color: #0c5460;">
+                                            <button type="button" class="btn-close position-absolute top-0 end-0 m-2" aria-label="Close" @click="showWorkOrderLogic = false"></button>
+                                            <h6 class="fw-bold mb-3 mt-1"><i class="fas fa-lightbulb text-warning me-2"></i>Lógica: Captura de Descripción</h6>
+                                            <p class="mb-0 text-justify" style="line-height: 1.6; opacity: 0.9;">
+                                                Este punto es el más crítico al momento de realizar una cotización, ya que en los recorridos con el cliente son muy cortos, y uno no alcanza a escribir porque va caminando para proyectos A y AA, por lo que se requiere el poder capturar el mayor número de detalles que el cliente menciona así como la confidencialidad de observaciones que el cotizador de Holtmont alcanza a ver y se requiere que la competencia no se entere. Por ello el requerimiento de la diadema y de poder cuestionar puntos.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="card-footer bg-white border-top-0 pb-3">
                                 <h6 class="small fw-bold text-muted mb-2">Archivos Multimedia</h6>
@@ -2016,6 +2032,7 @@
       const cellFileInput = ref(null); const uploadingCell = ref({row:null, col:null});
       const dynamicPpc = ref({ especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' });
       const vehicleData = ref({});
+      const showWorkOrderLogic = ref(true); // Logic display state
 
       // PROTOTYPES STATE
       const projectProgram = ref({ timeEstimated: 1, timeUnit: 'dias', items: [{ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 }] });
@@ -2738,7 +2755,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, showWorkOrderLogic,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
       laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
       requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
