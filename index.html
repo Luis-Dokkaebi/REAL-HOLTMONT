@@ -440,6 +440,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
 
 
@@ -988,6 +989,68 @@
                                         <i class="fas" :class="uploadSuccess ? 'fa-check text-success' : 'fa-cloud-upload-alt'"></i> {{ uploadSuccess ? 'Archivo Cargado' : 'Subir Archivos' }}
                                     </button>
                                     <input type="file" ref="fileInput" class="file-input-hidden" @change="handleFileSelect">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RESTRICCIONES & BUTTONS SECTION -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 pt-3 ps-3" style="border-top: 4px solid #dc3545 !important;">
+                                <h6 class="fw-bold mb-0 text-danger text-uppercase">RESTRICCIONES</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="small fw-bold text-muted">Producción</label>
+                                        <input v-model="workorderData.restricciones.produccion" class="form-control" placeholder="Restricciones de producción...">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold text-muted">Seguridad</label>
+                                        <input v-model="workorderData.restricciones.seguridad" class="form-control" placeholder="Ej: permiso de chispa, trabajo en altura, espacios confinados...">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold text-muted">Dificultad</label>
+                                        <input v-model="workorderData.restricciones.dificultad" class="form-control" placeholder="Ej: espacios reducidos, maquinaria, químicos...">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold text-muted">Horarios</label>
+                                        <input v-model="workorderData.restricciones.horarios" class="form-control" placeholder="Ej: nocturnos o fines de semana">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small fw-bold text-muted">Especificidad Trabajo</label>
+                                        <input v-model="workorderData.restricciones.especificidad" class="form-control" placeholder="Detalles específicos...">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BUTTONS LOGIC -->
+                        <div class="card border-0 shadow-sm mt-4">
+                            <div class="card-header bg-dark text-white border-0 pt-3 ps-3">
+                                <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DOCUMENTACIÓN Y HERRAMIENTAS</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap gap-3">
+                                    <button class="btn btn-outline-dark" @click="triggerUpload('FOTOS')"><i class="fas fa-camera me-2"></i>FOTOS</button>
+                                    <button class="btn btn-outline-dark" @click="triggerUpload('VIDEOS')"><i class="fas fa-video me-2"></i>VIDEOS</button>
+                                    <button class="btn btn-outline-dark" @click="triggerUpload('LAYOUT')"><i class="fas fa-pencil-ruler me-2"></i>LAYOUT / DIBUJO</button>
+                                    <button class="btn btn-outline-dark" @click="triggerUpload('PLANOS')"><i class="fas fa-map me-2"></i>PLANOS</button>
+
+                                    <div class="vr mx-2"></div>
+
+                                    <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
+                                    <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
+                                </div>
+                                <div v-if="workorderData.files && workorderData.files.length" class="mt-3">
+                                    <h6 class="small fw-bold text-muted">Archivos Adjuntos:</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <div v-for="(f, i) in workorderData.files" :key="i" class="badge bg-light text-dark border p-2">
+                                            <i class="fas fa-paperclip me-1"></i> {{ f }}
+                                            <i class="fas fa-times text-danger ms-2" style="cursor:pointer" @click="workorderData.files.splice(i,1)"></i>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1967,7 +2030,9 @@
           cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
           cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
           prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
-          checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false }
+          checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
+          restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
+          files: []
       });
       const workorderTypes = ['Construcción', 'Remodelación', 'Reparación', 'Mantenimiento', 'Reconfiguración', 'Póliza', 'Inspección'];
       const currentWorkorderId = ref(null);
@@ -2025,6 +2090,7 @@
       };
 
       const isUploadingFile = ref(false); const uploadSuccess = ref(false); const fileInput = ref(null);
+      const currentUploadType = ref('');
       const currentIframeUrl = ref(''); const iframeTitle = ref('');
       const showExtraModal = ref(false);
       const extraData = ref({ restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' });
@@ -2463,7 +2529,9 @@
                       cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
                       cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
                       prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
-                      checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false }
+                      checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
+                      restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
+                      files: []
                   };
               } else {
                   currentView.value='PPC_FORM';
@@ -2642,7 +2710,30 @@
       const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
       const addResponsable = (n) => { selectedResponsables.value.push(n); staffSearch.value=''; };
       const openFileDialog = () => fileInput.value.click();
-      const handleFileSelect = (e) => { const file = e.target.files[0]; if(!file) return; isUploadingFile.value=true; const r = new FileReader(); r.onload=(ev)=>google.script.run.withSuccessHandler(res=>{isUploadingFile.value=false;if(res.success){uploadSuccess.value=true; if(currentView.value === 'PPC_DINAMICO') dynamicPpc.value.archivoUrl=res.fileUrl; else ppcData.value.archivoUrl=res.fileUrl; Swal.fire('Archivo Subido','','success');}}).uploadFileToDrive(ev.target.result,file.type,file.name); r.readAsDataURL(file); };
+      const handleFileSelect = (e) => {
+          const file = e.target.files[0];
+          if(!file) return;
+          isUploadingFile.value=true;
+          const r = new FileReader();
+          r.onload=(ev)=>google.script.run.withSuccessHandler(res=>{
+              isUploadingFile.value=false;
+              if(res.success){
+                  uploadSuccess.value=true;
+                  if(currentView.value === 'PPC_DINAMICO') {
+                      dynamicPpc.value.archivoUrl=res.fileUrl;
+                  } else if (currentView.value === 'WORKORDER_FORM') {
+                      const tag = currentUploadType.value ? `[${currentUploadType.value}] ` : '';
+                      workorderData.value.files.push(tag + res.fileUrl);
+                      Swal.fire('Archivo Subido', '', 'success');
+                  } else {
+                      ppcData.value.archivoUrl=res.fileUrl;
+                  }
+                  if (currentView.value !== 'WORKORDER_FORM') Swal.fire('Archivo Subido','','success');
+              }
+          }).uploadFileToDrive(ev.target.result,file.type,file.name);
+          r.readAsDataURL(file);
+      };
+      const triggerUpload = (type) => { currentUploadType.value = type; fileInput.value.click(); };
       const promptExtraData = () => { if(!ppcData.value.concepto || !selectedResponsables.value.length) return Swal.fire('Faltan datos básicos','','warning'); extraData.value = { restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' }; showExtraModal.value = true; };
       const confirmAddToQueue = () => {
           // WORKORDER FLOW
@@ -2715,6 +2806,11 @@
             prioridad: workorderData.value.prioridad,
             fechaRespuesta: fEnt, // Mapped to Fecha Entrega
             comentarios: '',
+            restricciones: Object.entries(workorderData.value.restricciones)
+                .filter(([k, v]) => v)
+                .map(([k, v]) => `[${k.toUpperCase()}: ${v}]`)
+                .join(' '),
+            archivoUrl: workorderData.value.files.join('\n'),
             horas: 0,
             cumplimiento: 'NO',
             TRABAJO: workorderData.value.tipoTrabajo
@@ -2735,7 +2831,9 @@
                             cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
                             cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
                             prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
-                            checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false }
+                      checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
+                      restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
+                      files: []
                         };
                         currentWorkorderId.value = null;
                     });
@@ -2755,7 +2853,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, showWorkOrderLogic,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, showWorkOrderLogic, triggerUpload,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
       laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
       requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
