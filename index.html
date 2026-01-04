@@ -1255,14 +1255,14 @@
                                         </thead>
                                         <tbody>
                                             <tr v-for="(item, idx) in requiredMaterials.items" :key="idx">
-                                                <td><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.compras" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.ordenCompra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.pagos" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.residenteObra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residente')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.compras" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'compras')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'controller')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.ordenCompra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'ordenCompra')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.pagos" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'pagos')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'almacen')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'logistica')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.residenteObra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residenteObra')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -1415,11 +1415,11 @@
                                         </thead>
                                         <tbody>
                                             <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
-                                                <td><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
-                                                <td><input v-model="item.papaCaliente.residenteFin" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residente')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'controller')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'almacen')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'logistica')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.residenteFin" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residenteFin')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -2039,6 +2039,19 @@
       </div>
   </div>
 
+  <div v-if="showTimePopup" class="custom-modal-overlay">
+      <div class="custom-modal" style="width: 300px;">
+          <div class="custom-modal-header"><span>Agregar Horario</span><button type="button" class="btn-close" @click="showTimePopup = false"></button></div>
+          <div class="custom-modal-body text-center">
+              <div class="mb-3">
+                  <label class="small fw-bold mb-2 d-block">Seleccionar Hora:</label>
+                  <input type="time" v-model="timePopupValue" class="form-control text-center fs-4">
+              </div>
+              <button class="btn btn-primary w-100 fw-bold" @click="saveTimePopup"><i class="fas fa-check me-2"></i> ESTABLECER</button>
+          </div>
+      </div>
+  </div>
+
   <div v-if="showPpcSelectorModal" class="custom-modal-overlay">
       <div class="custom-modal" style="width: 500px;">
           <div class="custom-modal-header">
@@ -2192,6 +2205,23 @@
       const currentUploadType = ref('');
       const currentIframeUrl = ref(''); const iframeTitle = ref('');
       const showExtraModal = ref(false);
+      const showTimePopup = ref(false);
+      const timePopupValue = ref('');
+      const timePopupTarget = ref(null);
+      const openTimePopup = (targetObj, key) => {
+          timePopupTarget.value = { target: targetObj, key: key };
+          const now = new Date();
+          const hh = String(now.getHours()).padStart(2,'0');
+          const mm = String(now.getMinutes()).padStart(2,'0');
+          timePopupValue.value = `${hh}:${mm}`;
+          showTimePopup.value = true;
+      };
+      const saveTimePopup = () => {
+          if(timePopupTarget.value) {
+              timePopupTarget.value.target[timePopupTarget.value.key] = timePopupValue.value;
+          }
+          showTimePopup.value = false;
+      };
       const extraData = ref({ restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' });
       const priorityOpts = ['URGENTE', 'MEDIA', 'BAJA']; const riskOpts = ['ALTO', 'BAJO', 'CATASTROFICO'];
       const cellFileInput = ref(null); const uploadingCell = ref({row:null, col:null});
@@ -2965,6 +2995,7 @@
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, showWorkOrderLogic, triggerUpload,
+      showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
       laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
       requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
