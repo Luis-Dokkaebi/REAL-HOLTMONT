@@ -827,19 +827,16 @@ function internalUpdateTask(personName, taskData, username) {
                  const vendedorName = String(taskData[vendedorKey]).trim();
                  if (vendedorName.toUpperCase() !== "ANTONIA_VENTAS") {
                      try { 
-                        // TRAFFIC SPLITTING: Si existe la hoja ventas y es tarea comercial (tiene VENDEDOR), usarla.
-                        let targetSheet = vendedorName;
-                        // El check anterior `if (vendedorKey ...)` ya garantiza que estamos en contexto de ventas.
-                        // Sin embargo, validamos explícitamente para mayor seguridad.
-                        if (vendedorKey && taskData[vendedorKey]) {
-                            const salesSheetName = vendedorName + " VENTAS";
-                            if (findSheetSmart(salesSheetName)) {
-                                targetSheet = salesSheetName;
-                            }
-                        }
+                        // TRAFFIC SPLITTING: Solo enviar si tiene (VENTAS)
+                        if (vendedorName.toUpperCase().includes("(VENTAS)")) {
+                             let targetSheet = vendedorName;
+                             // Ya no agregamos " VENTAS" automáticamente, confiamos en el nombre explícito.
 
-                        const vRes = internalBatchUpdateTasks(targetSheet, [distData]);
-                        if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + targetSheet + ": " + vRes.message);
+                             const vRes = internalBatchUpdateTasks(targetSheet, [distData]);
+                             if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + targetSheet + ": " + vRes.message);
+                        } else {
+                             registrarLog("ANTONIA", "DIST_SKIP", "Omitido " + vendedorName + " por falta de sufijo (VENTAS)");
+                        }
                      } catch(e){
                         registrarLog("ANTONIA", "DIST_ERROR", e.toString());
                      }
@@ -987,7 +984,11 @@ function apiSavePPCData(payload, activeUser) {
 
           // C. Distribución al Staff (Tracker Personal)
           const responsables = String(item.responsable || "").split(",").map(s => s.trim()).filter(s => s);
-          responsables.forEach(personName => { addTaskToSheet(personName, taskData); });
+          responsables.forEach(personName => {
+              if (!personName.toUpperCase().includes("(VENTAS)")) {
+                  addTaskToSheet(personName, taskData);
+              }
+          });
 
           // D. Preparar Log (En Memoria)
           logEntries.push([new Date(), activeUser || "DESCONOCIDO", "GUARDADO_PPC", `ID: ${id} | Comentarios: ${comentarios}`]);
