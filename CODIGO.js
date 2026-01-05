@@ -372,7 +372,8 @@ function apiFetchTeamKPIData(username) {
 
        completed.forEach(t => {
            let start = t['FECHA'] || t['ALTA'] || t['FECHA INICIO'];
-           let end = t['FECHA FIN'] || t['FECHA_FIN'] || t['FECHA ENTREGA'] || t['FECHA RESPUESTA'];
+           // PRIORIDAD: FECHA TERMINO (REAL) > FECHA FIN > FECHA RESPUESTA (ESTIMADA)
+           let end = t['FECHA TERMINO'] || t['FECHA FIN'] || t['FECHA_FIN'] || t['FECHA ENTREGA'] || t['FECHA RESPUESTA'];
 
            if (start && end) {
                const pDate = (d) => {
@@ -628,7 +629,8 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         'ARCHIVO': ['ARCHIVO', 'ARCHIVOS', 'CLIP', 'LINK'],
         'CLASIFICACION': ['CLASIFICACION', 'CLASI'],
         'COMENTARIOS': ['COMENTARIOS', 'COMENTARIOS SEMANA EN CURSO', 'OBSERVACIONES', 'NOTAS'],
-        'PREVIOS': ['COMENTARIOS PREVIOS', 'PREVIOS', 'COMENTARIOS SEMANA PREVIA']
+        'PREVIOS': ['COMENTARIOS PREVIOS', 'PREVIOS', 'COMENTARIOS SEMANA PREVIA'],
+        'FECHA_TERMINO': ['FECHA TERMINO', 'FECHA REAL', 'TERMINO', 'REALIZADO']
       };
       for (let main in aliases) {
         if (aliases[main].includes(k)) {
@@ -685,6 +687,8 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     // 3. AUTO-ARCHIVADO
     let rowsMoved = false;
     const avanceIdx = getColIdx('AVANCE');
+    const fechaTerminoIdx = getColIdx('FECHA_TERMINO');
+
     if (avanceIdx > -1) {
         let separatorIndex = -1;
         for(let i=0; i<values.length; i++) {
@@ -714,6 +718,12 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
             const val = String(row[avanceIdx] || "").trim();
             const isComplete = val === "100" || val === "100%" || val === "1.0" || val === "1";
             if (isComplete) {
+                // AUTO-TIMESTAMP: FECHA TERMINO REAL
+                if (fechaTerminoIdx > -1) {
+                   if (!row[fechaTerminoIdx]) {
+                       row[fechaTerminoIdx] = Utilities.formatDate(new Date(), SS.getSpreadsheetTimeZone(), "dd/MM/yy");
+                   }
+                }
                 movedRows.push(row);
                 rowsMoved = true;
             } else {
