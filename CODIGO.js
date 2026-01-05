@@ -837,15 +837,27 @@ function internalUpdateTask(personName, taskData, username) {
                  const vendedorName = String(taskData[vendedorKey]).trim();
                  if (vendedorName.toUpperCase() !== "ANTONIA_VENTAS") {
                      try { 
-                        // TRAFFIC SPLITTING: Solo enviar si tiene (VENTAS)
-                        if (vendedorName.toUpperCase().includes("(VENTAS)")) {
-                             let targetSheet = vendedorName;
-                             // Ya no agregamos " VENTAS" automáticamente, confiamos en el nombre explícito.
+                        // TRAFFIC SPLITTING REFACTORIZADO
+                        // 1. Verificar si el nombre ya tiene el sufijo
+                        let targetSheet = vendedorName;
+                        let hasSuffix = targetSheet.toUpperCase().includes("(VENTAS)");
+                        let finalTarget = null;
 
-                             const vRes = internalBatchUpdateTasks(targetSheet, [distData]);
-                             if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + targetSheet + ": " + vRes.message);
+                        if (hasSuffix) {
+                            finalTarget = targetSheet;
                         } else {
-                             registrarLog("ANTONIA", "DIST_SKIP", "Omitido " + vendedorName + " por falta de sufijo (VENTAS)");
+                            // 2. Si no tiene sufijo, intentamos adjuntarlo y verificamos si existe la hoja
+                            let potentialSheet = targetSheet + " (VENTAS)";
+                            if (findSheetSmart(potentialSheet)) {
+                                finalTarget = potentialSheet;
+                            }
+                        }
+
+                        if (finalTarget) {
+                             const vRes = internalBatchUpdateTasks(finalTarget, [distData]);
+                             if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + finalTarget + ": " + vRes.message);
+                        } else {
+                             registrarLog("ANTONIA", "DIST_SKIP", "Omitido " + vendedorName + " - No se encontró tabla (VENTAS).");
                         }
                      } catch(e){
                         registrarLog("ANTONIA", "DIST_ERROR", e.toString());
