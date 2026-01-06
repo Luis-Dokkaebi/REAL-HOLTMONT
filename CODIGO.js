@@ -15,7 +15,13 @@ const APP_CONFIG = {
   ppcSheetName: "PPCV3",          
   draftSheetName: "PPC_BORRADOR", 
   salesSheetName: "Datos",        
-  logSheetName: "LOG_SISTEMA"
+  logSheetName: "LOG_SISTEMA",
+  // NUEVAS HOJAS PARA DETALLES DE WORK ORDER
+  woMaterialsSheet: "DB_WO_MATERIALES",
+  woLaborSheet: "DB_WO_MANO_OBRA",
+  woToolsSheet: "DB_WO_HERRAMIENTAS",
+  woEquipSheet: "DB_WO_EQUIPOS",
+  woProgramSheet: "DB_WO_PROGRAMA"
 };
 
 const FOLIO_CONFIG = {
@@ -927,6 +933,32 @@ function apiClearDrafts() {
   } catch(e) { return { success: false }; }
 }
 
+function ensureSheetWithHeaders(sheetName, headers) {
+    let sheet = findSheetSmart(sheetName);
+    if (!sheet) {
+        sheet = SS.insertSheet(sheetName);
+        sheet.appendRow(headers);
+        // Formato básico
+        sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e6e6e6");
+    }
+    return sheet;
+}
+
+function saveChildData(sheetName, items, headers) {
+    if (!items || items.length === 0) return;
+    const sheet = ensureSheetWithHeaders(sheetName, headers);
+
+    // Convertir objetos a array basado en headers
+    const rows = items.map(item => {
+        return headers.map(h => item[h] || item[h.replace(" ", "_")] || "");
+    });
+
+    // Append rows (BATCH)
+    if (rows.length > 0) {
+        sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+    }
+}
+
 function apiSavePPCData(payload, activeUser) {
   const lock = LockService.getScriptLock();
   // Esperar hasta 30 segundos para obtener el candado y evitar condiciones de carrera
@@ -939,7 +971,7 @@ function apiSavePPCData(payload, activeUser) {
       if (!sheetPPC) { 
         sheetPPC = SS.insertSheet(APP_CONFIG.ppcSheetName);
         // Standardize headers for robustness
-        sheetPPC.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA"]);
+        sheetPPC.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
       }
       
       const fechaHoy = new Date();
@@ -971,6 +1003,63 @@ function apiSavePPCData(payload, activeUser) {
           generatedIds.push(id);
           const comentarios = item.comentarios || "";
 
+          // --- NUEVO: GUARDADO DE DETALLES EN HOJAS HIJAS ---
+          // A. Materiales
+          if (item.materiales && item.materiales.length > 0) {
+             const matItems = item.materiales.map(m => ({
+                 FOLIO: id, ...m,
+                 RESIDENTE: m.papaCaliente ? m.papaCaliente.residente : "",
+                 COMPRAS: m.papaCaliente ? m.papaCaliente.compras : "",
+                 CONTROLLER: m.papaCaliente ? m.papaCaliente.controller : "",
+                 ORDEN_COMPRA: m.papaCaliente ? m.papaCaliente.ordenCompra : "",
+                 PAGOS: m.papaCaliente ? m.papaCaliente.pagos : "",
+                 ALMACEN: m.papaCaliente ? m.papaCaliente.almacen : "",
+                 LOGISTICA: m.papaCaliente ? m.papaCaliente.logistica : "",
+                 RESIDENTE_OBRA: m.papaCaliente ? m.papaCaliente.residenteObra : ""
+             }));
+             saveChildData(APP_CONFIG.woMaterialsSheet, matItems, ["FOLIO", "CANTIDAD", "UNIDAD", "TIPO", "DESCRIPCION", "COSTO", "ESPECIFICACION", "TOTAL", "RESIDENTE", "COMPRAS", "CONTROLLER", "ORDEN_COMPRA", "PAGOS", "ALMACEN", "LOGISTICA", "RESIDENTE_OBRA"]);
+          }
+
+          // B. Mano de Obra
+          if (item.manoObra && item.manoObra.length > 0) {
+             const laborItems = item.manoObra.map(l => ({ FOLIO: id, ...l }));
+             saveChildData(APP_CONFIG.woLaborSheet, laborItems, ["FOLIO", "CATEGORIA", "SALARIO", "PERSONAL", "SEMANAS", "EXTRAS", "NOCTURNO", "FIN_SEMANA", "OTROS", "TOTAL"]);
+          }
+
+          // C. Herramientas
+          if (item.herramientas && item.herramientas.length > 0) {
+             const toolItems = item.herramientas.map(t => ({
+                 FOLIO: id, ...t,
+                 RESIDENTE: t.papaCaliente ? t.papaCaliente.residente : "",
+                 CONTROLLER: t.papaCaliente ? t.papaCaliente.controller : "",
+                 ALMACEN: t.papaCaliente ? t.papaCaliente.almacen : "",
+                 LOGISTICA: t.papaCaliente ? t.papaCaliente.logistica : "",
+                 RESIDENTE_FIN: t.papaCaliente ? t.papaCaliente.residenteFin : ""
+             }));
+             saveChildData(APP_CONFIG.woToolsSheet, toolItems, ["FOLIO", "CANTIDAD", "UNIDAD", "DESCRIPCION", "COSTO", "TOTAL", "RESIDENTE", "CONTROLLER", "ALMACEN", "LOGISTICA", "RESIDENTE_FIN"]);
+          }
+
+          // D. Equipos
+          if (item.equipos && item.equipos.length > 0) {
+             const eqItems = item.equipos.map(e => ({ FOLIO: id, ...e }));
+             saveChildData(APP_CONFIG.woEquipSheet, eqItems, ["FOLIO", "CANTIDAD", "UNIDAD", "TIPO", "DESCRIPCION", "ESPECIFICACION", "DIAS", "HORAS", "COSTO", "TOTAL"]);
+          }
+
+          // E. Programa
+          if (item.programa && item.programa.length > 0) {
+             const progItems = item.programa.map(p => ({ FOLIO: id, ...p }));
+             saveChildData(APP_CONFIG.woProgramSheet, progItems, ["FOLIO", "DESCRIPCION", "FECHA", "DURACION", "UNIDAD_DURACION", "UNIDAD", "CANTIDAD", "PRECIO", "TOTAL", "RESPONSABLE"]);
+          }
+
+          // F. Detalles Extra (Checklist, Costos Adicionales) - JSON
+          let detallesExtra = "";
+          if (item.checkList || item.additionalCosts) {
+              detallesExtra = JSON.stringify({
+                  checkList: item.checkList,
+                  costs: item.additionalCosts
+              });
+          }
+
           // Mapeo Explícito para PPCV3
           const taskData = {
                  'FOLIO': id,
@@ -995,7 +1084,8 @@ function apiSavePPCData(payload, activeUser) {
                  'CELULAR': item.celular,
                  'FECHA_COTIZACION': item.fechaCotizacion,
                  'CLIENTE': item.cliente,
-                 'TRABAJO': item.TRABAJO
+                 'TRABAJO': item.TRABAJO,
+                 'DETALLES_EXTRA': detallesExtra // Nueva Columna
           };
           
           // A. Persistencia en PPC Maestro (PPCV3)
