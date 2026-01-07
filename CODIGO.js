@@ -1537,6 +1537,8 @@ function onOpen() {
   ui.createMenu('⚡ HOLTMONT CMD')
     .addItem('✅ REALIZAR ALTA (Fila Actual)', 'cmdRealizarAlta')
     .addItem('🔄 ACTUALIZAR (Fila Actual)', 'cmdActualizar')
+    .addSeparator()
+    .addItem('🎨 Aplicar Formato Condicional (Semaforo)', 'setupConditionalFormatting')
     .addToUi();
 }
 
@@ -1988,4 +1990,101 @@ function test_WorkOrder_Generation() {
   } else {
       console.error("❌ Failed to save or generate ID", res);
   }
+}
+
+/**
+ * ======================================================================
+ * MODULE: FORMATO CONDICIONAL (SEMAFORIZACIÓN)
+ * ======================================================================
+ */
+function setupConditionalFormatting() {
+  const ui = SpreadsheetApp.getUi();
+  const sheetsToFormat = [APP_CONFIG.ppcSheetName, FOLIO_CONFIG.SHEET_NAME];
+  let logMsg = "";
+
+  sheetsToFormat.forEach(sheetName => {
+    const sheet = SS.getSheetByName(sheetName);
+    if (!sheet) {
+      logMsg += `⚠️ Hoja no encontrada: ${sheetName}\n`;
+      return;
+    }
+
+    // 1. Encontrar Cabeceras
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 1) return;
+
+    // Buscar fila de encabezados
+    const values = sheet.getRange(1, 1, Math.min(20, lastRow), lastCol).getValues();
+    const headerRowIdx = findHeaderRow(values);
+
+    if (headerRowIdx === -1) {
+       logMsg += `⚠️ Cabeceras no detectadas en: ${sheetName}\n`;
+       return;
+    }
+
+    const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
+
+    // 2. Identificar Columnas Clave
+    // FECHA: 'FECHA', 'ALTA', 'FECHA INICIO', etc.
+    const colFechaIdx = headers.findIndex(h => h === "FECHA" || h.includes("FECHA INICIO") || h === "ALTA" || h === "FECHA_ALTA");
+    // CLASIFICACION: 'CLASIFICACION', 'A/AA/AAA'
+    const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI") || h === "A/AA/AAA");
+
+    if (colFechaIdx === -1 || colClasiIdx === -1) {
+       logMsg += `⚠️ Columnas faltantes en ${sheetName} (Fecha: ${colFechaIdx}, Clasi: ${colClasiIdx})\n`;
+       return;
+    }
+
+    const rowStart = headerRowIdx + 2; // Fila de datos (1-based)
+    const colFechaLet = colIndexToLetter(colFechaIdx + 1);
+    const colClasiLet = colIndexToLetter(colClasiIdx + 1);
+
+    // 3. Rango de Aplicación (Solo columna FECHA)
+    const numRows = sheet.getMaxRows() - rowStart + 1;
+    if (numRows < 1) return; // Evitar rango negativo
+
+    const range = sheet.getRange(rowStart, colFechaIdx + 1, numRows, 1);
+
+    // 4. Construir Reglas (Preservando existentes)
+    const existingRules = sheet.getConditionalFormatRules();
+    const newRules = [];
+
+    // Helper para crear par de reglas (Rojo/Verde)
+    const addRulePair = (clase, dias) => {
+        // VENCIDO (ROJO) -> TODAY - FECHA > DIAS
+        newRules.push(SpreadsheetApp.newConditionalFormatRule()
+            .whenFormulaSatisfied(`=AND(UPPER(TRIM($${colClasiLet}${rowStart}))="${clase}", (TODAY() - $${colFechaLet}${rowStart}) > ${dias})`)
+            .setBackground("#FF0000") // Rojo
+            .setRanges([range])
+            .build());
+
+        // A TIEMPO (VERDE) -> TODAY - FECHA <= DIAS
+        newRules.push(SpreadsheetApp.newConditionalFormatRule()
+            .whenFormulaSatisfied(`=AND(UPPER(TRIM($${colClasiLet}${rowStart}))="${clase}", (TODAY() - $${colFechaLet}${rowStart}) <= ${dias})`)
+            .setBackground("#00FF00") // Verde
+            .setRanges([range])
+            .build());
+    };
+
+    addRulePair("A", 3);
+    addRulePair("AA", 15);
+    addRulePair("AAA", 30);
+
+    // Priorizamos las nuevas reglas, luego las existentes
+    sheet.setConditionalFormatRules(newRules.concat(existingRules));
+    logMsg += `✅ Reglas aplicadas en: ${sheetName} (Fecha: Col ${colFechaLet}, Clasi: Col ${colClasiLet})\n`;
+  });
+
+  if (logMsg) ui.alert(logMsg);
+}
+
+function colIndexToLetter(col) {
+  let temp, letter = '';
+  while (col > 0) {
+    temp = (col - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    col = (col - temp - 1) / 26;
+  }
+  return letter;
 }
