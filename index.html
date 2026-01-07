@@ -10,6 +10,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -276,6 +277,25 @@
     body.theme-cyberpunk .table-excel th { background-color: #000; color: #0f0; border-color: #0f0; }
     body.theme-cyberpunk .table-excel td { background-color: #000; color: #0f0; border-color: #0f0; }
 
+    /* CYBERPUNK ANIMATION */
+    .cyberpunk-svg {
+        display: none;
+        position: absolute;
+        bottom: 20px;
+        right: -20px;
+        width: 180px;
+        height: 180px;
+        z-index: 0;
+        opacity: 0.3;
+        pointer-events: none;
+        fill: none;
+        stroke-width: 1.5;
+    }
+    body.theme-cyberpunk .cyberpunk-svg {
+        display: block;
+        stroke: #00ff9d;
+    }
+
     /* ESTILOS NUEVOS PARA LOGICA / INSTRUCCIONES WORKORDER (User Request) */
     .logic-card {
         background-color: #151515;
@@ -404,6 +424,12 @@
 
   <div v-if="isLoggedIn" class="app-wrapper">
     <aside class="sidebar" :class="{ compact: isCompact }">
+      <!-- SVG ANIMATION CONTAINER -->
+      <svg id="cyberpunk-logo-svg" class="cyberpunk-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+          <path class="cp-path" d="M50 5 L95 27.5 L95 72.5 L50 95 L5 72.5 L5 27.5 Z" />
+          <path class="cp-path" d="M50 20 L80 35 L80 65 L50 80 L20 65 L20 35 Z" />
+          <path class="cp-path" d="M50 35 L65 42.5 L65 57.5 L50 65 L35 57.5 L35 42.5 Z" />
+      </svg>
       <div class="brand">
           <span class="brand-text"><i class="fas fa-table me-2 text-primary"></i> HOLTMONT</span>
           <button class="btn btn-sm btn-link text-secondary btn-toggle-sidebar" @click="toggleSidebar" title="Contraer/Expandir Menú">
@@ -3110,6 +3136,17 @@
       const doLogin = () => { if(!loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role); loadCascadeTree(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiLogin(loginUser.value, loginPass.value); };
       const loadConfig = (r) => { google.script.run.withSuccessHandler(d => { config.value=d; if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r); };
       const toggleSidebar = () => { isCompact.value = !isCompact.value; };
+      const animateCyberpunkLogo = () => {
+          anime({
+              targets: '.cp-path',
+              strokeDashoffset: [anime.setDashoffset, 0],
+              easing: 'easeInOutSine',
+              duration: 2000,
+              direction: 'alternate',
+              loop: true
+          });
+      };
+
       const toggleTheme = () => {
           if (currentTheme.value === 'light') currentTheme.value = 'dark';
           else if (currentTheme.value === 'dark') currentTheme.value = 'cyberpunk';
@@ -3118,6 +3155,9 @@
       watch(currentTheme, (val) => {
           document.body.classList.remove('theme-light', 'theme-dark', 'theme-cyberpunk');
           document.body.classList.add('theme-' + val);
+          if (val === 'cyberpunk') {
+              nextTick(() => animateCyberpunkLogo());
+          }
       }, { immediate: true });
 
       const logout = () => { google.script.run.apiLogout(currentUsername.value); isLoggedIn.value=false; loginPass.value=''; loginUser.value=''; currentView.value='DASHBOARD'; };
