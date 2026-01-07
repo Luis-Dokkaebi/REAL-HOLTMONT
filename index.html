@@ -1152,11 +1152,18 @@
                                         <label class="small text-muted fw-bold mb-1">Elaboró (Responsable Interno)</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text bg-light"><i class="fas fa-user-tag text-muted"></i></span>
-                                            <select v-model="workorderData.cotizador" class="form-select">
-                                                <option value="" disabled>Selecciona tu nombre...</option>
-                                                <option v-for="p in (config.directory || config.staff)" :key="p.name" :value="p.name">{{ p.name }}</option>
-                                            </select>
+                                            <div class="form-control p-1 d-flex align-items-center flex-wrap gap-1" style="min-height: 31px; height: auto;" @click="$refs.cotizadorInput.focus()">
+                                                <span v-for="(name, idx) in workorderData.cotizador" :key="idx" class="user-chip">
+                                                    {{ name }} <i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="removeCotizador(idx)"></i>
+                                                </span>
+                                                <input ref="cotizadorInput" v-model="cotizadorSearch" placeholder="Buscar..." style="border:none; outline:none; background:transparent; font-size: 0.8rem; flex: 1; min-width: 60px;">
+                                            </div>
                                         </div>
+                                        <ul class="list-group position-absolute shadow" style="z-index:100; max-height:200px; overflow:auto; width: 90%; margin-top: 2px;" v-if="cotizadorSearch && filteredCotizadores.length">
+                                            <li v-for="p in filteredCotizadores" :key="p.name" class="list-group-item list-group-item-action small py-1" style="cursor:pointer;" @click="addCotizador(p.name)">
+                                                {{p.name}}
+                                            </li>
+                                        </ul>
                                         <div class="d-flex align-items-center mt-1">
                                             <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.resp = !showInstr.resp" :class="{'text-info': showInstr.resp}" title="Ver Instrucción"></i>
                                             <small v-if="showInstr.resp" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: se iria al traker automático / Instr 2: se requiere en base datos dar alta las personas que van a cotizar de holtmont para ayudar en la captura</small>
@@ -2451,10 +2458,15 @@
       const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
       const ppcExistingData = ref([]);
 
+      const cotizadorSearch = ref('');
+      const filteredCotizadores = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(cotizadorSearch.value.toLowerCase()) && !workorderData.value.cotizador.includes(p.name)).slice(0,5));
+      const addCotizador = (name) => { workorderData.value.cotizador.push(name); cotizadorSearch.value = ''; };
+      const removeCotizador = (idx) => { workorderData.value.cotizador.splice(idx, 1); };
+
       // WORKORDER STATE
       const workorderData = ref({
           cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
-          cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+          cotizador: [], departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
           prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
           checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
           restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
@@ -3093,7 +3105,7 @@
                   fetchNextSequence();
                   workorderData.value = {
                       cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
-                      cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+                      cotizador: [], departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
                       prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
                       checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
                       restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
@@ -3340,7 +3352,7 @@
       const syncQueueToBackend = () => { google.script.run.apiSyncDrafts(JSON.parse(JSON.stringify(activityQueue.value))); };
 
       const saveWorkOrder = () => {
-        if(!workorderData.value.cliente || !workorderData.value.tipoTrabajo || !workorderData.value.cotizador) {
+        if(!workorderData.value.cliente || !workorderData.value.tipoTrabajo || !workorderData.value.cotizador.length) {
             return Swal.fire('Faltan datos obligatorios', 'Cliente, Tipo de Trabajo y quien Elaboró son requeridos.', 'warning');
         }
         isSubmitting.value = true;
@@ -3396,7 +3408,7 @@
             cliente: fullClientName,
             especialidad: spec, // Mapping Department to Area/Especialidad for Folio
             concepto: conceptoStr,
-            responsable: workorderData.value.cotizador,
+            responsable: workorderData.value.cotizador.join(', '),
             requisitor: fullRequisitor,
             contacto: workorderData.value.contacto,
             celular: workorderData.value.celular,
@@ -3437,7 +3449,7 @@
                         // Reset Form
                         workorderData.value = {
                             cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
-                            cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+                            cotizador: [], departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
                             prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
                       checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
                       restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
@@ -3473,7 +3485,8 @@
       selectedFinancing,
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
-      showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown };
+      showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
+      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
