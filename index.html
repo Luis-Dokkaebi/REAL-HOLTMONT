@@ -1873,21 +1873,21 @@
                         <div class="footer-summary-container">
                              <div class="footer-item">
                                  <span class="footer-label"><i class="fas fa-list-alt"></i> Subtotal</span>
-                                 <span class="footer-value">{{ formatCurrency(dashboardSubtotal) }} MXN</span>
+                                 <span class="footer-value">{{ formatCurrency(animatedTotals.subtotal) }} MXN</span>
                              </div>
 
                              <div class="vr d-none d-md-block" style="opacity: 0.1;"></div>
 
                              <div class="footer-item">
                                  <span class="footer-label"><i class="fas fa-chart-line"></i> Utilidad (P1) 15%</span>
-                                 <span class="footer-value green">+{{ formatCurrency(dashboardUtility) }} MXN</span>
+                                 <span class="footer-value green">+{{ formatCurrency(animatedTotals.utility) }} MXN</span>
                              </div>
 
                              <div class="vr d-none d-md-block" style="opacity: 0.1;"></div>
 
                              <div class="footer-item">
                                  <span class="footer-label text-primary"><i class="fas fa-dollar-sign"></i> TOTAL COTIZACIÓN</span>
-                                 <span class="footer-value blue">{{ formatCurrency(dashboardTotal) }} MXN</span>
+                                 <span class="footer-value blue">{{ formatCurrency(animatedTotals.total) }} MXN</span>
                              </div>
 
                              <div class="d-flex gap-3 ms-auto align-items-center">
@@ -1907,13 +1907,13 @@
                                      <button class="btn btn-sm btn-light border fw-bold text-dark d-flex align-items-center px-3" @click="selectedFinancing = selectedFinancing === 'SEPSA' ? null : 'SEPSA'">
                                          <i class="fas fa-building me-2 text-secondary"></i> SEPSA
                                      </button>
-                                     <span v-if="selectedFinancing === 'SEPSA'" class="small fw-bold text-dark animate__animated animate__fadeIn">{{ formatCurrency(dashboardTotal * 2) }}</span>
+                                     <span v-if="selectedFinancing === 'SEPSA'" class="small fw-bold text-dark animate__animated animate__fadeIn">{{ formatCurrency(animatedTotals.total * 2) }}</span>
                                  </div>
                                  <div class="d-flex flex-column align-items-center gap-1">
                                      <button class="btn btn-sm btn-light border fw-bold text-danger d-flex align-items-center px-3" style="background:#fff0f0; border-color:#ffcccc !important;" @click="selectedFinancing = selectedFinancing === 'SANTANDER' ? null : 'SANTANDER'">
                                          SANTANDER
                                      </button>
-                                     <span v-if="selectedFinancing === 'SANTANDER'" class="small fw-bold text-danger animate__animated animate__fadeIn">{{ formatCurrency(dashboardTotal * 2.5) }}</span>
+                                     <span v-if="selectedFinancing === 'SANTANDER'" class="small fw-bold text-danger animate__animated animate__fadeIn">{{ formatCurrency(animatedTotals.total * 2.5) }}</span>
                                  </div>
                              </div>
                         </div>
@@ -2853,6 +2853,21 @@
       const dashboardUtility = computed(() => dashboardSubtotal.value * 0.15);
       const dashboardTotal = computed(() => dashboardSubtotal.value + dashboardUtility.value);
 
+      // ANIME.JS ANIMATION LOGIC
+      const animatedTotals = Vue.reactive({ subtotal: 0, utility: 0, total: 0 });
+
+      watch([dashboardSubtotal, dashboardUtility, dashboardTotal], ([newSub, newUtil, newTot]) => {
+          anime({
+              targets: animatedTotals,
+              subtotal: newSub,
+              utility: newUtil,
+              total: newTot,
+              round: 1,
+              easing: 'easeOutExpo',
+              duration: 1500
+          });
+      }, { immediate: true });
+
       const selectedFinancing = ref(null); // Financing toggle state
       const selectedWeek = ref('');
       const currentModuleId = ref('');
@@ -3629,7 +3644,7 @@
       requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
       toolsRequired, addToolItem, removeToolItem, updateToolRowTotal, toolsTotal,
       specialEquipment, addSpecialEquipItem, removeSpecialEquipItem, updateSpecialEquipRowTotal, specialEquipTotal,
-      additionalCosts, laborTotal, dashboardSubtotal, dashboardUtility, dashboardTotal,
+      additionalCosts, laborTotal, dashboardSubtotal, dashboardUtility, dashboardTotal, animatedTotals,
       selectedFinancing,
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
