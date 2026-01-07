@@ -1,92 +1,115 @@
 
+import asyncio
+from playwright.async_api import async_playwright
+import json
 import os
-from playwright.sync_api import sync_playwright
 
-def verify_workorder_form():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+async def main():
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+        page = await browser.new_page()
 
-        # Load the local HTML file
-        file_path = os.path.abspath("index.html")
-        page.goto(f"file://{file_path}")
-
-        # Mock window.google.script.run to bypass GAS errors and handle success callbacks
-        page.evaluate("""
+        # Mock google.script.run
+        await page.add_init_script("""
             window.google = {
                 script: {
                     run: {
                         withSuccessHandler: function(callback) {
-                            return {
-                                apiLogin: function(u, p) {
-                                    callback({
-                                        success: true,
-                                        name: 'TEST USER',
-                                        username: 'PREWORK_ORDER',
-                                        role: 'WORKORDER_USER'
-                                    });
-                                    return this;
-                                },
-                                getSystemConfig: function() {
-                                    callback({
-                                        departments: {},
-                                        staff: [],
-                                        directory: [],
-                                        specialModules: [{id: 'PPC_MASTER', type: 'ppc_native', label: 'Work Order', icon: 'fa-clipboard-list', color: '#007bff'}]
-                                    });
-                                    return this;
-                                },
-                                apiGetNextWorkOrderSeq: function() {
-                                    callback('0001');
-                                    return this;
-                                },
-                                apiFetchCascadeTree: function() {
-                                    callback({success: true, data: []});
-                                    return this;
-                                },
-                                withFailureHandler: function() { return this; }
-                            };
+                            this.successCallback = callback;
+                            return this;
                         },
-                        withFailureHandler: function() { return this; },
-                        apiLogin: function() {},
-                        apiLogout: function() {}
+                        withFailureHandler: function(callback) {
+                            this.failureCallback = callback;
+                            return this;
+                        },
+                        apiLogin: function(u, p) {
+                            if (this.successCallback) {
+                                this.successCallback({
+                                    success: true,
+                                    name: 'PREWORK',
+                                    username: 'PREWORK_ORDER',
+                                    role: 'WORKORDER_USER'
+                                });
+                            }
+                        },
+                        getSystemConfig: function(role) {
+                            if (this.successCallback) {
+                                this.successCallback({
+                                    departments: {'ELECTROMECANICA': {label: 'Electromecánica', color: '#000'}},
+                                    staff: [],
+                                    directory: [{name: 'Test User', dept: 'VENTAS'}],
+                                    specialModules: [
+                                        {id: 'PPC_MASTER', label: 'Work Order', icon: 'fa-clipboard-list', color: '#0d6efd', type: 'ppc_native'}
+                                    ]
+                                });
+                            }
+                        },
+                        apiGetNextWorkOrderSeq: function() {
+                            if (this.successCallback) this.successCallback('1000');
+                        },
+                        apiFetchPPCData: function() {
+                             if (this.successCallback) this.successCallback({success: true, data: []});
+                        },
+                        apiFetchDrafts: function() {
+                             if (this.successCallback) this.successCallback({success: true, data: []});
+                        },
+                        apiFetchCascadeTree: function() {
+                            if (this.successCallback) this.successCallback({success: true, data: []});
+                        },
+                        apiFetchTeamKPIData: function(u) {
+                             if (this.successCallback) this.successCallback({success: true, ventas: [], tracker: []});
+                        },
+                        apiFetchSalesHistory: function() {
+                             if (this.successCallback) this.successCallback({success: true, data: {}});
+                        }
                     }
                 }
             };
         """)
 
-        # Perform Login
-        page.fill('input[placeholder="Usuario"]', "PREWORK_ORDER")
-        page.fill('input[placeholder="Contraseña..."]', "password")
-        page.click('button:has-text("INICIAR SESIÓN")')
+        try:
+            # Check if server is up
+            response = await page.goto("http://localhost:8000/index.html")
+            print(f"Page loaded: {response.status}")
 
-        # Wait for dashboard to load
-        page.wait_for_selector('.dept-card', timeout=5000)
+            # Login
+            await page.fill("input[placeholder='Usuario']", "PREWORK_ORDER")
+            await page.fill("input[placeholder='Contraseña...']", "password")
+            await page.click("button:has-text('INICIAR SESIÓN')")
 
-        # Click the module to open WorkOrder Form
-        page.click('.dept-card', force=True)
+            # Wait for sidebar and module
+            await page.wait_for_selector(".dept-card", timeout=5000)
+            print("Logged in")
 
-        # Wait for WorkOrder form
-        page.wait_for_selector('h4:has-text("Holtmont Services")', timeout=5000)
+            # Click on Work Order module
+            await page.click(".dept-card")
+            print("Opened module")
 
-        # Select the *first* visible "MANO DE OBRA" header to be safe, as duplicate headers might exist due to code repetition or similar structures (though I should have moved it, not duplicated it).
-        # Actually, let's verify if I accidentally duplicated it. The error says 2 elements.
-        # This is a good check. If I duplicated instead of moved, I need to fix it.
-        # Wait, I did `replace_with_git_merge_diff` to modify "MATERIALES", "HERRAMIENTAS" and *insert* "MANO DE OBRA".
-        # But I removed "MANO DE OBRA" from its old location?
-        # My "Replace" block for "MANO DE OBRA" relocation was:
-        # SEARCH: `<!-- PROGRAMA DEL PROYECTO (NUEVO PROTOTIPO) --> ... <div class="card border-0 shadow-sm mt-5">`
-        # REPLACE: `<!-- MANO DE OBRA (NUEVO) --> ... <!-- PROGRAMA DEL PROYECTO (NUEVO PROTOTIPO) --> ...`
+            # Wait for cost card to appear (indicates our changes are present)
+            await page.wait_for_selector(".cost-card", timeout=5000)
+            print("Cost cards found")
 
-        # Wait, I might have failed to remove the old "MANO DE OBRA".
-        # Let's check the code via grep first.
+            # Scroll to the cost card area
+            await page.locator(".cost-card").first.scroll_into_view_if_needed()
 
-        target = page.locator('h6:has-text("MANO DE OBRA")').first
-        target.scroll_into_view_if_needed()
+            # Wait a bit for animations
+            await page.wait_for_timeout(500)
 
-        page.screenshot(path="verification/verification_screenshot.png", full_page=True)
+            # Take screenshot of the viewport (which should now show the costs)
+            await page.screenshot(path="verification_screenshot_costs.png")
+            print("Screenshot saved to verification_screenshot_costs.png")
 
-        browser.close()
+            # Also try to capture the footer
+            await page.locator(".footer-summary-container").scroll_into_view_if_needed()
+            await page.wait_for_timeout(500)
+            await page.screenshot(path="verification_screenshot_footer.png")
+            print("Screenshot saved to verification_screenshot_footer.png")
+
+        except Exception as e:
+            print(f"Error: {e}")
+            await page.screenshot(path="error_screenshot.png")
+        finally:
+            await browser.close()
 
 if __name__ == "__main__":
-    verify_workorder_form()
+    asyncio.run(main())
