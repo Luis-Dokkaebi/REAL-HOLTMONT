@@ -892,41 +892,6 @@
         </div>
 
         <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="overflow-y:auto;">
-            <!-- HEADER -->
-            <div class="d-flex justify-content-between align-items-center px-4 py-3" style="background: #1c1c1c; color: white;">
-                <div class="d-flex align-items-center">
-                    <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" style="height:40px; margin-right:15px; filter: brightness(0) invert(1);">
-                    <div>
-                        <h4 class="fw-bold m-0" style="font-family: 'Roboto', sans-serif;">Holtmont Services</h4>
-                        <small style="letter-spacing: 2px; opacity: 0.7;">PRE WORK ORDER</small>
-                    </div>
-                </div>
-                <div class="d-flex gap-3 align-items-center">
-                    <!-- Folio Widget -->
-                    <div class="bg-dark rounded px-3 py-2 border border-secondary position-relative">
-                        <small class="d-block text-white" style="font-size: 10px;">FOLIO <i class="fas fa-info-circle text-info ms-1" title="Instr. El folio debe ayudar a identificar el trabajo, un número, el nombre del cliente, departamento días, mes y año"></i></small>
-                        <span class="fw-bold text-white">{{ currentWorkorderId || generatedFolio }}</span>
-                    </div>
-                    <!-- Date Widget -->
-                    <div class="bg-dark rounded px-3 py-2 border border-secondary">
-                        <small class="d-block text-white" style="font-size: 10px;">FECHA <i class="fas fa-info-circle text-info ms-1" title="En automático se pasa al folio"></i></small>
-                        <span class="fw-bold text-white">{{ new Date().toLocaleDateString() }}</span>
-                    </div>
-                    <!-- Delivery Date Widget -->
-                    <div class="bg-dark rounded px-3 py-2 border border-secondary">
-                        <small class="d-block text-white" style="font-size: 10px;">FECHA DE ENTREGA</small>
-                        <input type="date" v-model="workorderData.fechaEntrega" class="bg-transparent border-0 text-white p-0 fw-bold" style="font-size: 13px; width: 110px;">
-                    </div>
-                    <!-- Priority -->
-                    <select v-model="workorderData.prioridad" class="btn btn-success fw-bold border-0" :class="{'bg-danger': workorderData.prioridad.includes('Alta'), 'bg-warning text-dark': workorderData.prioridad.includes('Media')}">
-                        <option value="AAA - Alta Prioridad">AAA - Alta Prioridad</option>
-                        <option value="AA - Media Prioridad">AA - Media Prioridad</option>
-                        <option value="A - Baja Prioridad">A - Baja Prioridad</option>
-                    </select>
-                    <button class="btn btn-outline-secondary btn-sm ms-2" @click="goHome">Cerrar</button>
-                </div>
-            </div>
-
             <div class="p-4" style="max-width: 1400px; margin: 0 auto; width: 100%;">
                 <!-- CHECKLIST VISITA -->
                 <div class="card border-0 shadow-sm mb-4">
@@ -956,6 +921,117 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- PROTOTYPE SECTION (MOVED UP) -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>PROTOTIPO: Control de Vehículo y Cotización <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.vehicle = !showLogic.vehicle" title="Ver Lógica"></i></h6>
+                    </div>
+                    <div class="card-body">
+                         <!-- Cotizacion Preliminar -->
+                         <div class="row mb-4 align-items-center">
+                             <div class="col-md-3"><label class="fw-bold">COTIZACION PRELIMINAR:</label></div>
+                             <div class="col-md-9"><input v-model="vehicleControlData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
+                         </div>
+
+                         <!-- Control Vehiculo Header -->
+                         <div class="bg-dark text-white p-2 fw-bold mb-3 small">
+                             Control de Vehículo, Tiempo de Cotización, Horarios, Gasolina, Cuidado de Vehículo, Evaluación Conducción
+                         </div>
+
+                         <div class="logic-card mb-3 position-relative" v-if="showLogic.vehicle">
+                             <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.vehicle = false"></button>
+                             <div class="logic-header"><span class="logic-icon"><i class="fas fa-rocket"></i></span> NUEVO A DESARROLLAR</div>
+                             <div class="logic-content">Lógica el control de los vehículo. Esto va generar un costo que se va ir a la integracion del costo de ir dando a un levantamiento, se requiere controlar los robos de partes, gasolina , tiempo perdidos y rendimientos , se generarian bonos por buen manejos ( Teoria de la Economia Conductual )</div>
+                         </div>
+
+                         <div class="row">
+                             <div class="col-12">
+                                 <table class="table table-bordered table-sm small align-middle">
+                                     <tbody>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Chofer Holtmont</td>
+                                             <td><input v-model="vehicleControlData.chofer" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td class="fw-bold bg-light">Gasolina</td>
+                                             <td><input v-model="vehicleControlData.gasolina" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="20 lts"></td>
+                                             <td class="fw-bold bg-light">Hora salida (GPS)</td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Vehículo Holtmont</td>
+                                             <td><input v-model="vehicleControlData.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td class="fw-bold bg-light">FOTO ODOMETRO</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_ODOMETRO')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td><input v-model="vehicleControlData.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Evaluación de Manejo</td>
+                                             <td><input v-model="vehicleControlData.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
+                                             <td class="fw-bold bg-light">FOTO DE INDICADOR ANTES DE LLENAR GASOLINA</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_ANTES_GASOLINA')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td class="fw-bold bg-light">Hora llegada (GPS)</td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Multas</td>
+                                             <td><input v-model="vehicleControlData.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
+                                             <td class="fw-bold bg-light">FOTO INDICADOR DESPUES</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_DESPUES_GASOLINA')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td><input v-model="vehicleControlData.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Verificación de Ruta</td>
+                                             <td colspan="4"><input v-model="vehicleControlData.ruta" class="form-control form-control-sm border-0 bg-transparent" placeholder="de Oficina a Planta"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Verificación Vehículo</td>
+                                             <td colspan="4"><input v-model="vehicleControlData.verifVehiculo" class="form-control form-control-sm border-0 bg-transparent" placeholder="con Video"></td>
+                                         </tr>
+                                     </tbody>
+                                 </table>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- HEADER (MOVED DOWN) -->
+                <div class="d-flex justify-content-between align-items-center px-4 py-3 mb-4 rounded" style="background: #1c1c1c; color: white;">
+                    <div class="d-flex align-items-center">
+                        <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" style="height:40px; margin-right:15px; filter: brightness(0) invert(1);">
+                        <div>
+                            <h4 class="fw-bold m-0" style="font-family: 'Roboto', sans-serif;">Holtmont Services</h4>
+                            <small style="letter-spacing: 2px; opacity: 0.7;">PRE WORK ORDER</small>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 align-items-center">
+                        <!-- Folio Widget -->
+                        <div class="bg-dark rounded px-3 py-2 border border-secondary position-relative">
+                            <small class="d-block text-white" style="font-size: 10px;">FOLIO <i class="fas fa-info-circle text-info ms-1" title="Instr. El folio debe ayudar a identificar el trabajo, un número, el nombre del cliente, departamento días, mes y año"></i></small>
+                            <span class="fw-bold text-white">{{ currentWorkorderId || generatedFolio }}</span>
+                        </div>
+                        <!-- Date Widget -->
+                        <div class="bg-dark rounded px-3 py-2 border border-secondary">
+                            <small class="d-block text-white" style="font-size: 10px;">FECHA <i class="fas fa-info-circle text-info ms-1" title="En automático se pasa al folio"></i></small>
+                            <span class="fw-bold text-white">{{ new Date().toLocaleDateString() }}</span>
+                        </div>
+                        <!-- Delivery Date Widget -->
+                        <div class="bg-dark rounded px-3 py-2 border border-secondary">
+                            <small class="d-block text-white" style="font-size: 10px;">FECHA DE ENTREGA</small>
+                            <input type="date" v-model="workorderData.fechaEntrega" class="bg-transparent border-0 text-white p-0 fw-bold" style="font-size: 13px; width: 110px;">
+                        </div>
+                        <!-- Priority -->
+                        <select v-model="workorderData.prioridad" class="btn btn-success fw-bold border-0" :class="{'bg-danger': workorderData.prioridad.includes('Alta'), 'bg-warning text-dark': workorderData.prioridad.includes('Media')}">
+                            <option value="AAA - Alta Prioridad">AAA - Alta Prioridad</option>
+                            <option value="AA - Media Prioridad">AA - Media Prioridad</option>
+                            <option value="A - Baja Prioridad">A - Baja Prioridad</option>
+                        </select>
+                        <button class="btn btn-outline-secondary btn-sm ms-2" @click="goHome">Cerrar</button>
                     </div>
                 </div>
 
@@ -1218,81 +1294,6 @@
                     </div>
                 </div>
 
-                <!-- PROTOTYPE SECTION -->
-                <div class="card border-0 shadow-sm mt-5">
-                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
-                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>PROTOTIPO: Control de Vehículo y Cotización <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.vehicle = !showLogic.vehicle" title="Ver Lógica"></i></h6>
-                    </div>
-                    <div class="card-body">
-                         <!-- Cotizacion Preliminar -->
-                         <div class="row mb-4 align-items-center">
-                             <div class="col-md-3"><label class="fw-bold">COTIZACION PRELIMINAR:</label></div>
-                             <div class="col-md-9"><input v-model="vehicleControlData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología..."></div>
-                         </div>
-
-                         <!-- Control Vehiculo Header -->
-                         <div class="bg-dark text-white p-2 fw-bold mb-3 small">
-                             Control de Vehículo, Tiempo de Cotización, Horarios, Gasolina, Cuidado de Vehículo, Evaluación Conducción
-                         </div>
-
-                         <div class="logic-card mb-3 position-relative" v-if="showLogic.vehicle">
-                             <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.vehicle = false"></button>
-                             <div class="logic-header"><span class="logic-icon"><i class="fas fa-rocket"></i></span> NUEVO A DESARROLLAR</div>
-                             <div class="logic-content">Lógica el control de los vehículo. Esto va generar un costo que se va ir a la integracion del costo de ir dando a un levantamiento, se requiere controlar los robos de partes, gasolina , tiempo perdidos y rendimientos , se generarian bonos por buen manejos ( Teoria de la Economia Conductual )</div>
-                         </div>
-
-                         <div class="row">
-                             <div class="col-12">
-                                 <table class="table table-bordered table-sm small align-middle">
-                                     <tbody>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Chofer Holtmont</td>
-                                             <td><input v-model="vehicleControlData.chofer" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
-                                             <td class="fw-bold bg-light">Gasolina</td>
-                                             <td><input v-model="vehicleControlData.gasolina" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="20 lts"></td>
-                                             <td class="fw-bold bg-light">Hora salida (GPS)</td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Vehículo Holtmont</td>
-                                             <td><input v-model="vehicleControlData.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
-                                             <td class="fw-bold bg-light">FOTO ODOMETRO</td>
-                                             <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_ODOMETRO')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
-                                             </td>
-                                             <td><input v-model="vehicleControlData.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Evaluación de Manejo</td>
-                                             <td><input v-model="vehicleControlData.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
-                                             <td class="fw-bold bg-light">FOTO DE INDICADOR ANTES DE LLENAR GASOLINA</td>
-                                             <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_ANTES_GASOLINA')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
-                                             </td>
-                                             <td class="fw-bold bg-light">Hora llegada (GPS)</td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Multas</td>
-                                             <td><input v-model="vehicleControlData.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
-                                             <td class="fw-bold bg-light">FOTO INDICADOR DESPUES</td>
-                                             <td>
-                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_DESPUES_GASOLINA')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
-                                             </td>
-                                             <td><input v-model="vehicleControlData.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Verificación de Ruta</td>
-                                             <td colspan="4"><input v-model="vehicleControlData.ruta" class="form-control form-control-sm border-0 bg-transparent" placeholder="de Oficina a Planta"></td>
-                                         </tr>
-                                         <tr>
-                                             <td class="fw-bold bg-light">Verificación Vehículo</td>
-                                             <td colspan="4"><input v-model="vehicleControlData.verifVehiculo" class="form-control form-control-sm border-0 bg-transparent" placeholder="con Video"></td>
-                                         </tr>
-                                     </tbody>
-                                 </table>
-                             </div>
-                         </div>
-                    </div>
-                </div>
 
 
                 <!-- PROGRAMA DEL PROYECTO (NUEVO PROTOTIPO) -->
