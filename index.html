@@ -716,7 +716,7 @@
                  <button class="btn btn-success btn-sm fw-bold" @click="addNewProjectTask"><i class="fas fa-plus"></i> NUEVA ACTIVIDAD</button>
             </div>
           </div>
-          <div class="excel-container flex-fill">
+          <div class="excel-container flex-fill" ref="projectTable">
              <div v-if="projectTasks.isLoading" class="text-center p-5 text-muted">Cargando actividades...</div>
              <div v-else-if="projectTasks.data.length === 0" class="text-center p-5 text-muted fst-italic">No hay actividades registradas para este proyecto.</div>
              <table v-else class="table-excel">
@@ -775,7 +775,7 @@
             </div>
             <div></div>
           </div>
-          <div class="excel-container flex-fill mb-2">
+          <div class="excel-container flex-fill mb-2" ref="trackerTable">
              <div v-if="staffTracker.isLoading" class="text-center p-5 text-muted">Cargando datos...</div>
              <table v-else class="table-excel">
                 <thead>
@@ -1932,7 +1932,7 @@
                    <table class="table-excel mini-table" style="background: white; border: 1px solid #999;"><thead><tr><th style="width:100px">ESPECIALIDAD</th><th style="width:40px">ACT</th><th style="width:40px">CUMP</th><th style="width:45px">PROM</th><th style="width:40px">ANT</th></tr></thead><tbody><tr v-for="stat in deptStats" :key="stat.key" :class="{'total-row': stat.key === 'TOTAL'}"><td style="font-weight:bold; text-align: left;">{{ stat.label }}</td><td class="text-center">{{ stat.actual }}</td><td class="text-center text-success fw-bold">{{ stat.cumplidas }}</td><td class="text-center">{{ stat.promedio }}</td><td class="text-center text-muted">{{ stat.anterior }}</td></tr></tbody></table>
                </div>
            </div>
-           <div class="excel-container flex-fill mb-3">
+           <div class="excel-container flex-fill mb-3" ref="ppcDraftTable">
                <table class="table-excel">
                    <thead><tr><th class="row-num">#</th><th v-if="currentUsername === 'PREWORK_ORDER'" style="width:60px">Cliente</th><th style="width:100px">Depto</th><th style="min-width:400px">Descripción Actividad</th><th style="width:150px">Responsable</th><th style="width:80px">Fecha</th><th style="width:40px">Reloj</th><th style="width:50px">Cumpl.</th><th style="width:40px">Clip</th><th style="min-width:150px">Comentarios</th><th style="min-width:150px">Previos</th><th style="width:50px"></th></tr></thead>
                    <tbody>
@@ -2481,6 +2481,39 @@
       const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
       const currentTheme = ref('light');
 
+      // REFS FOR TABLES (Pulse Effect)
+      const trackerTable = ref(null);
+      const projectTable = ref(null);
+      const ppcDraftTable = ref(null);
+
+      const pulseNewRow = (refName, position = 'first') => {
+          nextTick(() => {
+              let container = null;
+              if (refName === 'trackerTable') container = trackerTable.value;
+              if (refName === 'projectTable') container = projectTable.value;
+              if (refName === 'ppcDraftTable') container = ppcDraftTable.value;
+
+              if (!container) return;
+
+              let row;
+              if (position === 'first') {
+                  row = container.querySelector('tbody tr:first-child');
+              } else {
+                  row = container.querySelector('tbody tr:last-child');
+              }
+
+              if (!row) return;
+
+              anime({
+                  targets: row,
+                  backgroundColor: ['#00ff9d', 'rgba(0,0,0,0)'],
+                  boxShadow: ['0 0 15px rgba(0, 255, 157, 0.5)', '0 0 0 rgba(0,0,0,0)'],
+                  easing: 'easeOutQuad',
+                  duration: 2000
+              });
+          });
+      };
+
       const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'' });
       const isSubmitting = ref(false);
       const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
@@ -2979,7 +3012,14 @@
       };
 
       const refreshProjectTasks = () => { if(currentPpcProject.value) loadProjectTasks(currentPpcProject.value.name); };
-      const addNewProjectTask = () => { if (!projectTasks.value.headers.length) return; const row = { _isNew: true }; projectTasks.value.headers.forEach(h => row[h] = ""); row['ESTATUS'] = 'PENDIENTE'; projectTasks.value.data.unshift(row); };
+      const addNewProjectTask = () => {
+          if (!projectTasks.value.headers.length) return;
+          const row = { _isNew: true };
+          projectTasks.value.headers.forEach(h => row[h] = "");
+          row['ESTATUS'] = 'PENDIENTE';
+          projectTasks.value.data.unshift(row);
+          pulseNewRow('projectTable', 'first');
+      };
       const saveProjectRow = (row) => {
           if(!currentPpcProject.value) return;
           Swal.showLoading();
@@ -3446,7 +3486,13 @@
 
       const reloadStaffTracker = () => loadTrackerData();
 
-      const addNewRow = () => { if(!staffTracker.value.headers.length) return; const row={_isNew:true}; staffTracker.value.headers.forEach(h => { if(isCol(h, ['DIAS','RELOJ'])) row[h]=0; else row[h]=""; }); staffTracker.value.data.unshift(row); };
+      const addNewRow = () => {
+          if(!staffTracker.value.headers.length) return;
+          const row={_isNew:true};
+          staffTracker.value.headers.forEach(h => { if(isCol(h, ['DIAS','RELOJ'])) row[h]=0; else row[h]=""; });
+          staffTracker.value.data.unshift(row);
+          pulseNewRow('trackerTable', 'first');
+      };
       const saveRow = (row) => { Swal.showLoading(); google.script.run.withSuccessHandler(res => { Swal.close(); if(res.success){ row._isNew=false; if(res.moved){ reloadStaffTracker(); Swal.fire({icon: 'success', title: 'Archivado', text: 'Tarea movida a Realizadas (100%)', timer: 1500, showConfirmButton: false}); } else { Swal.fire({icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false}); } } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value); };
       const openCellUpload = (row, col) => { uploadingCell.value = {row, col}; cellFileInput.value.click(); };
       const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
@@ -3510,7 +3556,7 @@
              return;
           }
 
-          const item = JSON.parse(JSON.stringify(ppcData.value)); item.responsable = selectedResponsables.value.join(','); item.restricciones = extraData.value.restricciones; item.prioridades = extraData.value.prioridades; item.riesgos = extraData.value.riesgos; item.clasificacion = extraData.value.clasificacion; if(currentPpcProject.value) { const tag = `[PROY: ${currentPpcProject.value.name}]`; item.comentarios = (item.comentarios ? item.comentarios + ' ' : '') + tag; } let fResp = extraData.value.fechaRespuesta; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } item.fechaRespuesta = fResp; item.fechaAlta = new Date().toISOString(); activityQueue.value.push(item); ppcData.value.concepto=''; ppcData.value.horas=''; ppcData.value.comentarios=''; ppcData.value.comentariosPrevios=''; selectedResponsables.value=[]; uploadSuccess.value=false; showExtraModal.value = false; syncQueueToBackend();
+          const item = JSON.parse(JSON.stringify(ppcData.value)); item.responsable = selectedResponsables.value.join(','); item.restricciones = extraData.value.restricciones; item.prioridades = extraData.value.prioridades; item.riesgos = extraData.value.riesgos; item.clasificacion = extraData.value.clasificacion; if(currentPpcProject.value) { const tag = `[PROY: ${currentPpcProject.value.name}]`; item.comentarios = (item.comentarios ? item.comentarios + ' ' : '') + tag; } let fResp = extraData.value.fechaRespuesta; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } item.fechaRespuesta = fResp; item.fechaAlta = new Date().toISOString(); activityQueue.value.push(item); ppcData.value.concepto=''; ppcData.value.horas=''; ppcData.value.comentarios=''; ppcData.value.comentariosPrevios=''; selectedResponsables.value=[]; uploadSuccess.value=false; showExtraModal.value = false; syncQueueToBackend(); pulseNewRow('ppcDraftTable', 'last');
       };
       const syncQueueToBackend = () => { google.script.run.apiSyncDrafts(JSON.parse(JSON.stringify(activityQueue.value))); };
 
@@ -3649,7 +3695,8 @@
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
       showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
-      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation };
+      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
+      trackerTable, projectTable, ppcDraftTable };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
