@@ -1190,8 +1190,8 @@
                                     <div :class="showWorkOrderLogic ? 'col-md-8' : 'col-12'">
                                          <div class="position-relative h-100">
                                             <textarea v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
-                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" title="Organizar con IA (Simulado)">
-                                                <i class="fas fa-magic"></i>
+                                            <button class="btn position-absolute bottom-0 end-0 m-4 rounded-circle shadow" :class="isRecording ? 'btn-danger animate__animated animate__pulse animate__infinite' : 'btn-primary'" style="width: 40px; height: 40px;" @click="toggleDictation" :title="isRecording ? 'Detener Grabación' : 'Dictar por Voz'">
+                                                <i class="fas" :class="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
                                             </button>
                                          </div>
                                     </div>
@@ -2479,6 +2479,55 @@
       const currentWorkorderId = ref(null);
       const nextSequence = ref('0000');
 
+      // DICTATION LOGIC
+      const isRecording = ref(false);
+      let recognition = null;
+
+      const toggleDictation = () => {
+          if (isRecording.value) {
+              if (recognition) recognition.stop();
+              isRecording.value = false;
+              return;
+          }
+
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+          if (!SpeechRecognition) {
+              Swal.fire('No soportado', 'Tu navegador no soporta reconocimiento de voz.', 'error');
+              return;
+          }
+
+          recognition = new SpeechRecognition();
+          recognition.lang = 'es-MX'; // Optimized for Mexican Spanish
+          recognition.interimResults = false;
+          recognition.maxAlternatives = 1;
+
+          recognition.onstart = () => {
+              isRecording.value = true;
+          };
+
+          recognition.onend = () => {
+              isRecording.value = false;
+          };
+
+          recognition.onresult = (event) => {
+              const transcript = event.results[0][0].transcript;
+              if (transcript) {
+                  const currentText = workorderData.value.conceptoDesc || '';
+                  workorderData.value.conceptoDesc = currentText + (currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '') + transcript;
+              }
+          };
+
+          recognition.onerror = (event) => {
+              console.error(event.error);
+              isRecording.value = false;
+              if (event.error !== 'no-speech') {
+                  Swal.fire('Error', 'Error en dictado: ' + event.error, 'error');
+              }
+          };
+
+          recognition.start();
+      };
+
       const fetchNextSequence = () => {
           google.script.run.withSuccessHandler(seq => {
               if (seq) nextSequence.value = seq;
@@ -3488,7 +3537,7 @@
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
       showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
-      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador };
+      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
