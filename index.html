@@ -1277,6 +1277,7 @@
                     </div>
                 </div>
 
+
                 <!-- PROGRAMA DEL PROYECTO (NUEVO PROTOTIPO) -->
                 <div class="card border-0 shadow-sm mt-5">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
@@ -1337,101 +1338,6 @@
                                 <input :value="formatCurrency(item.total)" class="form-control form-control-sm fw-bold bg-white text-end" placeholder="Total" readonly style="width: 100px;">
 
                                 <button class="btn btn-outline-danger btn-sm border-0" @click="removeProjectItem(idx)"><i class="fas fa-trash-alt"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- MATERIALES REQUERIDOS & PAPA CALIENTE -->
-                <div class="row g-4 mt-4">
-                    <!-- MATERIALES REQUERIDOS -->
-                    <div class="col-xl-6">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #107c41 !important;">
-                                <h6 class="fw-bold mb-0" style="color: #0b5d2f;">MATERIALES REQUERIDOS</h6>
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="fw-bold text-dark">Total: {{ formatCurrency(materialsTotal) }}</span>
-                                    <button class="btn btn-primary btn-sm fw-bold" @click="addMaterialItem"><i class="fas fa-plus"></i> Agregar</button>
-                                </div>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered mb-0 small align-middle bg-white">
-                                        <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
-                                            <tr>
-                                                <th style="width: 70px;" class="text-center">Cant</th>
-                                                <th style="width: 70px;" class="text-center">Unidad</th>
-                                                <th style="width: 100px;">Tipo</th>
-                                                <th>Descripción</th>
-                                                <th style="width: 90px;" class="text-end">Costo</th>
-                                                <th style="width: 120px;">Espec.</th>
-                                                <th style="width: 90px;" class="text-end">Total</th>
-                                                <th style="width: 40px;"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(item, idx) in requiredMaterials.items" :key="idx">
-                                                <td><input type="number" v-model="item.quantity" @input="updateMaterialRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center px-1" placeholder="0"></td>
-                                                <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center px-1" placeholder="-"></td>
-                                                <td><input v-model="item.type" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-"></td>
-                                                <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-"></td>
-                                                <td><input type="number" v-model="item.cost" @input="updateMaterialRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end px-1" placeholder="0.00"></td>
-                                                <td><input v-model="item.spec" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-"></td>
-                                                <td class="fw-bold text-end px-1">{{ formatCurrency(item.total) }}</td>
-                                                <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeMaterialItem(idx)"></i></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- COMPRA DE MATERIAL PROGRAMA PAPA CALIENTE -->
-                    <div class="col-xl-6">
-                        <div class="card border-0 shadow-sm h-100">
-                             <div class="card-header bg-light border-0 pt-3 ps-3 pe-3" style="border-top: 4px solid #d63384 !important;">
-                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-fire me-2 text-danger"></i>Compra de Material Programa Papa Caliente</h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive h-100">
-                                    <table class="table table-bordered mb-0 small align-middle bg-white h-100">
-                                        <thead class="table-light text-center" style="font-size: 10px;">
-                                            <tr class="fw-bold">
-                                                <th>Cesar Garcia</th>
-                                                <th>Judit</th>
-                                                <th>Gisela</th>
-                                                <th>Vanessa</th>
-                                                <th>Rocio</th>
-                                                <th>Victor</th>
-                                                <th>Balu</th>
-                                                <th>Cesar Garcia</th>
-                                            </tr>
-                                            <tr class="text-muted text-uppercase">
-                                                <th>Residente</th>
-                                                <th>Compras</th>
-                                                <th>Controller</th>
-                                                <th>Orden Compra</th>
-                                                <th>Pagos Prov</th>
-                                                <th>Almacen</th>
-                                                <th>Logistica</th>
-                                                <th>Res. Obra</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(item, idx) in requiredMaterials.items" :key="idx">
-                                                <td class="position-relative"><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residente')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.compras" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'compras')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'controller')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.ordenCompra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'ordenCompra')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.pagos" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'pagos')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'almacen')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'logistica')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.residenteObra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residenteObra')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -1571,6 +1477,104 @@
                     </div>
                 </div>
 
+                <!-- MATERIALES REQUERIDOS & PAPA CALIENTE -->
+                <div class="row g-4 mt-4">
+                    <!-- MATERIALES REQUERIDOS -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #107c41 !important;">
+                                <h6 class="fw-bold mb-0" style="color: #0b5d2f;">MATERIALES REQUERIDOS</h6>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fw-bold text-dark">Total: {{ formatCurrency(materialsTotal) }}</span>
+                                    <button class="btn btn-primary btn-sm fw-bold" @click="addMaterialItem"><i class="fas fa-plus"></i> Agregar</button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered mb-0 small align-middle bg-white">
+                                        <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                            <tr>
+                                                <th style="width: 70px;" class="text-center">Cant</th>
+                                                <th style="width: 70px;" class="text-center">Unidad</th>
+                                                <th style="width: 100px;">Tipo</th>
+                                                <th>Descripción</th>
+                                                <th style="width: 90px;" class="text-end">Costo</th>
+                                                <th style="width: 120px;">Espec.</th>
+                                                <th style="width: 90px;" class="text-end">Total</th>
+                                                <th style="width: 40px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, idx) in requiredMaterials.items" :key="idx">
+                                                <td><input type="number" v-model="item.quantity" @input="updateMaterialRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center px-1" placeholder="0"></td>
+                                                <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center px-1" placeholder="-"></td>
+                                                <td><input v-model="item.type" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-"></td>
+                                                <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-"></td>
+                                                <td><input type="number" v-model="item.cost" @input="updateMaterialRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end px-1" placeholder="0.00"></td>
+                                                <td><input v-model="item.spec" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-"></td>
+                                                <td class="fw-bold text-end px-1">{{ formatCurrency(item.total) }}</td>
+                                                <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeMaterialItem(idx)"></i></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- COMPRA DE MATERIAL PROGRAMA PAPA CALIENTE -->
+                    <!-- COMENTADO
+                    <div class="col-xl-6">
+                        <div class="card border-0 shadow-sm h-100">
+                             <div class="card-header bg-light border-0 pt-3 ps-3 pe-3" style="border-top: 4px solid #d63384 !important;">
+                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-fire me-2 text-danger"></i>Compra de Material Programa Papa Caliente</h6>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive h-100">
+                                    <table class="table table-bordered mb-0 small align-middle bg-white h-100">
+                                        <thead class="table-light text-center" style="font-size: 10px;">
+                                            <tr class="fw-bold">
+                                                <th>Cesar Garcia</th>
+                                                <th>Judit</th>
+                                                <th>Gisela</th>
+                                                <th>Vanessa</th>
+                                                <th>Rocio</th>
+                                                <th>Victor</th>
+                                                <th>Balu</th>
+                                                <th>Cesar Garcia</th>
+                                            </tr>
+                                            <tr class="text-muted text-uppercase">
+                                                <th>Residente</th>
+                                                <th>Compras</th>
+                                                <th>Controller</th>
+                                                <th>Orden Compra</th>
+                                                <th>Pagos Prov</th>
+                                                <th>Almacen</th>
+                                                <th>Logistica</th>
+                                                <th>Res. Obra</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, idx) in requiredMaterials.items" :key="idx">
+                                                <td class="position-relative"><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residente')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.compras" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'compras')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'controller')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.ordenCompra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'ordenCompra')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.pagos" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'pagos')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'almacen')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'logistica')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                                <td class="position-relative"><input v-model="item.papaCaliente.residenteObra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residenteObra')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    -->
+                </div>
+
+
                 <!-- DISEÑO / MAQUINADOS / DIBUJOS (NUEVO) -->
                 <div class="card border-0 shadow-sm mt-4">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
@@ -1656,7 +1660,7 @@
                 <!-- HERRAMIENTAS REQUERIDAS & PAPA CALIENTE -->
                 <div class="row g-4 mt-4">
                     <!-- HERRAMIENTAS REQUERIDAS -->
-                    <div class="col-xl-6">
+                    <div class="col-12">
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #fd7e14 !important;">
                                 <h6 class="fw-bold mb-0" style="color: #e67e22;">HERRAMIENTAS REQUERIDAS</h6>
@@ -1695,6 +1699,7 @@
                     </div>
 
                     <!-- COMPRA DE HERRAMIENTA PROGRAMA PAPA CALIENTE -->
+                    <!-- COMENTADO
                     <div class="col-xl-6">
                         <div class="card border-0 shadow-sm h-100">
                              <div class="card-header bg-light border-0 pt-3 ps-3 pe-3" style="border-top: 4px solid #d63384 !important;">
@@ -1733,6 +1738,7 @@
                             </div>
                         </div>
                     </div>
+                    -->
                 </div>
 
                 <!-- EQUIPOS ESPECIALES Y ACCESORIOS (NUEVO) -->
