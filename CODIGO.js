@@ -1537,6 +1537,8 @@ function onOpen() {
   ui.createMenu('⚡ HOLTMONT CMD')
     .addItem('✅ REALIZAR ALTA (Fila Actual)', 'cmdRealizarAlta')
     .addItem('🔄 ACTUALIZAR (Fila Actual)', 'cmdActualizar')
+    .addSeparator()
+    .addItem('🎨 Aplicar Formato Condicional (Semaforo)', 'setupConditionalFormatting')
     .addToUi();
 }
 
@@ -1988,4 +1990,111 @@ function test_WorkOrder_Generation() {
   } else {
       console.error("❌ Failed to save or generate ID", res);
   }
+}
+
+/**
+ * ======================================================================
+ * MODULE: FORMATO CONDICIONAL (SEMAFORIZACIÓN)
+ * ======================================================================
+ */
+function setupConditionalFormatting() {
+  const ui = SpreadsheetApp.getUi();
+  // EXCLUSIONES: No en PPCV3, ANTONIA_VENTAS, LOGS, DATOS, DB_...
+  const excludedSheets = [
+      APP_CONFIG.ppcSheetName.toUpperCase(),
+      FOLIO_CONFIG.SHEET_NAME.toUpperCase(),
+      APP_CONFIG.logSheetName.toUpperCase(),
+      APP_CONFIG.salesSheetName.toUpperCase(),
+      APP_CONFIG.draftSheetName.toUpperCase()
+  ];
+
+  const allSheets = SS.getSheets();
+  let logMsg = "";
+  let count = 0;
+
+  allSheets.forEach(sheet => {
+    const sName = sheet.getName().trim();
+    const sNameUpper = sName.toUpperCase();
+
+    // Filtros de Exclusión
+    if (excludedSheets.includes(sNameUpper)) return;
+    if (sNameUpper.startsWith("DB_")) return;
+
+    // 1. Encontrar Cabeceras
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow < 2) return;
+
+    // Buscar fila de encabezados (primeras 20 filas)
+    const values = sheet.getRange(1, 1, Math.min(20, lastRow), lastCol).getValues();
+    const headerRowIdx = findHeaderRow(values);
+
+    if (headerRowIdx === -1) return; // Skip si no parece una hoja de datos válida
+
+    const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
+
+    // 2. Identificar Columnas Clave
+    const colFechaIdx = headers.findIndex(h => h === "FECHA" || h.includes("FECHA INICIO") || h === "ALTA" || h === "FECHA_ALTA");
+    const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
+
+    if (colFechaIdx === -1 || colClasiIdx === -1) return; // Skip si faltan columnas
+
+    const rowStart = headerRowIdx + 2; // Fila de datos (1-based)
+    const colFechaLet = colIndexToLetter(colFechaIdx + 1);
+    const colClasiLet = colIndexToLetter(colClasiIdx + 1);
+
+    // 3. Rango de Aplicación (Solo columna FECHA)
+    const numRows = sheet.getMaxRows() - rowStart + 1;
+    if (numRows < 1) return;
+
+    const range = sheet.getRange(rowStart, colFechaIdx + 1, numRows, 1);
+
+    // 4. Construir Reglas (Preservando existentes)
+    const existingRules = sheet.getConditionalFormatRules();
+    const newRules = [];
+
+    // Helper para crear par de reglas (Rojo/Verde)
+    const addRulePair = (clase, dias) => {
+        // VENCIDO (ROJO) -> TODAY - FECHA > DIAS
+        newRules.push(SpreadsheetApp.newConditionalFormatRule()
+            .whenFormulaSatisfied(`=AND(UPPER(TRIM($${colClasiLet}${rowStart}))="${clase}", (TODAY() - $${colFechaLet}${rowStart}) > ${dias}, ISNUMBER($${colFechaLet}${rowStart}))`)
+            .setBackground("#FF0000")
+            .setFontColor("#FFFFFF") // Texto Blanco para mejor contraste
+            .setRanges([range])
+            .build());
+
+        // A TIEMPO (VERDE) -> TODAY - FECHA <= DIAS
+        newRules.push(SpreadsheetApp.newConditionalFormatRule()
+            .whenFormulaSatisfied(`=AND(UPPER(TRIM($${colClasiLet}${rowStart}))="${clase}", (TODAY() - $${colFechaLet}${rowStart}) <= ${dias}, ISNUMBER($${colFechaLet}${rowStart}))`)
+            .setBackground("#00FF00")
+            .setFontColor("#000000")
+            .setRanges([range])
+            .build());
+    };
+
+    addRulePair("A", 3);
+    addRulePair("AA", 15);
+    addRulePair("AAA", 30);
+
+    // Priorizamos las nuevas reglas, luego las existentes (evitando duplicados triviales si es posible, pero concat es seguro)
+    sheet.setConditionalFormatRules(newRules.concat(existingRules));
+    logMsg += `✅ ${sName}\n`;
+    count++;
+  });
+
+  if (count > 0) {
+      ui.alert(`Semaforización aplicada a ${count} hojas de empleados:\n${logMsg}`);
+  } else {
+      ui.alert("⚠️ No se encontraron hojas de empleados aptas para aplicar formato.");
+  }
+}
+
+function colIndexToLetter(col) {
+  let temp, letter = '';
+  while (col > 0) {
+    temp = (col - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    col = (col - temp - 1) / 26;
+  }
+  return letter;
 }

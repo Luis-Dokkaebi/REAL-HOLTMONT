@@ -791,7 +791,7 @@
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
                          </div>
-                         <div v-else-if="String(h).toUpperCase().includes('FECHA')" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : {}">
+                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA')" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
@@ -3073,7 +3073,31 @@
 
       const getHeaderLabel = (h) => { const up = String(h).toUpperCase().trim(); if (up === 'CLASIFICACION') return 'CLASI'; if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN'; if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN'; return h; };
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
-      const getTrafficStyle = (row) => { const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); const d = parseInt(row['DIAS']||row['RELOJ']||0); if (isNaN(d)) return {}; if(t==='A') return d>=3?{backgroundColor:'#e74c3c',color:'white'}:(d===2?{backgroundColor:'#f1c40f',color:'black'}:{backgroundColor:'#2ecc71',color:'white'}); if(t==='AA') return d>=7?{backgroundColor:'#e74c3c',color:'white'}:(d>=4?{backgroundColor:'#f1c40f',color:'black'}:{backgroundColor:'#2ecc71',color:'white'}); if(t==='AAA') return d>=30?{backgroundColor:'#e74c3c',color:'white'}:(d>=11?{backgroundColor:'#f1c40f',color:'black'}:{backgroundColor:'#2ecc71',color:'white'}); return {}; };
+      const getTrafficStyle = (row) => { const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); const d = parseInt(row['DIAS']||row['RELOJ']||0); if (isNaN(d)) return {}; if(t==='A') return d>3?{backgroundColor:'#e74c3c',color:'white'}:{backgroundColor:'#2ecc71',color:'white'}; if(t==='AA') return d>15?{backgroundColor:'#e74c3c',color:'white'}:{backgroundColor:'#2ecc71',color:'white'}; if(t==='AAA') return d>30?{backgroundColor:'#e74c3c',color:'white'}:{backgroundColor:'#2ecc71',color:'white'}; return {}; };
+      const getFechaInicioTrafficStyle = (row) => {
+          const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','ALTA'].includes(String(k).toUpperCase().trim()));
+          if (!startKey) return {};
+          const val = row[startKey];
+          if (!val) return {};
+          let dObj = null;
+          if (val instanceof Date) dObj = val;
+          else if (typeof val === 'string') {
+              const p = val.split('/');
+              if (p.length === 3) dObj = new Date(p[2].length===2?'20'+p[2]:p[2], p[1]-1, p[0]);
+          }
+          if (!dObj || isNaN(dObj.getTime())) return {};
+
+          // Calculate elapsed days
+          const diff = new Date() - dObj;
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+          const t = String(row['CLASIFICACION']||'').trim().toUpperCase();
+          if (t === 'A') return days > 3 ? { backgroundColor: '#e74c3c', color: 'white' } : { backgroundColor: '#2ecc71', color: 'white' };
+          if (t === 'AA') return days > 15 ? { backgroundColor: '#e74c3c', color: 'white' } : { backgroundColor: '#2ecc71', color: 'white' };
+          if (t === 'AAA') return days > 30 ? { backgroundColor: '#e74c3c', color: 'white' } : { backgroundColor: '#2ecc71', color: 'white' };
+
+          return {};
+      };
       const getFechaRespuestaStyle = (row) => { const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO'].includes(String(k).toUpperCase().trim())); const startDateVal = startKey ? row[startKey] : null; const style = { backgroundColor: '#ffc107', color: 'black' }; if (!startDateVal) return style; let startDate = null; if (typeof startDateVal === 'string') { const parts = startDateVal.split('/'); if (parts.length === 3) { let y = parts[2].length === 2 ? '20' + parts[2] : parts[2]; startDate = new Date(`${y}-${parts[1]}-${parts[0]}`); } } else if (startDateVal instanceof Date) { startDate = startDateVal; } if (startDate && !isNaN(startDate.getTime())) { const diff = new Date() - startDate; if (Math.floor(diff / (1000 * 60 * 60 * 24)) > 3) { style.backgroundColor = '#dc3545'; style.color = 'white'; } } return style; };
 
       const toInitials = (name) => {
