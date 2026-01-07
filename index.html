@@ -397,6 +397,16 @@
 
     .btn-quote-save { background-color: white; border: 1px solid #dee2e6; color: #333; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
     .btn-quote-gen { background-color: #0d6efd; border: 1px solid #0d6efd; color: white; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+
+    /* ANIMATED TAB INDICATOR */
+    .tab-indicator {
+        position: absolute;
+        bottom: 0;
+        height: 3px;
+        background-color: var(--accent);
+        pointer-events: none;
+        transition: none;
+    }
   </style>
 </head>
 <body>
@@ -759,12 +769,18 @@
         </div>
 
         <div v-if="currentView === 'STAFF_TRACKER'" class="h-100 d-flex flex-column">
-          <div class="d-flex bg-white px-3 pt-3 gap-2 align-items-end border-bottom">
+          <div class="d-flex bg-white px-3 pt-3 gap-2 align-items-end border-bottom position-relative">
              <div class="cursor-pointer px-4 py-2 fw-bold"
-                  :class="activeTrackerTab === 'OPERATIVO' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                  @click="switchTrackerTab('OPERATIVO')">
+                  :class="activeTrackerTab === 'OPERATIVO' ? 'text-primary' : 'text-muted'"
+                  @click="switchTrackerTab('OPERATIVO', $event)" ref="tabOperativo">
                   <i class="fas fa-tasks me-2"></i>OPERATIVO
              </div>
+             <div class="cursor-pointer px-4 py-2 fw-bold"
+                  :class="activeTrackerTab === 'VENTAS' ? 'text-primary' : 'text-muted'"
+                  @click="switchTrackerTab('VENTAS', $event)" ref="tabVentas">
+                  <i class="fas fa-chart-line me-2"></i>VENTAS
+             </div>
+             <div class="tab-indicator" ref="tabIndicator"></div>
           </div>
           <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white border rounded mt-2">
             <div class="d-flex align-items-center">
@@ -3403,17 +3419,41 @@
 
       const closeIframe = () => currentView.value='DASHBOARD';
 
+      const tabIndicator = ref(null);
+      const tabOperativo = ref(null);
+      const tabVentas = ref(null);
+
+      const moveIndicator = (target) => {
+          if (!target || !tabIndicator.value) return;
+          anime({
+              targets: tabIndicator.value,
+              left: target.offsetLeft,
+              width: target.offsetWidth,
+              easing: 'spring(1, 80, 10, 0)'
+          });
+      };
+
       const openStaffTracker = (p) => {
           currentStaffName.value = p.name;
           activeTrackerTab.value = 'OPERATIVO';
           staffTracker.value.previousView = currentView.value;
           currentView.value = 'STAFF_TRACKER';
           loadTrackerData();
+          nextTick(() => {
+              if (tabOperativo.value) moveIndicator(tabOperativo.value);
+          });
       };
 
-      const switchTrackerTab = (tab) => {
-          if (activeTrackerTab.value === tab) return;
+      const switchTrackerTab = (tab, event) => {
           activeTrackerTab.value = tab;
+          if (event && event.currentTarget) {
+              moveIndicator(event.currentTarget);
+          } else {
+             nextTick(() => {
+                 if (tab === 'OPERATIVO' && tabOperativo.value) moveIndicator(tabOperativo.value);
+                 if (tab === 'VENTAS' && tabVentas.value) moveIndicator(tabVentas.value);
+             });
+          }
           loadTrackerData();
       };
 
@@ -3649,7 +3689,8 @@
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
       showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
-      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation };
+      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
+      tabIndicator, tabOperativo, tabVentas };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
