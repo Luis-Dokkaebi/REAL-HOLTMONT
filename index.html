@@ -823,7 +823,7 @@
                          </div>
                          <input v-else v-model="row[h]" class="excel-input" spellcheck="false">
                       </td>
-                      <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row)"><i class="fas fa-save"></i></button></td>
+                      <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)"><i class="fas fa-save"></i></button></td>
                    </tr>
                 </tbody>
              </table>
@@ -2514,6 +2514,30 @@
           });
       };
 
+      const triggerConfetti = (x, y) => {
+          const container = document.createElement('div');
+          Object.assign(container.style, { position: 'fixed', left: x + 'px', top: y + 'px', width: '0', height: '0', pointerEvents: 'none', zIndex: '9999' });
+          document.body.appendChild(container);
+          const colors = ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6'];
+          if (currentTheme.value === 'cyberpunk') colors.push('#00ff9d', '#ff0099');
+          for (let i = 0; i < 30; i++) {
+              const p = document.createElement('div');
+              Object.assign(p.style, { position: 'absolute', width: '4px', height: '4px', borderRadius: '50%', backgroundColor: colors[Math.floor(Math.random() * colors.length)] });
+              container.appendChild(p);
+          }
+          anime({
+              targets: container.children,
+              translateX: () => anime.random(-100, 100),
+              translateY: () => anime.random(-100, 100),
+              scale: [1, 0],
+              rotate: () => anime.random(0, 360),
+              opacity: [1, 0],
+              duration: () => anime.random(800, 1000),
+              easing: 'easeOutCirc',
+              complete: () => { if (container.parentNode) container.parentNode.removeChild(container); }
+          });
+      };
+
       const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'' });
       const isSubmitting = ref(false);
       const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
@@ -3221,7 +3245,13 @@
       const goBackToDept = () => currentView.value=staffTracker.value.previousView;
 
       const loadWeeklyPlan = () => { weeklyPlanData.value.isLoading = true; google.script.run.withSuccessHandler(res => { weeklyPlanData.value.isLoading = false; if(res.success){ weeklyPlanData.value.headers = res.headers; weeklyPlanData.value.data = res.data; selectedWeek.value = ''; } else Swal.fire('Error', res.message, 'error'); }).apiFetchWeeklyPlanData(); };
-      const savePPCV3Row = (row) => { const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }); Toast.fire({ icon: 'info', title: 'Guardando...' }); google.script.run.withSuccessHandler(res => { if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' }); else Swal.fire('Error', res.message, 'error'); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value); };
+      const savePPCV3Row = (row, event) => {
+          if (event && event.clientX) {
+             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
+             if (isCompleted) triggerConfetti(event.clientX, event.clientY);
+          }
+          const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }); Toast.fire({ icon: 'info', title: 'Guardando...' }); google.script.run.withSuccessHandler(res => { if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' }); else Swal.fire('Error', res.message, 'error'); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value);
+      };
 
       // ECG LOGIC
       const loadEcgData = () => {
@@ -3493,7 +3523,13 @@
           staffTracker.value.data.unshift(row);
           pulseNewRow('trackerTable', 'first');
       };
-      const saveRow = (row) => { Swal.showLoading(); google.script.run.withSuccessHandler(res => { Swal.close(); if(res.success){ row._isNew=false; if(res.moved){ reloadStaffTracker(); Swal.fire({icon: 'success', title: 'Archivado', text: 'Tarea movida a Realizadas (100%)', timer: 1500, showConfirmButton: false}); } else { Swal.fire({icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false}); } } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value); };
+      const saveRow = (row, event) => {
+          if (event && event.clientX) {
+             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
+             if (isCompleted) triggerConfetti(event.clientX, event.clientY);
+          }
+          Swal.showLoading(); google.script.run.withSuccessHandler(res => { Swal.close(); if(res.success){ row._isNew=false; if(res.moved){ reloadStaffTracker(); Swal.fire({icon: 'success', title: 'Archivado', text: 'Tarea movida a Realizadas (100%)', timer: 1500, showConfirmButton: false}); } else { Swal.fire({icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false}); } } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
+      };
       const openCellUpload = (row, col) => { uploadingCell.value = {row, col}; cellFileInput.value.click(); };
       const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
       const addResponsable = (n) => { selectedResponsables.value.push(n); staffSearch.value=''; };
