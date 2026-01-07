@@ -974,7 +974,10 @@
                                             <span class="input-group-text bg-light"><i class="fas fa-industry text-muted"></i></span>
                                             <input v-model="workorderData.cliente" class="form-control" placeholder="Ej: Corning Optical...">
                                         </div>
-                                        <small class="logic-inline"><i class="fas fa-info-circle me-1"></i> Instr: en automatico se va al folio</small>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.client = !showInstr.client" :class="{'text-info': showInstr.client}" title="Ver Instrucción"></i>
+                                            <small v-if="showInstr.client" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: en automatico se va al folio</small>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="small text-muted fw-bold mb-1">Número de Proyecto Cliente o RFQ</label>
@@ -982,7 +985,10 @@
                                             <span class="input-group-text bg-light"><i class="fas fa-hashtag text-muted"></i></span>
                                             <input v-model="workorderData.proyecto" class="form-control" placeholder="RFQ-XXXXX">
                                         </div>
-                                        <small class="logic-inline"><i class="fas fa-info-circle me-1"></i> Instr: sirve para la comunicación con el cliente con su RFQ para que lo identifique el cliente</small>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.rfq = !showInstr.rfq" :class="{'text-info': showInstr.rfq}" title="Ver Instrucción"></i>
+                                            <small v-if="showInstr.rfq" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: sirve para la comunicación con el cliente con su RFQ para que lo identifique el cliente</small>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="small text-muted fw-bold mb-1">Fecha de Entrega de Cotización</label>
@@ -990,7 +996,10 @@
                                             <span class="input-group-text bg-light"><i class="fas fa-calendar-alt text-muted"></i></span>
                                             <input type="date" v-model="workorderData.fechaCotizacion" class="form-control">
                                         </div>
-                                        <small class="logic-inline"><i class="fas fa-info-circle me-1"></i> Instr: se iria a sistema de Cotizaciones en automático</small>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.date = !showInstr.date" :class="{'text-info': showInstr.date}" title="Ver Instrucción"></i>
+                                            <small v-if="showInstr.date" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: se iria a sistema de Cotizaciones en automático</small>
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="small text-muted fw-bold mb-1">Requisitor</label>
@@ -1047,7 +1056,10 @@
                                 </div>
 
                                 <h6 class="fw-bold text-primary mb-2 small"><i class="fas fa-building me-2"></i>Departamento / Área (Folio)</h6>
-                                <small class="logic-inline mb-2"><i class="fas fa-info-circle me-1"></i> Instr 1: se agregaria al folio automático / Instr 2: se requiere en base datos dar alta los departamento de holtmont para ayudar en la captura</small>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.dept = !showInstr.dept" :class="{'text-info': showInstr.dept}" title="Ver Instrucción"></i>
+                                    <small v-if="showInstr.dept" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr 1: se agregaria al folio automático / Instr 2: se requiere en base datos dar alta los departamento de holtmont para ayudar en la captura</small>
+                                </div>
                                 <div class="d-flex flex-wrap gap-2 mb-4">
                                     <button v-for="(dept, key) in (config.allDepartments || config.departments)" :key="key"
                                         class="btn btn-sm fw-bold px-3"
@@ -1069,7 +1081,10 @@
                                                 <option v-for="p in (config.directory || config.staff)" :key="p.name" :value="p.name">{{ p.name }}</option>
                                             </select>
                                         </div>
-                                        <small class="logic-inline mt-1"><i class="fas fa-info-circle me-1"></i> Instr: se iria al traker automático / Instr 2: se requiere en base datos dar alta las personas que van a cotizar de holtmont para ayudar en la captura</small>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.resp = !showInstr.resp" :class="{'text-info': showInstr.resp}" title="Ver Instrucción"></i>
+                                            <small v-if="showInstr.resp" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: se iria al traker automático / Instr 2: se requiere en base datos dar alta las personas que van a cotizar de holtmont para ayudar en la captura</small>
+                                        </div>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="small text-muted fw-bold mb-1">Tiempo Estimado</label>
@@ -1178,13 +1193,15 @@
 
                                     <div class="vr mx-2"></div>
 
-                                    <div class="d-flex flex-column">
+                                    <div class="d-flex flex-column align-items-center">
                                         <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
-                                        <small class="logic-inline mt-1" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
+                                        <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.chatgpt = !showInstr.chatgpt" title="Ver Lógica"></i>
+                                        <small v-if="showInstr.chatgpt" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
                                     </div>
-                                    <div class="d-flex flex-column">
+                                    <div class="d-flex flex-column align-items-center">
                                         <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
-                                        <small class="logic-inline mt-1" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
+                                        <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.neural = !showInstr.neural" title="Ver Lógica"></i>
+                                        <small v-if="showInstr.neural" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
                                     </div>
                                 </div>
                                 <div v-if="workorderData.files && workorderData.files.length" class="mt-3">
@@ -2537,6 +2554,17 @@
           design: false
       });
 
+      // INSTRUCTIONS TOGGLES
+      const showInstr = ref({
+          client: false,
+          rfq: false,
+          date: false,
+          dept: false,
+          resp: false,
+          chatgpt: false,
+          neural: false
+      });
+
       // PROTOTYPES STATE
       const projectProgram = ref({ timeEstimated: 1, timeUnit: 'dias', items: [{ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: [] }] });
       const addProjectItem = () => projectProgram.value.items.push({ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: [] });
@@ -3444,7 +3472,7 @@
       selectedFinancing,
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
-      showLogic, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown };
+      showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
