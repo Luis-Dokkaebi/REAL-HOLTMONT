@@ -1028,11 +1028,12 @@
                     <!-- RIGHT COL: WORK TYPE -->
                     <div class="col-md-6">
                         <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-light border-0 pt-3 ps-3">
-                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-tools me-2"></i>Tipo de Trabajo</h6>
+                            <div class="card-header bg-light border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-tools me-2"></i>Tipo de Trabajo <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.workType = !showLogic.workType" title="Ver Lógica"></i></h6>
                             </div>
                             <div class="card-body">
-                                <div class="logic-card mb-3">
+                                <div class="logic-card mb-3 position-relative" v-if="showLogic.workType">
+                                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.workType = false"></button>
                                     <div class="logic-header"><span class="logic-icon"><i class="fas fa-lightbulb"></i></span> LÓGICA</div>
                                     <div class="logic-content">Tener una clasificación con un poco de mayor variedad para que se pueda clasificar el tipo de trabajo, se requiere de una reunión con las áreas convocada por el ing Olivo para que se defina.</div>
                                 </div>
@@ -1122,11 +1123,18 @@
                     <!-- RESTRICCIONES & BUTTONS SECTION -->
                     <div class="col-12">
                         <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-white border-0 pt-3 ps-3" style="border-top: 4px solid #dc3545 !important;">
-                                <h6 class="fw-bold mb-0 text-danger text-uppercase">RESTRICCIONES</h6>
+                            <div class="card-header bg-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #dc3545 !important;">
+                                <h6 class="fw-bold mb-0 text-danger text-uppercase">RESTRICCIONES <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.restrictions = !showLogic.restrictions" title="Ver Lógica"></i></h6>
                             </div>
                             <div class="card-body">
                                 <div class="row g-3">
+                                    <div class="col-12" v-if="showLogic.restrictions">
+                                        <div class="logic-card mt-2 position-relative">
+                                            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.restrictions = false"></button>
+                                            <div class="logic-header"><span class="logic-icon"><i class="fas fa-exclamation-triangle"></i></span> LÓGICA DE RESTRICCIONES</div>
+                                            <div class="logic-content">Se requiere que el cotizador pueda tener una guía rápida que le permita preguntar al cliente puntos clave que afectan el costo de la cotización.</div>
+                                        </div>
+                                    </div>
                                     <div class="col-12">
                                         <label class="small fw-bold text-muted">Producción</label>
                                         <input v-model="workorderData.restricciones.produccion" class="form-control" placeholder="Restricciones de producción...">
@@ -1147,23 +1155,18 @@
                                         <label class="small fw-bold text-muted">Especificidad Trabajo</label>
                                         <input v-model="workorderData.restricciones.especificidad" class="form-control" placeholder="Detalles específicos...">
                                     </div>
-                                    <div class="col-12">
-                                        <div class="logic-card mt-2">
-                                            <div class="logic-header"><span class="logic-icon"><i class="fas fa-exclamation-triangle"></i></span> LÓGICA DE RESTRICCIONES</div>
-                                            <div class="logic-content">Se requiere que el cotizador pueda tener una guía rápida que le permita preguntar al cliente puntos clave que afectan el costo de la cotización.</div>
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- BUTTONS LOGIC -->
                         <div class="card border-0 shadow-sm mt-4">
-                            <div class="card-header bg-dark text-white border-0 pt-3 ps-3">
-                                <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DOCUMENTACIÓN Y HERRAMIENTAS</h6>
+                            <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DOCUMENTACIÓN Y HERRAMIENTAS <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.docs = !showLogic.docs" title="Ver Lógica"></i></h6>
                             </div>
                             <div class="card-body">
-                                <div class="logic-card mb-3">
+                                <div class="logic-card mb-3 position-relative" v-if="showLogic.docs">
+                                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.docs = false"></button>
                                     <div class="logic-header"><span class="logic-icon"><i class="fas fa-mouse-pointer"></i></span> LÓGICA DE BOTONES</div>
                                     <div class="logic-content">Se requiere que los cotizadores puedan de forma ordenada capturar foto ordenadas con una Tablet, videos, también que puedan rallar la fotos para tomar notas muy visuales así como también puedan hacer layout dibujado digital, así como también archivar planos y los alcances del proyecto.</div>
                                 </div>
@@ -1200,8 +1203,8 @@
 
                 <!-- PROTOTYPE SECTION -->
                 <div class="card border-0 shadow-sm mt-5">
-                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3">
-                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>PROTOTIPO: Control de Vehículo y Cotización</h6>
+                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>PROTOTIPO: Control de Vehículo y Cotización <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.vehicle = !showLogic.vehicle" title="Ver Lógica"></i></h6>
                     </div>
                     <div class="card-body">
                          <!-- Cotizacion Preliminar -->
@@ -1215,7 +1218,8 @@
                              Control de Vehículo, Tiempo de Cotización, Horarios, Gasolina, Cuidado de Vehículo, Evaluación Conducción
                          </div>
 
-                         <div class="logic-card mb-3">
+                         <div class="logic-card mb-3 position-relative" v-if="showLogic.vehicle">
+                             <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.vehicle = false"></button>
                              <div class="logic-header"><span class="logic-icon"><i class="fas fa-rocket"></i></span> NUEVO A DESARROLLAR</div>
                              <div class="logic-content">Lógica el control de los vehículo. Esto va generar un costo que se va ir a la integracion del costo de ir dando a un levantamiento, se requiere controlar los robos de partes, gasolina , tiempo perdidos y rendimientos , se generarian bonos por buen manejos ( Teoria de la Economia Conductual )</div>
                          </div>
@@ -1305,11 +1309,25 @@
                                 </div>
 
                                 <!-- Responsable Column -->
-                                <div style="width: 140px;">
-                                    <select v-model="item.responsable" class="form-select form-select-sm" style="font-size: 0.8rem;">
-                                        <option value="">Responsable...</option>
-                                        <option v-for="p in (config.directory || config.staff)" :key="p.name" :value="p.name">{{ p.name }}</option>
-                                    </select>
+                                <div style="width: 140px; position:relative;">
+                                    <div class="form-control form-control-sm" style="font-size: 0.8rem; cursor:pointer; min-height: 31px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                         @click="openRespDropdown(idx, item)">
+                                        {{ Array.isArray(item.responsable) ? (item.responsable.length ? item.responsable.join(', ') : 'Responsables...') : (item.responsable || 'Responsables...') }}
+                                    </div>
+                                    <div v-if="projectRespDropdownOpen === idx" class="position-absolute bg-white border shadow rounded p-2" style="z-index: 1000; width: 250px; max-height: 200px; overflow-y: auto;">
+                                        <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1">
+                                            <small class="fw-bold">Seleccionar:</small>
+                                            <button class="btn btn-sm btn-link p-0 text-secondary" @click="projectRespDropdownOpen = null"><i class="fas fa-times"></i></button>
+                                        </div>
+                                        <div v-for="p in (config.directory || config.staff)" :key="p.name"
+                                             class="d-flex align-items-center p-1 rounded hover-bg-light" style="cursor:pointer;"
+                                             @click.stop="toggleProjectResponsable(item, p.name)">
+                                            <div class="form-check m-0">
+                                                <input class="form-check-input" type="checkbox" :checked="item.responsable.includes(p.name)" style="pointer-events: none;">
+                                                <label class="form-check-label small ms-2" style="cursor:pointer;">{{ p.name }}</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- New Columns requested by user -->
@@ -1422,14 +1440,15 @@
                 <!-- MANO DE OBRA (NUEVO) -->
                 <div class="card border-0 shadow-sm mt-4">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #107c41 !important;">
-                         <h6 class="fw-bold mb-0 text-primary text-uppercase">MANO DE OBRA</h6>
+                         <h6 class="fw-bold mb-0 text-primary text-uppercase">MANO DE OBRA <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.labor = !showLogic.labor" title="Ver Lógica"></i></h6>
                          <div class="d-flex align-items-center gap-3">
                             <span class="fw-bold text-dark">Total: {{ formatCurrency(laborTotal) }}</span>
                             <button class="btn btn-primary btn-sm fw-bold" @click="addLaborItem"><i class="fas fa-plus"></i> Agregar</button>
                          </div>
                     </div>
                     <div class="card-body p-0">
-                        <div class="logic-card m-2">
+                        <div class="logic-card m-2 position-relative" v-if="showLogic.labor">
+                            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.labor = false"></button>
                             <div class="logic-header"><span class="logic-icon"><i class="fas fa-clock"></i></span> LÓGICA DE LAS HORAS Y SUELDOS</div>
                             <div class="logic-content">Es muy importante ya que hay muchos trabajos de fin de semana o turno de noche los cuales se deben agregar costos u horas extra.</div>
                         </div>
@@ -1555,13 +1574,14 @@
                 <!-- DISEÑO / MAQUINADOS / DIBUJOS (NUEVO) -->
                 <div class="card border-0 shadow-sm mt-4">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
-                         <h6 class="fw-bold mb-0 text-dark text-uppercase">DISEÑO / MAQUINADOS / DIBUJOS</h6>
+                         <h6 class="fw-bold mb-0 text-dark text-uppercase">DISEÑO / MAQUINADOS / DIBUJOS <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.design = !showLogic.design" title="Ver Lógica"></i></h6>
                          <div class="d-flex align-items-center gap-3">
                             <button class="btn btn-primary btn-sm fw-bold" @click="addDesignRow"><i class="fas fa-plus"></i> Agregar</button>
                          </div>
                     </div>
                     <div class="card-body p-0">
-                        <div class="logic-card m-2">
+                        <div class="logic-card m-2 position-relative" v-if="showLogic.design">
+                            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.design = false"></button>
                             <div class="logic-header"><span class="logic-icon"><i class="fas fa-clipboard-list"></i></span> INSTRUCCIÓN</div>
                             <div class="logic-content">En la work order se requiere cargar archivos de planos para que el residente siempre tenga los correctos.</div>
                         </div>
@@ -2501,10 +2521,40 @@
       const vehicleControlData = ref({}); // Decoupled data for duplicated section
       const showWorkOrderLogic = ref(true); // Logic display state
 
+      // New Logic Toggles State
+      const showLogic = ref({
+          workType: false,
+          restrictions: false,
+          docs: false,
+          vehicle: false,
+          labor: false,
+          design: false
+      });
+
       // PROTOTYPES STATE
-      const projectProgram = ref({ timeEstimated: 1, timeUnit: 'dias', items: [{ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: '' }] });
-      const addProjectItem = () => projectProgram.value.items.push({ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: '' });
+      const projectProgram = ref({ timeEstimated: 1, timeUnit: 'dias', items: [{ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: [] }] });
+      const addProjectItem = () => projectProgram.value.items.push({ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: [] });
       const removeProjectItem = (idx) => projectProgram.value.items.splice(idx, 1);
+
+      const projectRespDropdownOpen = ref(null);
+      const openRespDropdown = (idx, item) => {
+          if (projectRespDropdownOpen.value === idx) {
+              projectRespDropdownOpen.value = null;
+          } else {
+              projectRespDropdownOpen.value = idx;
+              if (!Array.isArray(item.responsable)) {
+                 item.responsable = item.responsable ? String(item.responsable).split(',').map(s=>s.trim()) : [];
+              }
+          }
+      };
+      const toggleProjectResponsable = (item, name) => {
+          if (!Array.isArray(item.responsable)) {
+             item.responsable = item.responsable ? String(item.responsable).split(',').map(s=>s.trim()) : [];
+          }
+          const idx = item.responsable.indexOf(name);
+          if (idx > -1) item.responsable.splice(idx, 1);
+          else item.responsable.push(name);
+      };
       const updateProjectRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.price)||0); };
 
       // MANO DE OBRA STATE
@@ -3331,7 +3381,10 @@
             manoObra: JSON.parse(JSON.stringify(laborTable.value.items)),
             herramientas: JSON.parse(JSON.stringify(toolsRequired.value.items)),
             equipos: JSON.parse(JSON.stringify(specialEquipment.value.items)),
-            programa: JSON.parse(JSON.stringify(projectProgram.value.items)),
+            programa: projectProgram.value.items.map(i => ({
+                ...i,
+                responsable: Array.isArray(i.responsable) ? i.responsable.join(', ') : i.responsable
+            })),
             checkList: JSON.parse(JSON.stringify(workorderData.value.checkList)),
             additionalCosts: JSON.parse(JSON.stringify(additionalCosts.value))
         };
@@ -3384,7 +3437,8 @@
       additionalCosts, laborTotal, dashboardSubtotal, dashboardUtility, dashboardTotal,
       selectedFinancing,
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
-      eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend };
+      eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
+      showLogic, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
