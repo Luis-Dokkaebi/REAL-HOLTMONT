@@ -1989,3 +1989,87 @@ function test_WorkOrder_Generation() {
       console.error("❌ Failed to save or generate ID", res);
   }
 }
+
+/**
+ * BUSQUEDA NEURONAL (HISTORIAL)
+ * Busca proyectos similares en PPCV3 basado en palabras clave
+ */
+function apiNeuralSearch(query, type) {
+  try {
+    // Usamos el fetcher interno optimizado
+    const res = internalFetchSheetData(APP_CONFIG.ppcSheetName);
+    if (!res.success) return { success: false, message: "No se pudo acceder al historial (PPCV3)." };
+
+    const rows = res.data;
+    if (!rows || rows.length === 0) return { success: true, data: [] };
+
+    // Tokenizar query (eliminar palabras cortas)
+    const queryTokens = String(query || "").toUpperCase().split(/\s+/).filter(w => w.length > 3);
+    const typeFilter = String(type || "").toUpperCase();
+
+    // Scoring
+    const scoredRows = rows.map(row => {
+        let score = 0;
+        const concepto = String(row['CONCEPTO'] || row['DESCRIPCION'] || "").toUpperCase();
+        const area = String(row['AREA'] || row['ESPECIALIDAD'] || "").toUpperCase();
+        const cliente = String(row['CLIENTE'] || "").toUpperCase();
+        const restricciones = String(row['RESTRICCIONES'] || "").toUpperCase();
+
+        // Coincidencia exacta de tipo (Alta relevancia)
+        if (typeFilter && area.includes(typeFilter)) score += 10;
+
+        // Palabras clave
+        queryTokens.forEach(token => {
+            if (concepto.includes(token)) score += 5;
+            if (restricciones.includes(token)) score += 3;
+            if (cliente.includes(token)) score += 2;
+        });
+
+        // Boost si tiene restricciones o checklist (significa que es un buen ejemplo)
+        if (restricciones.length > 5) score += 2;
+        if (row['DETALLES_EXTRA']) score += 2;
+
+        return { row: row, score: score };
+    });
+
+    // Filtrar, Ordenar y Top 5
+    const topResults = scoredRows
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map(item => item.row);
+
+    return { success: true, data: topResults };
+
+  } catch (e) {
+    console.error(e);
+    return { success: false, message: e.toString() };
+  }
+}
+
+function test_apiNeuralSearch() {
+  console.log("🧠 INICIANDO TEST: Busqueda Neuronal");
+
+  // 1. Simular Datos en PPCV3 si esta vacio (Esto es solo para el test, en produccion ya habra datos)
+  // Pero apiNeuralSearch usa internalFetchSheetData que lee la hoja real.
+  // Vamos a asumir que la hoja existe o el test fallara indicando "No data".
+  // Si falla, es una señal de que necesitamos datos mock.
+
+  const query = "MANTENIMIENTO ELEVADOR";
+  const type = "ELECTROMECANICA";
+
+  console.log("🔎 Buscando:", query, "Tipo:", type);
+
+  const result = apiNeuralSearch(query, type);
+
+  if (result.success) {
+      console.log("✅ Busqueda Exitosa. Resultados encontrados:", result.data.length);
+      if(result.data.length > 0) {
+          console.log("🥇 Top Resultado:", result.data[0]['CONCEPTO'] || result.data[0]['DESCRIPCION']);
+      } else {
+          console.log("⚠️ Sin resultados (Normal si la DB esta vacia)");
+      }
+  } else {
+      console.error("❌ Error en busqueda:", result.message);
+  }
+}
