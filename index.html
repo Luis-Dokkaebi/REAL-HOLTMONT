@@ -591,7 +591,7 @@
                                 <canvas id="kpiChartProductivity"></canvas>
                             </div>
                         </div>
-                    </div>
+                    </div> <!-- End Col-12 for Buttons Logic -->
                 </div>
 
 
@@ -1186,7 +1186,7 @@
                                 <button v-if="!showWorkOrderLogic" @click="showWorkOrderLogic = true" class="btn btn-sm btn-outline-info" title="Mostrar Ayuda"><i class="fas fa-info-circle"></i></button>
                             </div>
                             <div class="card-body">
-                                <div class="row">
+                                <div class="row mb-4">
                                     <div :class="showWorkOrderLogic ? 'col-md-8' : 'col-12'">
                                          <div class="position-relative h-100">
                                             <textarea v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
@@ -1205,59 +1205,61 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="card-footer bg-white border-top-0 pb-3">
-                                <h6 class="small fw-bold text-muted mb-2">Archivos Multimedia</h6>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-outline-secondary btn-sm border-dashed" @click="openFileDialog">
-                                        <i class="fas" :class="uploadSuccess ? 'fa-check text-success' : 'fa-cloud-upload-alt'"></i> {{ uploadSuccess ? 'Archivo Cargado' : 'Subir Archivos' }}
-                                    </button>
-                                    <input type="file" ref="fileInput" class="file-input-hidden" @change="handleFileSelect">
+
+                                <!-- Multimedia Section (Merged) -->
+                                <div class="mb-4">
+                                    <h6 class="small fw-bold text-muted mb-2">Archivos Multimedia</h6>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-secondary btn-sm border-dashed" @click="openFileDialog">
+                                            <i class="fas" :class="uploadSuccess ? 'fa-check text-success' : 'fa-cloud-upload-alt'"></i> {{ uploadSuccess ? 'Archivo Cargado' : 'Subir Archivos' }}
+                                        </button>
+                                        <input type="file" ref="fileInput" class="file-input-hidden" @change="handleFileSelect">
+                                    </div>
+                                </div>
+
+                                <hr class="border-light my-4">
+
+                                <!-- RESTRICCIONES Section (Merged) -->
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold mb-0 text-danger text-uppercase">RESTRICCIONES <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.restrictions = !showLogic.restrictions" title="Ver Lógica"></i></h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12" v-if="showLogic.restrictions">
+                                            <div class="logic-card mt-2 position-relative">
+                                                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.restrictions = false"></button>
+                                                <div class="logic-header"><span class="logic-icon"><i class="fas fa-exclamation-triangle"></i></span> LÓGICA DE RESTRICCIONES</div>
+                                                <div class="logic-content">Se requiere que el cotizador pueda tener una guía rápida que le permita preguntar al cliente puntos clave que afectan el costo de la cotización.</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="small fw-bold text-muted">Producción</label>
+                                            <input v-model="workorderData.restricciones.produccion" class="form-control" placeholder="Restricciones de producción...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-muted">Seguridad</label>
+                                            <input v-model="workorderData.restricciones.seguridad" class="form-control" placeholder="Ej: permiso de chispa, trabajo en altura, espacios confinados...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-muted">Dificultad</label>
+                                            <input v-model="workorderData.restricciones.dificultad" class="form-control" placeholder="Ej: espacios reducidos, maquinaria, químicos...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-muted">Horarios</label>
+                                            <input v-model="workorderData.restricciones.horarios" class="form-control" placeholder="Ej: nocturnos o fines de semana">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-muted">Especificidad Trabajo</label>
+                                            <input v-model="workorderData.restricciones.especificidad" class="form-control" placeholder="Detalles específicos...">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- RESTRICCIONES & BUTTONS SECTION -->
+                    <!-- BUTTONS LOGIC -->
                     <div class="col-12">
-                        <div class="card border-0 shadow-sm">
-                            <div class="card-header bg-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #dc3545 !important;">
-                                <h6 class="fw-bold mb-0 text-danger text-uppercase">RESTRICCIONES <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.restrictions = !showLogic.restrictions" title="Ver Lógica"></i></h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-12" v-if="showLogic.restrictions">
-                                        <div class="logic-card mt-2 position-relative">
-                                            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.restrictions = false"></button>
-                                            <div class="logic-header"><span class="logic-icon"><i class="fas fa-exclamation-triangle"></i></span> LÓGICA DE RESTRICCIONES</div>
-                                            <div class="logic-content">Se requiere que el cotizador pueda tener una guía rápida que le permita preguntar al cliente puntos clave que afectan el costo de la cotización.</div>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="small fw-bold text-muted">Producción</label>
-                                        <input v-model="workorderData.restricciones.produccion" class="form-control" placeholder="Restricciones de producción...">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="small fw-bold text-muted">Seguridad</label>
-                                        <input v-model="workorderData.restricciones.seguridad" class="form-control" placeholder="Ej: permiso de chispa, trabajo en altura, espacios confinados...">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="small fw-bold text-muted">Dificultad</label>
-                                        <input v-model="workorderData.restricciones.dificultad" class="form-control" placeholder="Ej: espacios reducidos, maquinaria, químicos...">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="small fw-bold text-muted">Horarios</label>
-                                        <input v-model="workorderData.restricciones.horarios" class="form-control" placeholder="Ej: nocturnos o fines de semana">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="small fw-bold text-muted">Especificidad Trabajo</label>
-                                        <input v-model="workorderData.restricciones.especificidad" class="form-control" placeholder="Detalles específicos...">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- BUTTONS LOGIC -->
                         <div class="card border-0 shadow-sm mt-4">
                             <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
                                 <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DOCUMENTACIÓN Y HERRAMIENTAS <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.docs = !showLogic.docs" title="Ver Lógica"></i></h6>
