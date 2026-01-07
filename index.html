@@ -1279,12 +1279,12 @@
                                     <div class="vr mx-2"></div>
 
                                     <div class="d-flex flex-column align-items-center">
-                                        <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
+                                        <button class="btn btn-success text-white" @click="generateChatGPTContext"><i class="fas fa-robot me-2"></i>CHAT GPT</button>
                                         <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.chatgpt = !showInstr.chatgpt" title="Ver Lógica"></i>
                                         <small v-if="showInstr.chatgpt" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
                                     </div>
                                     <div class="d-flex flex-column align-items-center">
-                                        <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
+                                        <button class="btn btn-secondary" @click="triggerNeuralSearch" title="Buscar en Historial"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
                                         <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.neural = !showInstr.neural" title="Ver Lógica"></i>
                                         <small v-if="showInstr.neural" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
                                     </div>
@@ -3435,6 +3435,95 @@
       };
       const syncQueueToBackend = () => { google.script.run.apiSyncDrafts(JSON.parse(JSON.stringify(activityQueue.value))); };
 
+      const generateChatGPTContext = () => {
+          const wd = workorderData.value;
+          const prompt = `Act as an expert industrial estimator. I am doing a survey for a work order.
+Client: ${wd.cliente}
+Type: ${wd.tipoTrabajo}
+Description: ${wd.conceptoDesc}
+Restrictions: ${JSON.stringify(wd.restricciones)}
+Checklist: ${JSON.stringify(wd.checkList)}
+
+Please generate:
+1. A Minute of the survey (Resumen ejecutivo).
+2. Organize the information captured.
+3. Improve the text description (Make it technical and clear).
+4. Suggest 5 important things I might have missed checking based on this type of work (Blind spots).`;
+
+          Swal.fire({
+              title: 'Contexto para ChatGPT',
+              html: `<textarea class="form-control" rows="10" readonly id="chatgpt-prompt">${prompt}</textarea>`,
+              showCancelButton: true,
+              confirmButtonText: '<i class="fas fa-external-link-alt"></i> Abrir ChatGPT',
+              cancelButtonText: '<i class="fas fa-copy"></i> Copiar',
+              cancelButtonColor: '#3085d6',
+              confirmButtonColor: '#10a37f',
+              width: '600px'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  const copyText = document.getElementById("chatgpt-prompt");
+                  copyText.select();
+                  document.execCommand("copy"); // Fallback copy
+                  window.open('https://chat.openai.com', '_blank');
+              } else if (result.dismiss === Swal.DismissReason.cancel) {
+                  const copyText = document.getElementById("chatgpt-prompt");
+                  copyText.select();
+                  document.execCommand("copy");
+                  Swal.fire('Copiado', 'Prompt copiado al portapapeles', 'success');
+              }
+          });
+      };
+
+      const triggerNeuralSearch = () => {
+          if (!workorderData.value.tipoTrabajo && (!workorderData.value.conceptoDesc || workorderData.value.conceptoDesc.length < 5)) {
+              return Swal.fire('Faltan Datos', 'Ingresa un Tipo de Trabajo o Descripción para buscar similitudes.', 'warning');
+          }
+
+          Swal.fire({ title: 'Consultando Red Neuronal...', text: 'Buscando proyectos similares en el historial...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+          const query = workorderData.value.conceptoDesc || "";
+          const type = workorderData.value.tipoTrabajo || "";
+
+          google.script.run.withSuccessHandler(res => {
+              Swal.close();
+              if (res.success) {
+                  if (res.data.length === 0) {
+                      Swal.fire('Sin Coincidencias', 'No se encontraron proyectos similares.', 'info');
+                      return;
+                  }
+
+                  let htmlContent = '<div style="text-align:left; max-height:400px; overflow-y:auto;">';
+                  res.data.forEach(item => {
+                      const restricciones = item['RESTRICCIONES'] || "Ninguna registrada";
+                      const desc = item['CONCEPTO'] || item['DESCRIPCION'] || "Sin descripción";
+                      const cliente = item['CLIENTE'] || "N/A";
+
+                      htmlContent += `
+                        <div class="card mb-3 border-secondary">
+                            <div class="card-header bg-dark text-white py-1 small fw-bold d-flex justify-content-between">
+                                <span>${cliente}</span>
+                                <span class="badge bg-warning text-dark">${item['AREA'] || item['ESPECIALIDAD'] || 'Gral'}</span>
+                            </div>
+                            <div class="card-body p-2 small">
+                                <p class="mb-1"><strong>Desc:</strong> ${desc.substring(0, 150)}${desc.length > 150 ? '...' : ''}</p>
+                                <p class="mb-0 text-danger"><strong>Restricciones:</strong> ${restricciones}</p>
+                            </div>
+                        </div>`;
+                  });
+                  htmlContent += '</div>';
+
+                  Swal.fire({
+                      title: 'Proyectos Similares Encontrados',
+                      html: htmlContent,
+                      width: '600px',
+                      confirmButtonText: 'Cerrar'
+                  });
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiNeuralSearch(query, type);
+      };
+
       const saveWorkOrder = () => {
         if(!workorderData.value.cliente || !workorderData.value.tipoTrabajo || !workorderData.value.cotizador.length) {
             return Swal.fire('Faltan datos obligatorios', 'Cliente, Tipo de Trabajo y quien Elaboró son requeridos.', 'warning');
@@ -3558,7 +3647,7 @@
       const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, showWorkOrderLogic, triggerUpload,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, generateChatGPTContext, triggerNeuralSearch, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, showWorkOrderLogic, triggerUpload,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
       laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
