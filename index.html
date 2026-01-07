@@ -2483,7 +2483,7 @@
       const isRecording = ref(false);
       let recognition = null;
 
-      const toggleDictation = () => {
+      const toggleDictation = async () => {
           if (isRecording.value) {
               if (recognition) recognition.stop();
               isRecording.value = false;
@@ -2496,7 +2496,18 @@
               return;
           }
 
-          recognition = new SpeechRecognition();
+          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+              try {
+                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                  stream.getTracks().forEach(track => track.stop());
+              } catch (err) {
+                  console.error("Microphone permission denied via getUserMedia:", err);
+                  Swal.fire('Permiso Denegado', 'No se pudo acceder al micrófono. Por favor verifique los permisos del sitio.', 'error');
+                  return;
+              }
+          }
+
+          recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
           recognition.lang = 'es-MX'; // Optimized for Mexican Spanish
           recognition.continuous = true;
           recognition.interimResults = false;
@@ -2535,7 +2546,9 @@
                   return;
               }
               isRecording.value = false;
-              Swal.fire('Error', 'Error en dictado: ' + event.error, 'error');
+              if (event.error !== 'aborted') {
+                  Swal.fire('Error', 'Error en dictado: ' + event.error, 'error');
+              }
           };
 
           recognition.start();
