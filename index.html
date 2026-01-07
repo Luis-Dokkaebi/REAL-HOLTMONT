@@ -2492,14 +2492,14 @@
 
           const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
           if (!SpeechRecognition) {
-              Swal.fire('No soportado', 'Tu navegador no soporta reconocimiento de voz.', 'error');
+              Swal.fire('No soportado', 'Tu navegador no soporta reconocimiento de voz. Intenta con Chrome.', 'error');
               return;
           }
 
           recognition = new SpeechRecognition();
           recognition.lang = 'es-MX'; // Optimized for Mexican Spanish
+          recognition.continuous = true;
           recognition.interimResults = false;
-          recognition.maxAlternatives = 1;
 
           recognition.onstart = () => {
               isRecording.value = true;
@@ -2510,23 +2510,43 @@
           };
 
           recognition.onresult = (event) => {
-              const transcript = event.results[0][0].transcript;
-              if (transcript) {
+              let newTranscript = '';
+              for (let i = event.resultIndex; i < event.results.length; ++i) {
+                  if (event.results[i].isFinal) {
+                      newTranscript += event.results[i][0].transcript;
+                  }
+              }
+
+              if (newTranscript) {
                   const currentText = workorderData.value.conceptoDesc || '';
-                  workorderData.value.conceptoDesc = currentText + (currentText.length > 0 && !currentText.endsWith(' ') ? ' ' : '') + transcript;
+                  const needsSpace = currentText.length > 0 && !currentText.match(/\s$/);
+                  workorderData.value.conceptoDesc = currentText + (needsSpace ? ' ' : '') + newTranscript;
               }
           };
 
           recognition.onerror = (event) => {
-              console.error(event.error);
-              isRecording.value = false;
-              if (event.error !== 'no-speech') {
-                  Swal.fire('Error', 'Error en dictado: ' + event.error, 'error');
+              console.error("Speech Error:", event.error);
+              if (event.error === 'not-allowed') {
+                  isRecording.value = false;
+                  Swal.fire('Permiso Denegado', 'Por favor habilita el acceso al micrófono.', 'warning');
+                  return;
               }
+              if (event.error === 'no-speech') {
+                  return;
+              }
+              isRecording.value = false;
+              Swal.fire('Error', 'Error en dictado: ' + event.error, 'error');
           };
 
           recognition.start();
       };
+
+      watch(currentView, () => {
+         if (isRecording.value && recognition) {
+             recognition.stop();
+             isRecording.value = false;
+         }
+      });
 
       const fetchNextSequence = () => {
           google.script.run.withSuccessHandler(seq => {
