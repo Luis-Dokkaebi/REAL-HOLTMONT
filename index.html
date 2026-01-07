@@ -3325,7 +3325,15 @@
             archivoUrl: [...workorderData.value.files, ...designFiles].join('\n'),
             horas: 0,
             cumplimiento: 'NO',
-            TRABAJO: workorderData.value.tipoTrabajo
+            TRABAJO: workorderData.value.tipoTrabajo,
+            // CAMPOS DE DETALLE (NUEVO)
+            materiales: JSON.parse(JSON.stringify(requiredMaterials.value.items)),
+            manoObra: JSON.parse(JSON.stringify(laborTable.value.items)),
+            herramientas: JSON.parse(JSON.stringify(toolsRequired.value.items)),
+            equipos: JSON.parse(JSON.stringify(specialEquipment.value.items)),
+            programa: JSON.parse(JSON.stringify(projectProgram.value.items)),
+            checkList: JSON.parse(JSON.stringify(workorderData.value.checkList)),
+            additionalCosts: JSON.parse(JSON.stringify(additionalCosts.value))
         };
 
         google.script.run.withSuccessHandler(res => {
