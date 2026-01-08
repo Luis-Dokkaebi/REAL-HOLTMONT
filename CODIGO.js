@@ -1000,20 +1000,7 @@ function internalUpdateTask(personName, taskData, username) {
             return { success: false, message: "Operación no permitida: PPCV3 es de solo lectura desde esta vista." };
         }
 
-        // GENERATE FOLIO BEFORE SAVE (ANTONIA_VENTAS)
-        let generatedFolio = null;
-        if (String(personName).toUpperCase() === "ANTONIA_VENTAS") {
-             // AUTO-INCREMENT FOLIO FOR ANTONIA VENTAS
-             if (!taskData['FOLIO'] && !taskData['ID']) {
-                 taskData['FOLIO'] = generateAppSheetId();
-                 generatedFolio = taskData['FOLIO'];
-             }
-        }
-
         const res = internalBatchUpdateTasks(personName, [taskData]);
-
-        // Attach ID to response
-        if (generatedFolio) res.folio = generatedFolio;
 
         if (res.success && username) {
              const action = (taskData['COMENTARIOS'] || taskData['comentarios'] || taskData['COMENTARIOS SEMANA EN CURSO']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
@@ -1021,6 +1008,11 @@ function internalUpdateTask(personName, taskData, username) {
         }
 
         if (String(personName).toUpperCase() === "ANTONIA_VENTAS") {
+             // AUTO-INCREMENT FOLIO FOR ANTONIA VENTAS
+             if (!taskData['FOLIO'] && !taskData['ID']) {
+                 taskData['FOLIO'] = generateAppSheetId();
+             }
+
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex; 
 
@@ -1867,7 +1859,7 @@ function apiCreateStandardStructure(siteId, user) {
 function generateAppSheetId() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
