@@ -194,9 +194,14 @@ function getDirectoryFromDB() {
       if (lock.tryLock(5000)) {
           let sheet = findSheetSmart(APP_CONFIG.directorySheetName);
 
-          // MIGRACIÓN AUTOMÁTICA
+          // CREAR SI NO EXISTE
           if (!sheet) {
               sheet = SS.insertSheet(APP_CONFIG.directorySheetName);
+          }
+
+          // MIGRACIÓN/POBLADO AUTOMÁTICO (Si está vacía o solo tiene encabezados)
+          if (sheet.getLastRow() < 2) {
+              sheet.clear(); // Limpiar por si acaso el usuario puso encabezados manuales incorrectos
               const headers = ["NOMBRE", "DEPARTAMENTO", "TIPO_HOJA"];
               sheet.appendRow(headers);
 
@@ -206,7 +211,7 @@ function getDirectoryFromDB() {
                   sheet.getRange(2, 1, rows.length, 3).setValues(rows);
               }
               SpreadsheetApp.flush();
-              registrarLog("SISTEMA", "MIGRACION_DB", "Se creó DB_DIRECTORY y se migraron los usuarios.");
+              registrarLog("SISTEMA", "MIGRACION_DB", "Se pobló DB_DIRECTORY (estaba vacía).");
           }
 
           const data = sheet.getDataRange().getValues();
