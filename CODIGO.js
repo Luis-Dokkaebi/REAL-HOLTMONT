@@ -2378,11 +2378,20 @@ function applyTrafficLightToSheet(sheet) {
   });
   
   const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
+  const colDiasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ");
 
   if (colFechaIndices.length === 0 || colClasiIdx === -1) return false;
 
   const rowHeader = headerRowIdx + 1; // 1-based (Fila de Titulos)
   const colClasiLet = colIndexToLetter(colClasiIdx + 1);
+
+  // Identify PRIMARY Date Column (for linking DIAS coloring)
+  let primaryFechaIdx = -1;
+  for(let alias of fechaAliases) {
+      const idx = headers.indexOf(alias);
+      if(idx > -1) { primaryFechaIdx = idx; break; }
+  }
+  if(primaryFechaIdx === -1 && colFechaIndices.length > 0) primaryFechaIdx = colFechaIndices[0];
 
   // 3. Limpieza Inteligente de Reglas Antiguas
   const rules = sheet.getConditionalFormatRules();
@@ -2391,7 +2400,6 @@ function applyTrafficLightToSheet(sheet) {
                       ? r.getBooleanCondition().getCriteriaValues()[0]
                       : "";
       // Eliminamos reglas de semáforo viejas (detectadas por referencia a CLASI + TODAY)
-      // Como ahora soportamos múltiples columnas, borramos cualquier regla que use la columna de clasificación para semáforo
       if (formula.includes("TODAY") && formula.includes(colClasiLet) && formula.includes("ISNUMBER")) return false;
       return true;
   });
@@ -2401,34 +2409,39 @@ function applyTrafficLightToSheet(sheet) {
   // 4. Iterar sobre TODAS las columnas de fecha encontradas
   colFechaIndices.forEach(idx => {
       const colFechaLet = colIndexToLetter(idx + 1);
-      const range = sheet.getRange(rowHeader, idx + 1, sheet.getMaxRows() - rowHeader + 1, 1);
+
+      const rangesToColor = [sheet.getRange(rowHeader, idx + 1, sheet.getMaxRows() - rowHeader + 1, 1)];
+      if (idx === primaryFechaIdx && colDiasIdx > -1) {
+          rangesToColor.push(sheet.getRange(rowHeader, colDiasIdx + 1, sheet.getMaxRows() - rowHeader + 1, 1));
+      }
 
       const addRulePair = (clase, dias, buffer) => {
           const formulaBase = `AND(UPPER(TRIM($${colClasiLet}${rowHeader}))="${clase}", ISNUMBER($${colFechaLet}${rowHeader}), ROW()>${rowHeader})`;
+          const diffFormula = `(TODAY() - INT($${colFechaLet}${rowHeader}))`;
 
           // VENCIDO (ROJO): > dias
           newRules.push(SpreadsheetApp.newConditionalFormatRule()
-              .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) > ${dias})`)
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} > ${dias})`)
               .setBackground("#FF0000")
               .setFontColor("#FFFFFF")
-              .setRanges([range])
+              .setRanges(rangesToColor)
               .build());
 
           // POR VENCER (AMARILLO): Entre (dias - buffer) y dias
           const warningStart = dias - buffer;
           newRules.push(SpreadsheetApp.newConditionalFormatRule()
-              .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) >= ${warningStart}, (TODAY() - $${colFechaLet}${rowHeader}) <= ${dias})`)
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} >= ${warningStart}, ${diffFormula} <= ${dias})`)
               .setBackground("#FFFF00")
               .setFontColor("#000000")
-              .setRanges([range])
+              .setRanges(rangesToColor)
               .build());
 
           // A TIEMPO (VERDE): < warningStart
           newRules.push(SpreadsheetApp.newConditionalFormatRule()
-              .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) < ${warningStart})`)
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} < ${warningStart})`)
               .setBackground("#00FF00")
               .setFontColor("#000000")
-              .setRanges([range])
+              .setRanges(rangesToColor)
               .build());
       };
 
