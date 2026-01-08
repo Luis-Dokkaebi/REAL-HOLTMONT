@@ -1032,7 +1032,8 @@ function internalUpdateTask(personName, taskData, username) {
 
              // MODIFICADO: Se comenta la distribución a vendedores para evitar duplicidad y tráfico innecesario.
              // "ya no mandará la misma tarea a la hoja de los vendedores"
-             /*
+             // UPDATE: Se reactiva la distribución por reporte de bug (No se reflejaban actividades).
+
              const vendedorKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
              if (vendedorKey && taskData[vendedorKey]) {
                  const vendedorName = String(taskData[vendedorKey]).trim();
@@ -1063,7 +1064,7 @@ function internalUpdateTask(personName, taskData, username) {
                      }
                  }
              }
-             */
+
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
         } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
              // Sincronización Inversa: Vendedor -> ANTONIA_VENTAS
@@ -2455,5 +2456,30 @@ function test_NumericSequence_Generation() {
 
   } catch (e) {
       console.error("❌ Error en prueba:", e);
+  }
+}
+
+function test_Antonia_Distribution_Manual() {
+  console.log("🛠️ INICIANDO TEST: Distribución Manual Antonia -> Vendedor");
+
+  // 1. Datos simulados
+  const taskData = {
+    FOLIO: "TEST-DIST-" + new Date().getTime(),
+    CONCEPTO: "PRUEBA DISTRIBUCION",
+    VENDEDOR: "TEST_USER (VENTAS)", // Asume que existe hoja TEST_USER (VENTAS) o similar
+    ESTATUS: "COTIZADA"
+  };
+
+  // 2. Simular llamada desde ANTONIA_VENTAS
+  console.log("Simulando guardado desde ANTONIA_VENTAS...");
+  const res = internalUpdateTask("ANTONIA_VENTAS", taskData, "TEST_ADMIN");
+
+  // 3. Resultados
+  if (res.success) {
+      console.log("✅ internalUpdateTask exitoso.");
+      console.log("ℹ️ Verificar manualmente que la tarea aparezca en la hoja 'TEST_USER (VENTAS)'");
+      console.log("ℹ️ ID generado/usado: " + (taskData.FOLIO || res.ids));
+  } else {
+      console.error("❌ Falló internalUpdateTask: " + res.message);
   }
 }
