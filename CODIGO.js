@@ -976,7 +976,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
 
         // 5. AUTO-HEALING: FORMATO CONDICIONAL (SEMAFORO)
         // Se ejecuta solo al crear nuevas tareas para garantizar que el rango cubra la nueva fila superior.
-        const excludedForFormatting = [APP_CONFIG.ppcSheetName, APP_CONFIG.logSheetName, APP_CONFIG.draftSheetName, APP_CONFIG.salesSheetName, FOLIO_CONFIG.SHEET_NAME, "DB_SITIOS", "DB_PROYECTOS", "DB_DIRECTORY"];
+        const excludedForFormatting = [APP_CONFIG.logSheetName, APP_CONFIG.draftSheetName, APP_CONFIG.salesSheetName, "DB_SITIOS", "DB_PROYECTOS", "DB_DIRECTORY"];
         if (!excludedForFormatting.includes(sheetName) && !sheetName.startsWith("DB_")) {
              try { applyTrafficLightToSheet(sheet); } catch(e) { console.warn("Auto-Format Error: " + e.toString()); }
         }
@@ -2310,7 +2310,7 @@ function applyTrafficLightToSheet(sheet) {
   const sNameUpper = sheet.getName().toUpperCase().trim();
 
   // Exclusiones Internas (Seguridad)
-  const excludedSubstrings = ["LOG_", "DB_", "PPCV3", "DATOS", "BORRADOR"];
+  const excludedSubstrings = ["LOG_", "DB_", "DATOS", "BORRADOR"];
   if (excludedSubstrings.some(ex => sNameUpper.includes(ex))) return false;
 
   const lastRow = sheet.getLastRow();
@@ -2383,8 +2383,6 @@ function applyTrafficLightToSheet(sheet) {
 function setupConditionalFormatting() {
   const ui = SpreadsheetApp.getUi();
   const excludedSheets = [
-      APP_CONFIG.ppcSheetName.toUpperCase(),
-      FOLIO_CONFIG.SHEET_NAME.toUpperCase(),
       APP_CONFIG.logSheetName.toUpperCase(),
       APP_CONFIG.salesSheetName.toUpperCase(),
       APP_CONFIG.draftSheetName.toUpperCase()
