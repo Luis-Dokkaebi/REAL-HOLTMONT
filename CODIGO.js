@@ -6,7 +6,7 @@
  * ======================================================================
  */
 
-var DEMO_MODE = true; // HOTFIX: MODO DEMO
+var DEMO_MODE = false; // MODO PRODUCCION
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 // --- CONFIGURACIÓN ---
@@ -88,7 +88,7 @@ const INITIAL_DIRECTORY = [
     { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "ESTANDAR" }
 ];
 
-const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
+const DEFAULT_TRACKER_HEADERS = ['FOLIO', 'ESPECIALIDAD', 'CONCEPTO', 'RESPONSABLE', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA', 'FECHA_TERMINO'];
 const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT', 'AVANCE'];
 
 // --- ESTRUCTURA ESTÁNDAR DE PROYECTOS (MODIFICADO) ---
@@ -475,10 +475,6 @@ function getSystemConfig(role) {
   };
 }
 
-// CONSTANTES DE GRUPOS
-const GROUP_VENTAS = ['Eduardo Manzanares', 'Sebastian Padilla', 'Ramiro Rodriguez'];
-const GROUP_TRACKER = ['Judith Echavarria', 'Eduardo Teran', 'Angel Salinas'];
-
 /* FUNCIÓN PRINCIPAL DE DASHBOARD (RE-INGENIERÍA NATIVA) */
 function generarDashboard() {
   // 4. Control de Acceso (RBAC - Session)
@@ -523,6 +519,27 @@ function apiFetchTeamKPIData(username) {
   if (!user || user.role !== 'ADMIN') {
       return { success: false, message: 'Acceso Denegado. Privilegios insuficientes.' };
   }
+
+  // GENERACIÓN DINÁMICA DE GRUPOS (DESDE DB_DIRECTORY)
+  const fullDirectory = getDirectoryFromDB();
+  const salesGroup = [];
+  const trackerGroup = [];
+
+  fullDirectory.forEach(u => {
+      const name = String(u.name).trim();
+      const uNameUpper = name.toUpperCase();
+      const dept = String(u.dept).toUpperCase().trim();
+
+      // Filtrar cuentas de sistema o resumen
+      if (uNameUpper === "ANTONIA_VENTAS") return;
+
+      if (dept === "VENTAS") {
+          salesGroup.push(name);
+      } else if (dept !== "ADMINISTRACION") {
+          // Incluimos en Tracker a todo el personal operativo (no ventas, no admin puro)
+          trackerGroup.push(name);
+      }
+  });
 
   // Helper para procesar cada grupo (Map/Reduce Manual)
   const processGroup = (members) => {
@@ -587,8 +604,8 @@ function apiFetchTeamKPIData(username) {
 
   return {
       success: true,
-      ventas: processGroup(GROUP_VENTAS),
-      tracker: processGroup(GROUP_TRACKER)
+      ventas: processGroup(salesGroup),
+      tracker: processGroup(trackerGroup)
   };
 }
 
