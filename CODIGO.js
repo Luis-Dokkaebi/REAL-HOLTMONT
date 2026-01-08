@@ -961,6 +961,13 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         const insertPos = headerRowIndex + 2;
         sheet.insertRowsBefore(insertPos, rowsToAppend.length);
         sheet.getRange(insertPos, 1, normalizedAppend.length, finalMaxCols).setValues(normalizedAppend);
+
+        // 5. AUTO-HEALING: FORMATO CONDICIONAL (SEMAFORO)
+        // Se ejecuta solo al crear nuevas tareas para garantizar que el rango cubra la nueva fila superior.
+        const excludedForFormatting = [APP_CONFIG.ppcSheetName, APP_CONFIG.logSheetName, APP_CONFIG.draftSheetName, APP_CONFIG.salesSheetName, FOLIO_CONFIG.SHEET_NAME, "DB_SITIOS", "DB_PROYECTOS", "DB_DIRECTORY"];
+        if (!excludedForFormatting.includes(sheetName) && !sheetName.startsWith("DB_")) {
+             try { applyTrafficLightToSheet(sheet); } catch(e) { console.warn("Auto-Format Error: " + e.toString()); }
+        }
     }
     
     SpreadsheetApp.flush();
@@ -2263,9 +2270,83 @@ function test_ReverseSync_Flow() {
  * MODULE: FORMATO CONDICIONAL (SEMAFORIZACIÓN)
  * ======================================================================
  */
+function applyTrafficLightToSheet(sheet) {
+  if (!sheet) return false;
+  const sNameUpper = sheet.getName().toUpperCase().trim();
+
+  // Exclusiones Internas (Seguridad)
+  const excludedSubstrings = ["LOG_", "DB_", "PPCV3", "DATOS", "BORRADOR"];
+  if (excludedSubstrings.some(ex => sNameUpper.includes(ex))) return false;
+
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2) return false;
+
+  // 1. Encontrar Cabeceras
+  const values = sheet.getRange(1, 1, Math.min(20, lastRow), lastCol).getValues();
+  const headerRowIdx = findHeaderRow(values);
+  if (headerRowIdx === -1) return false;
+
+  const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
+
+  // 2. Identificar Columnas
+  const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'FECHA_ALTA'];
+  const colFechaIdx = headers.findIndex(h => fechaAliases.includes(h) || h.startsWith("FECHA "));
+  const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
+
+  if (colFechaIdx === -1 || colClasiIdx === -1) return false;
+
+  const rowHeader = headerRowIdx + 1; // 1-based (Fila de Titulos)
+  const colFechaLet = colIndexToLetter(colFechaIdx + 1);
+  const colClasiLet = colIndexToLetter(colClasiIdx + 1);
+
+  // 3. Rango de Aplicación (Include Header + Check ROW > Header)
+  // Esto permite que al insertar filas arriba (Row 2), el rango se estire y cubra la nueva fila.
+  const range = sheet.getRange(rowHeader, colFechaIdx + 1, sheet.getMaxRows() - rowHeader + 1, 1);
+
+  // 4. Limpieza Inteligente de Reglas Antiguas (Evitar Duplicados)
+  const rules = sheet.getConditionalFormatRules();
+  const cleanRules = rules.filter(r => {
+      const formula = (r.getBooleanCondition() && r.getBooleanCondition().getCriteriaType() === SpreadsheetApp.BooleanCriteria.CUSTOM_FORMULA)
+                      ? r.getBooleanCondition().getCriteriaValues()[0]
+                      : "";
+      // Eliminamos reglas de semáforo viejas (detectadas por referencia a CLASI + TODAY)
+      if (formula.includes("TODAY") && formula.includes(colClasiLet) && formula.includes("ISNUMBER")) return false;
+      return true;
+  });
+
+  const newRules = [];
+  const addRulePair = (clase, dias) => {
+      // FORMULA: ROW() > rowHeader asegura que no pinte el encabezado, aunque esté en el rango
+      const formulaBase = `AND(UPPER(TRIM($${colClasiLet}${rowHeader}))="${clase}", ISNUMBER($${colFechaLet}${rowHeader}), ROW()>${rowHeader})`;
+
+      // VENCIDO (ROJO)
+      newRules.push(SpreadsheetApp.newConditionalFormatRule()
+          .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) > ${dias})`)
+          .setBackground("#FF0000")
+          .setFontColor("#FFFFFF")
+          .setRanges([range])
+          .build());
+
+      // A TIEMPO (VERDE)
+      newRules.push(SpreadsheetApp.newConditionalFormatRule()
+          .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) <= ${dias})`)
+          .setBackground("#00FF00")
+          .setFontColor("#000000")
+          .setRanges([range])
+          .build());
+  };
+
+  addRulePair("A", 3);
+  addRulePair("AA", 15);
+  addRulePair("AAA", 30);
+
+  sheet.setConditionalFormatRules(newRules.concat(cleanRules));
+  return true;
+}
+
 function setupConditionalFormatting() {
   const ui = SpreadsheetApp.getUi();
-  // EXCLUSIONES: No en PPCV3, ANTONIA_VENTAS, LOGS, DATOS, DB_...
   const excludedSheets = [
       APP_CONFIG.ppcSheetName.toUpperCase(),
       FOLIO_CONFIG.SHEET_NAME.toUpperCase(),
@@ -2282,77 +2363,19 @@ function setupConditionalFormatting() {
     const sName = sheet.getName().trim();
     const sNameUpper = sName.toUpperCase();
 
-    // Filtros de Exclusión
     if (excludedSheets.includes(sNameUpper)) return;
-    if (sNameUpper.startsWith("DB_")) return;
 
-    // 1. Encontrar Cabeceras
-    const lastRow = sheet.getLastRow();
-    const lastCol = sheet.getLastColumn();
-    if (lastRow < 2) return;
-
-    // Buscar fila de encabezados (primeras 20 filas)
-    const values = sheet.getRange(1, 1, Math.min(20, lastRow), lastCol).getValues();
-    const headerRowIdx = findHeaderRow(values);
-
-    if (headerRowIdx === -1) return; // Skip si no parece una hoja de datos válida
-
-    const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
-
-    // 2. Identificar Columnas Clave
-    const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'FECHA_ALTA'];
-    const colFechaIdx = headers.findIndex(h => fechaAliases.includes(h) || h.startsWith("FECHA "));
-    const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
-
-    if (colFechaIdx === -1 || colClasiIdx === -1) return; // Skip si faltan columnas
-
-    const rowStart = headerRowIdx + 2; // Fila de datos (1-based)
-    const colFechaLet = colIndexToLetter(colFechaIdx + 1);
-    const colClasiLet = colIndexToLetter(colClasiIdx + 1);
-
-    // 3. Rango de Aplicación (Solo columna FECHA)
-    const numRows = sheet.getMaxRows() - rowStart + 1;
-    if (numRows < 1) return;
-
-    const range = sheet.getRange(rowStart, colFechaIdx + 1, numRows, 1);
-
-    // 4. Construir Reglas (Preservando existentes)
-    const existingRules = sheet.getConditionalFormatRules();
-    const newRules = [];
-
-    // Helper para crear par de reglas (Rojo/Verde)
-    const addRulePair = (clase, dias) => {
-        // VENCIDO (ROJO) -> TODAY - FECHA > DIAS
-        newRules.push(SpreadsheetApp.newConditionalFormatRule()
-            .whenFormulaSatisfied(`=AND(UPPER(TRIM($${colClasiLet}${rowStart}))="${clase}", (TODAY() - $${colFechaLet}${rowStart}) > ${dias}, ISNUMBER($${colFechaLet}${rowStart}))`)
-            .setBackground("#FF0000")
-            .setFontColor("#FFFFFF") // Texto Blanco para mejor contraste
-            .setRanges([range])
-            .build());
-
-        // A TIEMPO (VERDE) -> TODAY - FECHA <= DIAS
-        newRules.push(SpreadsheetApp.newConditionalFormatRule()
-            .whenFormulaSatisfied(`=AND(UPPER(TRIM($${colClasiLet}${rowStart}))="${clase}", (TODAY() - $${colFechaLet}${rowStart}) <= ${dias}, ISNUMBER($${colFechaLet}${rowStart}))`)
-            .setBackground("#00FF00")
-            .setFontColor("#000000")
-            .setRanges([range])
-            .build());
-    };
-
-    addRulePair("A", 3);
-    addRulePair("AA", 15);
-    addRulePair("AAA", 30);
-
-    // Priorizamos las nuevas reglas, luego las existentes (evitando duplicados triviales si es posible, pero concat es seguro)
-    sheet.setConditionalFormatRules(newRules.concat(existingRules));
-    logMsg += `✅ ${sName}\n`;
-    count++;
+    // Delegamos a la nueva función robusta
+    if (applyTrafficLightToSheet(sheet)) {
+       logMsg += `✅ ${sName}\n`;
+       count++;
+    }
   });
 
   if (count > 0) {
-      ui.alert(`Semaforización aplicada a ${count} hojas de empleados:\n${logMsg}`);
+      ui.alert(`Semaforización aplicada a ${count} hojas:\n${logMsg}`);
   } else {
-      ui.alert("⚠️ No se encontraron hojas de empleados aptas para aplicar formato.");
+      ui.alert("⚠️ No se encontraron hojas aptas (con columnas CLASIFICACION y FECHA) para aplicar formato.");
   }
 }
 
