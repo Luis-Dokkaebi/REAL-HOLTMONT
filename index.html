@@ -3374,7 +3374,22 @@
 
       const getHeaderLabel = (h) => { const up = String(h).toUpperCase().trim(); if (up === 'CLASIFICACION') return 'CLASI'; if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN'; if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN'; return h; };
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
-      const getTrafficStyle = (row) => { const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); const d = parseInt(row['DIAS']||row['RELOJ']||0); if (isNaN(d)) return {}; if(t==='A') return d>3?{backgroundColor:'#e74c3c',color:'white'}:{backgroundColor:'#2ecc71',color:'white'}; if(t==='AA') return d>15?{backgroundColor:'#e74c3c',color:'white'}:{backgroundColor:'#2ecc71',color:'white'}; if(t==='AAA') return d>30?{backgroundColor:'#e74c3c',color:'white'}:{backgroundColor:'#2ecc71',color:'white'}; return {}; };
+      const getTrafficStyle = (row) => {
+          const t = String(row['CLASIFICACION']||'').trim().toUpperCase();
+          const d = parseInt(row['DIAS']||row['RELOJ']||0);
+          if (isNaN(d)) return {};
+
+          let limit = 0, buffer = 0;
+          if(t==='A') { limit=3; buffer=1; }
+          else if(t==='AA') { limit=15; buffer=3; }
+          else if(t==='AAA') { limit=30; buffer=5; }
+          else return {};
+
+          if(d > limit) return {backgroundColor:'#e74c3c', color:'white'}; // Rojo
+          if(d >= (limit - buffer)) return {backgroundColor:'#ffff00', color:'black', fontWeight:'bold'}; // Amarillo
+          return {backgroundColor:'#2ecc71', color:'white'}; // Verde
+      };
+
       const getFechaInicioTrafficStyle = (row) => {
           const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','ALTA'].includes(String(k).toUpperCase().trim()));
           if (!startKey) return {};
@@ -3389,15 +3404,22 @@
           if (!dObj || isNaN(dObj.getTime())) return {};
 
           // Calculate elapsed days
-          const diff = new Date() - dObj;
+          const now = new Date();
+          now.setHours(0,0,0,0);
+          dObj.setHours(0,0,0,0);
+          const diff = now - dObj;
           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
           const t = String(row['CLASIFICACION']||'').trim().toUpperCase();
-          if (t === 'A') return days > 3 ? { backgroundColor: '#e74c3c', color: 'white' } : { backgroundColor: '#2ecc71', color: 'white' };
-          if (t === 'AA') return days > 15 ? { backgroundColor: '#e74c3c', color: 'white' } : { backgroundColor: '#2ecc71', color: 'white' };
-          if (t === 'AAA') return days > 30 ? { backgroundColor: '#e74c3c', color: 'white' } : { backgroundColor: '#2ecc71', color: 'white' };
+          let limit = 0, buffer = 0;
+          if(t==='A') { limit=3; buffer=1; }
+          else if(t==='AA') { limit=15; buffer=3; }
+          else if(t==='AAA') { limit=30; buffer=5; }
+          else return {};
 
-          return {};
+          if(days > limit) return {backgroundColor:'#e74c3c', color:'white'};
+          if(days >= (limit - buffer)) return {backgroundColor:'#ffff00', color:'black', fontWeight:'bold'};
+          return {backgroundColor:'#2ecc71', color:'white'};
       };
       const getFechaRespuestaStyle = (row) => { const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO'].includes(String(k).toUpperCase().trim())); const startDateVal = startKey ? row[startKey] : null; const style = { backgroundColor: '#ffc107', color: 'black' }; if (!startDateVal) return style; let startDate = null; if (typeof startDateVal === 'string') { const parts = startDateVal.split('/'); if (parts.length === 3) { let y = parts[2].length === 2 ? '20' + parts[2] : parts[2]; startDate = new Date(`${y}-${parts[1]}-${parts[0]}`); } } else if (startDateVal instanceof Date) { startDate = startDateVal; } if (startDate && !isNaN(startDate.getTime())) { const diff = new Date() - startDate; if (Math.floor(diff / (1000 * 60 * 60 * 24)) > 3) { style.backgroundColor = '#dc3545'; style.color = 'white'; } } return style; };
 
