@@ -6,7 +6,7 @@
  * ======================================================================
  */
 
-var DEMO_MODE = false; // HOTFIX: MODO DEMO
+var DEMO_MODE = true; // HOTFIX: MODO DEMO
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 // --- CONFIGURACIÓN ---
@@ -475,6 +475,10 @@ function getSystemConfig(role) {
   };
 }
 
+// CONSTANTES DE GRUPOS
+const GROUP_VENTAS = ['Eduardo Manzanares', 'Sebastian Padilla', 'Ramiro Rodriguez'];
+const GROUP_TRACKER = ['Judith Echavarria', 'Eduardo Teran', 'Angel Salinas'];
+
 /* FUNCIÓN PRINCIPAL DE DASHBOARD (RE-INGENIERÍA NATIVA) */
 function generarDashboard() {
   // 4. Control de Acceso (RBAC - Session)
@@ -519,20 +523,6 @@ function apiFetchTeamKPIData(username) {
   if (!user || user.role !== 'ADMIN') {
       return { success: false, message: 'Acceso Denegado. Privilegios insuficientes.' };
   }
-
-  // DYNAMIC GROUPS
-  const fullDirectory = getDirectoryFromDB();
-
-  // Filter Groups
-  // VENTAS: Dept = VENTAS, exclude ANTONIA_VENTAS
-  const groupVentasNames = fullDirectory
-      .filter(u => u.dept === 'VENTAS' && u.name !== 'ANTONIA_VENTAS')
-      .map(u => u.name);
-
-  // TRACKER: Dept != VENTAS, exclude ADMINISTRACION
-  const groupTrackerNames = fullDirectory
-      .filter(u => u.dept !== 'VENTAS' && u.dept !== 'ADMINISTRACION')
-      .map(u => u.name);
 
   // Helper para procesar cada grupo (Map/Reduce Manual)
   const processGroup = (members) => {
@@ -597,8 +587,8 @@ function apiFetchTeamKPIData(username) {
 
   return {
       success: true,
-      ventas: processGroup(groupVentasNames),
-      tracker: processGroup(groupTrackerNames)
+      ventas: processGroup(GROUP_VENTAS),
+      tracker: processGroup(GROUP_TRACKER)
   };
 }
 
