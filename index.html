@@ -3318,11 +3318,15 @@
       const isCol = (h, list) => list.includes(String(h).toUpperCase().trim());
 
       const calculateDiasCounter = (row) => {
-          if (!staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) return;
+          // Permite ejecutar en cualquier hoja que tenga las columnas
+          // if (!staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) return;
+
           const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ']));
           if (!hDias) return;
-          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA']));
+
+          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO']));
           if (!hFecha || !row[hFecha]) return;
+
           let dObj = null;
           const val = row[hFecha];
           if (val instanceof Date) dObj = val;
@@ -3723,10 +3727,9 @@
                   if(staffTracker.value.name.toUpperCase().includes('VENTAS')){
                       staffTracker.value.data.forEach(row => updateSalesAvance(row));
                   }
-                  // Recalcular Días (Contador) para ANTONIA_VENTAS
-                  if(staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')){
-                      staffTracker.value.data.forEach(row => calculateDiasCounter(row));
-                  }
+                  // Recalcular Días (Contador) para todas las hojas (si tienen las columnas)
+                  // Se ejecuta siempre, la función calculateDiasCounter valida si existen las columnas
+                  staffTracker.value.data.forEach(row => calculateDiasCounter(row));
               } else {
                   if (res.message && res.message.includes("Falta hoja")) {
                       staffTracker.value.data = [];
@@ -3947,7 +3950,7 @@
           if (!val) { row[h] = ''; return; }
           const parts = val.split('-');
           if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
-          if (staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) calculateDiasCounter(row);
+          calculateDiasCounter(row);
       };
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
