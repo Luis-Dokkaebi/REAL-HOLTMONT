@@ -6,7 +6,7 @@
  * ======================================================================
  */
 
-var DEMO_MODE = true; // HOTFIX: MODO DEMO
+var DEMO_MODE = false; // HOTFIX: MODO DEMO
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 // --- CONFIGURACIÓN ---
@@ -475,10 +475,6 @@ function getSystemConfig(role) {
   };
 }
 
-// CONSTANTES DE GRUPOS
-const GROUP_VENTAS = ['Eduardo Manzanares', 'Sebastian Padilla', 'Ramiro Rodriguez'];
-const GROUP_TRACKER = ['Judith Echavarria', 'Eduardo Teran', 'Angel Salinas'];
-
 /* FUNCIÓN PRINCIPAL DE DASHBOARD (RE-INGENIERÍA NATIVA) */
 function generarDashboard() {
   // 4. Control de Acceso (RBAC - Session)
@@ -585,10 +581,26 @@ function apiFetchTeamKPIData(username) {
     });
   };
 
+  // DYNAMIC FETCHING
+  const fullDirectory = getDirectoryFromDB();
+
+  // Filter for VENTAS
+  const groupVentas = fullDirectory
+      .filter(u => u.dept === 'VENTAS' && u.name !== 'ANTONIA_VENTAS')
+      .map(u => u.name);
+
+  // Filter for TRACKER (Non-Ventas, Non-Admin/System)
+  const groupTracker = fullDirectory
+      .filter(u => u.dept !== 'VENTAS' &&
+                   u.dept !== 'ADMINISTRACION' &&
+                   u.name !== 'ADMINISTRADOR' &&
+                   u.name !== 'PREWORK_ORDER')
+      .map(u => u.name);
+
   return {
       success: true,
-      ventas: processGroup(GROUP_VENTAS),
-      tracker: processGroup(GROUP_TRACKER)
+      ventas: processGroup(groupVentas),
+      tracker: processGroup(groupTracker)
   };
 }
 
