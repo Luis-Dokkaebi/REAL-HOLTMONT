@@ -487,6 +487,12 @@
             <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
         </div>
 
+        <!-- DIRECTORIO (ADMIN ONLY) -->
+        <div class="nav-item" v-if="['ADMIN', 'ADMIN_CONTROL'].includes(currentRole)" :class="{ active: currentView === 'DIRECTORY_VIEW' }" @click="openDirectoryView">
+            <div class="nav-icon-col"><i class="fas fa-address-book"></i></div>
+            <span class="nav-text">Directorio</span>
+        </div>
+
         <div class="mt-auto">
             <div class="p-3">
                 <button class="btn btn-outline-secondary w-100 btn-sm mb-2" @click="toggleTheme" :title="isCompact ? currentTheme : 'Cambiar Tema'">
@@ -650,6 +656,42 @@
                         <canvas :id="'chart-'+personName.replace(/\s+/g,'')"></canvas>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div v-if="currentView === 'DIRECTORY_VIEW'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:white; padding:20px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0 text-primary"><i class="fas fa-address-book me-2"></i>DIRECTORIO</h4>
+                <div>
+                    <button class="btn btn-success btn-sm fw-bold me-2" @click="openAddEmpModal"><i class="fas fa-plus-circle me-1"></i> NUEVO EMPLEADO</button>
+                    <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm flex-fill overflow-auto">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Departamento</th>
+                            <th class="text-center">Tipo Hojas</th>
+                            <th class="text-end">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="emp in (config.directory || config.staff)" :key="emp.name">
+                            <td class="fw-bold">{{ emp.name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ emp.dept }}</span></td>
+                            <td class="text-center">
+                                <span v-if="emp.type === 'HIBRIDO'" class="badge bg-warning text-dark">HÍBRIDO (2 Tablas)</span>
+                                <span v-else class="badge bg-secondary">ESTÁNDAR</span>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-danger border-0" @click="deleteEmployee(emp.name)" title="Eliminar y Archivar"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -2460,6 +2502,36 @@
     </div>
   </div>
 
+  <!-- MODAL AGREGAR EMPLEADO -->
+  <div v-if="showAddEmpModal" class="custom-modal-overlay">
+      <div class="custom-modal" style="width: 400px;">
+          <div class="custom-modal-header"><span>Nuevo Empleado</span><button type="button" class="btn-close" @click="showAddEmpModal = false"></button></div>
+          <div class="custom-modal-body">
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Nombre Completo</label>
+                  <input v-model="newEmployee.name" class="form-control" placeholder="Ej: JUAN PEREZ">
+              </div>
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Departamento</label>
+                  <select v-model="newEmployee.dept" class="form-select">
+                      <option v-for="(d, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{ d.label }}</option>
+                  </select>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Configuración de Hojas</label>
+                  <select v-model="newEmployee.type" class="form-select">
+                      <option value="ESTANDAR">Estándar (1 Tabla: Nombre)</option>
+                      <option value="HIBRIDO">Híbrido (2 Tablas: Nombre + Ventas)</option>
+                  </select>
+                  <div class="form-text small mt-1" v-if="newEmployee.type === 'HIBRIDO'">
+                      <i class="fas fa-info-circle text-info"></i> Se crearán 2 hojas: "{{ newEmployee.name }}" y "{{ newEmployee.name }} (VENTAS)".
+                  </div>
+              </div>
+              <button class="btn btn-primary w-100 fw-bold" @click="addNewEmployee" :disabled="isSubmitting || !newEmployee.name"><span v-if="isSubmitting"><i class="fas fa-spinner fa-spin"></i> Creando...</span><span v-else>AGREGAR</span></button>
+          </div>
+      </div>
+  </div>
+
 </div>
 
 <script>
@@ -2997,6 +3069,60 @@
       const currentTargetSite = ref({});
       const newSubProject = ref({ name: '', type: 'OBRA CIVIL', createdBy: '' });
 
+      // DIRECTORY MANAGEMENT
+      const showAddEmpModal = ref(false);
+      const newEmployee = ref({ name: '', dept: 'CONSTRUCCION', type: 'ESTANDAR' });
+
+      const openDirectoryView = () => {
+          currentView.value = 'DIRECTORY_VIEW';
+          // Force reload config to get latest directory from DB
+          google.script.run.withSuccessHandler(d => { config.value = d; }).getSystemConfig(currentRole.value);
+      };
+
+      const openAddEmpModal = () => {
+          newEmployee.value = { name: '', dept: 'CONSTRUCCION', type: 'ESTANDAR' };
+          showAddEmpModal.value = true;
+      };
+
+      const addNewEmployee = () => {
+          if(!newEmployee.value.name) return;
+          isSubmitting.value = true;
+          google.script.run.withSuccessHandler(res => {
+              isSubmitting.value = false;
+              if (res.success) {
+                  Swal.fire('Empleado Agregado', 'Se han creado las hojas correspondientes.', 'success');
+                  showAddEmpModal.value = false;
+                  openDirectoryView();
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiAddEmployee(newEmployee.value.name, newEmployee.value.dept, newEmployee.value.type);
+      };
+
+      const deleteEmployee = (name) => {
+          Swal.fire({
+              title: '¿Eliminar Empleado?',
+              text: `Se archivarán las hojas de ${name}. Esta acción no se puede deshacer fácilmente.`,
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, eliminar',
+              cancelButtonText: 'Cancelar'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  Swal.showLoading();
+                  google.script.run.withSuccessHandler(res => {
+                      Swal.close();
+                      if (res.success) {
+                          Swal.fire('Eliminado', 'Empleado eliminado y hojas archivadas.', 'success');
+                          openDirectoryView();
+                      } else {
+                          Swal.fire('Error', res.message, 'error');
+                      }
+                  }).apiDeleteEmployee(name);
+              }
+          });
+      };
+
       // *** MODIFICADO: ESTRUCTURA DE CARPETAS CON NUEVOS PPCs ***
       const projectSubFolders = ref([
           { name: "PPC INTERNO", icon: "fa-tasks", color: "#fd7e14", bg: "#fff4de" },
@@ -3098,6 +3224,9 @@
           }).apiSaveSubProject({ parentId: currentTargetSite.value.id, name: newSubProject.value.name, type: newSubProject.value.type, createdBy: newSubProject.value.createdBy });
       };
       const openProjectTask = (sub) => { currentPpcProject.value = sub; openModule({ id: "PPC_DINAMICO", type: "ppc_dynamic_view" }); };
+
+      // EXPORT DIRECTORY FUNCTIONS
+      const { openDirectoryView, openAddEmpModal, addNewEmployee, deleteEmployee, showAddEmpModal, newEmployee } = { openDirectoryView, openAddEmpModal, addNewEmployee, deleteEmployee, showAddEmpModal, newEmployee };
 
       // --- LOGICA GENERAL Y COMPUTED ---
       const salesStaff = computed(() => (config.value.directory || []).filter(p => p.dept === 'VENTAS' && p.name !== 'ANTONIA_VENTAS').map(p => p.name));
@@ -3732,7 +3861,8 @@
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
       showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
-      trackerTable, projectTable, ppcDraftTable };
+      trackerTable, projectTable, ppcDraftTable,
+      openDirectoryView, openAddEmpModal, addNewEmployee, deleteEmployee, showAddEmpModal, newEmployee };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
