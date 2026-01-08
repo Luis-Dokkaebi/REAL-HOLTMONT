@@ -2326,55 +2326,63 @@ function applyTrafficLightToSheet(sheet) {
 
   // 2. Identificar Columnas
   const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'FECHA_ALTA'];
-  const colFechaIdx = headers.findIndex(h => fechaAliases.includes(h) || h.startsWith("FECHA "));
+  const colFechaIndices = [];
+  headers.forEach((h, i) => {
+      if (fechaAliases.includes(h) || h.startsWith("FECHA ")) {
+          colFechaIndices.push(i);
+      }
+  });
+
   const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
 
-  if (colFechaIdx === -1 || colClasiIdx === -1) return false;
+  if (colFechaIndices.length === 0 || colClasiIdx === -1) return false;
 
   const rowHeader = headerRowIdx + 1; // 1-based (Fila de Titulos)
-  const colFechaLet = colIndexToLetter(colFechaIdx + 1);
   const colClasiLet = colIndexToLetter(colClasiIdx + 1);
 
-  // 3. Rango de Aplicación (Include Header + Check ROW > Header)
-  // Esto permite que al insertar filas arriba (Row 2), el rango se estire y cubra la nueva fila.
-  const range = sheet.getRange(rowHeader, colFechaIdx + 1, sheet.getMaxRows() - rowHeader + 1, 1);
-
-  // 4. Limpieza Inteligente de Reglas Antiguas (Evitar Duplicados)
+  // 3. Limpieza Inteligente de Reglas Antiguas
   const rules = sheet.getConditionalFormatRules();
   const cleanRules = rules.filter(r => {
       const formula = (r.getBooleanCondition() && r.getBooleanCondition().getCriteriaType() === SpreadsheetApp.BooleanCriteria.CUSTOM_FORMULA)
                       ? r.getBooleanCondition().getCriteriaValues()[0]
                       : "";
       // Eliminamos reglas de semáforo viejas (detectadas por referencia a CLASI + TODAY)
+      // Como ahora soportamos múltiples columnas, borramos cualquier regla que use la columna de clasificación para semáforo
       if (formula.includes("TODAY") && formula.includes(colClasiLet) && formula.includes("ISNUMBER")) return false;
       return true;
   });
 
   const newRules = [];
-  const addRulePair = (clase, dias) => {
-      // FORMULA: ROW() > rowHeader asegura que no pinte el encabezado, aunque esté en el rango
-      const formulaBase = `AND(UPPER(TRIM($${colClasiLet}${rowHeader}))="${clase}", ISNUMBER($${colFechaLet}${rowHeader}), ROW()>${rowHeader})`;
 
-      // VENCIDO (ROJO)
-      newRules.push(SpreadsheetApp.newConditionalFormatRule()
-          .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) > ${dias})`)
-          .setBackground("#FF0000")
-          .setFontColor("#FFFFFF")
-          .setRanges([range])
-          .build());
+  // 4. Iterar sobre TODAS las columnas de fecha encontradas
+  colFechaIndices.forEach(idx => {
+      const colFechaLet = colIndexToLetter(idx + 1);
+      const range = sheet.getRange(rowHeader, idx + 1, sheet.getMaxRows() - rowHeader + 1, 1);
 
-      // A TIEMPO (VERDE)
-      newRules.push(SpreadsheetApp.newConditionalFormatRule()
-          .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) <= ${dias})`)
-          .setBackground("#00FF00")
-          .setFontColor("#000000")
-          .setRanges([range])
-          .build());
-  };
+      const addRulePair = (clase, dias) => {
+          const formulaBase = `AND(UPPER(TRIM($${colClasiLet}${rowHeader}))="${clase}", ISNUMBER($${colFechaLet}${rowHeader}), ROW()>${rowHeader})`;
 
-  addRulePair("A", 3);
-  addRulePair("AA", 15);
-  addRulePair("AAA", 30);
+          // VENCIDO (ROJO)
+          newRules.push(SpreadsheetApp.newConditionalFormatRule()
+              .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) > ${dias})`)
+              .setBackground("#FF0000")
+              .setFontColor("#FFFFFF")
+              .setRanges([range])
+              .build());
+
+          // A TIEMPO (VERDE)
+          newRules.push(SpreadsheetApp.newConditionalFormatRule()
+              .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) <= ${dias})`)
+              .setBackground("#00FF00")
+              .setFontColor("#000000")
+              .setRanges([range])
+              .build());
+      };
+
+      addRulePair("A", 3);
+      addRulePair("AA", 15);
+      addRulePair("AAA", 30);
+  });
 
   sheet.setConditionalFormatRules(newRules.concat(cleanRules));
   return true;
