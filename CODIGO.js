@@ -2253,7 +2253,8 @@ function setupConditionalFormatting() {
     const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
 
     // 2. Identificar Columnas Clave
-    const colFechaIdx = headers.findIndex(h => h === "FECHA" || h.includes("FECHA INICIO") || h === "ALTA" || h === "FECHA_ALTA");
+    const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'FECHA_ALTA'];
+    const colFechaIdx = headers.findIndex(h => fechaAliases.includes(h) || h.startsWith("FECHA "));
     const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
 
     if (colFechaIdx === -1 || colClasiIdx === -1) return; // Skip si faltan columnas
