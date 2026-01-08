@@ -397,22 +397,11 @@
 
     .btn-quote-save { background-color: white; border: 1px solid #dee2e6; color: #333; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
     .btn-quote-gen { background-color: #0d6efd; border: 1px solid #0d6efd; color: white; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
-
-    /* LOADING BAR (Idea 8) */
-    .loading-bar-container { position: fixed; top: 0; left: 0; width: 100%; height: 4px; z-index: 9999; pointer-events: none; }
-    .loading-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #00ff9d, #3699ff); box-shadow: 0 0 10px rgba(54, 153, 255, 0.5); }
-
-    /* CRITICAL PULSE (Idea 18) */
-    @keyframes subtlePulse { 0% { background-color: rgba(255, 0, 0, 0.05); } 50% { background-color: rgba(255, 0, 0, 0.15); } 100% { background-color: rgba(255, 0, 0, 0.05); } }
-    .pulsing-critical td { animation: subtlePulse 3s infinite ease-in-out; }
-    body.theme-dark .pulsing-critical td { animation: subtlePulseDark 3s infinite ease-in-out; }
-    @keyframes subtlePulseDark { 0% { background-color: rgba(255, 0, 0, 0.1); } 50% { background-color: rgba(255, 0, 0, 0.3); } 100% { background-color: rgba(255, 0, 0, 0.1); } }
   </style>
 </head>
 <body>
 
 <div id="app">
-  <div class="loading-bar-container"><div class="loading-bar" ref="loadingBar"></div></div>
   <div v-if="!isLoggedIn" class="login-overlay">
     <div class="login-card">
       <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" class="login-logo" alt="Logo">
@@ -421,7 +410,7 @@
       <div class="mb-3">
           <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario">
           <div class="input-group">
-              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup="e => e.key === 'Enter' && doLogin()">
+              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin">
               <button class="btn btn-outline-secondary" type="button" @click="showPassword = !showPassword" title="Mostrar/Ocultar">
                   <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
               </button>
@@ -529,13 +518,13 @@
 
         <div v-if="currentView === 'DASHBOARD'" class="row g-3">
           <div class="col-md-4 col-lg-3" v-for="mod in config.specialModules" :key="mod.id">
-            <div class="dept-card" @click="openModule(mod)" @mouseenter="animateCardIcon($event)" :style="{borderTop: '4px solid '+mod.color}">
+            <div class="dept-card" @click="openModule(mod)" :style="{borderTop: '4px solid '+mod.color}">
                 <i class="fas fa-2x mb-3" :class="mod.icon" :style="{color: mod.color}"></i>
                 <h6 class="fw-bold" :style="{color: mod.color}">{{mod.label}}</h6>
             </div>
           </div>
           <div class="col-md-4 col-lg-3" v-for="(dept, key) in config.departments" :key="key">
-            <div class="dept-card" @click="selectDept(key)" @mouseenter="animateCardIcon($event)" :style="{borderTop: '4px solid '+dept.color}">
+            <div class="dept-card" @click="selectDept(key)" :style="{borderTop: '4px solid '+dept.color}">
                 <i class="fas fa-2x mb-3" :class="dept.icon" :style="{color: dept.color}"></i>
                 <h6 class="fw-bold" :style="{color: dept.color}">{{dept.label}}</h6>
             </div>
@@ -745,7 +734,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in projectTasks.data" :key="i" :class="{'new-row-highlight': row._isNew, 'pulsing-critical': isCritical(row)}">
+                   <tr v-for="(row, i) in projectTasks.data" :key="i" :class="{'new-row-highlight': row._isNew}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in projectTasks.headers" :key="idx">
                          <div v-if="isCol(h, ['AREA','ALTA'])" style="position:relative; width:100%; height:100%;">
@@ -803,7 +792,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in staffTracker.data" :key="i" :class="{'new-row-highlight': row._isNew, 'pulsing-critical': isCritical(row)}">
+                   <tr v-for="(row, i) in staffTracker.data" :key="i" :class="{'new-row-highlight': row._isNew}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in staffTracker.headers" :key="idx">
                          <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
@@ -893,7 +882,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(row, i) in filteredWeeklyData" :key="i" :class="{'pulsing-critical': isCritical(row)}">
+                        <tr v-for="(row, i) in filteredWeeklyData" :key="i">
                             <td class="row-num">{{ i + 1 }}</td>
                             <td v-for="(h, idx) in weeklyPlanData.headers" :key="idx" class="text-center">
                                 <div v-if="h === 'SEMANA'" style="font-weight:bold; color:#0d6efd; background-color:#f8f9fa; font-size:10px;">S{{ row[h] }}</div>
@@ -2560,7 +2549,7 @@
 </div>
 
 <script>
-  window.onerror = function(msg, url, line, col, error) { if(String(msg).toLowerCase().includes("script error")) return; Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + (error ? error.message : msg) }); };
+  window.onerror = function(msg, url, line) { if(String(msg).toLowerCase().includes("script error")) return; Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
 
   const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
   const app = createApp({
@@ -2582,66 +2571,6 @@
       const trackerTable = ref(null);
       const projectTable = ref(null);
       const ppcDraftTable = ref(null);
-      const loadingBar = ref(null);
-
-      const globalLoading = computed(() => {
-          return loggingIn.value || isSubmitting.value || staffTracker.value.isLoading || weeklyPlanData.value.isLoading || isUploadingFile.value || projectTasks.value.isLoading || kpiData.value.isLoading;
-      });
-
-      watch(globalLoading, (newVal) => {
-          if (!loadingBar.value) return;
-          if (newVal) {
-              anime.remove(loadingBar.value);
-              loadingBar.value.style.opacity = 1;
-              loadingBar.value.style.width = '0%';
-              anime({
-                  targets: loadingBar.value,
-                  width: ['0%', '80%'],
-                  duration: 2000,
-                  easing: 'easeInOutQuart'
-              });
-          } else {
-              anime({
-                  targets: loadingBar.value,
-                  width: '100%',
-                  duration: 500,
-                  easing: 'easeOutQuad',
-                  complete: () => {
-                      anime({
-                          targets: loadingBar.value,
-                          opacity: 0,
-                          duration: 300,
-                          complete: () => { loadingBar.value.style.width = '0%'; }
-                      });
-                  }
-              });
-          }
-      });
-
-      const animateCardIcon = (e) => {
-          const icon = e.currentTarget.querySelector('i');
-          if (!icon) return;
-          anime.remove(icon);
-          anime({
-              targets: icon,
-              scale: [1, 1.4, 1],
-              rotate: [0, 15, -15, 0],
-              duration: 800,
-              easing: 'easeOutElastic(1, .5)'
-          });
-      };
-
-      const isCritical = (row) => {
-          // 1. Clasificación AAA
-          if (row['CLASIFICACION'] === 'AAA') return true;
-          // 2. Prioridad Alta (Check various headers)
-          const prioKey = Object.keys(row).find(k => k.toUpperCase().includes('PRIORIDAD'));
-          if (prioKey && String(row[prioKey]).toUpperCase().includes('ALTA')) return true;
-          // 3. Overdue (Reuse traffic light logic mostly, but specific for critical)
-          const style = getTrafficStyle(row);
-          if (style.backgroundColor === '#e74c3c' || style.backgroundColor === '#FF0000') return true; // Red background means overdue/critical
-          return false;
-      };
 
       const pulseNewRow = (refName, position = 'first') => {
           nextTick(() => {
@@ -4015,8 +3944,7 @@
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
-      isAvanceLocked,
-      loadingBar, animateCardIcon, isCritical };
+      isAvanceLocked };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
