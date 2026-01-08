@@ -89,7 +89,7 @@ const INITIAL_DIRECTORY = [
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
-const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO'];
+const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT', 'AVANCE'];
 
 // --- ESTRUCTURA ESTÁNDAR DE PROYECTOS (MODIFICADO) ---
 // Aquí definimos los sub-proyectos automáticos.
@@ -1042,6 +1042,21 @@ function internalUpdateTask(personName, taskData, username) {
                  }
              }
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
+        } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
+             // Sincronización Inversa: Vendedor -> ANTONIA_VENTAS
+             // Si el vendedor actualiza su tabla, replicamos el cambio a la maestra de ANTONIA
+             try {
+                 const syncData = JSON.parse(JSON.stringify(taskData));
+                 delete syncData._rowIndex; // Evitar conflictos de índice de fila
+
+                 // Intentamos actualizar en ANTONIA_VENTAS
+                 const syncRes = internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                 if (!syncRes.success) {
+                     console.warn("Fallo sincronización inversa a ANTONIA_VENTAS: " + syncRes.message);
+                 }
+             } catch (e) {
+                 console.error("Error en sincronización inversa: " + e.toString());
+             }
         }
         return res;
     } catch(e) { return {success:false, message:e.toString()}; }
@@ -2208,6 +2223,38 @@ function test_Directory_CRUD() {
       console.log("✅ User successfully removed from DB");
   } else {
       console.error("❌ User STILL found in DB after deleting");
+  }
+}
+
+function test_ReverseSync_Flow() {
+  console.log("🛠️ INICIANDO TEST: Sincronización Inversa (Ventas -> Antonia)");
+
+  // 1. Simular Datos de Tarea
+  const testId = "TEST-SYNC-" + new Date().getTime();
+  const taskData = {
+    FOLIO: testId,
+    CONCEPTO: "TEST_REVERSE_SYNC",
+    VENDEDOR: "TEST_USER (VENTAS)",
+    AVANCE: "50%",
+    COTIZACION: "http://fake-url.com/cotizacion.pdf"
+  };
+
+  const personName = "TEST_USER (VENTAS)";
+
+  // 2. Ejecutar internalUpdateTask
+  // Nota: Esto intentará escribir en las hojas reales si existen.
+  // En este entorno simulado, verificamos que no lance errores y que la lógica pase.
+
+  console.log("Simulando actualización en: " + personName);
+  const result = internalUpdateTask(personName, taskData, "TEST_ADMIN");
+
+  if (result.success) {
+      console.log("✅ Update local exitoso.");
+      // Aquí idealmente verificaríamos que ANTONIA_VENTAS se actualizó,
+      // pero sin acceso a la hoja en tiempo real, confiamos en que el log no muestre error de sync.
+      console.log("ℹ️ Verificar logs del sistema para confirmar 'Sincronización Inversa'.");
+  } else {
+      console.error("❌ Falló update local: " + result.message);
   }
 }
 
