@@ -3316,6 +3316,34 @@
       });
 
       const isCol = (h, list) => list.includes(String(h).toUpperCase().trim());
+
+      const calculateDiasCounter = (row) => {
+          if (!staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) return;
+          const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ']));
+          if (!hDias) return;
+          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA']));
+          if (!hFecha || !row[hFecha]) return;
+          let dObj = null;
+          const val = row[hFecha];
+          if (val instanceof Date) dObj = val;
+          else if (typeof val === 'string') {
+              const parts = val.split('/');
+              if (parts.length === 3) {
+                   let y = parts[2];
+                   if (y.length === 2) y = '20' + y;
+                   dObj = new Date(`${y}-${parts[1]}-${parts[0]}`);
+              }
+          }
+          if (dObj && !isNaN(dObj.getTime())) {
+              const now = new Date();
+              dObj.setHours(0,0,0,0);
+              now.setHours(0,0,0,0);
+              const diffTime = now - dObj;
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              row[hDias] = Math.max(0, diffDays);
+          }
+      };
+
       const getColumnStyle = (h) => {
           const up = String(h).toUpperCase().trim(); let w = '120px'; let fs = '12px'; let pad = '8px 4px'; let align = 'left';
           if (up === 'CONCEPTO' || up.includes('DESCRIP')) { w = (staffTracker.value.name === 'ANTONIA_VENTAS') ? '600px' : '380px'; }
@@ -3673,6 +3701,10 @@
                   if(staffTracker.value.name.toUpperCase().includes('VENTAS')){
                       staffTracker.value.data.forEach(row => updateSalesAvance(row));
                   }
+                  // Recalcular Días (Contador) para ANTONIA_VENTAS
+                  if(staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')){
+                      staffTracker.value.data.forEach(row => calculateDiasCounter(row));
+                  }
               } else {
                   if (res.message && res.message.includes("Falta hoja")) {
                       staffTracker.value.data = [];
@@ -3888,7 +3920,13 @@
       const clearQueue = () => { Swal.fire({ title: '¿Limpiar tabla?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }).then((result) => { if (result.isConfirmed) { activityQueue.value = []; google.script.run.apiClearDrafts(); } }); };
       const toIsoDate = (val) => { if (!val) return ''; const parts = String(val).split('/'); if (parts.length === 3) { let y = parts[2]; if (y.length === 2) y = '20' + y; return `${y}-${parts[1]}-${parts[0]}`; } return ''; };
       const formatDisplayDate = (val) => { if(!val) return ''; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{2}$/)) return val; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return val.replace(/\/(\d{4})$/, (m, y) => "/" + y.slice(-2)); return val; };
-      const updateDateFromPicker = (e, row, h) => { const val = e.target.value; if (!val) { row[h] = ''; return; } const parts = val.split('-'); if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; };
+      const updateDateFromPicker = (e, row, h) => {
+          const val = e.target.value;
+          if (!val) { row[h] = ''; return; }
+          const parts = val.split('-');
+          if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+          if (staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) calculateDiasCounter(row);
+      };
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, showWorkOrderLogic, triggerUpload,
