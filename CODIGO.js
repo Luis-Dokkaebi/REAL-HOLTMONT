@@ -1022,19 +1022,23 @@ function internalUpdateTask(personName, taskData, username) {
         if (String(personName).toUpperCase() === "ANTONIA_VENTAS") {
              // AUTO-INCREMENT FOLIO FOR ANTONIA VENTAS
              if (!taskData['FOLIO'] && !taskData['ID']) {
-                 taskData['FOLIO'] = generateAppSheetId();
+                 // MODIFICADO: Folio Numérico Secuencial (Solicitud Usuario)
+                 // Se usa ANTONIA_SEQ como llave para el contador
+                 taskData['FOLIO'] = generateNumericSequence('ANTONIA_SEQ');
              }
 
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex; 
 
+             // MODIFICADO: Se comenta la distribución a vendedores para evitar duplicidad y tráfico innecesario.
+             // "ya no mandará la misma tarea a la hoja de los vendedores"
+             /*
              const vendedorKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
              if (vendedorKey && taskData[vendedorKey]) {
                  const vendedorName = String(taskData[vendedorKey]).trim();
                  if (vendedorName.toUpperCase() !== "ANTONIA_VENTAS") {
                      try { 
                         // TRAFFIC SPLITTING REFACTORIZADO
-                        // 1. Verificar si el nombre ya tiene el sufijo
                         let targetSheet = vendedorName;
                         let hasSuffix = targetSheet.toUpperCase().includes("(VENTAS)");
                         let finalTarget = null;
@@ -1042,7 +1046,6 @@ function internalUpdateTask(personName, taskData, username) {
                         if (hasSuffix) {
                             finalTarget = targetSheet;
                         } else {
-                            // 2. Si no tiene sufijo, intentamos adjuntarlo y verificamos si existe la hoja
                             let potentialSheet = targetSheet + " (VENTAS)";
                             if (findSheetSmart(potentialSheet)) {
                                 finalTarget = potentialSheet;
@@ -1060,6 +1063,7 @@ function internalUpdateTask(personName, taskData, username) {
                      }
                  }
              }
+             */
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
         } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
              // Sincronización Inversa: Vendedor -> ANTONIA_VENTAS
@@ -1865,8 +1869,26 @@ function apiCreateStandardStructure(siteId, user) {
 }
 
 /**
+ * GENERADOR DE FOLIO NUMÉRICO SECUENCIAL (NUEVO)
+ */
+function generateNumericSequence(key) {
+  const lock = LockService.getScriptLock();
+  try {
+    if (lock.tryLock(5000)) {
+       const props = PropertiesService.getScriptProperties();
+       let val = Number(props.getProperty(key) || 1000);
+       val++;
+       props.setProperty(key, String(val));
+       return String(val);
+    }
+  } catch(e) { console.error(e); } finally { lock.releaseLock(); }
+  return String(new Date().getTime());
+}
+
+/**
  * GENERADOR DE UNIQUEID (APP-SHEET STYLE)
  * Genera string alfanumérico de 8 caracteres.
+ * (MANTENIDO POR COMPATIBILIDAD, AUNQUE DEPRECADO EN FLUJOS NUEVOS)
  */
 function generateAppSheetId() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -2399,4 +2421,39 @@ function colIndexToLetter(col) {
     col = (col - temp - 1) / 26;
   }
   return letter;
+}
+
+function test_NumericSequence_Generation() {
+  console.log("🛠️ INICIANDO TEST: Generación de Secuencia Numérica");
+  try {
+      const lock = LockService.getScriptLock();
+      const props = PropertiesService.getScriptProperties();
+
+      // Mock properties for testing if not set
+      if (!props.getProperty('ANTONIA_SEQ')) {
+          props.setProperty('ANTONIA_SEQ', '1000');
+          console.log("Inicializando ANTONIA_SEQ a 1000 para prueba.");
+      }
+
+      const val1 = generateNumericSequence('ANTONIA_SEQ');
+      const val2 = generateNumericSequence('ANTONIA_SEQ');
+
+      console.log("Valor 1:", val1);
+      console.log("Valor 2:", val2);
+
+      if (Number(val2) === Number(val1) + 1) {
+          console.log("✅ Secuencia incrementa correctamente.");
+      } else {
+          console.error("❌ Secuencia falló en incrementar.");
+      }
+
+      if (!isNaN(val1)) {
+          console.log("✅ El folio es numérico.");
+      } else {
+          console.error("❌ El folio NO es numérico.");
+      }
+
+  } catch (e) {
+      console.error("❌ Error en prueba:", e);
+  }
 }
