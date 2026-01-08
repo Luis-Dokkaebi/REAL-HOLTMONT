@@ -213,44 +213,56 @@ function getSystemConfig(role) {
   
   if (role === 'ANGEL_USER') {
     return {
-      departments: { "DISEÑO": allDepts["DISEÑO"], "VENTAS": allDepts["VENTAS"] },
+      departments: {},
       allDepartments: allDepts, 
       staff: [ { name: "ANGEL SALINAS", dept: "DISEÑO" } ], 
       directory: fullDirectory, 
-      specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "ANGEL SALINAS" }],
+      specialModules: [
+          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "ANGEL SALINAS" },
+          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "ANGEL SALINAS (VENTAS)" }
+      ],
       accessProjects: false 
     };
   }
 
   if (role === 'TERESA_USER') {
     return {
-      departments: { "CONSTRUCCION": allDepts["CONSTRUCCION"] },
+      departments: {},
       allDepartments: allDepts, 
       staff: [ { name: "TERESA GARZA", dept: "CONSTRUCCION" } ], 
       directory: fullDirectory, 
-      specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#e83e8c", type: "mirror_staff", target: "TERESA GARZA" }],
+      specialModules: [
+          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#e83e8c", type: "mirror_staff", target: "TERESA GARZA" },
+          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "TERESA GARZA (VENTAS)" }
+      ],
       accessProjects: false 
     };
   }
 
   if (role === 'EDUARDO_USER') {
     return {
-      departments: { "CONSTRUCCION": allDepts["CONSTRUCCION"] },
+      departments: {},
       allDepartments: allDepts, 
       staff: [ { name: "EDUARDO TERAN", dept: "CONSTRUCCION" } ], 
       directory: fullDirectory, 
-      specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO TERAN" }],
+      specialModules: [
+          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO TERAN" },
+          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO TERAN (VENTAS)" }
+      ],
       accessProjects: false 
     };
   }
 
   if (role === 'RAMIRO_USER') {
     return {
-      departments: { "CONSTRUCCION": allDepts["CONSTRUCCION"] },
+      departments: {},
       allDepartments: allDepts, 
       staff: [ { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION" } ], 
       directory: fullDirectory, 
-      specialModules: [{ id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#20c997", type: "mirror_staff", target: "RAMIRO RODRIGUEZ" }],
+      specialModules: [
+          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#20c997", type: "mirror_staff", target: "RAMIRO RODRIGUEZ" },
+          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "RAMIRO RODRIGUEZ (VENTAS)" }
+      ],
       accessProjects: false 
     };
   }
