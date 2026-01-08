@@ -16,6 +16,7 @@ const APP_CONFIG = {
   draftSheetName: "PPC_BORRADOR", 
   salesSheetName: "Datos",        
   logSheetName: "LOG_SISTEMA",
+  directorySheetName: "DB_DIRECTORY", // NUEVO: Hoja de Directorio
   // NUEVAS HOJAS PARA DETALLES DE WORK ORDER
   woMaterialsSheet: "DB_WO_MATERIALES",
   woLaborSheet: "DB_WO_MANO_OBRA",
@@ -28,6 +29,67 @@ const FOLIO_CONFIG = {
   SHEET_NAME: 'ANTONIA_VENTAS',
   COLUMN_NAME: 'Folio'
 };
+
+const INITIAL_DIRECTORY = [
+    { name: "ANTONIA_VENTAS", dept: "VENTAS", type: "VENTAS" },
+    { name: "JUDITH ECHAVARRIA", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "RAMIRO RODRIGUEZ", dept: "VENTAS", type: "HIBRIDO" },
+    { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "CESAR GOMEZ", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "ALFONSO CORREA", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "TERESA GARZA", dept: "VENTAS", type: "HIBRIDO" },
+    { name: "GUILLERMO DAMICO", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "ANGEL SALINAS", dept: "VENTAS", type: "HIBRIDO" },
+    { name: "JUAN JOSE SANCHEZ", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "LUIS CARLOS", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "ANTONIO SALAZAR", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "ROCIO CASTRO", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "DANIA GONZALEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "JUANY RODRIGUEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "LAURA HUERTA", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "LILIANA MARTINEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "DANIELA CASTRO", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "EDUARDO BENITEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "ANTONIO CABRERA", dept: "ADMINISTRACION", type: "ESTANDAR" },
+    { name: "ADMINISTRADOR", dept: "ADMINISTRACION", type: "HIBRIDO" },
+    { name: "EDUARDO MANZANARES", dept: "HVAC", type: "ESTANDAR" },
+    { name: "JUAN JOSE SANCHEZ", dept: "HVAC", type: "ESTANDAR" },
+    { name: "SELENE BALDONADO", dept: "HVAC", type: "ESTANDAR" },
+    { name: "ROLANDO MORENO", dept: "HVAC", type: "ESTANDAR" },
+    { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
+    { name: "SEBASTIAN PADILLA", dept: "ELECTROMECANICA", type: "ESTANDAR" },
+    { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
+    { name: "MIGUEL GONZALEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
+    { name: "ALICIA RIVERA", dept: "ELECTROMECANICA", type: "ESTANDAR" },
+    { name: "RICARDO MENDO", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "CARLOS MENDEZ", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "REYNALDO GARCIA", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "INGE OLIVO", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "EDUARDO TERAN", dept: "CONSTRUCCION", type: "HIBRIDO" },
+    { name: "EDGAR HOLT", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "ALEXIS TORRES", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "TERESA GARZA", dept: "CONSTRUCCION", type: "HIBRIDO" },
+    { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION", type: "HIBRIDO" },
+    { name: "GUILLERMO DAMICO", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "RUBEN PESQUEDA", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "JUDITH ECHAVARRIA", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "GISELA DOMINGUEZ", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "VANESSA DE LARA", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "NELSON MALDONADO", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "VICTOR ALMACEN", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "DIMAS RAMOS", dept: "EHS", type: "ESTANDAR" },
+    { name: "CITLALI GOMEZ", dept: "EHS", type: "ESTANDAR" },
+    { name: "AIMEE RAMIREZ", dept: "EHS", type: "ESTANDAR" },
+    { name: "EDGAR HOLT", dept: "MAQUINARIA", type: "ESTANDAR" },
+    { name: "ALEXIS TORRES", dept: "MAQUINARIA", type: "ESTANDAR" },
+    { name: "ANGEL SALINAS", dept: "DISEÑO", type: "HIBRIDO" },
+    { name: "EDGAR HOLT", dept: "DISEÑO", type: "ESTANDAR" },
+    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "ESTANDAR" }
+];
+
+const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
+const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO'];
 
 // --- ESTRUCTURA ESTÁNDAR DE PROYECTOS (MODIFICADO) ---
 // Aquí definimos los sub-proyectos automáticos.
@@ -126,64 +188,156 @@ function apiLogout(username) {
   return { success: true };
 }
 
+function getDirectoryFromDB() {
+  const lock = LockService.getScriptLock();
+  try {
+      if (lock.tryLock(5000)) {
+          let sheet = findSheetSmart(APP_CONFIG.directorySheetName);
+
+          // MIGRACIÓN AUTOMÁTICA
+          if (!sheet) {
+              sheet = SS.insertSheet(APP_CONFIG.directorySheetName);
+              const headers = ["NOMBRE", "DEPARTAMENTO", "TIPO_HOJA"];
+              sheet.appendRow(headers);
+
+              // Populate from INITIAL_DIRECTORY
+              const rows = INITIAL_DIRECTORY.map(u => [u.name, u.dept, u.type]);
+              if (rows.length > 0) {
+                  sheet.getRange(2, 1, rows.length, 3).setValues(rows);
+              }
+              SpreadsheetApp.flush();
+              registrarLog("SISTEMA", "MIGRACION_DB", "Se creó DB_DIRECTORY y se migraron los usuarios.");
+          }
+
+          const data = sheet.getDataRange().getValues();
+          if (data.length < 2) return [];
+
+          // Parse Data
+          const headers = data[0].map(h => String(h).toUpperCase().trim());
+          const nameIdx = headers.indexOf("NOMBRE");
+          const deptIdx = headers.indexOf("DEPARTAMENTO");
+          const typeIdx = headers.indexOf("TIPO_HOJA");
+
+          if (nameIdx === -1) return [];
+
+          const directory = [];
+          for (let i = 1; i < data.length; i++) {
+              const row = data[i];
+              if (row[nameIdx]) {
+                  directory.push({
+                      name: String(row[nameIdx]).trim(),
+                      dept: (deptIdx > -1) ? String(row[deptIdx]).trim() : "GENERAL",
+                      type: (typeIdx > -1) ? String(row[typeIdx]).trim() : "ESTANDAR"
+                  });
+              }
+          }
+          return directory;
+      }
+  } catch (e) {
+      console.error(e);
+      // Fallback in case of error
+      return INITIAL_DIRECTORY;
+  } finally {
+      lock.releaseLock();
+  }
+  return INITIAL_DIRECTORY;
+}
+
+function apiAddEmployee(payload) {
+    const lock = LockService.getScriptLock();
+    try {
+        if (lock.tryLock(10000)) {
+            const { name, dept, type } = payload;
+            const cleanName = String(name).toUpperCase().trim();
+            if (!cleanName) return { success: false, message: "Nombre inválido" };
+
+            let sheet = findSheetSmart(APP_CONFIG.directorySheetName);
+            if (!sheet) {
+                // Should have been created by getDirectoryFromDB, but ensure it exists
+                getDirectoryFromDB();
+                sheet = findSheetSmart(APP_CONFIG.directorySheetName);
+            }
+
+            // Check duplicate
+            const data = sheet.getDataRange().getValues();
+            for(let i=1; i<data.length; i++) {
+                if (String(data[i][0]).toUpperCase().trim() === cleanName) {
+                    return { success: false, message: "El usuario ya existe." };
+                }
+            }
+
+            // Add to DB
+            sheet.appendRow([cleanName, dept, type]);
+
+            // Create Sheets based on Type
+            const createSheetIfMissing = (sName, headers) => {
+                let s = findSheetSmart(sName);
+                if (!s) {
+                    s = SS.insertSheet(sName);
+                    s.appendRow(headers);
+                    s.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e6e6e6");
+                    // Conditional Formatting (Basic)
+                    try {
+                        const rule = SpreadsheetApp.newConditionalFormatRule()
+                            .whenTextEqualTo("100")
+                            .setBackground("#d4edda")
+                            .setRanges([s.getRange("F:F")]) // Assuming Avance is commonly around F
+                            .build();
+                        s.setConditionalFormatRules([rule]);
+                    } catch(e){}
+                }
+            };
+
+            if (type === 'ESTANDAR' || type === 'HIBRIDO') {
+                createSheetIfMissing(cleanName, DEFAULT_TRACKER_HEADERS);
+            }
+            if (type === 'VENTAS' || type === 'HIBRIDO') {
+                createSheetIfMissing(cleanName + " (VENTAS)", DEFAULT_SALES_HEADERS);
+            }
+
+            registrarLog("ADMIN", "ADD_EMPLOYEE", `Usuario: ${cleanName}, Tipo: ${type}`);
+            return { success: true };
+        }
+    } catch(e) {
+        return { success: false, message: e.toString() };
+    } finally {
+        lock.releaseLock();
+    }
+}
+
+function apiDeleteEmployee(name) {
+    const lock = LockService.getScriptLock();
+    try {
+        if (lock.tryLock(10000)) {
+            const cleanName = String(name).toUpperCase().trim();
+            const sheet = findSheetSmart(APP_CONFIG.directorySheetName);
+            if (!sheet) return { success: false, message: "No existe DB_DIRECTORY" };
+
+            const data = sheet.getDataRange().getValues();
+            let rowIndex = -1;
+            for(let i=1; i<data.length; i++) {
+                if (String(data[i][0]).toUpperCase().trim() === cleanName) {
+                    rowIndex = i + 1; // 1-based
+                    break;
+                }
+            }
+
+            if (rowIndex > -1) {
+                sheet.deleteRow(rowIndex);
+                registrarLog("ADMIN", "DELETE_EMPLOYEE", `Usuario eliminado: ${cleanName}`);
+                return { success: true };
+            }
+            return { success: false, message: "Usuario no encontrado." };
+        }
+    } catch(e) {
+        return { success: false, message: e.toString() };
+    } finally {
+        lock.releaseLock();
+    }
+}
+
 function getSystemConfig(role) {
-  const fullDirectory = [
-    { name: "ANTONIA_VENTAS", dept: "VENTAS" }, 
-    { name: "JUDITH ECHAVARRIA", dept: "VENTAS" },
-    { name: "EDUARDO MANZANARES", dept: "VENTAS" },
-    { name: "RAMIRO RODRIGUEZ", dept: "VENTAS" },
-    { name: "SEBASTIAN PADILLA", dept: "VENTAS" },
-    { name: "CESAR GOMEZ", dept: "VENTAS" },
-    { name: "ALFONSO CORREA", dept: "VENTAS" },
-    { name: "TERESA GARZA", dept: "VENTAS" },
-    { name: "GUILLERMO DAMICO", dept: "VENTAS" },
-    { name: "ANGEL SALINAS", dept: "VENTAS" },
-    { name: "JUAN JOSE SANCHEZ", dept: "VENTAS" },
-    { name: "LUIS CARLOS", dept: "ADMINISTRACION" },
-    { name: "ANTONIO SALAZAR", dept: "ADMINISTRACION" },
-    { name: "ROCIO CASTRO", dept: "ADMINISTRACION" },
-    { name: "DANIA GONZALEZ", dept: "ADMINISTRACION" },
-    { name: "JUANY RODRIGUEZ", dept: "ADMINISTRACION" },
-    { name: "LAURA HUERTA", dept: "ADMINISTRACION" },
-    { name: "LILIANA MARTINEZ", dept: "ADMINISTRACION" },
-    { name: "DANIELA CASTRO", dept: "ADMINISTRACION" },
-    { name: "EDUARDO BENITEZ", dept: "ADMINISTRACION" },
-    { name: "ANTONIO CABRERA", dept: "ADMINISTRACION" },
-    { name: "ADMINISTRADOR", dept: "ADMINISTRACION" }, 
-    { name: "EDUARDO MANZANARES", dept: "HVAC" },
-    { name: "JUAN JOSE SANCHEZ", dept: "HVAC" },
-    { name: "SELENE BALDONADO", dept: "HVAC" },
-    { name: "ROLANDO MORENO", dept: "HVAC" },
-    { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA" },
-    { name: "SEBASTIAN PADILLA", dept: "ELECTROMECANICA" },
-    { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA" },
-    { name: "MIGUEL GONZALEZ", dept: "ELECTROMECANICA" },
-    { name: "ALICIA RIVERA", dept: "ELECTROMECANICA" },
-    { name: "RICARDO MENDO", dept: "CONSTRUCCION" },
-    { name: "CARLOS MENDEZ", dept: "CONSTRUCCION" },
-    { name: "REYNALDO GARCIA", dept: "CONSTRUCCION" },
-    { name: "INGE OLIVO", dept: "CONSTRUCCION" },
-    { name: "EDUARDO TERAN", dept: "CONSTRUCCION" },
-    { name: "EDGAR HOLT", dept: "CONSTRUCCION" },
-    { name: "ALEXIS TORRES", dept: "CONSTRUCCION" },
-    { name: "TERESA GARZA", dept: "CONSTRUCCION" },
-    { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION" },
-    { name: "GUILLERMO DAMICO", dept: "CONSTRUCCION" },
-    { name: "RUBEN PESQUEDA", dept: "CONSTRUCCION" },
-    { name: "JUDITH ECHAVARRIA", dept: "COMPRAS" },
-    { name: "GISELA DOMINGUEZ", dept: "COMPRAS" },
-    { name: "VANESSA DE LARA", dept: "COMPRAS" },
-    { name: "NELSON MALDONADO", dept: "COMPRAS" },
-    { name: "VICTOR ALMACEN", dept: "COMPRAS" }, 
-    { name: "DIMAS RAMOS", dept: "EHS" },
-    { name: "CITLALI GOMEZ", dept: "EHS" },
-    { name: "AIMEE RAMIREZ", dept: "EHS" },
-    { name: "EDGAR HOLT", dept: "MAQUINARIA" },
-    { name: "ALEXIS TORRES", dept: "MAQUINARIA" },
-    { name: "ANGEL SALINAS", dept: "DISEÑO" },
-    { name: "EDGAR HOLT", dept: "DISEÑO" },
-    { name: "EDGAR LOPEZ", dept: "DISEÑO" }
-  ];
+  const fullDirectory = getDirectoryFromDB();
 
   const allDepts = {
       "CONSTRUCCION": { label: "Construcción", icon: "fa-hard-hat", color: "#e83e8c" },
@@ -2001,6 +2155,54 @@ function test_WorkOrder_Generation() {
       }
   } else {
       console.error("❌ Failed to save or generate ID", res);
+  }
+}
+
+function test_Directory_CRUD() {
+  console.log("🛠️ INICIANDO TEST: Directory CRUD & Migration");
+
+  // 1. Test Migration / Fetch
+  const dir1 = getDirectoryFromDB();
+  console.log("Directory Size:", dir1.length);
+  if (dir1.length > 0) {
+      console.log("✅ getDirectoryFromDB returned data (Migration or Fetch worked)");
+  } else {
+      console.error("❌ getDirectoryFromDB returned empty");
+  }
+
+  // 2. Test Add
+  const testUser = { name: "TEST_USER_AUTO", dept: "TEST_DEPT", type: "ESTANDAR" };
+  const addRes = apiAddEmployee(testUser);
+  if (addRes.success) {
+      console.log("✅ apiAddEmployee Success");
+  } else {
+      console.error("❌ apiAddEmployee Failed:", addRes.message);
+  }
+
+  // 3. Verify Added
+  const dir2 = getDirectoryFromDB();
+  const found = dir2.find(u => u.name === "TEST_USER_AUTO");
+  if (found) {
+      console.log("✅ User found in Directory DB");
+  } else {
+      console.error("❌ User NOT found in Directory DB after adding");
+  }
+
+  // 4. Test Delete
+  const delRes = apiDeleteEmployee("TEST_USER_AUTO");
+  if (delRes.success) {
+      console.log("✅ apiDeleteEmployee Success");
+  } else {
+      console.error("❌ apiDeleteEmployee Failed:", delRes.message);
+  }
+
+  // 5. Verify Deleted
+  const dir3 = getDirectoryFromDB();
+  const found2 = dir3.find(u => u.name === "TEST_USER_AUTO");
+  if (!found2) {
+      console.log("✅ User successfully removed from DB");
+  } else {
+      console.error("❌ User STILL found in DB after deleting");
   }
 }
 

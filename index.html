@@ -487,6 +487,12 @@
             <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
         </div>
 
+        <!-- BOTÓN DIRECTORIO (Solo ADMIN y ADMIN_CONTROL) -->
+        <div class="nav-item" v-if="['ADMIN', 'ADMIN_CONTROL'].includes(currentRole)" :class="{ active: currentView === 'DIRECTORY_VIEW' }" @click="currentView = 'DIRECTORY_VIEW'; currentDept = ''; currentModuleId = '';">
+            <div class="nav-icon-col"><i class="fas fa-address-book text-success"></i></div>
+            <span class="nav-text text-success fw-bold">DIRECTORIO</span>
+        </div>
+
         <div class="mt-auto">
             <div class="p-3">
                 <button class="btn btn-outline-secondary w-100 btn-sm mb-2" @click="toggleTheme" :title="isCompact ? currentTheme : 'Cambiar Tema'">
@@ -915,6 +921,49 @@
              </div>
              <div class="mt-4 text-end"><button class="btn btn-lg fw-bold px-5 text-white" style="background:#e83e8c; border:none;" @click="saveDynamicPPC" :disabled="isSubmitting"><i class="fas fa-save me-2"></i> GUARDAR</button></div>
           </div>
+        </div>
+
+        <div v-if="currentView === 'DIRECTORY_VIEW'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0 text-dark"><i class="fas fa-address-book me-2 text-success"></i>DIRECTORIO DE EMPLEADOS</h4>
+                <div>
+                    <button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openNewEmployeeModal"><i class="fas fa-user-plus me-1"></i> NUEVO EMPLEADO</button>
+                    <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Departamento</th>
+                                    <th>Perfil de Hoja</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="emp in (config.directory || [])" :key="emp.name">
+                                    <td class="fw-bold">{{ emp.name }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ emp.dept }}</span></td>
+                                    <td>
+                                        <span v-if="emp.type === 'HIBRIDO'" class="badge bg-primary">Híbrido (2 Hojas)</span>
+                                        <span v-else-if="emp.type === 'VENTAS'" class="badge bg-info text-dark">Ventas</span>
+                                        <span v-else class="badge bg-secondary">Estándar (Operativo)</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-danger border-0" @click="deleteEmployee(emp.name)" title="Eliminar del Directorio">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="overflow-y:auto;">
@@ -2460,6 +2509,43 @@
     </div>
   </div>
 
+  <div v-if="showEmployeeModal" class="custom-modal-overlay">
+      <div class="custom-modal" style="width: 450px;">
+          <div class="custom-modal-header"><span>Nuevo Empleado</span><button type="button" class="btn-close" @click="showEmployeeModal = false"></button></div>
+          <div class="custom-modal-body">
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Nombre Completo</label>
+                  <input v-model="newEmployee.name" class="form-control" placeholder="Nombre Apellido" style="text-transform: uppercase;">
+              </div>
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Departamento</label>
+                  <select v-model="newEmployee.dept" class="form-select">
+                      <option value="" disabled>Seleccionar...</option>
+                      <option v-for="(d, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{ d.label }}</option>
+                  </select>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Perfil de Hoja (Hojas a crear)</label>
+                  <select v-model="newEmployee.type" class="form-select">
+                      <option value="ESTANDAR">🔵 Estándar (Operativo - 1 Hoja)</option>
+                      <option value="VENTAS">🟢 Ventas (Comercial - 1 Hoja)</option>
+                      <option value="HIBRIDO">🟣 Híbrido (Ambas - 2 Hojas)</option>
+                  </select>
+                  <div class="form-text mt-2 small text-muted" v-if="newEmployee.type === 'ESTANDAR'">
+                      Creará hoja: <strong>{{ (newEmployee.name || '[NOMBRE]').toUpperCase() }}</strong>
+                  </div>
+                  <div class="form-text mt-2 small text-muted" v-if="newEmployee.type === 'VENTAS'">
+                      Creará hoja: <strong>{{ (newEmployee.name || '[NOMBRE]').toUpperCase() }} (VENTAS)</strong>
+                  </div>
+                  <div class="form-text mt-2 small text-muted" v-if="newEmployee.type === 'HIBRIDO'">
+                      Creará AMBAS hojas.
+                  </div>
+              </div>
+              <button class="btn btn-success w-100 fw-bold" @click="saveNewEmployee" :disabled="isSubmitting || !newEmployee.name || !newEmployee.dept"><span v-if="isSubmitting"><i class="fas fa-spinner fa-spin"></i> Creando...</span><span v-else>CREAR EMPLEADO</span></button>
+          </div>
+      </div>
+  </div>
+
 </div>
 
 <script>
@@ -2996,6 +3082,55 @@
       const showSubProjectModal = ref(false);
       const currentTargetSite = ref({});
       const newSubProject = ref({ name: '', type: 'OBRA CIVIL', createdBy: '' });
+
+      // EMPLEADOS MANAGEMENT
+      const showEmployeeModal = ref(false);
+      const newEmployee = ref({ name: '', dept: '', type: 'ESTANDAR' });
+
+      const openNewEmployeeModal = () => {
+          newEmployee.value = { name: '', dept: '', type: 'ESTANDAR' };
+          showEmployeeModal.value = true;
+      };
+
+      const saveNewEmployee = () => {
+          if(!newEmployee.value.name || !newEmployee.value.dept) return;
+          isSubmitting.value = true;
+          google.script.run.withSuccessHandler(res => {
+              isSubmitting.value = false;
+              if (res.success) {
+                  Swal.fire({ icon: 'success', title: 'Empleado Creado', text: 'Se han generado las hojas correspondientes.', timer: 2000, showConfirmButton: false });
+                  showEmployeeModal.value = false;
+                  // Reload config to update directory list
+                  loadConfig(currentRole.value);
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiAddEmployee(JSON.parse(JSON.stringify(newEmployee.value)));
+      };
+
+      const deleteEmployee = (name) => {
+          Swal.fire({
+              title: '¿Eliminar del Directorio?',
+              text: `Se eliminará a "${name}" de las listas. Sus hojas de Excel NO se borrarán.`,
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#d33',
+              confirmButtonText: 'Sí, eliminar'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  Swal.showLoading();
+                  google.script.run.withSuccessHandler(res => {
+                      Swal.close();
+                      if (res.success) {
+                          Swal.fire('Eliminado', '', 'success');
+                          loadConfig(currentRole.value);
+                      } else {
+                          Swal.fire('Error', res.message, 'error');
+                      }
+                  }).apiDeleteEmployee(name);
+              }
+          });
+      };
 
       // *** MODIFICADO: ESTRUCTURA DE CARPETAS CON NUEVOS PPCs ***
       const projectSubFolders = ref([
@@ -3732,7 +3867,8 @@
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
       showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
-      trackerTable, projectTable, ppcDraftTable };
+      trackerTable, projectTable, ppcDraftTable,
+      showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
