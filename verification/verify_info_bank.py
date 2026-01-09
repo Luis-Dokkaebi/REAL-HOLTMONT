@@ -89,11 +89,23 @@ def run_verification():
         sidebar_item.click()
 
         # Verify View Title
-        page.wait_for_selector('h4:has-text("BANCO DE INFORMACION 2025")')
+        page.wait_for_selector('h4:has-text("BANCO DE INFORMACION")')
         print("Info Bank View Loaded.")
+
+        # Verify Years
+        print("Checking Year Selection...")
+        if page.locator('h2:has-text("2026")').is_visible():
+            print("Year '2026' found.")
+        else:
+            print("Error: Year '2026' not found.")
+            sys.exit(1)
+
+        # Click 2026
+        page.click('h2:has-text("2026")')
 
         # Verify Months
         print("Checking Month Buttons...")
+        page.wait_for_selector('h5:has-text("Meses del Año 2026")')
         if page.locator('h5:has-text("Enero")').is_visible():
             print("Month 'Enero' found.")
         else:
@@ -105,7 +117,7 @@ def run_verification():
 
         # Verify Companies
         print("Checking Company List...")
-        page.wait_for_selector('h5:has-text("Empresas - Enero")')
+        page.wait_for_selector('h5:has-text("Empresas - Enero 2026")')
 
         company = page.locator('span:has-text("DANFOSS MTY")')
         if company.is_visible():
@@ -138,14 +150,19 @@ def run_verification():
         # Test Navigation Back
         print("Testing Back Navigation...")
         page.click('button:has-text("Volver")')
-        page.wait_for_selector('h5:has-text("Empresas - Enero")')
+        page.wait_for_selector('h5:has-text("Empresas - Enero 2026")')
         print("Returned to Companies list.")
 
         page.click('button:has-text("Volver")')
-        page.wait_for_selector('h5:has-text("Selecciona el Mes")')
+        page.wait_for_selector('h5:has-text("Meses del Año 2026")')
         print("Returned to Months list.")
 
-        # Re-navigate to a view for screenshot
+        page.click('button:has-text("Volver")')
+        page.wait_for_selector('h5:has-text("Selecciona el Año")')
+        print("Returned to Years list.")
+
+        # Re-navigate to a view for screenshot (Use 2026 this time)
+        page.click('h2:has-text("2026")')
         page.click('h5:has-text("Enero")')
         page.click('span:has-text("DANFOSS MTY")')
         page.wait_for_selector('h5:has-text("DANFOSS MTY - Carpetas")')

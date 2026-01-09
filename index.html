@@ -932,10 +932,11 @@
         <div v-if="currentView === 'INFO_BANK'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="d-flex align-items-center">
-                    <h4 class="fw-bold m-0 text-info"><i class="fas fa-database me-2"></i>BANCO DE INFORMACION 2025</h4>
-                    <nav aria-label="breadcrumb" class="ms-4" v-if="infoBankState.view !== 'MONTHS'">
+                    <h4 class="fw-bold m-0 text-info"><i class="fas fa-database me-2"></i>BANCO DE INFORMACION</h4>
+                    <nav aria-label="breadcrumb" class="ms-4" v-if="infoBankState.view !== 'YEARS'">
                         <ol class="breadcrumb m-0">
-                             <li class="breadcrumb-item"><a href="#" @click.prevent="resetInfoBank">Año 2025</a></li>
+                             <li class="breadcrumb-item"><a href="#" @click.prevent="resetInfoBank">Inicio</a></li>
+                             <li class="breadcrumb-item" v-if="infoBankState.selectedYear"><a href="#" @click.prevent="infoBankState.view = 'MONTHS'; infoBankState.selectedMonth = '';">{{infoBankState.selectedYear}}</a></li>
                              <li class="breadcrumb-item" v-if="infoBankState.selectedMonth"><a href="#" @click.prevent="infoBankState.view = 'COMPANIES'">{{infoBankState.selectedMonth}}</a></li>
                              <li class="breadcrumb-item active" v-if="infoBankState.selectedCompany">{{infoBankState.selectedCompany}}</li>
                         </ol>
@@ -944,9 +945,26 @@
                 <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
             </div>
 
+            <!-- VIEW: YEARS -->
+            <div v-if="infoBankState.view === 'YEARS'" class="animate__animated animate__fadeIn">
+                 <h5 class="fw-bold text-secondary mb-3">Selecciona el Año</h5>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="y in ibYears" :key="y">
+                         <div class="card shadow-sm border-0 h-100" style="cursor:pointer; transition:all 0.2s;" @click="selectIbYear(y)" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                             <div class="card-body text-center py-5 bg-white rounded">
+                                 <h2 class="fw-bold m-0 text-info">{{y}}</h2>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
             <!-- VIEW: MONTHS -->
             <div v-if="infoBankState.view === 'MONTHS'" class="animate__animated animate__fadeIn">
-                 <h5 class="fw-bold text-secondary mb-3">Selecciona el Mes</h5>
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">Meses del Año {{infoBankState.selectedYear}}</h5>
+                 </div>
                  <div class="row g-3">
                      <div class="col-6 col-md-4 col-lg-3" v-for="m in ibMonths" :key="m">
                          <div class="card shadow-sm border-0 h-100 btn-month" style="cursor:pointer; transition:all 0.2s;" @click="selectIbMonth(m)" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
@@ -962,7 +980,7 @@
             <div v-if="infoBankState.view === 'COMPANIES'" class="animate__animated animate__fadeIn">
                  <div class="d-flex align-items-center mb-3">
                      <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
-                     <h5 class="fw-bold text-secondary m-0">Empresas - {{infoBankState.selectedMonth}}</h5>
+                     <h5 class="fw-bold text-secondary m-0">Empresas - {{infoBankState.selectedMonth}} {{infoBankState.selectedYear}}</h5>
                  </div>
                  <div class="row g-2">
                      <div class="col-12 col-md-6 col-lg-4" v-for="c in ibCompanies" :key="c">
@@ -2611,8 +2629,9 @@
       const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
       const currentTheme = ref('light');
 
-      // INFO BANK STATE (LUIS_CARLOS 2025)
-      const infoBankState = ref({ view: 'MONTHS', selectedMonth: '', selectedCompany: '' });
+      // INFO BANK STATE (LUIS_CARLOS 2025-2026)
+      const infoBankState = ref({ view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '' });
+      const ibYears = ['2025', '2026'];
       const ibMonths = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
       const ibCompanies = [
           'BSC', 'CHULA BRAND', 'COMERCIAL TREVIÑO', 'CONVATEC', 'CORNING 1', 'DANFOSS 2', 'DANFOSS 4', 'DANFOSS MTY', 'DANHIL', 'DANHIL MTY',
@@ -2629,13 +2648,15 @@
           { name: 'CRONOGRAMA', icon: 'fa-calendar-alt', color: '#dc3545' }
       ];
 
+      const selectIbYear = (y) => { infoBankState.value.selectedYear = y; infoBankState.value.view = 'MONTHS'; };
       const selectIbMonth = (m) => { infoBankState.value.selectedMonth = m; infoBankState.value.view = 'COMPANIES'; };
       const selectIbCompany = (c) => { infoBankState.value.selectedCompany = c; infoBankState.value.view = 'FOLDERS'; };
       const goBackInfoBank = () => {
           if (infoBankState.value.view === 'FOLDERS') { infoBankState.value.view = 'COMPANIES'; infoBankState.value.selectedCompany = ''; }
           else if (infoBankState.value.view === 'COMPANIES') { infoBankState.value.view = 'MONTHS'; infoBankState.value.selectedMonth = ''; }
+          else if (infoBankState.value.view === 'MONTHS') { infoBankState.value.view = 'YEARS'; infoBankState.value.selectedYear = ''; }
       };
-      const resetInfoBank = () => { infoBankState.value = { view: 'MONTHS', selectedMonth: '', selectedCompany: '' }; };
+      const resetInfoBank = () => { infoBankState.value = { view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '' }; };
 
       // REFS FOR TABLES (Pulse Effect)
       const trackerTable = ref(null);
@@ -4043,7 +4064,7 @@
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
-      infoBankState, ibMonths, ibCompanies, ibFolders, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank };
+      infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
