@@ -1029,6 +1029,14 @@ function apiUpdatePPCV3(taskData, username) {
 
   const targetSheet = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
 
+  // EXPLICIT REMAPPING FOR PPCV4 (TOÑITA) TO MATCH SCREENSHOT HEADERS EXACTLY
+  if (targetSheet === 'PPCV4') {
+      if (taskData['FECHA']) taskData['Fecha de Alta'] = taskData['FECHA'];
+      if (taskData['CONCEPTO']) taskData['Descripción de la Actividad'] = taskData['CONCEPTO'];
+      if (taskData['ARCHIVO']) taskData['Archivos'] = taskData['ARCHIVO'];
+      // Keep original keys too, internalBatchUpdateTasks will handle duplicates/aliases, but explicit keys take precedence in matching
+  }
+
   const res = internalBatchUpdateTasks(targetSheet, [taskData]);
   if(res.success) {
       const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
@@ -1344,7 +1352,16 @@ function apiSavePPCData(payload, activeUser) {
 
           // A.1. Persistencia Condicional en PPCV4 (Solo ANTONIA_VENTAS)
           if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
-              addTaskToSheet('PPCV4', taskData);
+              // Create specific task object for PPCV4 to match headers exactly if aliases fail
+              const taskPPC4 = { ...taskData };
+              // Ensure critical fields map to Screenshot Headers
+              if (taskData['FECHA']) taskPPC4['Fecha de Alta'] = taskData['FECHA'];
+              if (taskData['CONCEPTO']) taskPPC4['Descripción de la Actividad'] = taskData['CONCEPTO'];
+              if (taskData['ARCHIVO']) taskPPC4['Archivos'] = taskData['ARCHIVO'];
+              if (taskData['COMENTARIOS']) taskPPC4['Comentarios Semana en Curso'] = taskData['COMENTARIOS'];
+              if (taskData['INVOLUCRADOS']) taskPPC4['RESPONSABLE'] = taskData['INVOLUCRADOS'];
+
+              addTaskToSheet('PPCV4', taskPPC4);
           }
 
           // B. Respaldo Obligatorio en ADMINISTRADOR (Control)
