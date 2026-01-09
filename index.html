@@ -2523,7 +2523,7 @@
 </div>
 
 <script>
-  window.onerror = function(msg, url, line) { if(String(msg).toLowerCase().includes("script error")) return; Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
+  window.onerror = function(msg, url, line, col, error) { if(String(msg).toLowerCase().includes("script error")) return; Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + (error ? error.message : msg) }); };
 
   const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
   const app = createApp({
