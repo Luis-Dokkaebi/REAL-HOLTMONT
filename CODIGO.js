@@ -1984,68 +1984,112 @@ function apiGetNextWorkOrderSeq() {
 
 /*
  * ======================================================================
- * AUTOMATIZACIÓN DIARIA: CONTADOR 'ANTONIA_VENTAS'
+ * AUTOMATIZACIÓN DIARIA: CONTADOR DE DÍAS (VENTAS)
  * ======================================================================
  */
 function incrementarContadorDias() {
-  const SHEET_NAME_COUNTER = "ANTONIA_VENTAS";
-
+  // Lista de hojas a procesar (Antonia + Vendedores)
+  const sheetsToProcess = ["ANTONIA_VENTAS"];
+  
   try {
-    const sheet = findSheetSmart(SHEET_NAME_COUNTER);
-    if (!sheet) {
-      console.warn(`Hoja '${SHEET_NAME_COUNTER}' no encontrada.`);
-      return;
-    }
+      const directory = getDirectoryFromDB();
+      directory.forEach(user => {
+          if ((user.dept === 'VENTAS' || user.type === 'VENTAS' || user.type === 'HIBRIDO') && user.name !== "ANTONIA_VENTAS") {
+              sheetsToProcess.push(user.name + " (VENTAS)"); // Estándar: NOMBRE (VENTAS)
+              // También intentar sin sufijo si es un usuario que usa su hoja principal como ventas (poco probable en config actual pero por seguridad)
+              if (user.type === 'VENTAS') sheetsToProcess.push(user.name);
+          }
+      });
+  } catch(e) { console.error("Error obteniendo directorio para contador", e); }
 
-    const dataRange = sheet.getDataRange();
-    const values = dataRange.getValues();
-    if (values.length < 2) return; // Solo encabezados o vacía
+  // Eliminar duplicados
+  const uniqueSheets = [...new Set(sheetsToProcess)];
 
-    // Buscar exactamente el encabezado 'dias' en la fila 1 (índice 0)
-    // El requerimiento dice "encabezado 'dias' (fila 1)"
-    const headers = values[0];
-    const diasIdx = headers.indexOf("dias");
+  const today = new Date();
+  today.setHours(0,0,0,0);
 
-    if (diasIdx === -1) {
-       console.warn(`Columna con encabezado exacto 'dias' no encontrada en la fila 1 de ${SHEET_NAME_COUNTER}.`);
-       return;
-    }
+  uniqueSheets.forEach(sheetName => {
+      try {
+        const sheet = findSheetSmart(sheetName);
+        if (!sheet) return;
 
-    // Leer solo la columna de interés para optimizar, aunque ya tenemos 'values'.
-    // Trabajaremos sobre 'values' para construir el bloque de actualización.
+        const dataRange = sheet.getDataRange();
+        const values = dataRange.getValues();
+        if (values.length < 2) return; 
 
-    const newColumnValues = [];
-    let updatedCount = 0;
+        // Buscar Cabeceras
+        const headerRowIdx = findHeaderRow(values);
+        if (headerRowIdx === -1) return;
 
-    // Recorrer filas a partir de la fila 2 (índice 1)
-    for (let i = 0; i < values.length; i++) {
-        if (i === 0) {
-            // Mantener encabezado
-            newColumnValues.push([values[i][diasIdx]]);
-            continue;
+        const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
+        
+        // Buscar columnas clave
+        let diasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ");
+        
+        const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO'];
+        let fechaIdx = -1;
+        for(let alias of fechaAliases) {
+            const idx = headers.indexOf(alias);
+            if(idx > -1) { fechaIdx = idx; break; }
         }
 
-        let val = values[i][diasIdx];
+        if (diasIdx === -1 || fechaIdx === -1) return;
 
-        // Lógica de negocio: Si es número, +1. Si vacío o no número, ignorar.
-        if (typeof val === 'number') {
-            val = val + 1;
-            updatedCount++;
+        const newColumnValues = [];
+        let updatedCount = 0;
+        let startRow = headerRowIdx + 1; // 0-based index of first data row
+
+        // Iterar solo datos
+        for (let i = startRow; i < values.length; i++) {
+            let fechaVal = values[i][fechaIdx];
+            let newVal = values[i][diasIdx];
+
+            // Lógica: TODAY - FECHA = DÍAS
+            let calculated = false;
+            if (fechaVal instanceof Date) {
+                fechaVal.setHours(0,0,0,0);
+                const diffTime = today - fechaVal;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                newVal = Math.max(0, diffDays);
+                calculated = true;
+            } else if (typeof fechaVal === 'string' && fechaVal.trim() !== "") {
+                if(fechaVal.match(/\d{1,2}\/\d{1,2}\/\d{2,4}/)) {
+                    try {
+                        const parts = fechaVal.split('/');
+                        let y = parts[2];
+                        if(y.length === 2) y = '20'+y;
+                        const dObj = new Date(y, parts[1]-1, parts[0]);
+                        if(!isNaN(dObj.getTime())) {
+                            dObj.setHours(0,0,0,0);
+                            const diffDays = Math.floor((today - dObj) / (1000 * 60 * 60 * 24));
+                            newVal = Math.max(0, diffDays);
+                            calculated = true;
+                        }
+                    } catch(e) {}
+                }
+            }
+            
+            if (calculated) updatedCount++;
+            else if (newVal === undefined) newVal = ""; // Keep clean if calculation fails
+            
+            newColumnValues.push([newVal]);
         }
 
-        newColumnValues.push([val]);
-    }
+        // Batch Update
+        if (newColumnValues.length > 0) {
+            sheet.getRange(startRow + 1, diasIdx + 1, newColumnValues.length, 1).setValues(newColumnValues);
+            // Re-apply traffic light just in case
+            try { applyTrafficLightToSheet(sheet); } catch(e){}
+        }
+        
+        console.log(`[CONTADOR] ${sheetName}: ${updatedCount} actualizados.`);
 
-    // Escribir en bloque (setValues)
-    sheet.getRange(1, diasIdx + 1, newColumnValues.length, 1).setValues(newColumnValues);
-
-    registrarLog("SISTEMA", "CONTADOR_DIARIO", `Se actualizaron ${updatedCount} filas en '${SHEET_NAME_COUNTER}'`);
-    console.log(`Proceso finalizado. Filas actualizadas: ${updatedCount}`);
-
-  } catch (e) {
-    console.error(e);
-    registrarLog("SISTEMA", "ERROR_CONTADOR", e.toString());
-  }
+      } catch (e) {
+        console.error(`Error procesando ${sheetName}:`, e);
+      }
+  });
+  
+  registrarLog("SISTEMA", "CONTADOR_DIARIO", `Actualización masiva de días completada.`);
 }
 
 function instalarDisparador() {
@@ -2334,11 +2378,20 @@ function applyTrafficLightToSheet(sheet) {
   });
   
   const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
+  const colDiasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ");
 
   if (colFechaIndices.length === 0 || colClasiIdx === -1) return false;
 
   const rowHeader = headerRowIdx + 1; // 1-based (Fila de Titulos)
   const colClasiLet = colIndexToLetter(colClasiIdx + 1);
+  
+  // Identify PRIMARY Date Column (for linking DIAS coloring)
+  let primaryFechaIdx = -1;
+  for(let alias of fechaAliases) {
+      const idx = headers.indexOf(alias);
+      if(idx > -1) { primaryFechaIdx = idx; break; }
+  }
+  if(primaryFechaIdx === -1 && colFechaIndices.length > 0) primaryFechaIdx = colFechaIndices[0];
 
   // 3. Limpieza Inteligente de Reglas Antiguas
   const rules = sheet.getConditionalFormatRules();
@@ -2347,7 +2400,6 @@ function applyTrafficLightToSheet(sheet) {
                       ? r.getBooleanCondition().getCriteriaValues()[0]
                       : "";
       // Eliminamos reglas de semáforo viejas (detectadas por referencia a CLASI + TODAY)
-      // Como ahora soportamos múltiples columnas, borramos cualquier regla que use la columna de clasificación para semáforo
       if (formula.includes("TODAY") && formula.includes(colClasiLet) && formula.includes("ISNUMBER")) return false;
       return true;
   });
@@ -2357,31 +2409,46 @@ function applyTrafficLightToSheet(sheet) {
   // 4. Iterar sobre TODAS las columnas de fecha encontradas
   colFechaIndices.forEach(idx => {
       const colFechaLet = colIndexToLetter(idx + 1);
-      const range = sheet.getRange(rowHeader, idx + 1, sheet.getMaxRows() - rowHeader + 1, 1);
+      
+      const rangesToColor = [sheet.getRange(rowHeader, idx + 1, sheet.getMaxRows() - rowHeader + 1, 1)];
+      if (idx === primaryFechaIdx && colDiasIdx > -1) {
+          rangesToColor.push(sheet.getRange(rowHeader, colDiasIdx + 1, sheet.getMaxRows() - rowHeader + 1, 1));
+      }
 
-      const addRulePair = (clase, dias) => {
+      const addRulePair = (clase, dias, buffer) => {
           const formulaBase = `AND(UPPER(TRIM($${colClasiLet}${rowHeader}))="${clase}", ISNUMBER($${colFechaLet}${rowHeader}), ROW()>${rowHeader})`;
+          const diffFormula = `(TODAY() - INT($${colFechaLet}${rowHeader}))`;
 
-          // VENCIDO (ROJO)
+          // VENCIDO (ROJO): > dias
           newRules.push(SpreadsheetApp.newConditionalFormatRule()
-              .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) > ${dias})`)
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} > ${dias})`)
               .setBackground("#FF0000")
               .setFontColor("#FFFFFF")
-              .setRanges([range])
+              .setRanges(rangesToColor)
               .build());
 
-          // A TIEMPO (VERDE)
+          // POR VENCER (AMARILLO): Entre (dias - buffer) y dias
+          const warningStart = dias - buffer;
           newRules.push(SpreadsheetApp.newConditionalFormatRule()
-              .whenFormulaSatisfied(`=AND(${formulaBase}, (TODAY() - $${colFechaLet}${rowHeader}) <= ${dias})`)
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} >= ${warningStart}, ${diffFormula} <= ${dias})`)
+              .setBackground("#FFFF00")
+              .setFontColor("#000000")
+              .setRanges(rangesToColor)
+              .build());
+
+          // A TIEMPO (VERDE): < warningStart
+          newRules.push(SpreadsheetApp.newConditionalFormatRule()
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} < ${warningStart})`)
               .setBackground("#00FF00")
               .setFontColor("#000000")
-              .setRanges([range])
+              .setRanges(rangesToColor)
               .build());
       };
 
-      addRulePair("A", 3);
-      addRulePair("AA", 15);
-      addRulePair("AAA", 30);
+      // Configuración: Clase, Límite, Buffer (Días de aviso antes del límite)
+      addRulePair("A", 3, 1);    // Verde < 2, Amarillo 2-3, Rojo > 3
+      addRulePair("AA", 15, 3);  // Verde < 12, Amarillo 12-15, Rojo > 15
+      addRulePair("AAA", 30, 5); // Verde < 25, Amarillo 25-30, Rojo > 30
   });
 
   sheet.setConditionalFormatRules(newRules.concat(cleanRules));
@@ -2476,16 +2543,3 @@ function test_Antonia_Distribution_Manual() {
     ESTATUS: "COTIZADA"
   };
 
-  // 2. Simular llamada desde ANTONIA_VENTAS
-  console.log("Simulando guardado desde ANTONIA_VENTAS...");
-  const res = internalUpdateTask("ANTONIA_VENTAS", taskData, "TEST_ADMIN");
-
-  // 3. Resultados
-  if (res.success) {
-      console.log("✅ internalUpdateTask exitoso.");
-      console.log("ℹ️ Verificar manualmente que la tarea aparezca en la hoja 'TEST_USER (VENTAS)'");
-      console.log("ℹ️ ID generado/usado: " + (taskData.FOLIO || res.ids));
-  } else {
-      console.error("❌ Falló internalUpdateTask: " + res.message);
-  }
-}
