@@ -368,7 +368,7 @@ function getSystemConfig(role) {
       allDepartments: allDepts, 
       staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ], 
       directory: fullDirectory, 
-      specialModules: [ ppcModuleMaster ],
+      specialModules: [ ppcModuleMaster, ppcModuleWeekly ],
       accessProjects: false 
   };
   
@@ -1027,10 +1027,12 @@ function apiUpdatePPCV3(taskData, username) {
   if (taskData['COMENTARIOS SEMANA EN CURSO'] !== undefined) taskData['COMENTARIOS'] = taskData['COMENTARIOS SEMANA EN CURSO'];
   if (taskData['COMENTARIOS SEMANA PREVIA'] !== undefined) taskData['COMENTARIOS PREVIOS'] = taskData['COMENTARIOS SEMANA PREVIA'];
 
-  const res = internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, [taskData]);
+  const targetSheet = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
+
+  const res = internalBatchUpdateTasks(targetSheet, [taskData]);
   if(res.success) {
       const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
-      registrarLog(username || "DESCONOCIDO", action, `Update PPCV3 ID: ${taskData['ID']||taskData['FOLIO']}`);
+      registrarLog(username || "DESCONOCIDO", action, `Update ${targetSheet} ID: ${taskData['ID']||taskData['FOLIO']}`);
   }
   return res;
 }
@@ -1213,6 +1215,15 @@ function apiSavePPCData(payload, activeUser) {
         // Standardize headers for robustness
         sheetPPC.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
       }
+
+      // 1.1 VERIFICACIÓN CRÍTICA DE PPCV4 (Para ANTONIA_VENTAS)
+      if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
+          let sheetPPC4 = findSheetSmart('PPCV4');
+          if (!sheetPPC4) {
+             sheetPPC4 = SS.insertSheet('PPCV4');
+             sheetPPC4.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
+          }
+      }
       
       const fechaHoy = new Date();
       const fechaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
@@ -1330,6 +1341,11 @@ function apiSavePPCData(payload, activeUser) {
           
           // A. Persistencia en PPC Maestro (PPCV3)
           addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
+
+          // A.1. Persistencia Condicional en PPCV4 (Solo ANTONIA_VENTAS)
+          if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
+              addTaskToSheet('PPCV4', taskData);
+          }
 
           // B. Respaldo Obligatorio en ADMINISTRADOR (Control)
           addTaskToSheet("ADMINISTRADOR", taskData);
@@ -1451,10 +1467,11 @@ function apiFetchPPCData() {
   } catch(e){ return {success:false, message: e.toString()} } 
 }
 
-function apiFetchWeeklyPlanData() {
+function apiFetchWeeklyPlanData(username) {
   try {
-    const sheet = findSheetSmart(APP_CONFIG.ppcSheetName);
-    if (!sheet) return { success: false, message: "No existe la hoja PPCV3" };
+    const sheetName = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
+    const sheet = findSheetSmart(sheetName);
+    if (!sheet) return { success: false, message: "No existe la hoja " + sheetName };
     const data = sheet.getDataRange().getValues();
     if (data.length < 2) return { success: true, headers: [], data: [] };
     const headerRowIdx = findHeaderRow(data);
