@@ -1331,6 +1331,11 @@ function apiSavePPCData(payload, activeUser) {
           // A. Persistencia en PPC Maestro (PPCV3)
           addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
 
+          // A.1. Persistencia Condicional en PPCV4 (Solo ANTONIA_VENTAS)
+          if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
+              addTaskToSheet('PPCV4', taskData);
+          }
+
           // B. Respaldo Obligatorio en ADMINISTRADOR (Control)
           addTaskToSheet("ADMINISTRADOR", taskData);
 
