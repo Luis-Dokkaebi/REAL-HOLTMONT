@@ -834,20 +834,20 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       const k = key.toUpperCase().trim();
       if (colMap[k] !== undefined) return colMap[k];
       const aliases = {
-        'FECHA': ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA'],
-        'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN'],
-        'RESPONSABLE': ['RESPONSABLE', 'INVOLUCRADOS', 'VENDEDOR'],
+        'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO'],
+        'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN', 'ACTIVIDAD'],
+        'RESPONSABLE': ['RESPONSABLE', 'RESPONSABLES', 'INVOLUCRADOS', 'VENDEDOR', 'ENCARGADO', 'ASIGNADO'],
         'RELOJ': ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'],
         'ESTATUS': ['ESTATUS', 'STATUS'],
         'CUMPLIMIENTO': ['CUMPLIMIENTO', 'CUMPL.', 'CUMP'],
         'AVANCE': ['AVANCE', 'AVANCE %', '% AVANCE'],
         'ALTA': ['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD', 'ALTA'],
-        'FECHA_RESPUESTA': ['FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA'],
+        'FECHA_RESPUESTA': ['FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA', 'FECHA_FIN', 'DEADLINE'],
         'PRIORIDAD': ['PRIORIDAD', 'PRIORIDADES'],
         'RIESGOS': ['RIESGO', 'RIESGOS'],
-        'ARCHIVO': ['ARCHIVO', 'ARCHIVOS', 'CLIP', 'LINK'],
+        'ARCHIVO': ['ARCHIVO', 'ARCHIVOS', 'CLIP', 'LINK', 'URL', 'EVIDENCIA', 'DOCUMENTO', 'FOTO', 'VIDEO'],
         'CLASIFICACION': ['CLASIFICACION', 'CLASI'],
-        'COMENTARIOS': ['COMENTARIOS', 'COMENTARIOS SEMANA EN CURSO', 'OBSERVACIONES', 'NOTAS'],
+        'COMENTARIOS': ['COMENTARIOS', 'COMENTARIO', 'COMENTARIOS SEMANA EN CURSO', 'OBSERVACIONES', 'NOTAS', 'DETALLES'],
         'PREVIOS': ['COMENTARIOS PREVIOS', 'PREVIOS', 'COMENTARIOS SEMANA PREVIA'],
         'FECHA_TERMINO': ['FECHA TERMINO', 'FECHA REAL', 'TERMINO', 'REALIZADO']
       };
@@ -1482,13 +1482,13 @@ function apiFetchWeeklyPlanData(username) {
         const up = h.toUpperCase();
         if (up.includes("ESPECIALIDAD") || up.includes("AREA") || up.includes("DEPARTAMENTO")) return "ESPECIALIDAD";
         if (up.includes("DESCRIPCI") || up.includes("CONCEPTO")) return "CONCEPTO"; 
-        if (up.includes("INVOLUCRADOS") || up.includes("RESPONSABLE")) return "RESPONSABLE";
+        if (up.includes("INVOLUCRADOS") || up.includes("RESPONSABLE") || up.includes("VENDEDOR") || up.includes("ENCARGADO")) return "RESPONSABLE";
         if (up.includes("ALTA") || up.includes("FECHA")) return "FECHA";
         if (up.includes("RELOJ") || up.includes("HORAS")) return "RELOJ";
-        if (up.includes("ARCHIV") || up.includes("CLIP")) return "ARCHIVO";
+        if (up.includes("ARCHIV") || up.includes("CLIP") || up.includes("LINK") || up.includes("EVIDENCIA")) return "ARCHIVO";
         if (up.includes("CUMPLIMIENTO")) return "CUMPLIMIENTO";
-        if (up === "COMENTARIOS") return "COMENTARIOS SEMANA EN CURSO";
-        if (up === "COMENTARIOS PREVIOS") return "COMENTARIOS SEMANA PREVIA";
+        if (up === "COMENTARIOS" || up === "COMENTARIOS SEMANA EN CURSO" || up.includes("OBSERVACIONES")) return "COMENTARIOS SEMANA EN CURSO";
+        if (up === "COMENTARIOS PREVIOS" || up === "COMENTARIOS SEMANA PREVIA" || up === "PREVIOS") return "COMENTARIOS SEMANA PREVIA";
         return up; 
     });
     const displayHeaders = ["SEMANA", ...mappedHeaders];
