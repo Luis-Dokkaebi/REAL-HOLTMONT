@@ -118,6 +118,7 @@ const USER_DB = {
   "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza" },
   "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran" },
   "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" },
+  "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder" }
 };
 
@@ -423,6 +424,20 @@ function getSystemConfig(role) {
           { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "RAMIRO RODRIGUEZ (VENTAS)" }
       ],
       accessProjects: false 
+    };
+  }
+
+  if (role === 'SEBASTIAN_USER') {
+    return {
+      departments: {},
+      allDepartments: allDepts,
+      staff: [ { name: "SEBASTIAN PADILLA", dept: "ELECTROMECANICA" } ],
+      directory: fullDirectory,
+      specialModules: [
+          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#ffc107", type: "mirror_staff", target: "SEBASTIAN PADILLA" },
+          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "SEBASTIAN PADILLA (VENTAS)" }
+      ],
+      accessProjects: false
     };
   }
 
