@@ -966,7 +966,7 @@
             </div>
         </div>
 
-        <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="overflow-y:auto;">
+                <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="overflow-y:auto;">
             <div class="p-4" style="max-width: 1400px; margin: 0 auto; width: 100%;">
                 <!-- CHECKLIST VISITA -->
                 <div class="card border-0 shadow-sm mb-4">
@@ -1332,55 +1332,9 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- BUTTONS LOGIC -->
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm mt-4">
-                            <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
-                                <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DOCUMENTACIÓN Y HERRAMIENTAS <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.docs = !showLogic.docs" title="Ver Lógica"></i></h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="logic-card mb-3 position-relative" v-if="showLogic.docs">
-                                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.docs = false"></button>
-                                    <div class="logic-header"><span class="logic-icon"><i class="fas fa-mouse-pointer"></i></span> LÓGICA DE BOTONES</div>
-                                    <div class="logic-content">Se requiere que los cotizadores puedan de forma ordenada capturar foto ordenadas con una Tablet, videos, también que puedan rallar la fotos para tomar notas muy visuales así como también puedan hacer layout dibujado digital, así como también archivar planos y los alcances del proyecto.</div>
-                                </div>
-                                <div class="d-flex flex-wrap gap-3">
-                                    <button class="btn btn-outline-dark" @click="triggerUpload('FOTOS')"><i class="fas fa-camera me-2"></i>FOTOS</button>
-                                    <button class="btn btn-outline-dark" @click="triggerUpload('VIDEOS')"><i class="fas fa-video me-2"></i>VIDEOS</button>
-                                    <button class="btn btn-outline-dark" @click="triggerUpload('LAYOUT')"><i class="fas fa-pencil-ruler me-2"></i>LAYOUT / DIBUJO</button>
-                                    <button class="btn btn-outline-dark" @click="triggerUpload('PLANOS')"><i class="fas fa-map me-2"></i>PLANOS</button>
-
-                                    <div class="vr mx-2"></div>
-
-                                    <div class="d-flex flex-column align-items-center">
-                                        <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
-                                        <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.chatgpt = !showInstr.chatgpt" title="Ver Lógica"></i>
-                                        <small v-if="showInstr.chatgpt" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
-                                    </div>
-                                    <div class="d-flex flex-column align-items-center">
-                                        <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
-                                        <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.neural = !showInstr.neural" title="Ver Lógica"></i>
-                                        <small v-if="showInstr.neural" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
-                                    </div>
-                                </div>
-                                <div v-if="workorderData.files && workorderData.files.length" class="mt-3">
-                                    <h6 class="small fw-bold text-muted">Archivos Adjuntos:</h6>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <div v-for="(f, i) in workorderData.files" :key="i" class="badge bg-light text-dark border p-2">
-                                            <i class="fas fa-paperclip me-1"></i> {{ f }}
-                                            <i class="fas fa-times text-danger ms-2" style="cursor:pointer" @click="workorderData.files.splice(i,1)"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
-
-
-                <!-- PROGRAMA DEL PROYECTO (NUEVO PROTOTIPO) -->
+                <!-- PROGRAMA DEL PROYECTO (PROGRAMACION) - Order #5 -->
                 <div class="card border-0 shadow-sm mt-5">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
                         <h6 class="fw-bold mb-0" style="color: #4a148c;">PROGRAMA DEL PROYECTO</h6>
@@ -1445,7 +1399,48 @@
                     </div>
                 </div>
 
-                <!-- MANO DE OBRA (NUEVO) -->
+                <!-- 1. HERRAMIENTAS REQUERIDAS (REORDERED #1) -->
+                <div class="row g-4 mt-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #fd7e14 !important;">
+                                <h6 class="fw-bold mb-0" style="color: #e67e22;">HERRAMIENTAS REQUERIDAS</h6>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fw-bold text-dark">Total: {{ formatCurrency(toolsTotal) }}</span>
+                                    <button class="btn btn-primary btn-sm fw-bold" @click="addToolItem"><i class="fas fa-plus"></i> Agregar</button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered mb-0 small align-middle bg-white">
+                                        <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                            <tr>
+                                                <th style="width: 80px;" class="text-center">Cantidad</th>
+                                                <th style="width: 80px;" class="text-center">Unidad</th>
+                                                <th>Descripción</th>
+                                                <th style="width: 120px;" class="text-end">Costo Unitario</th>
+                                                <th style="width: 120px;" class="text-end">Total</th>
+                                                <th style="width: 40px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
+                                                <td><input type="number" v-model="item.quantity" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
+                                                <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="-"></td>
+                                                <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent" placeholder="-"></td>
+                                                <td><input type="number" v-model="item.cost" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end" placeholder="0.00"></td>
+                                                <td class="fw-bold text-end">{{ formatCurrency(item.total) }}</td>
+                                                <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeToolItem(idx)"></i></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. MANO DE OBRA (REORDERED #2) -->
                 <div class="card border-0 shadow-sm mt-4">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #107c41 !important;">
                          <h6 class="fw-bold mb-0 text-primary text-uppercase">MANO DE OBRA <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.labor = !showLogic.labor" title="Ver Lógica"></i></h6>
@@ -1579,9 +1574,8 @@
                     </div>
                 </div>
 
-                <!-- MATERIALES REQUERIDOS & PAPA CALIENTE -->
+                <!-- 3. MATERIALES REQUERIDOS (Tabla de Otros) (REORDERED #3) -->
                 <div class="row g-4 mt-4">
-                    <!-- MATERIALES REQUERIDOS -->
                     <div class="col-12">
                         <div class="card border-0 shadow-sm h-100">
                             <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #107c41 !important;">
@@ -1623,61 +1617,9 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- COMPRA DE MATERIAL PROGRAMA PAPA CALIENTE -->
-                    <!-- COMENTADO
-                    <div class="col-xl-6">
-                        <div class="card border-0 shadow-sm h-100">
-                             <div class="card-header bg-light border-0 pt-3 ps-3 pe-3" style="border-top: 4px solid #d63384 !important;">
-                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-fire me-2 text-danger"></i>Compra de Material Programa Papa Caliente</h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive h-100">
-                                    <table class="table table-bordered mb-0 small align-middle bg-white h-100">
-                                        <thead class="table-light text-center" style="font-size: 10px;">
-                                            <tr class="fw-bold">
-                                                <th>Cesar Garcia</th>
-                                                <th>Judit</th>
-                                                <th>Gisela</th>
-                                                <th>Vanessa</th>
-                                                <th>Rocio</th>
-                                                <th>Victor</th>
-                                                <th>Balu</th>
-                                                <th>Cesar Garcia</th>
-                                            </tr>
-                                            <tr class="text-muted text-uppercase">
-                                                <th>Residente</th>
-                                                <th>Compras</th>
-                                                <th>Controller</th>
-                                                <th>Orden Compra</th>
-                                                <th>Pagos Prov</th>
-                                                <th>Almacen</th>
-                                                <th>Logistica</th>
-                                                <th>Res. Obra</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(item, idx) in requiredMaterials.items" :key="idx">
-                                                <td class="position-relative"><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residente')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.compras" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'compras')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'controller')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.ordenCompra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'ordenCompra')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.pagos" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'pagos')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'almacen')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'logistica')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.residenteObra" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residenteObra')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    -->
                 </div>
 
-
-                <!-- DISEÑO / MAQUINADOS / DIBUJOS (NUEVO) -->
+                <!-- 4. DISEÑO / MAQUINADOS / DIBUJOS (REORDERED #4) -->
                 <div class="card border-0 shadow-sm mt-4">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
                          <h6 class="fw-bold mb-0 text-dark text-uppercase">DISEÑO / MAQUINADOS / DIBUJOS <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.design = !showLogic.design" title="Ver Lógica"></i></h6>
@@ -1759,91 +1701,7 @@
                     </div>
                 </div>
 
-                <!-- HERRAMIENTAS REQUERIDAS & PAPA CALIENTE -->
-                <div class="row g-4 mt-4">
-                    <!-- HERRAMIENTAS REQUERIDAS -->
-                    <div class="col-12">
-                        <div class="card border-0 shadow-sm h-100">
-                            <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #fd7e14 !important;">
-                                <h6 class="fw-bold mb-0" style="color: #e67e22;">HERRAMIENTAS REQUERIDAS</h6>
-                                <div class="d-flex align-items-center gap-3">
-                                    <span class="fw-bold text-dark">Total: {{ formatCurrency(toolsTotal) }}</span>
-                                    <button class="btn btn-primary btn-sm fw-bold" @click="addToolItem"><i class="fas fa-plus"></i> Agregar</button>
-                                </div>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered mb-0 small align-middle bg-white">
-                                        <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
-                                            <tr>
-                                                <th style="width: 80px;" class="text-center">Cantidad</th>
-                                                <th style="width: 80px;" class="text-center">Unidad</th>
-                                                <th>Descripción</th>
-                                                <th style="width: 120px;" class="text-end">Costo Unitario</th>
-                                                <th style="width: 120px;" class="text-end">Total</th>
-                                                <th style="width: 40px;"></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
-                                                <td><input type="number" v-model="item.quantity" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0"></td>
-                                                <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="-"></td>
-                                                <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent" placeholder="-"></td>
-                                                <td><input type="number" v-model="item.cost" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end" placeholder="0.00"></td>
-                                                <td class="fw-bold text-end">{{ formatCurrency(item.total) }}</td>
-                                                <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeToolItem(idx)"></i></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- COMPRA DE HERRAMIENTA PROGRAMA PAPA CALIENTE -->
-                    <!-- COMENTADO
-                    <div class="col-xl-6">
-                        <div class="card border-0 shadow-sm h-100">
-                             <div class="card-header bg-light border-0 pt-3 ps-3 pe-3" style="border-top: 4px solid #d63384 !important;">
-                                <h6 class="fw-bold mb-0 text-dark"><i class="fas fa-fire me-2 text-danger"></i>Compra de Herramienta Programa Papa Caliente</h6>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive h-100">
-                                    <table class="table table-bordered mb-0 small align-middle bg-white h-100">
-                                        <thead class="table-light text-center" style="font-size: 10px;">
-                                            <tr class="fw-bold">
-                                                <th>Cesar Garcia</th>
-                                                <th>Gisela</th>
-                                                <th>Victor</th>
-                                                <th>Balu</th>
-                                                <th>Cesar Garcia</th>
-                                            </tr>
-                                            <tr class="text-muted text-uppercase">
-                                                <th>Residente</th>
-                                                <th>Controller</th>
-                                                <th>Almacen</th>
-                                                <th>Logistica</th>
-                                                <th>Residente</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
-                                                <td class="position-relative"><input v-model="item.papaCaliente.residente" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residente')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.controller" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'controller')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.almacen" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'almacen')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.logistica" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'logistica')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                                <td class="position-relative"><input v-model="item.papaCaliente.residenteFin" class="form-control form-control-sm border-0 bg-transparent text-center px-0" placeholder="-"><button class="btn btn-sm text-primary position-absolute end-0 top-0 bottom-0 d-flex align-items-center px-1" style="background:transparent; border:none; z-index:5;" @click="openTimePopup(item.papaCaliente, 'residenteFin')"><i class="fas fa-clock" style="font-size:10px;"></i></button></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    -->
-                </div>
-
-                <!-- EQUIPOS ESPECIALES Y ACCESORIOS (NUEVO) -->
+                <!-- 5. EQUIPOS ESPECIALES (REORDERED #5) -->
                 <div class="card border-0 shadow-sm mt-4">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #dc3545 !important;">
                         <h6 class="fw-bold mb-0 text-danger text-uppercase">EQUIPOS ESPECIALES Y ACCESORIOS</h6>
@@ -1888,8 +1746,8 @@
                     </div>
                 </div>
 
-                <!-- COSTOS ADICIONALES -->
-                <div class="row g-3 mt-2">
+                <!-- 6. COSTOS ADICIONALES (INSUMOS, VIATICOS, TRANSPORTE) (REORDERED #6) -->
+                <div class="row g-3 mt-4">
                     <div class="col-md-4">
                         <div class="card shadow-sm border-0 h-100">
                             <div class="card-body">
@@ -1913,6 +1771,112 @@
                                 <input type="number" v-model="additionalCosts.transporte" class="form-control fw-bold" placeholder="0">
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- 7. DIBUJOS PLANOS Y DIAGRAMAS (DOCUMENTACION BUTTONS - REORDERED #7) -->
+                <div class="col-12 mt-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DIBUJOS PLANOS Y DIAGRAMAS (DOCUMENTACIÓN) <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.docs = !showLogic.docs" title="Ver Lógica"></i></h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="logic-card mb-3 position-relative" v-if="showLogic.docs">
+                                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.docs = false"></button>
+                                <div class="logic-header"><span class="logic-icon"><i class="fas fa-mouse-pointer"></i></span> LÓGICA DE BOTONES</div>
+                                <div class="logic-content">Se requiere que los cotizadores puedan de forma ordenada capturar foto ordenadas con una Tablet, videos, también que puedan rallar la fotos para tomar notas muy visuales así como también puedan hacer layout dibujado digital, así como también archivar planos y los alcances del proyecto.</div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-3">
+                                <button class="btn btn-outline-dark" @click="triggerUpload('FOTOS')"><i class="fas fa-camera me-2"></i>FOTOS</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('VIDEOS')"><i class="fas fa-video me-2"></i>VIDEOS</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('LAYOUT')"><i class="fas fa-pencil-ruler me-2"></i>LAYOUT / DIBUJO</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('PLANOS')"><i class="fas fa-map me-2"></i>PLANOS</button>
+
+                                <div class="vr mx-2"></div>
+
+                                <div class="d-flex flex-column align-items-center">
+                                    <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
+                                    <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.chatgpt = !showInstr.chatgpt" title="Ver Lógica"></i>
+                                    <small v-if="showInstr.chatgpt" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
+                                </div>
+                                <div class="d-flex flex-column align-items-center">
+                                    <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
+                                    <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.neural = !showInstr.neural" title="Ver Lógica"></i>
+                                    <small v-if="showInstr.neural" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
+                                </div>
+                            </div>
+                            <div v-if="workorderData.files && workorderData.files.length" class="mt-3">
+                                <h6 class="small fw-bold text-muted">Archivos Adjuntos:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div v-for="(f, i) in workorderData.files" :key="i" class="badge bg-light text-dark border p-2">
+                                        <i class="fas fa-paperclip me-1"></i> {{ f }}
+                                        <i class="fas fa-times text-danger ms-2" style="cursor:pointer" @click="workorderData.files.splice(i,1)"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. CONTROL DE VEHÍCULO (NUEVA TABLA INDEPENDIENTE #8) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>CONTROL DE VEHÍCULO (FINAL)</h6>
+                    </div>
+                    <div class="card-body">
+                         <div class="bg-dark text-white p-2 fw-bold mb-3 small">
+                             Seguimiento de Vehículo y Tiempos de Regreso
+                         </div>
+                         <div class="row">
+                             <div class="col-12">
+                                 <table class="table table-bordered table-sm small align-middle">
+                                     <tbody>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Chofer Holtmont</td>
+                                             <td><input v-model="vehicleControlData2.chofer" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td class="fw-bold bg-light">Gasolina</td>
+                                             <td><input v-model="vehicleControlData2.gasolina" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="20 lts"></td>
+                                             <td class="fw-bold bg-light">Hora salida (GPS)</td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Vehículo Holtmont</td>
+                                             <td><input v-model="vehicleControlData2.vehiculo" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="HM 003 March 2023"></td>
+                                             <td class="fw-bold bg-light">FOTO ODOMETRO</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_2_ODOMETRO')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td><input v-model="vehicleControlData2.horaSalida" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="8:30am"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Evaluación de Manejo</td>
+                                             <td><input v-model="vehicleControlData2.evaluacion" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Alertas por alta velocidad"></td>
+                                             <td class="fw-bold bg-light">FOTO DE INDICADOR ANTES DE LLENAR GASOLINA</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_2_ANTES_GASOLINA')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td class="fw-bold bg-light">Hora llegada (GPS)</td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Multas</td>
+                                             <td><input v-model="vehicleControlData2.multas" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="Asignación de Multa"></td>
+                                             <td class="fw-bold bg-light">FOTO INDICADOR DESPUES</td>
+                                             <td>
+                                                 <button class="btn btn-sm btn-outline-secondary w-100" @click="triggerUpload('VEHICULO_2_DESPUES_GASOLINA')"><i class="fas fa-camera me-1"></i> Subir Foto</button>
+                                             </td>
+                                             <td><input v-model="vehicleControlData2.horaLlegada" class="form-control form-control-sm text-danger border-0 bg-transparent" placeholder="9:20am"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Verificación de Ruta</td>
+                                             <td colspan="4"><input v-model="vehicleControlData2.ruta" class="form-control form-control-sm border-0 bg-transparent" placeholder="de Oficina a Planta"></td>
+                                         </tr>
+                                         <tr>
+                                             <td class="fw-bold bg-light">Verificación Vehículo</td>
+                                             <td colspan="4"><input v-model="vehicleControlData2.verifVehiculo" class="form-control form-control-sm border-0 bg-transparent" placeholder="con Video"></td>
+                                         </tr>
+                                     </tbody>
+                                 </table>
+                             </div>
+                         </div>
                     </div>
                 </div>
 
@@ -1970,8 +1934,7 @@
                 </div>
             </div>
         </div>
-
-        <div v-if="currentView === 'PPC_FORM'" class="h-100 d-flex flex-column" style="background:white; padding:20px;">
+<div v-if="currentView === 'PPC_FORM'" class="h-100 d-flex flex-column" style="background:white; padding:20px;">
            <div class="d-flex justify-content-between align-items-center mb-3">
                <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : 'PPC Maestro' }}</h5><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
                <div><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
@@ -2841,6 +2804,7 @@
       const dynamicPpc = ref({ especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' });
       const vehicleData = ref({});
       const vehicleControlData = ref({}); // Decoupled data for duplicated section
+      const vehicleControlData2 = ref({}); // Second independent vehicle control
       const showWorkOrderLogic = ref(true); // Logic display state
 
       // New Logic Toggles State
@@ -3855,6 +3819,22 @@
             if (vCtrl.verifVehiculo) conceptoStr += `\nVerificación: ${vCtrl.verifVehiculo}`;
         }
 
+        // Serialize Vehicle Control Data 2 (Final)
+        const vCtrl2 = vehicleControlData2.value;
+        if (Object.keys(vCtrl2).length > 0) {
+            conceptoStr += `\n\n[CONTROL VEHICULO FINAL]`;
+            if (vCtrl2.cotizacion) conceptoStr += `\nCotización: ${vCtrl2.cotizacion}`;
+            if (vCtrl2.chofer) conceptoStr += `\nChofer: ${vCtrl2.chofer}`;
+            if (vCtrl2.vehiculo) conceptoStr += `\nVehiculo: ${vCtrl2.vehiculo}`;
+            if (vCtrl2.gasolina) conceptoStr += `\nGasolina: ${vCtrl2.gasolina}`;
+            if (vCtrl2.horaSalida) conceptoStr += `\nHora Salida: ${vCtrl2.horaSalida}`;
+            if (vCtrl2.evaluacion) conceptoStr += `\nEvaluación: ${vCtrl2.evaluacion}`;
+            if (vCtrl2.multas) conceptoStr += `\nMultas: ${vCtrl2.multas}`;
+            if (vCtrl2.horaLlegada) conceptoStr += `\nHora Llegada: ${vCtrl2.horaLlegada}`;
+            if (vCtrl2.ruta) conceptoStr += `\nRuta: ${vCtrl2.ruta}`;
+            if (vCtrl2.verifVehiculo) conceptoStr += `\nVerificación: ${vCtrl2.verifVehiculo}`;
+        }
+
         const fullClientName = workorderData.value.cliente;
 
         const fullRequisitor = workorderData.value.newRequisitor
@@ -3954,7 +3934,7 @@
       };
 
       return { isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, showWorkOrderLogic, triggerUpload,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
       laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
