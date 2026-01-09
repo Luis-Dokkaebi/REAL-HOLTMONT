@@ -117,6 +117,7 @@ const USER_DB = {
   "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas" },
   "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza" },
   "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran" },
+  "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares" },
   "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" },
   "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder" }
@@ -410,6 +411,20 @@ function getSystemConfig(role) {
           { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO TERAN (VENTAS)" }
       ],
       accessProjects: false 
+    };
+  }
+
+  if (role === 'MANZANARES_USER') {
+    return {
+      departments: {},
+      allDepartments: allDepts,
+      staff: [ { name: "EDUARDO MANZANARES", dept: "HVAC" } ],
+      directory: fullDirectory,
+      specialModules: [
+          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO MANZANARES" },
+          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO MANZANARES (VENTAS)" }
+      ],
+      accessProjects: false
     };
   }
 
