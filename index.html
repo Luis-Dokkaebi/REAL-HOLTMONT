@@ -818,7 +818,7 @@
                              <select v-model="row[h]" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option value="A">A</option><option value="AA">AA</option><option value="AAA">AAA</option></select>
                          </div>
                          <input v-else-if="isCol(h, ['DIAS','RELOJ'])" type="number" v-model="row[h]" style="text-align:center; font-weight:bold; width:100%; height:100%; border:none; outline:none; padding:6px 0px; background:transparent;" :style="getTrafficStyle(row)">
-                         <input v-else-if="String(h).toUpperCase().includes('AVANCE')" v-model="row[h]" :readonly="isAvanceLocked(row)" :style="{textAlign:'center', fontWeight:'bold', color: isAvanceLocked(row) ? '#555' : '#217346', width:'100%', height:'100%', border:'none', outline:'none', padding:'6px 0px', background: isAvanceLocked(row) ? '#e9ecef' : 'transparent'}">
+                         <input v-else-if="String(h).toUpperCase().includes('AVANCE')" v-model="row[h]" style="text-align:center; font-weight:bold; color:#217346; width:100%; height:100%; border:none; outline:none; padding:6px 0px; background:transparent;">
                          <input v-else-if="isCol(h, ['ESTATUS','STATUS'])" v-model="row[h]" style="text-align:center; font-weight:bold; font-size:10px; width:100%; height:100%; border:none; outline:none; padding:6px 1px; background:transparent;" class="excel-input">
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
@@ -2599,38 +2599,6 @@
       };
 
       const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'' });
-      // LOGICA AVANCE VENTAS (REQ USER)
-      const getSalesFileCount = (row) => {
-          if (!staffTracker.value.name.toUpperCase().includes('VENTAS')) return 0;
-          const headers = staffTracker.value.headers;
-          let count = 0;
-          const hasVal = (keywords) => {
-              const h = headers.find(hdr => keywords.some(k => String(hdr).toUpperCase().includes(k)));
-              return h && row[h] && String(row[h]).includes('http'); // Must contain URL
-          };
-          if (hasVal(['F2'])) count++;
-          if (hasVal(['COTIZACION', 'COTIZACIÓN', 'COT'])) count++;
-          if (hasVal(['TIMEOUT', 'TIME OUT'])) count++;
-          if (hasVal(['LAYOUT', 'TIMELINE'])) count++;
-          return count;
-      };
-      const updateSalesAvance = (row) => {
-          if (!staffTracker.value.name.toUpperCase().includes('VENTAS')) return;
-          const count = getSalesFileCount(row);
-          const hAvance = staffTracker.value.headers.find(h => String(h).toUpperCase().includes('AVANCE'));
-          if (hAvance) {
-              if (count < 4) {
-                  row[hAvance] = (count * 25) + '%';
-              } else {
-                  const curr = parseFloat(String(row[hAvance]||'').replace('%',''));
-                  if (isNaN(curr) || curr < 100) row[hAvance] = '100%';
-              }
-          }
-      };
-      const isAvanceLocked = (row) => {
-          if (!staffTracker.value.name.toUpperCase().includes('VENTAS')) return false;
-          return getSalesFileCount(row) < 4;
-      };
 
       const isSubmitting = ref(false);
       const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
@@ -3716,10 +3684,6 @@
                   staffTracker.value.data = res.data;
                   staffTracker.value.history = res.history;
                   staffTracker.value.headers = res.headers;
-                  // Recalcular Avance Ventas al cargar
-                  if(staffTracker.value.name.toUpperCase().includes('VENTAS')){
-                      staffTracker.value.data.forEach(row => updateSalesAvance(row));
-                  }
                   // Recalcular Días (Contador) para todas las hojas (si tienen las columnas)
                   // Se ejecuta siempre, la función calculateDiasCounter valida si existen las columnas
                   staffTracker.value.data.forEach(row => calculateDiasCounter(row));
@@ -3753,7 +3717,7 @@
           Swal.showLoading(); google.script.run.withSuccessHandler(res => { Swal.close(); if(res.success){ row._isNew=false; if(res.moved){ reloadStaffTracker(); Swal.fire({icon: 'success', title: 'Archivado', text: 'Tarea movida a Realizadas (100%)', timer: 1500, showConfirmButton: false}); } else { Swal.fire({icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false}); } } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
       };
       const openCellUpload = (row, col) => { uploadingCell.value = {row, col}; cellFileInput.value.click(); };
-      const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } updateSalesAvance(uploadingCell.value.row); saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
+      const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
       const addResponsable = (n) => { selectedResponsables.value.push(n); staffSearch.value=''; };
       const openFileDialog = () => fileInput.value.click();
       const handleFileSelect = (e) => {
@@ -3982,8 +3946,7 @@
       showLogic, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
-      showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
-      isAvanceLocked };
+      showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
