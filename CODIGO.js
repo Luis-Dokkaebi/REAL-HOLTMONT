@@ -2543,3 +2543,10 @@ function test_Antonia_Distribution_Manual() {
     ESTATUS: "COTIZADA"
   };
 
+  const res = internalUpdateTask("ANTONIA_VENTAS", taskData, "TEST_ADMIN");
+  if (res.success) {
+      console.log("✅ Distribución exitosa (Simulada).");
+  } else {
+      console.error("❌ Fallo distribución: " + res.message);
+  }
+}
