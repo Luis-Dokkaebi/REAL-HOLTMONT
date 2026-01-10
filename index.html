@@ -1030,27 +1030,36 @@
                              <table class="table table-hover mb-0 align-middle">
                                  <thead class="table-light small text-uppercase">
                                      <tr>
-                                         <th>Fecha</th>
-                                         <th>Concepto / Descripción</th>
-                                         <th class="text-center">Archivo</th>
-                                         <th class="text-center">Estatus</th>
+                                         <th style="min-width:90px">FECHA INICIO</th>
+                                         <th style="min-width:100px">AREA</th>
+                                         <th>CONCEPTO</th>
+                                         <th style="min-width:120px">VENDEDOR</th>
+                                         <th class="text-center" style="min-width:100px">ESTATUS</th>
                                      </tr>
                                  </thead>
-                                 <tbody>
-                                     <tr v-for="(file, idx) in infoBankState.files" :key="idx">
-                                         <td style="font-size:12px; font-weight:bold;">{{ formatDisplayDate(file['FECHA'] || file['ALTA']) }}</td>
+                                 <tbody class="info-bank-list">
+                                     <tr v-for="(file, idx) in infoBankState.files" :key="idx" class="info-bank-row" style="opacity:0">
+                                         <td style="font-size:12px; font-weight:bold;">{{ formatDisplayDate(file.FECHA_INICIO) }}</td>
+                                         <td style="font-size:11px;"><span class="badge bg-light text-secondary border">{{ file.AREA || 'N/A' }}</span></td>
                                          <td style="font-size:12px;">
-                                             <div class="fw-bold">{{ file['CONCEPTO'] || 'Sin Descripción' }}</div>
-                                             <div class="small text-muted">{{ file['FOLIO'] }}</div>
+                                             <div class="fw-bold text-dark">{{ file.CONCEPTO || 'Sin Descripción' }}</div>
+                                             <div class="small text-muted d-flex align-items-center gap-2">
+                                                 <span>{{ file.FOLIO }}</span>
+                                                 <a v-if="file.COTIZACION" :href="file.COTIZACION" target="_blank" class="text-primary text-decoration-none fw-bold" style="font-size:10px;">
+                                                     <i class="fas fa-paperclip me-1"></i>VER ARCHIVO
+                                                 </a>
+                                             </div>
+                                         </td>
+                                         <td style="font-size:11px;">
+                                             <div class="d-flex align-items-center">
+                                                 <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width:20px; height:20px; font-size:9px;">
+                                                     {{ toInitials(file.VENDEDOR) }}
+                                                 </div>
+                                                 <span class="text-truncate" style="max-width:120px;">{{ file.VENDEDOR }}</span>
+                                             </div>
                                          </td>
                                          <td class="text-center">
-                                             <a v-if="file['COTIZACION']" :href="file['COTIZACION']" target="_blank" class="btn btn-sm btn-outline-success fw-bold px-3 py-1" style="font-size:11px;">
-                                                 <i class="fas fa-file-pdf me-1"></i> VER PDF
-                                             </a>
-                                             <span v-else class="text-muted small">-</span>
-                                         </td>
-                                         <td class="text-center">
-                                             <span class="badge bg-light text-dark border">{{ file['ESTATUS'] || 'N/A' }}</span>
+                                             <span class="badge" :class="getBadgeClass(file.ESTATUS)">{{ file.ESTATUS || 'N/A' }}</span>
                                          </td>
                                      </tr>
                                  </tbody>
@@ -2727,6 +2736,17 @@
           fetchInfoBankFiles();
       };
 
+      const animateInfoBankRows = () => {
+          anime({
+              targets: '.info-bank-row',
+              translateY: [20, 0],
+              opacity: [0, 1],
+              delay: anime.stagger(50),
+              easing: 'easeOutQuad',
+              duration: 800
+          });
+      };
+
       const fetchInfoBankFiles = () => {
           infoBankState.value.isLoading = true;
           infoBankState.value.files = [];
@@ -2734,10 +2754,21 @@
               infoBankState.value.isLoading = false;
               if (res.success) {
                   infoBankState.value.files = res.data;
+                  nextTick(() => { animateInfoBankRows(); });
               } else {
                   Swal.fire('Error', res.message, 'error');
               }
           }).apiFetchInfoBankData(infoBankState.value.selectedYear || '2025', infoBankState.value.selectedMonth, infoBankState.value.selectedCompany, infoBankState.value.selectedFolder);
+      };
+
+      const getBadgeClass = (status) => {
+          if (!status) return 'bg-light text-dark border';
+          const s = String(status).toUpperCase();
+          if (s.includes('VENDIDA') || s.includes('GANADA') || s.includes('APROBADA')) return 'bg-success text-white';
+          if (s.includes('COTIZADA') || s.includes('ENVIADA')) return 'bg-info text-dark';
+          if (s.includes('PERDIDA') || s.includes('CANCELADA')) return 'bg-danger text-white';
+          if (s.includes('PENDIENTE')) return 'bg-warning text-dark';
+          return 'bg-light text-dark border';
       };
 
       const goBackInfoBank = () => {
@@ -4154,7 +4185,7 @@
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
-      infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles };
+      infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
