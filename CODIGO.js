@@ -25,7 +25,7 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
        if (!rowClient.includes(targetCompany) && !targetCompany.includes(rowClient)) return false;
 
        // 2. Date Match (FECHA INICIO)
-       const dateVal = row['FECHA'] || row['ALTA'] || row['FECHA_ALTA'];
+       const dateVal = row['FECHA'] || row['ALTA'] || row['FECHA_ALTA'] || row['FECHA INICIO'] || row['FECHA_INICIO'] || row['FECHA VISITA'];
        if (!dateVal) return false;
 
        let dObj = null;
