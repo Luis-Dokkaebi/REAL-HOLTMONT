@@ -2627,15 +2627,28 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
 
     // Filtrar datos
     const filtered = res.data.filter(row => {
+       // Helper para buscar valores insensible a mayúsculas
+       const keys = Object.keys(row);
+       const upperKeys = keys.map(k => k.toUpperCase().trim());
+       const getVal = (targetKeys) => {
+           for (const t of targetKeys) {
+               const idx = upperKeys.indexOf(t);
+               if (idx > -1) return row[keys[idx]];
+           }
+           return null;
+       };
+
        // 1. Company Match (Loose)
-       const rowClient = String(row['CLIENTE'] || '').toUpperCase().trim();
+       const rowClient = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
        if (!rowClient) return false;
        
        // Check bidirectional inclusion to handle variations
        if (!rowClient.includes(targetCompany) && !targetCompany.includes(rowClient)) return false;
 
-       // 2. Date Match (FECHA INICIO)
-       const dateVal = row['FECHA'] || row['FECHA INICIO'] || row['FECHA_INICIO'] || row['FECHA VISITA'] || row['ALTA'] || row['FECHA_ALTA'] || row['FECHA DE INICIO'];
+       // 2. Date Match (Prioridad: FECHA INICIO)
+       // Se prioriza 'FECHA INICIO' tal cual pidió el usuario, luego fallbacks.
+       const dateVal = getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
+
        if (!dateVal) return false;
        
        let dObj = null;
