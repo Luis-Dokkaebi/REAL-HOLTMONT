@@ -982,11 +982,62 @@
                  </div>
                  <div class="row g-3">
                      <div class="col-6 col-md-4 col-lg-3" v-for="f in ibFolders" :key="f.name">
-                         <div class="card shadow-sm border-0 h-100 text-center" style="cursor:pointer; transition:all 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                         <div class="card shadow-sm border-0 h-100 text-center" style="cursor:pointer; transition:all 0.2s;" @click="openIbFolder(f)" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                              <div class="card-body d-flex flex-column align-items-center justify-content-center py-4 bg-white rounded">
                                  <i class="fas fa-3x mb-3" :class="f.icon" :style="{color: f.color}"></i>
                                  <h6 class="fw-bold text-dark m-0">{{f.name}}</h6>
                              </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: FILES -->
+            <div v-if="infoBankState.view === 'FILES'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">{{infoBankState.selectedCompany}} / {{infoBankState.selectedFolder}}</h5>
+                 </div>
+
+                 <div v-if="infoBankState.isLoading" class="text-center p-5">
+                      <div class="spinner-border text-primary mb-2" role="status"></div>
+                      <div class="text-muted small">Buscando archivos en Base de Datos...</div>
+                 </div>
+                 <div v-else-if="infoBankState.files.length === 0" class="text-center p-5 bg-white border rounded shadow-sm">
+                      <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                      <p class="text-muted fw-bold">No se encontraron registros para este mes y cliente.</p>
+                 </div>
+                 <div v-else class="card border-0 shadow-sm">
+                     <div class="card-body p-0">
+                         <div class="table-responsive">
+                             <table class="table table-hover mb-0 align-middle">
+                                 <thead class="table-light small text-uppercase">
+                                     <tr>
+                                         <th>Fecha</th>
+                                         <th>Concepto / Descripción</th>
+                                         <th class="text-center">Archivo</th>
+                                         <th class="text-center">Estatus</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody>
+                                     <tr v-for="(file, idx) in infoBankState.files" :key="idx">
+                                         <td style="font-size:12px; font-weight:bold;">{{ formatDisplayDate(file['FECHA'] || file['ALTA']) }}</td>
+                                         <td style="font-size:12px;">
+                                             <div class="fw-bold">{{ file['CONCEPTO'] || 'Sin Descripción' }}</div>
+                                             <div class="small text-muted">{{ file['FOLIO'] }}</div>
+                                         </td>
+                                         <td class="text-center">
+                                             <a v-if="file['COTIZACION']" :href="file['COTIZACION']" target="_blank" class="btn btn-sm btn-outline-success fw-bold px-3 py-1" style="font-size:11px;">
+                                                 <i class="fas fa-file-pdf me-1"></i> VER PDF
+                                             </a>
+                                             <span v-else class="text-muted small">-</span>
+                                         </td>
+                                         <td class="text-center">
+                                             <span class="badge bg-light text-dark border">{{ file['ESTATUS'] || 'N/A' }}</span>
+                                         </td>
+                                     </tr>
+                                 </tbody>
+                             </table>
                          </div>
                      </div>
                  </div>
@@ -2612,7 +2663,7 @@
       const currentTheme = ref('light');
 
       // INFO BANK STATE (LUIS_CARLOS 2025)
-      const infoBankState = ref({ view: 'MONTHS', selectedMonth: '', selectedCompany: '' });
+      const infoBankState = ref({ view: 'MONTHS', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false });
       const ibMonths = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
       const ibCompanies = [
           'BSC', 'CHULA BRAND', 'COMERCIAL TREVIÑO', 'CONVATEC', 'CORNING 1', 'DANFOSS 2', 'DANFOSS 4', 'DANFOSS MTY', 'DANHIL', 'DANHIL MTY',
@@ -2634,11 +2685,32 @@
 
       const selectIbMonth = (m) => { infoBankState.value.selectedMonth = m; infoBankState.value.view = 'COMPANIES'; };
       const selectIbCompany = (c) => { infoBankState.value.selectedCompany = c; infoBankState.value.view = 'FOLDERS'; };
+
+      const openIbFolder = (f) => {
+          infoBankState.value.selectedFolder = f.name;
+          infoBankState.value.view = 'FILES';
+          fetchInfoBankFiles();
+      };
+
+      const fetchInfoBankFiles = () => {
+          infoBankState.value.isLoading = true;
+          infoBankState.value.files = [];
+          google.script.run.withSuccessHandler(res => {
+              infoBankState.value.isLoading = false;
+              if (res.success) {
+                  infoBankState.value.files = res.data;
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiFetchInfoBankData('2025', infoBankState.value.selectedMonth, infoBankState.value.selectedCompany, infoBankState.value.selectedFolder);
+      };
+
       const goBackInfoBank = () => {
           if (infoBankState.value.view === 'FOLDERS') { infoBankState.value.view = 'COMPANIES'; infoBankState.value.selectedCompany = ''; }
           else if (infoBankState.value.view === 'COMPANIES') { infoBankState.value.view = 'MONTHS'; infoBankState.value.selectedMonth = ''; }
+          else if (infoBankState.value.view === 'FILES') { infoBankState.value.view = 'FOLDERS'; infoBankState.value.selectedFolder = ''; infoBankState.value.files = []; }
       };
-      const resetInfoBank = () => { infoBankState.value = { view: 'MONTHS', selectedMonth: '', selectedCompany: '' }; };
+      const resetInfoBank = () => { infoBankState.value = { view: 'MONTHS', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false }; };
 
       // REFS FOR TABLES (Pulse Effect)
       const trackerTable = ref(null);
@@ -4046,7 +4118,7 @@
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
-      infoBankState, ibMonths, ibCompanies, ibFolders, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank };
+      infoBankState, ibMonths, ibCompanies, ibFolders, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
