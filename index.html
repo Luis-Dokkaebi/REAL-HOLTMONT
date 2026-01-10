@@ -2665,12 +2665,16 @@
       // INFO BANK STATE (LUIS_CARLOS 2025)
       const infoBankState = ref({ view: 'MONTHS', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false });
       const ibMonths = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const ibCompanies = [
-          'BSC', 'CHULA BRAND', 'COMERCIAL TREVIÑO', 'CONVATEC', 'CORNING 1', 'DANFOSS 2', 'DANFOSS 4', 'DANFOSS MTY', 'DANHIL', 'DANHIL MTY',
-          'DEL BRAVO', 'DEL BRAVO STORAGE', 'EATON 1', 'EATON 3', 'EATON 5', 'ESSITY', 'J&E COMPANIES', 'LG', 'MAIZ MIER', 'MARMON',
-          'MASTERBRAND MISION', 'MASTERBRAND WESLACO', 'MEGATECH', 'MEGATECH 2', 'NETAFIM', 'NIDEC', 'PANASONIC', 'PANASONIC MTY', 'PANASONIC NORTE',
-          'PENTAIR', 'REXNORD 1', 'REXNORD 1 MTY', 'REXNORD 2', 'REXNORD USA', 'SEASON GROUP', 'UNIFORM GROUP', 'WC RB', 'WC RY', 'WESLACO', 'XB SOLUCIONES'
-      ].sort();
+      const ibCompanies = ref([]); // Dynamic
+
+      const loadIbCompanies = () => {
+          google.script.run.withSuccessHandler(res => {
+              if (res.success) {
+                  ibCompanies.value = res.data;
+              }
+          }).apiFetchDistinctClients();
+      };
+
       const ibFolders = [
           { name: 'SCOPE', icon: 'fa-crosshairs', color: '#007bff' },
           { name: 'CORREOS', icon: 'fa-envelope', color: '#ffc107' },
@@ -2683,7 +2687,11 @@
           { name: 'PREOPERATIVA', icon: 'fa-hard-hat', color: '#fd7e14' }
       ];
 
-      const selectIbMonth = (m) => { infoBankState.value.selectedMonth = m; infoBankState.value.view = 'COMPANIES'; };
+      const selectIbMonth = (m) => {
+          infoBankState.value.selectedMonth = m;
+          infoBankState.value.view = 'COMPANIES';
+          loadIbCompanies(); // Load fresh list when entering company view
+      };
       const selectIbCompany = (c) => { infoBankState.value.selectedCompany = c; infoBankState.value.view = 'FOLDERS'; };
 
       const openIbFolder = (f) => {
@@ -2710,7 +2718,10 @@
           else if (infoBankState.value.view === 'COMPANIES') { infoBankState.value.view = 'MONTHS'; infoBankState.value.selectedMonth = ''; }
           else if (infoBankState.value.view === 'FILES') { infoBankState.value.view = 'FOLDERS'; infoBankState.value.selectedFolder = ''; infoBankState.value.files = []; }
       };
-      const resetInfoBank = () => { infoBankState.value = { view: 'MONTHS', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false }; };
+      const resetInfoBank = () => {
+          infoBankState.value = { view: 'MONTHS', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false };
+          // loadIbCompanies(); // Optional pre-load
+      };
 
       // REFS FOR TABLES (Pulse Effect)
       const trackerTable = ref(null);

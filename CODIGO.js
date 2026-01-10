@@ -2663,3 +2663,29 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
     return { success: false, message: e.toString() };
   }
 }
+function apiFetchDistinctClients() {
+  try {
+    const sheetName = "ANTONIA_VENTAS";
+    const res = internalFetchSheetData(sheetName);
+    if (!res.success) return { success: false, message: res.message };
+
+    const clients = new Set();
+
+    // Add existing static list for robustness (optional, but good practice to not lose hardcoded ones if needed)
+    // Actually, user said "I need all those from the ANTONIA_VENTAS list", implying dynamic.
+    // Let's check headers to find 'CLIENTE'
+    // internalFetchSheetData returns objects with keys uppercased and trimmed.
+
+    res.data.forEach(row => {
+        if (row['CLIENTE']) {
+            const c = String(row['CLIENTE']).trim().toUpperCase();
+            if (c) clients.add(c);
+        }
+    });
+
+    const sortedClients = Array.from(clients).sort();
+    return { success: true, data: sortedClients };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
