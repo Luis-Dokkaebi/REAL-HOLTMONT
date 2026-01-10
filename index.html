@@ -2704,7 +2704,7 @@
       const filteredIbCompanies = computed(() => {
           const y = infoBankState.value.selectedYear;
           const m = infoBankState.value.selectedMonth;
-          if (y === '2025' && ['Octubre', 'Noviembre', 'Diciembre'].includes(m)) {
+          if ((y === '2025' && ['Octubre', 'Noviembre', 'Diciembre'].includes(m)) || (y === '2026' && m === 'Enero')) {
               return ['CORNING 1', 'WC RY', 'EATON 3', 'PANASONIC', 'PANASONIC MTY', 'VERTIV', 'PANASONIC NORTE', 'ALCOM', 'DANFOSS 4'];
           }
           return ibCompanies;
