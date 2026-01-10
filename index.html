@@ -2704,9 +2704,16 @@
       const filteredIbCompanies = computed(() => {
           const y = infoBankState.value.selectedYear;
           const m = infoBankState.value.selectedMonth;
-          if ((y === '2025' && ['Octubre', 'Noviembre', 'Diciembre'].includes(m)) || (y === '2026' && m === 'Enero')) {
-              return ['CORNING 1', 'WC RY', 'EATON 3', 'PANASONIC', 'PANASONIC MTY', 'VERTIV', 'PANASONIC NORTE', 'ALCOM', 'DANFOSS 4'];
+
+          if (y === '2025') {
+              if (m === 'Octubre') return ['DANFOSS 4'];
+              if (m === 'Noviembre') return ['PANASONIC MTY', 'PANASONIC NORTE', 'ALCOM'];
+              if (m === 'Diciembre') return ['VERTIV', 'CORNING 1', 'PANASONIC MTY', 'PANASONIC'];
           }
+          if (y === '2026') {
+              if (m === 'Enero') return ['EATON 3', 'WC RY', 'CORNING 1'];
+          }
+
           return ibCompanies;
       });
 
