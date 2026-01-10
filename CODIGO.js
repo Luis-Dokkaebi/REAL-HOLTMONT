@@ -2671,7 +2671,30 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
        return true;
     });
 
-    return { success: true, data: filtered };
+    // NORMALIZACION DE DATOS PARA EL FRONTEND (SOLICITUD USUARIO)
+    const mappedData = filtered.map(row => {
+       const keys = Object.keys(row);
+       const upperKeys = keys.map(k => k.toUpperCase().trim());
+       const getVal = (targetKeys) => {
+           for (const t of targetKeys) {
+               const idx = upperKeys.indexOf(t);
+               if (idx > -1) return row[keys[idx]];
+           }
+           return "";
+       };
+
+       return {
+           'FECHA_INICIO': getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']),
+           'AREA': getVal(['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD']),
+           'CONCEPTO': getVal(['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'ACTIVIDAD']),
+           'VENDEDOR': getVal(['VENDEDOR', 'RESPONSABLE', 'ENCARGADO', 'INVOLUCRADOS']),
+           'ESTATUS': getVal(['ESTATUS', 'STATUS', 'ESTADO']),
+           'FOLIO': getVal(['FOLIO', 'ID']),
+           'COTIZACION': getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF'])
+       };
+    });
+
+    return { success: true, data: mappedData };
   } catch(e) {
     return { success: false, message: e.toString() };
   }
