@@ -1252,7 +1252,9 @@ function apiSavePPCData(payload, activeUser) {
       items.forEach(item => {
           // Use existing ID if provided (for updates/tests) or generate new
           let id = item.id;
+          let isNew = false;
           if (!id) {
+              isNew = true;
               if (activeUser === 'PREWORK_ORDER') {
                   id = generateWorkOrderFolio(item.cliente, item.especialidad);
               } else {
@@ -1328,12 +1330,10 @@ function apiSavePPCData(payload, activeUser) {
                  'INVOLUCRADOS': item.responsable,
                  'FECHA': fechaStr,
                  'RELOJ': item.horas,
-                 'ESTATUS': "ASIGNADO",
                  'PRIORIDAD': item.prioridad || item.prioridades,
                  'RESTRICCIONES': item.restricciones,
                  'RIESGOS': item.riesgos,
                  'FECHA_RESPUESTA': item.fechaRespuesta,
-                 'AVANCE': "0%",
                  'COMENTARIOS': comentarios,
                  'ARCHIVO': item.archivoUrl,
                  'CUMPLIMIENTO': item.cumplimiento,
@@ -1346,6 +1346,10 @@ function apiSavePPCData(payload, activeUser) {
                  'TRABAJO': item.TRABAJO,
                  'DETALLES_EXTRA': detallesExtra // Nueva Columna
           };
+
+          // Evitar sobrescribir avance/estatus si es una actualización sin estos datos explícitos
+          if (isNew || item.estatus) taskData['ESTATUS'] = item.estatus || "ASIGNADO";
+          if (isNew || item.avance) taskData['AVANCE'] = item.avance || "0%";
           
           // A. Persistencia en PPC Maestro (PPCV3)
           addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
@@ -2723,5 +2727,84 @@ function apiFetchDistinctClients() {
     return { success: true, data: sortedClients };
   } catch (e) {
     return { success: false, message: e.toString() };
+  }
+}
+
+function test_SavePPCData_Update_Preserves_Progress() {
+  console.log("🛠️ INICIANDO TEST: Update Preserves Progress");
+
+  // 1. Simular Tarea Existente
+  const testId = "TEST-PROG-" + new Date().getTime();
+  const existingTask = {
+      FOLIO: testId,
+      CONCEPTO: "TEST_ORIGINAL",
+      AVANCE: "50%",
+      ESTATUS: "EN PROCESO"
+  };
+
+  // Guardamos tarea inicial (simulando estado previo)
+  // Usamos internalBatchUpdateTasks para "sembrar" el dato sin pasar por la lógica de apiSavePPCData que pondría defaults
+  internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, [existingTask]);
+  console.log("✅ Tarea sembrada con AVANCE: 50%");
+
+  // 2. Simular Update desde Frontend (sin enviar Avance/Estatus)
+  const updatePayload = {
+      id: testId,
+      concepto: "TEST_UPDATED",
+      // No enviamos avance ni estatus, simulando saveWorkOrder en modo edición
+      responsable: "TEST_USER",
+      prioridad: "Media"
+  };
+
+  const user = "TEST_USER";
+
+  // 3. Ejecutar apiSavePPCData (Update)
+  const res = apiSavePPCData(updatePayload, user);
+
+  if (!res.success) {
+      console.error("❌ Fallo apiSavePPCData:", res.message);
+      return;
+  }
+
+  // 4. Verificar Persistencia
+  const sheet = SS.getSheetByName(APP_CONFIG.ppcSheetName);
+  const data = sheet.getDataRange().getValues();
+  const headerIdx = findHeaderRow(data);
+  const headers = data[headerIdx].map(h => String(h).toUpperCase().trim());
+
+  const idCol = headers.findIndex(h => h === "ID" || h === "FOLIO");
+  const avanceCol = headers.findIndex(h => h === "AVANCE");
+  const estatusCol = headers.findIndex(h => h === "ESTATUS");
+  const conceptoCol = headers.findIndex(h => h === "CONCEPTO" || h === "DESCRIPCION");
+
+  if (idCol === -1 || avanceCol === -1) {
+      console.error("❌ No se encontraron columnas ID o AVANCE");
+      return;
+  }
+
+  let foundRow = null;
+  for(let i = headerIdx + 1; i < data.length; i++) {
+      if (String(data[i][idCol]) === testId) {
+          foundRow = data[i];
+          break;
+      }
+  }
+
+  if (foundRow) {
+      const finalAvance = String(foundRow[avanceCol]);
+      const finalEstatus = String(foundRow[estatusCol]);
+      const finalConcepto = String(foundRow[conceptoCol]);
+
+      console.log(`🔍 Resultado: Avance="${finalAvance}", Estatus="${finalEstatus}", Concepto="${finalConcepto}"`);
+
+      if (finalAvance === "50%" && finalEstatus === "EN PROCESO" && finalConcepto === "TEST_UPDATED") {
+          console.log("✅ PRUEBA PASADA: El avance y estatus se conservaron, el concepto se actualizó.");
+      } else {
+          console.error("❌ PRUEBA FALLIDA: Se sobrescribieron los datos o no se actualizó el concepto.");
+          if (finalAvance === "0%") console.error("   -> El avance se reseteó a 0%");
+          if (finalEstatus === "ASIGNADO") console.error("   -> El estatus se reseteó a ASIGNADO");
+      }
+  } else {
+      console.error("❌ Tarea no encontrada después del update.");
   }
 }
