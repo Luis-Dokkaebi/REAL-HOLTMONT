@@ -3522,11 +3522,20 @@
           const val = row[hFecha];
           if (val instanceof Date) dObj = val;
           else if (typeof val === 'string') {
-              const parts = val.split('/');
-              if (parts.length === 3) {
-                   let y = parts[2];
-                   if (y.length === 2) y = '20' + y;
-                   dObj = new Date(`${y}-${parts[1]}-${parts[0]}`);
+              if (val.includes('/')) {
+                  const parts = val.split('/');
+                  if (parts.length === 3) {
+                       let y = parts[2];
+                       if (y.length === 2) y = '20' + y;
+                       dObj = new Date(`${y}-${parts[1]}-${parts[0]}`);
+                  }
+              } else if (val.includes('-')) {
+                  // ISO Date support (YYYY-MM-DD)
+                  const parts = val.split('-');
+                  if (parts.length === 3) {
+                      // Simplicity for Days calculation
+                      dObj = new Date(parts[0], parts[1]-1, parts[2]);
+                  }
               }
           }
           if (dObj && !isNaN(dObj.getTime())) {
@@ -3660,7 +3669,7 @@
       const loadWeeklyPlan = () => { weeklyPlanData.value.isLoading = true; google.script.run.withSuccessHandler(res => { weeklyPlanData.value.isLoading = false; if(res.success){ weeklyPlanData.value.headers = res.headers; weeklyPlanData.value.data = res.data; selectedWeek.value = ''; } else Swal.fire('Error', res.message, 'error'); }).apiFetchWeeklyPlanData(currentUsername.value); };
       const savePPCV3Row = (row, event) => {
           if (event && event.clientX) {
-             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
+             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v).replace('%','').trim() === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
              if (isCompleted) triggerConfetti(event.clientX, event.clientY);
           }
           const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }); Toast.fire({ icon: 'info', title: 'Guardando...' }); google.script.run.withSuccessHandler(res => { if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' }); else Swal.fire('Error', res.message, 'error'); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value);
@@ -3949,7 +3958,7 @@
       };
       const saveRow = (row, event) => {
           if (event && event.clientX) {
-             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
+             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v).replace('%','').trim() === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
              if (isCompleted) triggerConfetti(event.clientX, event.clientY);
           }
           Swal.showLoading(); google.script.run.withSuccessHandler(res => { Swal.close(); if(res.success){ row._isNew=false; if(res.moved){ reloadStaffTracker(); Swal.fire({icon: 'success', title: 'Archivado', text: 'Tarea movida a Realizadas (100%)', timer: 1500, showConfirmButton: false}); } else { Swal.fire({icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false}); } } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
