@@ -627,10 +627,53 @@ function apiFetchTeamKPIData(username) {
                    u.name !== 'PREWORK_ORDER')
       .map(u => u.name);
 
+  // PRODUCTIVITY LOGIC (Daily Income)
+  let productivityData = { labels: [], values: [] };
+  try {
+      const tonitaSheet = findSheetSmart("ANTONIA_VENTAS");
+      if (tonitaSheet) {
+          const tValues = tonitaSheet.getDataRange().getValues();
+          const tHeaderIdx = findHeaderRow(tValues);
+          if (tHeaderIdx > -1) {
+              const tHeaders = tValues[tHeaderIdx].map(h => String(h).toUpperCase().trim());
+              const dateIdx = tHeaders.findIndex(h => h.includes("FECHA") || h.includes("ALTA"));
+
+              if (dateIdx > -1) {
+                  const dateCounts = {};
+                  const today = new Date();
+                  const currentMonth = today.getMonth();
+
+                  // Count per date
+                  for(let i = tHeaderIdx + 1; i < tValues.length; i++) {
+                      let dVal = tValues[i][dateIdx];
+                      if (!dVal) continue;
+
+                      let dObj = null;
+                      if (dVal instanceof Date) dObj = dVal;
+                      else if (typeof dVal === 'string') {
+                           // Try parse dd/mm/yy
+                           const parts = dVal.split('/');
+                           if (parts.length === 3) dObj = new Date(parts[2].length===2?'20'+parts[2]:parts[2], parts[1]-1, parts[0]);
+                      }
+
+                      if (dObj && !isNaN(dObj.getTime()) && dObj.getMonth() === currentMonth && dObj.getFullYear() === today.getFullYear()) {
+                          const label = Utilities.formatDate(dObj, SS.getSpreadsheetTimeZone(), "dd-MMM");
+                          dateCounts[label] = (dateCounts[label] || 0) + 1;
+                      }
+                  }
+
+                  productivityData.labels = Object.keys(dateCounts).sort();
+                  productivityData.values = productivityData.labels.map(k => dateCounts[k]);
+              }
+          }
+      }
+  } catch(e) { console.warn("Error calculating productivity: " + e.toString()); }
+
   return {
       success: true,
       ventas: processGroup(groupVentas),
-      tracker: processGroup(groupTracker)
+      tracker: processGroup(groupTracker),
+      productivity: productivityData
   };
 }
 
@@ -2611,6 +2654,17 @@ function test_Antonia_Distribution_Manual() {
     ESTATUS: "COTIZADA"
   };
 
+  // 2. Ejecutar Distribución
+  console.log("Simulando distribución para:", taskData.VENDEDOR);
+
+  // Nota: Esto es solo una simulación porque no podemos llamar a internalUpdateTask sin afectar datos reales
+  // en un entorno de producción sin flag de test.
+  if (taskData.VENDEDOR && taskData.VENDEDOR.includes("(VENTAS)")) {
+      console.log("✅ Condición de distribución detectada.");
+      console.log("Destino: " + taskData.VENDEDOR);
+  } else {
+      console.error("❌ No se detectó vendedor válido para distribución.");
+  }
 }
 
 function apiFetchInfoBankData(year, monthName, companyName, folderName) {
