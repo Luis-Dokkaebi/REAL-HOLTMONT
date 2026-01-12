@@ -85,7 +85,7 @@ const INITIAL_DIRECTORY = [
     { name: "ALEXIS TORRES", dept: "MAQUINARIA", type: "ESTANDAR" },
     { name: "ANGEL SALINAS", dept: "DISEÑO", type: "HIBRIDO" },
     { name: "EDGAR HOLT", dept: "DISEÑO", type: "ESTANDAR" },
-    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "ESTANDAR" }
+    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "HIBRIDO" }
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
@@ -120,6 +120,7 @@ const USER_DB = {
   "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares" },
   "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" },
   "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla" },
+  "EDGAR_LOPEZ":      { pass: "edgar2025", role: "EDGAR_USER", label: "Edgar Lopez" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder" }
 };
 
@@ -423,6 +424,20 @@ function getSystemConfig(role) {
       specialModules: [
           { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO MANZANARES" },
           { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO MANZANARES (VENTAS)" }
+      ],
+      accessProjects: false
+    };
+  }
+
+  if (role === 'EDGAR_USER') {
+    return {
+      departments: {},
+      allDepartments: allDepts,
+      staff: [ { name: "EDGAR LOPEZ", dept: "DISEÑO" } ],
+      directory: fullDirectory,
+      specialModules: [
+          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "EDGAR LOPEZ" },
+          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDGAR LOPEZ (VENTAS)" }
       ],
       accessProjects: false
     };
