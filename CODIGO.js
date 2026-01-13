@@ -1058,7 +1058,7 @@ function internalUpdateTask(personName, taskData, username) {
              // 1. AUTO-INCREMENT FOLIO (Before Saving)
              if (!taskData['FOLIO'] && !taskData['ID']) {
                  // NEW TASK -> GENERATE ID
-                 taskData['FOLIO'] = generateNumericSequence('ANTONIA_SEQ');
+                 taskData['FOLIO'] = generateSafeNumericSequence('ANTONIA_SEQ', 'ANTONIA_VENTAS', 'FOLIO');
              } else {
                  // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
                  // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
@@ -1970,6 +1970,49 @@ function generateNumericSequence(key) {
     }
   } catch(e) { console.error(e); } finally { lock.releaseLock(); }
   return String(new Date().getTime());
+}
+
+/**
+ * GENERADOR DE FOLIO SEGURO (CON VERIFICACIÓN DE DUPLICADOS)
+ * Busca en la hoja real antes de asignar, saltando si encuentra duplicados.
+ */
+function generateSafeNumericSequence(key, sheetName, headerName) {
+  const lock = LockService.getScriptLock();
+  try {
+    if (lock.tryLock(10000)) { // 10s wait
+       const props = PropertiesService.getScriptProperties();
+       let currentSeq = Number(props.getProperty(key) || 1000);
+
+       // 1. Validar contra hoja real
+       const sheet = findSheetSmart(sheetName);
+       const existingFolios = new Set();
+
+       if (sheet) {
+           const data = sheet.getDataRange().getValues();
+           const headerIdx = findHeaderRow(data);
+           if (headerIdx > -1) {
+               const headers = data[headerIdx].map(h => String(h).toUpperCase().trim());
+               const colIdx = headers.indexOf(String(headerName).toUpperCase().trim());
+               if (colIdx > -1) {
+                   for (let i = headerIdx + 1; i < data.length; i++) {
+                       const val = data[i][colIdx];
+                       if (val) existingFolios.add(String(val));
+                   }
+               }
+           }
+       }
+
+       // 2. Buscar siguiente libre
+       let nextVal = currentSeq + 1;
+       while (existingFolios.has(String(nextVal))) {
+           nextVal++;
+       }
+
+       props.setProperty(key, String(nextVal));
+       return String(nextVal);
+    }
+  } catch(e) { console.error(e); } finally { lock.releaseLock(); }
+  return String(new Date().getTime()); // Fallback
 }
 
 /**
