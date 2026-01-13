@@ -1057,6 +1057,11 @@ function apiUpdatePPCV3(taskData, username) {
   if(res.success) {
       const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
       registrarLog(username || "DESCONOCIDO", action, `Update ${targetSheet} ID: ${taskData['ID']||taskData['FOLIO']}`);
+
+      // Sync DB if Antonia
+      if (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') {
+          syncInfoBankDB();
+      }
   }
   return res;
 }
@@ -1122,6 +1127,9 @@ function internalUpdateTask(personName, taskData, username) {
              }
 
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
+
+             // Sync DB
+             try { syncInfoBankDB(); } catch(e) { console.warn("Sync Error: " + e.toString()); }
         } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
              // Sincronización Inversa: Vendedor -> ANTONIA_VENTAS
              // Si el vendedor actualiza su tabla, replicamos el cambio a la maestra de ANTONIA
@@ -1435,6 +1443,11 @@ function apiSavePPCData(payload, activeUser) {
         } catch(logErr) {
             console.error("Error escribiendo logs: " + logErr.toString());
         }
+      }
+
+      // NUEVO: Sync InfoBank si es Antonia
+      if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
+          syncInfoBankDB();
       }
 
       return { success: true, message: "Datos procesados y distribuidos correctamente.", ids: generatedIds };
@@ -2631,9 +2644,9 @@ function test_Antonia_Distribution_Manual() {
 
 function syncInfoBankDB() {
     try {
-        // 1. Leer Origen (ANTONIA_VENTAS)
-        const sourceRes = internalFetchSheetData("ANTONIA_VENTAS");
-        if (!sourceRes.success) return { success: false, message: "Error leyendo ANTONIA_VENTAS" };
+        // 1. Leer Origen (ANTONIA_VENTAS -> PPCV4)
+        const sourceRes = internalFetchSheetData("PPCV4");
+        if (!sourceRes.success) return { success: false, message: "Error leyendo PPCV4" };
 
         // 2. Preparar Destino (DB_BANCO_DATOS)
         const dbSheetName = APP_CONFIG.infoBankSheetName || "DB_BANCO_DATOS";
