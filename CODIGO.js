@@ -1052,6 +1052,33 @@ function internalUpdateTask(personName, taskData, username) {
             return { success: false, message: "Operación no permitida: PPCV3 es de solo lectura desde esta vista." };
         }
 
+        const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
+
+        if (isAntonia) {
+             // 1. AUTO-INCREMENT FOLIO (Before Saving)
+             if (!taskData['FOLIO'] && !taskData['ID']) {
+                 // NEW TASK -> GENERATE ID
+                 taskData['FOLIO'] = generateNumericSequence('ANTONIA_SEQ');
+             } else {
+                 // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
+                 // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
+
+                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex'];
+
+                 Object.keys(taskData).forEach(key => {
+                     const kUp = key.toUpperCase();
+                     if (key.startsWith('_')) return; // Preserve internal keys
+
+                     const isBase = allowedBase.includes(kUp);
+                     const isDate = kUp.includes('FECHA') || kUp.includes('ALTA'); // Allow Date fields
+
+                     if (!isBase && !isDate) {
+                         delete taskData[key];
+                     }
+                 });
+             }
+        }
+
         const res = internalBatchUpdateTasks(personName, [taskData]);
 
         if (res.success && username) {
@@ -1059,14 +1086,7 @@ function internalUpdateTask(personName, taskData, username) {
              registrarLog(username, action, `Update Task ID: ${taskData['ID']||taskData['FOLIO']} en ${personName}`);
         }
 
-        if (String(personName).toUpperCase() === "ANTONIA_VENTAS") {
-             // AUTO-INCREMENT FOLIO FOR ANTONIA VENTAS
-             if (!taskData['FOLIO'] && !taskData['ID']) {
-                 // MODIFICADO: Folio Numérico Secuencial (Solicitud Usuario)
-                 // Se usa ANTONIA_SEQ como llave para el contador
-                 taskData['FOLIO'] = generateNumericSequence('ANTONIA_SEQ');
-             }
-
+        if (isAntonia) {
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex; 
 
@@ -1122,6 +1142,8 @@ function internalUpdateTask(personName, taskData, username) {
                  console.error("Error en sincronización inversa: " + e.toString());
              }
         }
+        // RETURN UPDATED DATA (Critical for Frontend Folio Update)
+        res.data = taskData;
         return res;
     } catch(e) { return {success:false, message:e.toString()}; }
 }
