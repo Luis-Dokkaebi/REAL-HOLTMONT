@@ -1253,7 +1253,16 @@ function apiSavePPCData(payload, activeUser) {
           let sheetPPC4 = findSheetSmart('PPCV4');
           if (!sheetPPC4) {
              sheetPPC4 = SS.insertSheet('PPCV4');
-             sheetPPC4.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
+             // MODIFICADO: Se agrega CLIENTE explícitamente al crear la hoja
+             sheetPPC4.appendRow(["ID", "CLIENTE", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
+          } else {
+             // AUTO-HEALING: Si existe pero no tiene CLIENTE, lo agregamos (Hotfix)
+             const hRange = sheetPPC4.getRange(1, 1, 1, sheetPPC4.getLastColumn());
+             const headers = hRange.getValues()[0].map(h => String(h).toUpperCase().trim());
+             if (!headers.includes("CLIENTE")) {
+                 sheetPPC4.insertColumnAfter(1); // Insert after ID
+                 sheetPPC4.getRange(1, 2).setValue("CLIENTE");
+             }
           }
       }
       
@@ -1388,6 +1397,8 @@ function apiSavePPCData(payload, activeUser) {
               if (taskData['ARCHIVO']) taskPPC4['Archivos'] = taskData['ARCHIVO'];
               if (taskData['COMENTARIOS']) taskPPC4['Comentarios Semana en Curso'] = taskData['COMENTARIOS'];
               if (taskData['INVOLUCRADOS']) taskPPC4['RESPONSABLE'] = taskData['INVOLUCRADOS'];
+              // Asegurar CLIENTE (si no está mapeado por alias)
+              if (taskData['CLIENTE']) taskPPC4['CLIENTE'] = taskData['CLIENTE'];
 
               addTaskToSheet('PPCV4', taskPPC4);
           }
@@ -2651,6 +2662,8 @@ function syncInfoBankDB() {
         // 2. Preparar Destino (DB_BANCO_DATOS)
         const dbSheetName = APP_CONFIG.infoBankSheetName || "DB_BANCO_DATOS";
         let dbSheet = findSheetSmart(dbSheetName);
+
+        // ESTRUCTURA EXACTA SOLICITADA POR USUARIO
         const headers = ["FOLIO", "CLIENTE", "FECHA_INICIO", "AREA", "CONCEPTO", "VENDEDOR", "ESTATUS", "COTIZACION", "LAST_UPDATE"];
 
         if (!dbSheet) {
@@ -2669,15 +2682,20 @@ function syncInfoBankDB() {
         } else {
             // Asegurar headers
             const headerRow = dbValues[0].map(h => String(h).toUpperCase().trim());
-            if (headerRow[0] !== "FOLIO") { // Simple check
-               dbSheet.insertRowBefore(1);
-               dbSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+            // Verificación simple de estructura
+            if (headerRow[0] !== "FOLIO" || !headerRow.includes("COTIZACION")) {
+               // No sobreescribimos cabeceras existentes agresivamente, pero advertimos
+               // Si falta columna COTIZACION, insertar
+               if (!headerRow.includes("COTIZACION")) {
+                   dbSheet.insertColumnAfter(7); // Posicion 8
+                   dbSheet.getRange(1, 8).setValue("COTIZACION");
+               }
                dbValues = dbSheet.getDataRange().getValues();
             }
         }
 
         // Mapear FOLIO -> Indice Fila
-        const folioIdx = 0; // Asumimos estructura fija basada en headers definidos arriba
+        const folioIdx = 0;
         const dbMap = new Map();
         for (let i = 1; i < dbValues.length; i++) {
             const f = String(dbValues[i][folioIdx]).trim().toUpperCase();
@@ -2689,11 +2707,10 @@ function syncInfoBankDB() {
         let updatesCount = 0;
         const now = new Date();
 
-        // COMBINAR ACTIVAS E HISTORIAL (Solicitud: incluir tareas realizadas)
+        // COMBINAR ACTIVAS E HISTORIAL
         const allRows = [...sourceRes.data, ...(sourceRes.history || [])];
 
         allRows.forEach(row => {
-            // Helper para extracción flexible
             const keys = Object.keys(row);
             const upperKeys = keys.map(k => k.toUpperCase().trim());
             const getVal = (targetKeys) => {
@@ -2708,11 +2725,13 @@ function syncInfoBankDB() {
             if (!folio) return;
 
             const cleanFolio = String(folio).trim().toUpperCase();
-            let fecha = getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
 
-            // Format Date String
+            // "en la fecha en que se está guardando su cotización"
+            // Preferimos FECHA de PPCV4. Si no, usamos FECHA_INICIO o HOY.
+            let fecha = getVal(['FECHA', 'FECHA DE ALTA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA']);
             if (fecha instanceof Date) fecha = Utilities.formatDate(fecha, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
 
+            // Mapeo Estricto según Solicitud
             const rowData = [
                 cleanFolio, // FOLIO
                 getVal(['CLIENTE']), // CLIENTE
@@ -2721,33 +2740,21 @@ function syncInfoBankDB() {
                 getVal(['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'ACTIVIDAD']), // CONCEPTO
                 getVal(['VENDEDOR', 'RESPONSABLE', 'ENCARGADO', 'INVOLUCRADOS']), // VENDEDOR
                 getVal(['ESTATUS', 'STATUS', 'ESTADO']), // ESTATUS
-                getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF']), // COTIZACION
+                getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF']), // COTIZACION (Se guarda archivo/link)
                 now // LAST_UPDATE
             ];
 
             if (dbMap.has(cleanFolio)) {
-                // UPDATE
                 const rIdx = dbMap.get(cleanFolio);
-                // Solo actualizamos si hay cambios significativos?
-                // Por simplicidad, actualizamos todo el registro excepto tal vez fecha?
-                // El usuario quiere persistencia. Si actualizamos, y Antonia borra algo, se borra aquí.
-                // Pero "NUNCA SE BORRE" refiere al registro.
-                // Asumimos sincronización de contenido (última versión disponible).
                 dbValues[rIdx] = rowData;
                 updatesCount++;
             } else {
-                // INSERT
                 newRows.push(rowData);
             }
         });
 
         // 5. Escritura (Batch)
-        // Escribir updates (toda la tabla reescrita para simplicidad si hay muchos updates, o optimizado)
-        // Dado que Apps Script es lento fila por fila, reescribir todo el bloque es a veces mejor si no es gigante.
-        // Pero para "Banco de Datos" que crece, mejor append new y update range.
-
         if (updatesCount > 0) {
-            // Si hay updates, reescribimos la parte existente
             dbSheet.getRange(1, 1, dbValues.length, headers.length).setValues(dbValues);
         }
 
@@ -2760,6 +2767,46 @@ function syncInfoBankDB() {
     } catch(e) {
         console.error("Sync Error:", e);
         return { success: false, message: e.toString() };
+    }
+}
+
+function test_Antonia_InfoBank_Integration() {
+    console.log("🛠️ INICIANDO TEST: Integración Antonia -> InfoBank");
+    const testId = "TEST-IB-" + new Date().getTime();
+    const payload = {
+        id: testId,
+        cliente: "CLIENTE_TEST_BANK",
+        especialidad: "VENTAS",
+        concepto: "PRUEBA BANCO DATOS",
+        responsable: "ANTONIA_VENTAS",
+        estatus: "COTIZADA",
+        archivoUrl: "http://doc.pdf",
+        fecha: "01/01/25"
+    };
+
+    // 1. Guardar como Antonia
+    const res = apiSavePPCData(payload, "ANTONIA_VENTAS");
+    if (!res.success) {
+        console.error("❌ Fallo guardar:", res.message);
+        return;
+    }
+    console.log("✅ Guardado Exitoso en PPCV4.");
+
+    // 2. Verificar DB_BANCO_DATOS
+    const dbRes = internalFetchSheetData("DB_BANCO_DATOS");
+    if (dbRes.success) {
+        const found = dbRes.data.find(r => r['FOLIO'] === testId);
+        if (found) {
+            console.log("✅ Registro encontrado en DB_BANCO_DATOS:");
+            console.log(found);
+            if (found['CLIENTE'] === "CLIENTE_TEST_BANK" && found['COTIZACION'] === "http://doc.pdf") {
+                console.log("✅ Datos correctos (Cliente y Cotización).");
+            } else {
+                console.error("❌ Datos incorrectos en DB:", found);
+            }
+        } else {
+            console.error("❌ Registro NO encontrado en DB_BANCO_DATOS.");
+        }
     }
 }
 
