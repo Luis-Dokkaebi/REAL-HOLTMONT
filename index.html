@@ -1024,42 +1024,42 @@
                       <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
                       <p class="text-muted fw-bold">No se encontraron registros para este mes y cliente.</p>
                  </div>
-                 <div v-else class="card border-0 shadow-sm" style="background:transparent; box-shadow:none !important;">
+                 <div v-else class="card border-0 shadow-sm">
                      <div class="card-body p-0">
                          <div class="table-responsive">
-                             <table class="table mb-0 align-middle" style="border-collapse: separate; border-spacing: 0 8px;">
-                                 <thead class="small text-uppercase text-muted">
+                             <table class="table table-hover mb-0 align-middle">
+                                 <thead class="table-light small text-uppercase">
                                      <tr>
-                                         <th style="border:none; padding-left:15px;">FECHA INICIO</th>
-                                         <th style="border:none;">AREA</th>
-                                         <th style="border:none;">CONCEPTO</th>
-                                         <th style="border:none;">VENDEDOR</th>
-                                         <th class="text-center" style="border:none;">ESTATUS</th>
+                                         <th style="min-width:90px">FECHA INICIO</th>
+                                         <th style="min-width:100px">AREA</th>
+                                         <th>CONCEPTO</th>
+                                         <th style="min-width:120px">VENDEDOR</th>
+                                         <th class="text-center" style="min-width:100px">ESTATUS</th>
                                      </tr>
                                  </thead>
                                  <tbody class="info-bank-list">
-                                     <tr v-for="(file, idx) in infoBankState.files" :key="idx" class="info-bank-row bg-white shadow-sm rounded" style="transition: transform 0.2s ease-out;" onmouseover="this.style.transform='scale(1.01)'" onmouseout="this.style.transform='scale(1)'">
-                                         <td style="font-size:12px; font-weight:bold; border:none; border-radius: 8px 0 0 8px; padding: 15px;">{{ formatDisplayDate(file.FECHA_INICIO) }}</td>
-                                         <td style="font-size:11px; border:none;"><span class="badge bg-light text-secondary border">{{ file.AREA || 'N/A' }}</span></td>
-                                         <td style="font-size:13px; border:none;">
+                                     <tr v-for="(file, idx) in infoBankState.files" :key="idx" class="info-bank-row" style="opacity:0">
+                                         <td style="font-size:12px; font-weight:bold;">{{ formatDisplayDate(file.FECHA_INICIO) }}</td>
+                                         <td style="font-size:11px;"><span class="badge bg-light text-secondary border">{{ file.AREA || 'N/A' }}</span></td>
+                                         <td style="font-size:12px;">
                                              <div class="fw-bold text-dark">{{ file.CONCEPTO || 'Sin Descripción' }}</div>
-                                             <div class="small text-muted d-flex align-items-center gap-3 mt-1">
-                                                 <span class="badge bg-light text-muted border border-light" style="font-weight:normal;">{{ file.FOLIO }}</span>
-                                                 <a v-if="file.COTIZACION" :href="file.COTIZACION" target="_blank" class="text-primary text-decoration-none fw-bold bg-light px-2 py-1 rounded" style="font-size:10px;">
+                                             <div class="small text-muted d-flex align-items-center gap-2">
+                                                 <span>{{ file.FOLIO }}</span>
+                                                 <a v-if="file.COTIZACION" :href="file.COTIZACION" target="_blank" class="text-primary text-decoration-none fw-bold" style="font-size:10px;">
                                                      <i class="fas fa-paperclip me-1"></i>VER ARCHIVO
                                                  </a>
                                              </div>
                                          </td>
-                                         <td style="font-size:11px; border:none;">
+                                         <td style="font-size:11px;">
                                              <div class="d-flex align-items-center">
-                                                 <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-2 shadow-sm" style="width:24px; height:24px; font-size:10px;">
+                                                 <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width:20px; height:20px; font-size:9px;">
                                                      {{ toInitials(file.VENDEDOR) }}
                                                  </div>
-                                                 <span class="text-truncate fw-bold text-secondary" style="max-width:120px;">{{ file.VENDEDOR }}</span>
+                                                 <span class="text-truncate" style="max-width:120px;">{{ file.VENDEDOR }}</span>
                                              </div>
                                          </td>
-                                         <td class="text-center" style="border:none; border-radius: 0 8px 8px 0;">
-                                             <span class="badge rounded-pill px-3 py-2" :class="getBadgeClass(file.ESTATUS)">{{ file.ESTATUS || 'N/A' }}</span>
+                                         <td class="text-center">
+                                             <span class="badge" :class="getBadgeClass(file.ESTATUS)">{{ file.ESTATUS || 'N/A' }}</span>
                                          </td>
                                      </tr>
                                  </tbody>
@@ -3522,20 +3522,11 @@
           const val = row[hFecha];
           if (val instanceof Date) dObj = val;
           else if (typeof val === 'string') {
-              if (val.includes('/')) {
-                  const parts = val.split('/');
-                  if (parts.length === 3) {
-                       let y = parts[2];
-                       if (y.length === 2) y = '20' + y;
-                       dObj = new Date(`${y}-${parts[1]}-${parts[0]}`);
-                  }
-              } else if (val.includes('-')) {
-                  // ISO Date support (YYYY-MM-DD)
-                  const parts = val.split('-');
-                  if (parts.length === 3) {
-                      // Simplicity for Days calculation
-                      dObj = new Date(parts[0], parts[1]-1, parts[2]);
-                  }
+              const parts = val.split('/');
+              if (parts.length === 3) {
+                   let y = parts[2];
+                   if (y.length === 2) y = '20' + y;
+                   dObj = new Date(`${y}-${parts[1]}-${parts[0]}`);
               }
           }
           if (dObj && !isNaN(dObj.getTime())) {
@@ -3669,7 +3660,7 @@
       const loadWeeklyPlan = () => { weeklyPlanData.value.isLoading = true; google.script.run.withSuccessHandler(res => { weeklyPlanData.value.isLoading = false; if(res.success){ weeklyPlanData.value.headers = res.headers; weeklyPlanData.value.data = res.data; selectedWeek.value = ''; } else Swal.fire('Error', res.message, 'error'); }).apiFetchWeeklyPlanData(currentUsername.value); };
       const savePPCV3Row = (row, event) => {
           if (event && event.clientX) {
-             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v).replace('%','').trim() === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
+             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
              if (isCompleted) triggerConfetti(event.clientX, event.clientY);
           }
           const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }); Toast.fire({ icon: 'info', title: 'Guardando...' }); google.script.run.withSuccessHandler(res => { if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' }); else Swal.fire('Error', res.message, 'error'); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value);
@@ -3958,7 +3949,7 @@
       };
       const saveRow = (row, event) => {
           if (event && event.clientX) {
-             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v).replace('%','').trim() === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
+             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
              if (isCompleted) triggerConfetti(event.clientX, event.clientY);
           }
           Swal.showLoading(); google.script.run.withSuccessHandler(res => { Swal.close(); if(res.success){ row._isNew=false; if(res.moved){ reloadStaffTracker(); Swal.fire({icon: 'success', title: 'Archivado', text: 'Tarea movida a Realizadas (100%)', timer: 1500, showConfirmButton: false}); } else { Swal.fire({icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false}); } } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
