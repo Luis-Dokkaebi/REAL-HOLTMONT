@@ -17,7 +17,6 @@ const APP_CONFIG = {
   salesSheetName: "Datos",        
   logSheetName: "LOG_SISTEMA",
   directorySheetName: "DB_DIRECTORY", // NUEVO: Hoja de Directorio
-  infoBankSheetName: "DB_BANCO_DATOS", // NUEVO: Persistencia Banco de Datos
   // NUEVAS HOJAS PARA DETALLES DE WORK ORDER
   woMaterialsSheet: "DB_WO_MATERIALES",
   woLaborSheet: "DB_WO_MANO_OBRA",
@@ -86,7 +85,7 @@ const INITIAL_DIRECTORY = [
     { name: "ALEXIS TORRES", dept: "MAQUINARIA", type: "ESTANDAR" },
     { name: "ANGEL SALINAS", dept: "DISEÑO", type: "HIBRIDO" },
     { name: "EDGAR HOLT", dept: "DISEÑO", type: "ESTANDAR" },
-    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "HIBRIDO" }
+    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "ESTANDAR" }
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
@@ -121,7 +120,6 @@ const USER_DB = {
   "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares" },
   "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" },
   "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla" },
-  "EDGAR_LOPEZ":      { pass: "edgar2025", role: "EDGAR_USER", label: "Edgar Lopez" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder" }
 };
 
@@ -425,20 +423,6 @@ function getSystemConfig(role) {
       specialModules: [
           { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO MANZANARES" },
           { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO MANZANARES (VENTAS)" }
-      ],
-      accessProjects: false
-    };
-  }
-
-  if (role === 'EDGAR_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts,
-      staff: [ { name: "EDGAR LOPEZ", dept: "DISEÑO" } ],
-      directory: fullDirectory,
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "EDGAR LOPEZ" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDGAR LOPEZ (VENTAS)" }
       ],
       accessProjects: false
     };
@@ -1057,11 +1041,6 @@ function apiUpdatePPCV3(taskData, username) {
   if(res.success) {
       const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
       registrarLog(username || "DESCONOCIDO", action, `Update ${targetSheet} ID: ${taskData['ID']||taskData['FOLIO']}`);
-
-      // Sync DB if Antonia
-      if (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') {
-          syncInfoBankDB();
-      }
   }
   return res;
 }
@@ -1127,9 +1106,6 @@ function internalUpdateTask(personName, taskData, username) {
              }
 
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
-
-             // Sync DB
-             try { syncInfoBankDB(); } catch(e) { console.warn("Sync Error: " + e.toString()); }
         } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
              // Sincronización Inversa: Vendedor -> ANTONIA_VENTAS
              // Si el vendedor actualiza su tabla, replicamos el cambio a la maestra de ANTONIA
@@ -1253,16 +1229,7 @@ function apiSavePPCData(payload, activeUser) {
           let sheetPPC4 = findSheetSmart('PPCV4');
           if (!sheetPPC4) {
              sheetPPC4 = SS.insertSheet('PPCV4');
-             // MODIFICADO: Se agrega CLIENTE explícitamente al crear la hoja
-             sheetPPC4.appendRow(["ID", "CLIENTE", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
-          } else {
-             // AUTO-HEALING: Si existe pero no tiene CLIENTE, lo agregamos (Hotfix)
-             const hRange = sheetPPC4.getRange(1, 1, 1, sheetPPC4.getLastColumn());
-             const headers = hRange.getValues()[0].map(h => String(h).toUpperCase().trim());
-             if (!headers.includes("CLIENTE")) {
-                 sheetPPC4.insertColumnAfter(1); // Insert after ID
-                 sheetPPC4.getRange(1, 2).setValue("CLIENTE");
-             }
+             sheetPPC4.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
           }
       }
       
@@ -1285,9 +1252,7 @@ function apiSavePPCData(payload, activeUser) {
       items.forEach(item => {
           // Use existing ID if provided (for updates/tests) or generate new
           let id = item.id;
-          let isNew = false;
           if (!id) {
-              isNew = true;
               if (activeUser === 'PREWORK_ORDER') {
                   id = generateWorkOrderFolio(item.cliente, item.especialidad);
               } else {
@@ -1363,10 +1328,12 @@ function apiSavePPCData(payload, activeUser) {
                  'INVOLUCRADOS': item.responsable,
                  'FECHA': fechaStr,
                  'RELOJ': item.horas,
+                 'ESTATUS': "ASIGNADO",
                  'PRIORIDAD': item.prioridad || item.prioridades,
                  'RESTRICCIONES': item.restricciones,
                  'RIESGOS': item.riesgos,
                  'FECHA_RESPUESTA': item.fechaRespuesta,
+                 'AVANCE': "0%",
                  'COMENTARIOS': comentarios,
                  'ARCHIVO': item.archivoUrl,
                  'CUMPLIMIENTO': item.cumplimiento,
@@ -1379,10 +1346,6 @@ function apiSavePPCData(payload, activeUser) {
                  'TRABAJO': item.TRABAJO,
                  'DETALLES_EXTRA': detallesExtra // Nueva Columna
           };
-
-          // Evitar sobrescribir avance/estatus si es una actualización sin estos datos explícitos
-          if (isNew || item.estatus) taskData['ESTATUS'] = item.estatus || "ASIGNADO";
-          if (isNew || item.avance) taskData['AVANCE'] = item.avance || "0%";
           
           // A. Persistencia en PPC Maestro (PPCV3)
           addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
@@ -1397,8 +1360,6 @@ function apiSavePPCData(payload, activeUser) {
               if (taskData['ARCHIVO']) taskPPC4['Archivos'] = taskData['ARCHIVO'];
               if (taskData['COMENTARIOS']) taskPPC4['Comentarios Semana en Curso'] = taskData['COMENTARIOS'];
               if (taskData['INVOLUCRADOS']) taskPPC4['RESPONSABLE'] = taskData['INVOLUCRADOS'];
-              // Asegurar CLIENTE (si no está mapeado por alias)
-              if (taskData['CLIENTE']) taskPPC4['CLIENTE'] = taskData['CLIENTE'];
 
               addTaskToSheet('PPCV4', taskPPC4);
           }
@@ -1454,11 +1415,6 @@ function apiSavePPCData(payload, activeUser) {
         } catch(logErr) {
             console.error("Error escribiendo logs: " + logErr.toString());
         }
-      }
-
-      // NUEVO: Sync InfoBank si es Antonia
-      if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
-          syncInfoBankDB();
       }
 
       return { success: true, message: "Datos procesados y distribuidos correctamente.", ids: generatedIds };
@@ -2653,177 +2609,9 @@ function test_Antonia_Distribution_Manual() {
 
 }
 
-function syncInfoBankDB() {
-    try {
-        // 1. Leer Origen (ANTONIA_VENTAS -> PPCV4)
-        const sourceRes = internalFetchSheetData("PPCV4");
-        if (!sourceRes.success) return { success: false, message: "Error leyendo PPCV4" };
-
-        // 2. Preparar Destino (DB_BANCO_DATOS)
-        const dbSheetName = APP_CONFIG.infoBankSheetName || "DB_BANCO_DATOS";
-        let dbSheet = findSheetSmart(dbSheetName);
-
-        // ESTRUCTURA EXACTA SOLICITADA POR USUARIO
-        const headers = ["FOLIO", "CLIENTE", "FECHA_INICIO", "AREA", "CONCEPTO", "VENDEDOR", "ESTATUS", "COTIZACION", "LAST_UPDATE"];
-
-        if (!dbSheet) {
-            dbSheet = SS.insertSheet(dbSheetName);
-            dbSheet.appendRow(headers);
-        }
-
-        // 3. Leer DB Actual (Para Upsert)
-        const dbRange = dbSheet.getDataRange();
-        let dbValues = dbRange.getValues();
-
-        // Inicializar si está vacía
-        if (dbValues.length < 1) {
-            dbSheet.appendRow(headers);
-            dbValues = [headers];
-        } else {
-            // Asegurar headers
-            const headerRow = dbValues[0].map(h => String(h).toUpperCase().trim());
-            // Verificación simple de estructura
-            if (headerRow[0] !== "FOLIO" || !headerRow.includes("COTIZACION")) {
-               // No sobreescribimos cabeceras existentes agresivamente, pero advertimos
-               // Si falta columna COTIZACION, insertar
-               if (!headerRow.includes("COTIZACION")) {
-                   dbSheet.insertColumnAfter(7); // Posicion 8
-                   dbSheet.getRange(1, 8).setValue("COTIZACION");
-               }
-               dbValues = dbSheet.getDataRange().getValues();
-            }
-        }
-
-        // Mapear FOLIO -> Indice Fila
-        const folioIdx = 0;
-        const dbMap = new Map();
-        for (let i = 1; i < dbValues.length; i++) {
-            const f = String(dbValues[i][folioIdx]).trim().toUpperCase();
-            if (f) dbMap.set(f, i);
-        }
-
-        // 4. Procesar Datos de Origen (Upsert)
-        const newRows = [];
-        let updatesCount = 0;
-        const now = new Date();
-
-        // COMBINAR ACTIVAS E HISTORIAL
-        const allRows = [...sourceRes.data, ...(sourceRes.history || [])];
-
-        allRows.forEach(row => {
-            const keys = Object.keys(row);
-            const upperKeys = keys.map(k => k.toUpperCase().trim());
-            const getVal = (targetKeys) => {
-                for (const t of targetKeys) {
-                    const idx = upperKeys.indexOf(t);
-                    if (idx > -1) return row[keys[idx]];
-                }
-                return "";
-            };
-
-            const folio = getVal(['FOLIO', 'ID']);
-            if (!folio) return;
-
-            const cleanFolio = String(folio).trim().toUpperCase();
-
-            // "en la fecha en que se está guardando su cotización"
-            // Preferimos FECHA de PPCV4. Si no, usamos FECHA_INICIO o HOY.
-            let fecha = getVal(['FECHA', 'FECHA DE ALTA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA']);
-            if (fecha instanceof Date) fecha = Utilities.formatDate(fecha, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
-
-            // Mapeo Estricto según Solicitud
-            const rowData = [
-                cleanFolio, // FOLIO
-                getVal(['CLIENTE']), // CLIENTE
-                fecha, // FECHA_INICIO
-                getVal(['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD']), // AREA
-                getVal(['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'ACTIVIDAD']), // CONCEPTO
-                getVal(['VENDEDOR', 'RESPONSABLE', 'ENCARGADO', 'INVOLUCRADOS']), // VENDEDOR
-                getVal(['ESTATUS', 'STATUS', 'ESTADO']), // ESTATUS
-                getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF']), // COTIZACION (Se guarda archivo/link)
-                now // LAST_UPDATE
-            ];
-
-            if (dbMap.has(cleanFolio)) {
-                const rIdx = dbMap.get(cleanFolio);
-                dbValues[rIdx] = rowData;
-                updatesCount++;
-            } else {
-                newRows.push(rowData);
-            }
-        });
-
-        // 5. Escritura (Batch)
-        if (updatesCount > 0) {
-            dbSheet.getRange(1, 1, dbValues.length, headers.length).setValues(dbValues);
-        }
-
-        if (newRows.length > 0) {
-            dbSheet.getRange(dbValues.length + 1, 1, newRows.length, headers.length).setValues(newRows);
-        }
-
-        return { success: true, count: updatesCount + newRows.length };
-
-    } catch(e) {
-        console.error("Sync Error:", e);
-        return { success: false, message: e.toString() };
-    }
-}
-
-function test_Antonia_InfoBank_Integration() {
-    console.log("🛠️ INICIANDO TEST: Integración Antonia -> InfoBank");
-    const testId = "TEST-IB-" + new Date().getTime();
-    const payload = {
-        id: testId,
-        cliente: "CLIENTE_TEST_BANK",
-        especialidad: "VENTAS",
-        concepto: "PRUEBA BANCO DATOS",
-        responsable: "ANTONIA_VENTAS",
-        estatus: "COTIZADA",
-        archivoUrl: "http://doc.pdf",
-        fecha: "01/01/25"
-    };
-
-    // 1. Guardar como Antonia
-    const res = apiSavePPCData(payload, "ANTONIA_VENTAS");
-    if (!res.success) {
-        console.error("❌ Fallo guardar:", res.message);
-        return;
-    }
-    console.log("✅ Guardado Exitoso en PPCV4.");
-
-    // 2. Verificar DB_BANCO_DATOS
-    const dbRes = internalFetchSheetData("DB_BANCO_DATOS");
-    if (dbRes.success) {
-        const found = dbRes.data.find(r => r['FOLIO'] === testId);
-        if (found) {
-            console.log("✅ Registro encontrado en DB_BANCO_DATOS:");
-            console.log(found);
-            if (found['CLIENTE'] === "CLIENTE_TEST_BANK" && found['COTIZACION'] === "http://doc.pdf") {
-                console.log("✅ Datos correctos (Cliente y Cotización).");
-            } else {
-                console.error("❌ Datos incorrectos en DB:", found);
-            }
-        } else {
-            console.error("❌ Registro NO encontrado en DB_BANCO_DATOS.");
-        }
-    }
-}
-
 function apiFetchInfoBankData(year, monthName, companyName, folderName) {
   try {
-    // 1. Sincronizar (Persistencia)
-    syncInfoBankDB();
-
-    // 2. Filter Logic for Folders
-    // We only have data for 'COTIZACIONES' coming from ANTONIA_VENTAS
-    const targetFolder = String(folderName || '').toUpperCase().trim();
-    if (targetFolder !== 'COTIZACIONES') {
-        return { success: true, data: [] }; // Return empty for now for other folders
-    }
-
-    // 3. Leer de DB Persistente
-    const sheetName = APP_CONFIG.infoBankSheetName || "DB_BANCO_DATOS";
+    const sheetName = "ANTONIA_VENTAS";
     const res = internalFetchSheetData(sheetName);
     if (!res.success) return { success: false, message: res.message };
 
@@ -2839,23 +2627,35 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
 
     // Filtrar datos
     const filtered = res.data.filter(row => {
-       // La DB ya tiene headers estandarizados: FOLIO, CLIENTE, FECHA_INICIO, etc.
-       // internalFetchSheetData devuelve claves en mayusculas: CLIENTE, FECHA_INICIO...
+       // Helper para buscar valores insensible a mayúsculas
+       const keys = Object.keys(row);
+       const upperKeys = keys.map(k => k.toUpperCase().trim());
+       const getVal = (targetKeys) => {
+           for (const t of targetKeys) {
+               const idx = upperKeys.indexOf(t);
+               if (idx > -1) return row[keys[idx]];
+           }
+           return null;
+       };
 
        // 1. Company Match (Loose)
-       const rowClient = String(row['CLIENTE'] || '').toUpperCase().trim();
+       const rowClient = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
        if (!rowClient) return false;
+       
+       // Check bidirectional inclusion to handle variations
        if (!rowClient.includes(targetCompany) && !targetCompany.includes(rowClient)) return false;
 
-       // 2. Date Match
-       const dateVal = row['FECHA_INICIO'];
+       // 2. Date Match (Prioridad: FECHA INICIO)
+       // Se prioriza 'FECHA INICIO' tal cual pidió el usuario, luego fallbacks.
+       const dateVal = getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
+
        if (!dateVal) return false;
        
        let dObj = null;
        if (dateVal instanceof Date) {
            dObj = dateVal;
        } else {
-           // Parse string dd/mm/yy
+           // Try parsing string dd/mm/yy
            const parts = String(dateVal).split('/');
            if (parts.length === 3) {
                let y = parseInt(parts[2]);
@@ -2871,16 +2671,28 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
        return true;
     });
 
-    // Mapeo Directo (Ya normalizado en DB)
-    const mappedData = filtered.map(row => ({
-           'FECHA_INICIO': row['FECHA_INICIO'],
-           'AREA': row['AREA'],
-           'CONCEPTO': row['CONCEPTO'],
-           'VENDEDOR': row['VENDEDOR'],
-           'ESTATUS': row['ESTATUS'],
-           'FOLIO': row['FOLIO'],
-           'COTIZACION': row['COTIZACION']
-    }));
+    // NORMALIZACION DE DATOS PARA EL FRONTEND (SOLICITUD USUARIO)
+    const mappedData = filtered.map(row => {
+       const keys = Object.keys(row);
+       const upperKeys = keys.map(k => k.toUpperCase().trim());
+       const getVal = (targetKeys) => {
+           for (const t of targetKeys) {
+               const idx = upperKeys.indexOf(t);
+               if (idx > -1) return row[keys[idx]];
+           }
+           return "";
+       };
+
+       return {
+           'FECHA_INICIO': getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']),
+           'AREA': getVal(['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD']),
+           'CONCEPTO': getVal(['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'ACTIVIDAD']),
+           'VENDEDOR': getVal(['VENDEDOR', 'RESPONSABLE', 'ENCARGADO', 'INVOLUCRADOS']),
+           'ESTATUS': getVal(['ESTATUS', 'STATUS', 'ESTADO']),
+           'FOLIO': getVal(['FOLIO', 'ID']),
+           'COTIZACION': getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF'])
+       };
+    });
 
     return { success: true, data: mappedData };
   } catch(e) {
@@ -2911,120 +2723,5 @@ function apiFetchDistinctClients() {
     return { success: true, data: sortedClients };
   } catch (e) {
     return { success: false, message: e.toString() };
-  }
-}
-
-function test_SavePPCData_Update_Preserves_Progress() {
-  console.log("🛠️ INICIANDO TEST: Update Preserves Progress");
-
-  // 1. Simular Tarea Existente
-  const testId = "TEST-PROG-" + new Date().getTime();
-  const existingTask = {
-      FOLIO: testId,
-      CONCEPTO: "TEST_ORIGINAL",
-      AVANCE: "50%",
-      ESTATUS: "EN PROCESO"
-  };
-
-  // Guardamos tarea inicial (simulando estado previo)
-  // Usamos internalBatchUpdateTasks para "sembrar" el dato sin pasar por la lógica de apiSavePPCData que pondría defaults
-  internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, [existingTask]);
-  console.log("✅ Tarea sembrada con AVANCE: 50%");
-
-  // 2. Simular Update desde Frontend (sin enviar Avance/Estatus)
-  const updatePayload = {
-      id: testId,
-      concepto: "TEST_UPDATED",
-      // No enviamos avance ni estatus, simulando saveWorkOrder en modo edición
-      responsable: "TEST_USER",
-      prioridad: "Media"
-  };
-
-  const user = "TEST_USER";
-
-  // 3. Ejecutar apiSavePPCData (Update)
-  const res = apiSavePPCData(updatePayload, user);
-
-  if (!res.success) {
-      console.error("❌ Fallo apiSavePPCData:", res.message);
-      return;
-  }
-
-  // 4. Verificar Persistencia
-  const sheet = SS.getSheetByName(APP_CONFIG.ppcSheetName);
-  const data = sheet.getDataRange().getValues();
-  const headerIdx = findHeaderRow(data);
-  const headers = data[headerIdx].map(h => String(h).toUpperCase().trim());
-
-  const idCol = headers.findIndex(h => h === "ID" || h === "FOLIO");
-  const avanceCol = headers.findIndex(h => h === "AVANCE");
-  const estatusCol = headers.findIndex(h => h === "ESTATUS");
-  const conceptoCol = headers.findIndex(h => h === "CONCEPTO" || h === "DESCRIPCION");
-
-  if (idCol === -1 || avanceCol === -1) {
-      console.error("❌ No se encontraron columnas ID o AVANCE");
-      return;
-  }
-
-  let foundRow = null;
-  for(let i = headerIdx + 1; i < data.length; i++) {
-      if (String(data[i][idCol]) === testId) {
-          foundRow = data[i];
-          break;
-      }
-  }
-
-  if (foundRow) {
-      const finalAvance = String(foundRow[avanceCol]);
-      const finalEstatus = String(foundRow[estatusCol]);
-      const finalConcepto = String(foundRow[conceptoCol]);
-
-      console.log(`🔍 Resultado: Avance="${finalAvance}", Estatus="${finalEstatus}", Concepto="${finalConcepto}"`);
-
-      if (finalAvance === "50%" && finalEstatus === "EN PROCESO" && finalConcepto === "TEST_UPDATED") {
-          console.log("✅ PRUEBA PASADA: El avance y estatus se conservaron, el concepto se actualizó.");
-      } else {
-          console.error("❌ PRUEBA FALLIDA: Se sobrescribieron los datos o no se actualizó el concepto.");
-          if (finalAvance === "0%") console.error("   -> El avance se reseteó a 0%");
-          if (finalEstatus === "ASIGNADO") console.error("   -> El estatus se reseteó a ASIGNADO");
-      }
-  } else {
-      console.error("❌ Tarea no encontrada después del update.");
-  }
-}
-
-function test_InfoBank_Persistence() {
-  console.log("🛠️ INICIANDO TEST: Persistencia Banco de Datos (Info Bank)");
-
-  // 1. Simular Sincronización
-  // Esto llamará a syncInfoBankDB() que leerá ANTONIA_VENTAS y escribirá en DB_BANCO_DATOS.
-  // Como no podemos modificar ANTONIA_VENTAS fácilmente sin afectar datos reales,
-  // confiamos en que la función maneje la lectura.
-
-  const resSync = syncInfoBankDB();
-  if (resSync.success) {
-      console.log("✅ Sync ejecutado correctamente. Registros procesados/actualizados: " + resSync.count);
-  } else {
-      console.error("❌ Sync falló: " + resSync.message);
-  }
-
-  // 2. Verificar Lectura desde DB
-  // Intentamos leer un mes conocido (ej. Diciembre 2025)
-  // Nota: Esto depende de los datos existentes.
-  const resFetch = apiFetchInfoBankData("2025", "DICIEMBRE", "PANASONIC", "ANY");
-
-  if (resFetch.success) {
-      console.log("✅ apiFetchInfoBankData leyó correctamente desde la DB Persistente.");
-      console.log("📊 Registros encontrados (Muestra): " + resFetch.data.length);
-      if (resFetch.data.length > 0) {
-          console.log("📄 Primer registro:", resFetch.data[0]);
-          if (resFetch.data[0].FOLIO) {
-               console.log("✅ El registro contiene FOLIO (Persistencia correcta).");
-          } else {
-               console.warn("⚠️ El registro no tiene FOLIO.");
-          }
-      }
-  } else {
-      console.error("❌ apiFetchInfoBankData falló: " + resFetch.message);
   }
 }
