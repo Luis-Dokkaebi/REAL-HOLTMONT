@@ -2747,3 +2747,116 @@ function apiFetchDistinctClients() {
     return { success: false, message: e.toString() };
   }
 }
+
+function apiSaveTrackerBatch(personName, tasks, username) {
+  const lock = LockService.getScriptLock();
+  if (lock.tryLock(30000)) {
+    try {
+      const processedTasks = [];
+      const distributionTasks = [];
+      const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
+
+      // Sequence Logic for Antonia
+      let currentSeq = null;
+      let seqKey = 'ANTONIA_SEQ';
+      if (isAntonia) {
+          const props = PropertiesService.getScriptProperties();
+          currentSeq = Number(props.getProperty(seqKey) || 1000);
+      }
+
+      tasks.forEach(task => {
+        let taskData = {...task};
+
+        if (isAntonia) {
+             if (!taskData['FOLIO'] && !taskData['ID']) {
+                 currentSeq++;
+                 taskData['FOLIO'] = String(currentSeq);
+             } else {
+                 // RESTRICTIONS FOR EXISTING TASKS
+                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex'];
+                 Object.keys(taskData).forEach(key => {
+                     const kUp = key.toUpperCase();
+                     if (key.startsWith('_')) return;
+                     const isBase = allowedBase.includes(kUp);
+                     const isDate = kUp.includes('FECHA') || kUp.includes('ALTA');
+                     if (!isBase && !isDate) {
+                         delete taskData[key];
+                     }
+                 });
+             }
+             // Prepare distribution data
+             const distData = JSON.parse(JSON.stringify(taskData));
+             delete distData._rowIndex;
+             distributionTasks.push(distData);
+        } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
+             // REVERSE SYNC PREPARATION
+             const distData = JSON.parse(JSON.stringify(taskData));
+             delete distData._rowIndex;
+             distributionTasks.push(distData);
+        }
+        processedTasks.push(taskData);
+      });
+
+      // Save Sequence
+      if (isAntonia && currentSeq !== null) {
+           const props = PropertiesService.getScriptProperties();
+           props.setProperty(seqKey, String(currentSeq));
+      }
+
+      // Batch Update Main Sheet
+      const res = internalBatchUpdateTasks(personName, processedTasks, false); // Already locked
+
+      if (res.success) {
+          // Handle Distribution for Antonia
+          if (isAntonia && distributionTasks.length > 0) {
+              // Group by vendor to batch updates
+              const byVendor = {};
+              distributionTasks.forEach(t => {
+                  const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR");
+                  if (vendedorKey && t[vendedorKey]) {
+                       const vName = String(t[vendedorKey]).trim();
+                       if (vName.toUpperCase() !== "ANTONIA_VENTAS") {
+                           let target = vName;
+                           // Logic to find target sheet (suffix check)
+                           let finalTarget = null;
+                           if (target.toUpperCase().includes("(VENTAS)")) finalTarget = target;
+                           else {
+                               if (findSheetSmart(target + " (VENTAS)")) finalTarget = target + " (VENTAS)";
+                           }
+
+                           if (finalTarget) {
+                               if (!byVendor[finalTarget]) byVendor[finalTarget] = [];
+                               byVendor[finalTarget].push(t);
+                           }
+                       }
+                  }
+              });
+
+              // Execute distribution batches
+              for (const [vSheet, vTasks] of Object.entries(byVendor)) {
+                   internalBatchUpdateTasks(vSheet, vTasks, false);
+              }
+
+              // Sync to ADMIN
+              internalBatchUpdateTasks("ADMINISTRADOR", distributionTasks, false);
+          }
+
+          // Handle Reverse Sync (Vendor -> Antonia)
+          if (String(personName).toUpperCase().includes("(VENTAS)") && !isAntonia && distributionTasks.length > 0) {
+               internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
+          }
+
+          registrarLog(username, "BATCH_UPDATE", `Actualizadas ${tasks.length} tareas en ${personName}`);
+      }
+
+      return { success: true, message: "Guardado exitoso" };
+
+    } catch (e) {
+      return { success: false, message: e.toString() };
+    } finally {
+      lock.releaseLock();
+    }
+  } else {
+      return { success: false, message: "Sistema ocupado" };
+  }
+}
