@@ -751,7 +751,7 @@
                          <input v-else-if="isCol(h, ['ESTATUS','STATUS'])" v-model="row[h]" class="excel-input" style="font-weight:bold">
                          <input v-else v-model="row[h]" class="excel-input">
                       </td>
-                      <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveProjectRow(row)"><i class="fas fa-save"></i></button></td>
+                      <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveProjectRow(row)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                    </tr>
                 </tbody>
              </table>
@@ -835,7 +835,7 @@
                          </div>
                          <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" spellcheck="false">
                       </td>
-                      <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)"><i class="fas fa-save"></i></button></td>
+                      <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                    </tr>
                 </tbody>
              </table>
@@ -902,7 +902,7 @@
                                 </div>
                                 <div v-else class="px-1" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;" :title="row[h]">{{ row[h] }}</div>
                             </td>
-                            <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-primary" @click="savePPCV3Row(row)"><i class="fas fa-save"></i></button></td>
+                             <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-primary" @click="savePPCV3Row(row)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                         </tr>
                     </tbody>
                 </table>
@@ -3405,12 +3405,16 @@
       };
       const saveProjectRow = (row) => {
           if(!currentPpcProject.value) return;
+          if (row._isSaving) return;
+          row._isSaving = true;
+
           Swal.showLoading();
           google.script.run.withSuccessHandler(res => {
+              row._isSaving = false;
               Swal.close();
               if (res.success) { row._isNew = false; if(res.moved) { refreshProjectTasks(); Swal.fire({ icon: 'success', title: 'Archivado', timer: 1000, showConfirmButton: false }); } else { Swal.fire({ icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false }); refreshProjectTasks(); } }
               else { Swal.fire('Error', res.message, 'error'); }
-          }).apiSaveProjectTask(JSON.parse(JSON.stringify(row)), currentPpcProject.value.name, currentUsername.value);
+          }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiSaveProjectTask(JSON.parse(JSON.stringify(row)), currentPpcProject.value.name, currentUsername.value);
       };
 
       const loadCascadeTree = () => {
@@ -3671,11 +3675,20 @@
 
       const loadWeeklyPlan = () => { weeklyPlanData.value.isLoading = true; google.script.run.withSuccessHandler(res => { weeklyPlanData.value.isLoading = false; if(res.success){ weeklyPlanData.value.headers = res.headers; weeklyPlanData.value.data = res.data; selectedWeek.value = ''; } else Swal.fire('Error', res.message, 'error'); }).apiFetchWeeklyPlanData(currentUsername.value); };
       const savePPCV3Row = (row, event) => {
+          if (row._isSaving) return;
+          row._isSaving = true;
+
           if (event && event.clientX) {
              const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
              if (isCompleted) triggerConfetti(event.clientX, event.clientY);
           }
-          const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 }); Toast.fire({ icon: 'info', title: 'Guardando...' }); google.script.run.withSuccessHandler(res => { if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' }); else Swal.fire('Error', res.message, 'error'); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value);
+          const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+          Toast.fire({ icon: 'info', title: 'Guardando...' });
+          google.script.run.withSuccessHandler(res => {
+              row._isSaving = false;
+              if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' });
+              else Swal.fire('Error', res.message, 'error');
+          }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value);
       };
 
       // ECG LOGIC
@@ -3960,12 +3973,16 @@
           pulseNewRow('trackerTable', 'first');
       };
       const saveRow = (row, event) => {
+          if (row._isSaving) return;
+          row._isSaving = true;
+
           if (event && event.clientX) {
              const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
              if (isCompleted) triggerConfetti(event.clientX, event.clientY);
           }
           Swal.showLoading();
           google.script.run.withSuccessHandler(res => {
+              row._isSaving = false;
               Swal.close();
               if(res.success){
                   row._isNew=false;
@@ -3982,7 +3999,7 @@
               } else {
                   Swal.fire('Error', res.message, 'error');
               }
-          }).withFailureHandler(handleErr).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
+          }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
       };
       const openCellUpload = (row, col) => { uploadingCell.value = {row, col}; cellFileInput.value.click(); };
       const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
