@@ -2755,7 +2755,14 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
     // 1. Sincronizar (Persistencia)
     syncInfoBankDB();
 
-    // 2. Leer de DB Persistente
+    // 2. Filter Logic for Folders
+    // We only have data for 'COTIZACIONES' coming from ANTONIA_VENTAS
+    const targetFolder = String(folderName || '').toUpperCase().trim();
+    if (targetFolder !== 'COTIZACIONES') {
+        return { success: true, data: [] }; // Return empty for now for other folders
+    }
+
+    // 3. Leer de DB Persistente
     const sheetName = APP_CONFIG.infoBankSheetName || "DB_BANCO_DATOS";
     const res = internalFetchSheetData(sheetName);
     if (!res.success) return { success: false, message: res.message };
