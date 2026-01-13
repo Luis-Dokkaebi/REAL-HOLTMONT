@@ -783,7 +783,7 @@
                 <button class="btn btn-light btn-sm border me-2" @click="goBackToDept"><i class="fas fa-arrow-left"></i></button>
                 <span class="small fw-bold me-2" :style="{color: currentDeptData.color || 'var(--primary)'}"><i class="fas fa-file-excel me-1"></i> {{ staffTracker.name }}</span>
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
-                <button v-if="['LUIS_CARLOS', 'ANTONIA_VENTAS', 'JAIME_OLIVO', 'JESUS_CANTU'].includes(currentUsername)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
+                <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
             </div>
             <div></div>
           </div>
