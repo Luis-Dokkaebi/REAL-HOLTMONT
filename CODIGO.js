@@ -2676,7 +2676,10 @@ function syncInfoBankDB() {
         let updatesCount = 0;
         const now = new Date();
 
-        sourceRes.data.forEach(row => {
+        // COMBINAR ACTIVAS E HISTORIAL (Solicitud: incluir tareas realizadas)
+        const allRows = [...sourceRes.data, ...(sourceRes.history || [])];
+
+        allRows.forEach(row => {
             // Helper para extracción flexible
             const keys = Object.keys(row);
             const upperKeys = keys.map(k => k.toUpperCase().trim());
