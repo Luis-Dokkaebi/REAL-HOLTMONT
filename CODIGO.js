@@ -17,6 +17,7 @@ const APP_CONFIG = {
   salesSheetName: "Datos",        
   logSheetName: "LOG_SISTEMA",
   directorySheetName: "DB_DIRECTORY", // NUEVO: Hoja de Directorio
+  infoBankSheetName: "DB_BANCO_DATOS", // NUEVO: Persistencia Banco de Datos
   // NUEVAS HOJAS PARA DETALLES DE WORK ORDER
   woMaterialsSheet: "DB_WO_MATERIALES",
   woLaborSheet: "DB_WO_MANO_OBRA",
@@ -2628,9 +2629,131 @@ function test_Antonia_Distribution_Manual() {
 
 }
 
+function syncInfoBankDB() {
+    try {
+        // 1. Leer Origen (ANTONIA_VENTAS)
+        const sourceRes = internalFetchSheetData("ANTONIA_VENTAS");
+        if (!sourceRes.success) return { success: false, message: "Error leyendo ANTONIA_VENTAS" };
+
+        // 2. Preparar Destino (DB_BANCO_DATOS)
+        const dbSheetName = APP_CONFIG.infoBankSheetName || "DB_BANCO_DATOS";
+        let dbSheet = findSheetSmart(dbSheetName);
+        const headers = ["FOLIO", "CLIENTE", "FECHA_INICIO", "AREA", "CONCEPTO", "VENDEDOR", "ESTATUS", "COTIZACION", "LAST_UPDATE"];
+
+        if (!dbSheet) {
+            dbSheet = SS.insertSheet(dbSheetName);
+            dbSheet.appendRow(headers);
+        }
+
+        // 3. Leer DB Actual (Para Upsert)
+        const dbRange = dbSheet.getDataRange();
+        let dbValues = dbRange.getValues();
+
+        // Inicializar si está vacía
+        if (dbValues.length < 1) {
+            dbSheet.appendRow(headers);
+            dbValues = [headers];
+        } else {
+            // Asegurar headers
+            const headerRow = dbValues[0].map(h => String(h).toUpperCase().trim());
+            if (headerRow[0] !== "FOLIO") { // Simple check
+               dbSheet.insertRowBefore(1);
+               dbSheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+               dbValues = dbSheet.getDataRange().getValues();
+            }
+        }
+
+        // Mapear FOLIO -> Indice Fila
+        const folioIdx = 0; // Asumimos estructura fija basada en headers definidos arriba
+        const dbMap = new Map();
+        for (let i = 1; i < dbValues.length; i++) {
+            const f = String(dbValues[i][folioIdx]).trim().toUpperCase();
+            if (f) dbMap.set(f, i);
+        }
+
+        // 4. Procesar Datos de Origen (Upsert)
+        const newRows = [];
+        let updatesCount = 0;
+        const now = new Date();
+
+        sourceRes.data.forEach(row => {
+            // Helper para extracción flexible
+            const keys = Object.keys(row);
+            const upperKeys = keys.map(k => k.toUpperCase().trim());
+            const getVal = (targetKeys) => {
+                for (const t of targetKeys) {
+                    const idx = upperKeys.indexOf(t);
+                    if (idx > -1) return row[keys[idx]];
+                }
+                return "";
+            };
+
+            const folio = getVal(['FOLIO', 'ID']);
+            if (!folio) return;
+
+            const cleanFolio = String(folio).trim().toUpperCase();
+            let fecha = getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
+
+            // Format Date String
+            if (fecha instanceof Date) fecha = Utilities.formatDate(fecha, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
+
+            const rowData = [
+                cleanFolio, // FOLIO
+                getVal(['CLIENTE']), // CLIENTE
+                fecha, // FECHA_INICIO
+                getVal(['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD']), // AREA
+                getVal(['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'ACTIVIDAD']), // CONCEPTO
+                getVal(['VENDEDOR', 'RESPONSABLE', 'ENCARGADO', 'INVOLUCRADOS']), // VENDEDOR
+                getVal(['ESTATUS', 'STATUS', 'ESTADO']), // ESTATUS
+                getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF']), // COTIZACION
+                now // LAST_UPDATE
+            ];
+
+            if (dbMap.has(cleanFolio)) {
+                // UPDATE
+                const rIdx = dbMap.get(cleanFolio);
+                // Solo actualizamos si hay cambios significativos?
+                // Por simplicidad, actualizamos todo el registro excepto tal vez fecha?
+                // El usuario quiere persistencia. Si actualizamos, y Antonia borra algo, se borra aquí.
+                // Pero "NUNCA SE BORRE" refiere al registro.
+                // Asumimos sincronización de contenido (última versión disponible).
+                dbValues[rIdx] = rowData;
+                updatesCount++;
+            } else {
+                // INSERT
+                newRows.push(rowData);
+            }
+        });
+
+        // 5. Escritura (Batch)
+        // Escribir updates (toda la tabla reescrita para simplicidad si hay muchos updates, o optimizado)
+        // Dado que Apps Script es lento fila por fila, reescribir todo el bloque es a veces mejor si no es gigante.
+        // Pero para "Banco de Datos" que crece, mejor append new y update range.
+
+        if (updatesCount > 0) {
+            // Si hay updates, reescribimos la parte existente
+            dbSheet.getRange(1, 1, dbValues.length, headers.length).setValues(dbValues);
+        }
+
+        if (newRows.length > 0) {
+            dbSheet.getRange(dbValues.length + 1, 1, newRows.length, headers.length).setValues(newRows);
+        }
+
+        return { success: true, count: updatesCount + newRows.length };
+
+    } catch(e) {
+        console.error("Sync Error:", e);
+        return { success: false, message: e.toString() };
+    }
+}
+
 function apiFetchInfoBankData(year, monthName, companyName, folderName) {
   try {
-    const sheetName = "ANTONIA_VENTAS";
+    // 1. Sincronizar (Persistencia)
+    syncInfoBankDB();
+
+    // 2. Leer de DB Persistente
+    const sheetName = APP_CONFIG.infoBankSheetName || "DB_BANCO_DATOS";
     const res = internalFetchSheetData(sheetName);
     if (!res.success) return { success: false, message: res.message };
 
@@ -2646,35 +2769,23 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
 
     // Filtrar datos
     const filtered = res.data.filter(row => {
-       // Helper para buscar valores insensible a mayúsculas
-       const keys = Object.keys(row);
-       const upperKeys = keys.map(k => k.toUpperCase().trim());
-       const getVal = (targetKeys) => {
-           for (const t of targetKeys) {
-               const idx = upperKeys.indexOf(t);
-               if (idx > -1) return row[keys[idx]];
-           }
-           return null;
-       };
+       // La DB ya tiene headers estandarizados: FOLIO, CLIENTE, FECHA_INICIO, etc.
+       // internalFetchSheetData devuelve claves en mayusculas: CLIENTE, FECHA_INICIO...
 
        // 1. Company Match (Loose)
-       const rowClient = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
+       const rowClient = String(row['CLIENTE'] || '').toUpperCase().trim();
        if (!rowClient) return false;
-       
-       // Check bidirectional inclusion to handle variations
        if (!rowClient.includes(targetCompany) && !targetCompany.includes(rowClient)) return false;
 
-       // 2. Date Match (Prioridad: FECHA INICIO)
-       // Se prioriza 'FECHA INICIO' tal cual pidió el usuario, luego fallbacks.
-       const dateVal = getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
-
+       // 2. Date Match
+       const dateVal = row['FECHA_INICIO'];
        if (!dateVal) return false;
        
        let dObj = null;
        if (dateVal instanceof Date) {
            dObj = dateVal;
        } else {
-           // Try parsing string dd/mm/yy
+           // Parse string dd/mm/yy
            const parts = String(dateVal).split('/');
            if (parts.length === 3) {
                let y = parseInt(parts[2]);
@@ -2690,28 +2801,16 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
        return true;
     });
 
-    // NORMALIZACION DE DATOS PARA EL FRONTEND (SOLICITUD USUARIO)
-    const mappedData = filtered.map(row => {
-       const keys = Object.keys(row);
-       const upperKeys = keys.map(k => k.toUpperCase().trim());
-       const getVal = (targetKeys) => {
-           for (const t of targetKeys) {
-               const idx = upperKeys.indexOf(t);
-               if (idx > -1) return row[keys[idx]];
-           }
-           return "";
-       };
-
-       return {
-           'FECHA_INICIO': getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']),
-           'AREA': getVal(['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD']),
-           'CONCEPTO': getVal(['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'ACTIVIDAD']),
-           'VENDEDOR': getVal(['VENDEDOR', 'RESPONSABLE', 'ENCARGADO', 'INVOLUCRADOS']),
-           'ESTATUS': getVal(['ESTATUS', 'STATUS', 'ESTADO']),
-           'FOLIO': getVal(['FOLIO', 'ID']),
-           'COTIZACION': getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF'])
-       };
-    });
+    // Mapeo Directo (Ya normalizado en DB)
+    const mappedData = filtered.map(row => ({
+           'FECHA_INICIO': row['FECHA_INICIO'],
+           'AREA': row['AREA'],
+           'CONCEPTO': row['CONCEPTO'],
+           'VENDEDOR': row['VENDEDOR'],
+           'ESTATUS': row['ESTATUS'],
+           'FOLIO': row['FOLIO'],
+           'COTIZACION': row['COTIZACION']
+    }));
 
     return { success: true, data: mappedData };
   } catch(e) {
@@ -2821,5 +2920,41 @@ function test_SavePPCData_Update_Preserves_Progress() {
       }
   } else {
       console.error("❌ Tarea no encontrada después del update.");
+  }
+}
+
+function test_InfoBank_Persistence() {
+  console.log("🛠️ INICIANDO TEST: Persistencia Banco de Datos (Info Bank)");
+
+  // 1. Simular Sincronización
+  // Esto llamará a syncInfoBankDB() que leerá ANTONIA_VENTAS y escribirá en DB_BANCO_DATOS.
+  // Como no podemos modificar ANTONIA_VENTAS fácilmente sin afectar datos reales,
+  // confiamos en que la función maneje la lectura.
+
+  const resSync = syncInfoBankDB();
+  if (resSync.success) {
+      console.log("✅ Sync ejecutado correctamente. Registros procesados/actualizados: " + resSync.count);
+  } else {
+      console.error("❌ Sync falló: " + resSync.message);
+  }
+
+  // 2. Verificar Lectura desde DB
+  // Intentamos leer un mes conocido (ej. Diciembre 2025)
+  // Nota: Esto depende de los datos existentes.
+  const resFetch = apiFetchInfoBankData("2025", "DICIEMBRE", "PANASONIC", "ANY");
+
+  if (resFetch.success) {
+      console.log("✅ apiFetchInfoBankData leyó correctamente desde la DB Persistente.");
+      console.log("📊 Registros encontrados (Muestra): " + resFetch.data.length);
+      if (resFetch.data.length > 0) {
+          console.log("📄 Primer registro:", resFetch.data[0]);
+          if (resFetch.data[0].FOLIO) {
+               console.log("✅ El registro contiene FOLIO (Persistencia correcta).");
+          } else {
+               console.warn("⚠️ El registro no tiene FOLIO.");
+          }
+      }
+  } else {
+      console.error("❌ apiFetchInfoBankData falló: " + resFetch.message);
   }
 }
