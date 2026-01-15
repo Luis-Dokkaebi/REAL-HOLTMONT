@@ -1094,6 +1094,25 @@ function internalUpdateTask(personName, taskData, username) {
 
         const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
 
+        // --- NEW RESTRICTION BLOCK (ANGEL, TERESA, EDUARDO, MANZANARES, RAMIRO, SEBASTIAN, EDGAR) ---
+        const restrictedUsers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "EDGAR_LOPEZ"];
+        if (restrictedUsers.includes(String(username).toUpperCase().trim())) {
+             const allowed = ['FOLIO', 'ID', 'AVANCE', 'AVANCE %', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', '_rowIndex'];
+             // Helper to check if key matches allowed
+             const isAllowed = (k) => {
+                 const kUp = k.toUpperCase();
+                 if (k.startsWith('_')) return true;
+                 return allowed.some(a => kUp.includes(a));
+             };
+
+             Object.keys(taskData).forEach(key => {
+                 if (!isAllowed(key)) {
+                     delete taskData[key];
+                 }
+             });
+        }
+        // --- END NEW RESTRICTION BLOCK ---
+
         if (isAntonia) {
              // 1. AUTO-INCREMENT FOLIO (Before Saving)
              if (!taskData['FOLIO'] && !taskData['ID']) {
