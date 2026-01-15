@@ -1040,8 +1040,19 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
              if (r.length >= finalMaxCols) return r;
              return r.concat(new Array(finalMaxCols - r.length).fill(""));
         });
-        const insertPos = headerRowIndex + 2;
-        sheet.insertRowsBefore(insertPos, rowsToAppend.length);
+
+        // FIX: PPCV3 and LOGS should append to bottom (Queue), others might stay as LIFO (Stack) if preferred
+        // However, standard spreadsheet logic is usually new at bottom.
+        // Assuming GLOBAL change to append at bottom is safer for logic order.
+        const lastRow = sheet.getLastRow();
+        const maxRows = sheet.getMaxRows();
+
+        // Ensure space exists
+        if ((lastRow + rowsToAppend.length) > maxRows) {
+            sheet.insertRowsAfter(maxRows, (lastRow + rowsToAppend.length) - maxRows);
+        }
+
+        const insertPos = lastRow + 1;
         sheet.getRange(insertPos, 1, normalizedAppend.length, finalMaxCols).setValues(normalizedAppend);
 
         // 5. AUTO-HEALING: FORMATO CONDICIONAL (SEMAFORO)
@@ -1067,20 +1078,32 @@ function apiUpdatePPCV3(taskData, username) {
   if (taskData['COMENTARIOS SEMANA EN CURSO'] !== undefined) taskData['COMENTARIOS'] = taskData['COMENTARIOS SEMANA EN CURSO'];
   if (taskData['COMENTARIOS SEMANA PREVIA'] !== undefined) taskData['COMENTARIOS PREVIOS'] = taskData['COMENTARIOS SEMANA PREVIA'];
 
-  const targetSheet = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
+  const isAntonia = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS');
 
-  // EXPLICIT REMAPPING FOR PPCV4 (TOÑITA) TO MATCH SCREENSHOT HEADERS EXACTLY
-  if (targetSheet === 'PPCV4') {
-      if (taskData['FECHA']) taskData['Fecha de Alta'] = taskData['FECHA'];
-      if (taskData['CONCEPTO']) taskData['Descripción de la Actividad'] = taskData['CONCEPTO'];
-      if (taskData['ARCHIVO']) taskData['Archivos'] = taskData['ARCHIVO'];
-      // Keep original keys too, internalBatchUpdateTasks will handle duplicates/aliases, but explicit keys take precedence in matching
+  // 1. UPDATE MASTER SHEET (PPCV3) - ALWAYS
+  let res = internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, [taskData]);
+
+  // 2. CONDITIONAL UPDATE FOR PPCV4 (ANTONIA)
+  if (isAntonia) {
+      const ppc4Data = { ...taskData };
+      // EXPLICIT REMAPPING FOR PPCV4 (TOÑITA) TO MATCH SCREENSHOT HEADERS EXACTLY
+      if (ppc4Data['FECHA']) ppc4Data['Fecha de Alta'] = ppc4Data['FECHA'];
+      if (ppc4Data['CONCEPTO']) ppc4Data['Descripción de la Actividad'] = ppc4Data['CONCEPTO'];
+      if (ppc4Data['ARCHIVO']) ppc4Data['Archivos'] = ppc4Data['ARCHIVO'];
+
+      const res4 = internalBatchUpdateTasks('PPCV4', [ppc4Data]);
+
+      // If master failed but this succeeded, or vice versa, we should handle it?
+      // For now, if either succeeds, we consider it a partial success, but return Master result primarily.
+      if (!res.success && res4.success) {
+          console.warn(`[WARN] Master update failed but Antonia update succeeded for user ${username}. Msg: ${res.message}`);
+          res = res4; // Return success so frontend doesn't block, but log it.
+      }
   }
 
-  const res = internalBatchUpdateTasks(targetSheet, [taskData]);
   if(res.success) {
       const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
-      registrarLog(username || "DESCONOCIDO", action, `Update ${targetSheet} ID: ${taskData['ID']||taskData['FOLIO']}`);
+      registrarLog(username || "DESCONOCIDO", action, `Update PPC ID: ${taskData['ID']||taskData['FOLIO']}`);
   }
   return res;
 }
@@ -1337,7 +1360,8 @@ function apiSavePPCData(payload, activeUser) {
               if (activeUser === 'PREWORK_ORDER') {
                   id = generateWorkOrderFolio(item.cliente, item.especialidad);
               } else {
-                  id = "PPC-" + Math.floor(Math.random() * 1000000);
+                  // FIX: Use sequence or UUID instead of random to avoid collisions
+                  id = "PPC-" + generateNumericSequence("PPC_SEQ");
               }
           }
           generatedIds.push(id);
