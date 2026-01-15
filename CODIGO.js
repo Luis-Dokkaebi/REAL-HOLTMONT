@@ -887,9 +887,11 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       } else {
         const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase();
         if (tFolio && folioIdx > -1) {
+           // TRIM FIX: Search with trim to handle invisible spaces in sheet
+           const searchFolio = tFolio.trim();
            for (let i = headerRowIndex + 1; i < values.length; i++) {
              const row = values[i];
-             if (String(row[folioIdx]).toUpperCase() === tFolio) { rowIndex = i; break; }
+             if (String(row[folioIdx]).toUpperCase().trim() === searchFolio) { rowIndex = i; break; }
           }
         }
       }
@@ -904,18 +906,41 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         modified = true;
       } 
       else {
-          const newRow = new Array(totalColumns).fill("");
-          Object.keys(task).forEach(key => {
-              if (key.startsWith('_')) return;
-              const cIdx = getColIdx(key);
-              if (cIdx > -1) newRow[cIdx] = task[key];
-          });
-          if (folioIdx > -1 && !newRow[folioIdx] && (task['FOLIO'] || task['ID'])) {
-              newRow[folioIdx] = task['FOLIO'] || task['ID'];
+          // BATCH DEDUP: Check if already appending this ID in current batch
+          let appendedRowIndex = -1;
+          const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
+
+          if (folioIdx > -1 && tFolio) {
+               for(let k=0; k<rowsToAppend.length; k++) {
+                   if(String(rowsToAppend[k][folioIdx]).toUpperCase().trim() === tFolio) {
+                       appendedRowIndex = k;
+                       break;
+                   }
+               }
           }
-          const statusIdx = getColIdx('ESTATUS');
-          if(statusIdx > -1 && !newRow[statusIdx]) newRow[statusIdx] = 'ASIGNADO';
-          rowsToAppend.push(newRow);
+
+          if (appendedRowIndex > -1) {
+              // Update the pending row instead of creating duplicate
+              const targetRow = rowsToAppend[appendedRowIndex];
+              Object.keys(task).forEach(key => {
+                  if (key.startsWith('_')) return;
+                  const cIdx = getColIdx(key);
+                  if (cIdx > -1) targetRow[cIdx] = task[key];
+              });
+          } else {
+              const newRow = new Array(totalColumns).fill("");
+              Object.keys(task).forEach(key => {
+                  if (key.startsWith('_')) return;
+                  const cIdx = getColIdx(key);
+                  if (cIdx > -1) newRow[cIdx] = task[key];
+              });
+              if (folioIdx > -1 && !newRow[folioIdx] && (task['FOLIO'] || task['ID'])) {
+                  newRow[folioIdx] = task['FOLIO'] || task['ID'];
+              }
+              const statusIdx = getColIdx('ESTATUS');
+              if(statusIdx > -1 && !newRow[statusIdx]) newRow[statusIdx] = 'ASIGNADO';
+              rowsToAppend.push(newRow);
+          }
       }
     });
     // 3. AUTO-ARCHIVADO
