@@ -3514,6 +3514,13 @@
       const isCol = (h, list) => list.includes(String(h).toUpperCase().trim());
 
       const isFieldEditable = (h, row) => {
+          const restrictedRoles = ['ANGEL_USER', 'TERESA_USER', 'EDUARDO_USER', 'MANZANARES_USER', 'RAMIRO_USER', 'SEBASTIAN_USER', 'EDGAR_USER'];
+          if (restrictedRoles.includes(currentRole.value)) {
+              const hUp = String(h).toUpperCase();
+              const allowed = ['AVANCE', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT'];
+              return allowed.some(a => hUp.includes(a));
+          }
+
           if (currentRole.value === 'TONITA') {
               if (row._isNew) return true;
               if (!row['FOLIO'] && !row['ID']) return true;
