@@ -1596,7 +1596,11 @@ function apiFetchWeeklyPlanData(username) {
       mappedHeaders.forEach((h, colIdx) => {
         let val = r[colIdx];
         if (val instanceof Date) {
-           val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
+           if (val.getFullYear() < 1900) {
+              val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "HH:mm");
+           } else {
+              val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
+           }
         }
         rowObj[h] = val;
       });
