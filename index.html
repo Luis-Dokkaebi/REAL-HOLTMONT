@@ -789,6 +789,7 @@
                 <span class="small fw-bold me-2" :style="{color: currentDeptData.color || 'var(--primary)'}"><i class="fas fa-file-excel me-1"></i> {{ staffTracker.name }}</span>
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
                 <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
+                <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-info text-white btn-sm py-0 px-2 ms-1" @click="openEstimationModal" title="Nueva Estimación"><i class="fas fa-calculator me-1"></i> Estimación</button>
                 <button v-if="['TONITA'].includes(currentRole) || currentUser === 'ANTONIA_VENTAS'" class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
             </div>
             <div></div>
@@ -2689,6 +2690,57 @@
       </div>
   </div>
 
+  <div v-if="showEstimationModal" class="custom-modal-overlay">
+      <div class="custom-modal" style="width: 500px;">
+          <div class="custom-modal-header"><span>Nueva Estimación</span><button type="button" class="btn-close" @click="showEstimationModal = false"></button></div>
+          <div class="custom-modal-body">
+              <div class="mb-3 card p-3 bg-light border-0">
+                  <label class="form-label small fw-bold text-dark">Cargar Evidencia (PDF/Imagen) *</label>
+                  <div class="input-group">
+                      <input type="file" class="form-control" @change="handleEvidenceSelect" accept="image/*,.pdf">
+                  </div>
+                  <small class="text-muted mt-1 d-block" style="font-size: 0.75rem;">Carga el PDF de la estimación para autocompletar el contrato.</small>
+              </div>
+
+              <div class="row g-2">
+                  <div class="col-md-6 mb-3">
+                      <label class="form-label small fw-bold">Contrato *</label>
+                      <input v-model="estimationData.contrato" class="form-control" placeholder="Nombre completo" list="contracts-list">
+                      <datalist id="contracts-list">
+                          <option value="Segundo Contrato - NIDEC"></option>
+                          <option value="Primer Contrato - Obras Civiles"></option>
+                      </datalist>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                      <label class="form-label small fw-bold">Centro de Costos *</label>
+                      <select v-model="estimationData.centroCostos" class="form-select">
+                          <option value="" disabled>Selecciona un centro de costos</option>
+                          <option v-for="(d, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{ d.label }}</option>
+                      </select>
+                  </div>
+              </div>
+
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Monto de la Estimación *</label>
+                  <input type="number" v-model="estimationData.monto" class="form-control" placeholder="0.00">
+              </div>
+
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Descripción *</label>
+                  <textarea v-model="estimationData.descripcion" class="form-control" rows="3" placeholder="Describe los conceptos incluidos..."></textarea>
+              </div>
+
+              <div class="text-end border-top pt-3">
+                  <button class="btn btn-light border me-2" @click="showEstimationModal = false">Cancelar</button>
+                  <button class="btn btn-dark fw-bold" @click="saveEstimation" :disabled="isSubmitting">
+                      <span v-if="isSubmitting"><i class="fas fa-spinner fa-spin"></i> Guardando...</span>
+                      <span v-else><i class="fas fa-upload me-2"></i> Crear Estimación</span>
+                  </button>
+              </div>
+          </div>
+      </div>
+  </div>
+
 </div>
 
 <script>
@@ -3331,6 +3383,77 @@
       const newSubProject = ref({ name: '', type: 'OBRA CIVIL', createdBy: '' });
 
       // EMPLEADOS MANAGEMENT
+      // ESTIMACIONES MODAL
+      const showEstimationModal = ref(false);
+      const estimationData = ref({ evidencia: null, contrato: '', centroCostos: '', monto: '', descripcion: '' });
+
+      const openEstimationModal = () => {
+          estimationData.value = { evidencia: null, contrato: '', centroCostos: '', monto: '', descripcion: '' };
+          showEstimationModal.value = true;
+      };
+
+      const handleEvidenceSelect = (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          // Auto-fill Contract from filename (remove extension)
+          const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+          estimationData.value.contrato = nameWithoutExt;
+          estimationData.value.evidencia = file; // Store file for upload if needed
+
+          // Optional: Upload immediately or wait for save?
+          // User said "Cargar Evidencia", usually implies upload.
+          // We'll upload on save to keep it simple, or we can upload here to get URL.
+          // Let's upload on save.
+      };
+
+      const saveEstimation = () => {
+          if (!estimationData.value.contrato || !estimationData.value.monto) {
+              return Swal.fire('Faltan datos', 'Contrato y Monto son obligatorios.', 'warning');
+          }
+
+          isSubmitting.value = true;
+
+          const processSave = (fileUrl) => {
+              const payload = {
+                  evidenciaUrl: fileUrl,
+                  contrato: estimationData.value.contrato,
+                  centroCostos: estimationData.value.centroCostos,
+                  monto: estimationData.value.monto,
+                  descripcion: estimationData.value.descripcion,
+                  createdBy: currentUser.value
+              };
+
+              google.script.run.withSuccessHandler(res => {
+                  isSubmitting.value = false;
+                  if (res.success) {
+                      Swal.fire({ icon: 'success', title: 'Estimación Creada', text: 'ID: ' + res.id, timer: 2000, showConfirmButton: false });
+                      showEstimationModal.value = false;
+                  } else {
+                      Swal.fire('Error', res.message, 'error');
+                  }
+              }).apiSaveEstimation(payload);
+          };
+
+          if (estimationData.value.evidencia) {
+              // Upload first
+              const reader = new FileReader();
+              reader.onload = (ev) => {
+                  google.script.run.withSuccessHandler(res => {
+                      if (res.success) {
+                          processSave(res.fileUrl);
+                      } else {
+                          isSubmitting.value = false;
+                          Swal.fire('Error al subir archivo', res.message, 'error');
+                      }
+                  }).uploadFileToDrive(ev.target.result, estimationData.value.evidencia.type, estimationData.value.evidencia.name);
+              };
+              reader.readAsDataURL(estimationData.value.evidencia);
+          } else {
+              processSave("");
+          }
+      };
+
       const showEmployeeModal = ref(false);
       const newEmployee = ref({ name: '', dept: '', type: 'ESTANDAR' });
 
@@ -4287,6 +4410,7 @@
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
+      showEstimationModal, estimationData, openEstimationModal, handleEvidenceSelect, saveEstimation,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass };
     }
   });

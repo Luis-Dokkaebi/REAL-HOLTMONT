@@ -2923,3 +2923,47 @@ function apiSaveTrackerBatch(personName, tasks, username) {
       return { success: false, message: "Sistema ocupado" };
   }
 }
+
+/*
+ * ======================================================================
+ * MODULE: ESTIMACIONES (NUEVO)
+ * ======================================================================
+ */
+function apiSaveEstimation(data) {
+  const lock = LockService.getScriptLock();
+  if (lock.tryLock(10000)) {
+    try {
+      const sheetName = "DB_ESTIMACIONES";
+      let sheet = findSheetSmart(sheetName);
+      if (!sheet) {
+        sheet = SS.insertSheet(sheetName);
+        sheet.appendRow(["ID", "EVIDENCIA_URL", "CONTRATO", "CENTRO_COSTOS", "MONTO", "DESCRIPCION", "FECHA_CREACION", "CREADO_POR"]);
+        sheet.getRange(1, 1, 1, 8).setFontWeight("bold").setBackground("#e6e6e6");
+      }
+
+      const id = "EST-" + new Date().getTime();
+      const createdBy = data.createdBy || "ANONIMO";
+
+      sheet.appendRow([
+        id,
+        data.evidenciaUrl || "",
+        data.contrato || "",
+        data.centroCostos || "",
+        data.monto || 0,
+        data.descripcion || "",
+        new Date(),
+        createdBy
+      ]);
+
+      SpreadsheetApp.flush();
+      registrarLog(createdBy, "NUEVA_ESTIMACION", `ID: ${id} | Contrato: ${data.contrato}`);
+
+      return { success: true, id: id, message: "Estimación creada correctamente." };
+    } catch (e) {
+      return { success: false, message: e.toString() };
+    } finally {
+      lock.releaseLock();
+    }
+  }
+  return { success: false, message: "Sistema ocupado." };
+}
