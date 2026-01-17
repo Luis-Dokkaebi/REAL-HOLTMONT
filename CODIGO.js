@@ -2923,3 +2923,68 @@ function apiSaveTrackerBatch(personName, tasks, username) {
       return { success: false, message: "Sistema ocupado" };
   }
 }
+
+function test_InfoBank_Dynamic_Flow() {
+  console.log("🛠️ INICIANDO TEST: Flujo Dinámico Info Bank (Cliente + Fecha)");
+
+  // 1. Simular una cotización nueva en PPCV4 (ANTONIA_VENTAS)
+  const uniqueId = "TEST-IB-" + new Date().getTime();
+  const testClient = "CLIENTE_PRUEBA_DYNAMIC";
+  const testMonth = "05/05/25"; // Mayo 2025
+
+  const payload = {
+      FOLIO: uniqueId,
+      CLIENTE: testClient,
+      FECHA: testMonth,
+      CONCEPTO: "Cotización de Prueba Dinámica",
+      ARCHIVO: "http://example.com/cotizacion.pdf",
+      ESTATUS: "COTIZADA",
+      VENDEDOR: "ANTONIA_VENTAS"
+  };
+
+  console.log("1. Insertando registro en PPCV4...");
+  // Usamos internalBatchUpdateTasks para simular la inserción directa
+  const resUpdate = internalBatchUpdateTasks("PPCV4", [payload]);
+
+  if (!resUpdate.success) {
+      console.error("❌ Falló inserción en PPCV4: " + resUpdate.message);
+      return;
+  }
+  console.log("✅ Registro insertado en PPCV4.");
+
+  // 2. Ejecutar Sincronización (Directa o vía Fetch)
+  console.log("2. Ejecutando Sincronización (syncInfoBankDB)...");
+  const resSync = syncInfoBankDB();
+  if (!resSync.success) {
+      console.error("❌ Falló syncInfoBankDB: " + resSync.message);
+      return;
+  }
+  console.log("✅ Sync completado. Registros procesados: " + resSync.count);
+
+  // 3. Verificar que apiFetchDistinctClients trae el nuevo cliente
+  console.log("3. Verificando apiFetchDistinctClients...");
+  const resClients = apiFetchDistinctClients();
+  if (resClients.success && resClients.data.includes(testClient)) {
+      console.log("✅ Cliente encontrado en lista dinámica: " + testClient);
+  } else {
+      console.error("❌ El cliente no aparece en apiFetchDistinctClients.");
+      console.log("Lista recibida:", resClients.data);
+  }
+
+  // 4. Verificar que apiFetchInfoBankData trae el archivo filtrando por Mayo 2025
+  console.log("4. Verificando apiFetchInfoBankData (Mayo 2025)...");
+  const resFetch = apiFetchInfoBankData("2025", "MAYO", testClient, "COTIZACIONES");
+
+  if (resFetch.success) {
+      const found = resFetch.data.find(r => r.FOLIO === uniqueId);
+      if (found) {
+          console.log("✅ Registro encontrado en Info Bank filtrado por fecha y cliente.");
+          console.log(found);
+      } else {
+          console.error("❌ Registro NO encontrado en la búsqueda filtrada.");
+          console.log("Data retornada:", resFetch.data);
+      }
+  } else {
+      console.error("❌ Error en apiFetchInfoBankData: " + resFetch.message);
+  }
+}
