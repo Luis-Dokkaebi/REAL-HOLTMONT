@@ -975,7 +975,25 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         
         activeRows.forEach(row => {
             const val = String(row[avanceIdx] || "").trim();
-            const isComplete = val === "100" || val === "100%" || val === "1.0" || val === "1";
+
+            // FIX ROBUSTO: Detección de 100% (Soporta "100,0", "100.0", "1", "1.0")
+            let isComplete = false;
+            const strictMatch = val === "100" || val === "100%" || val === "1.0" || val === "1";
+
+            if (strictMatch) {
+                isComplete = true;
+            } else {
+                // Limpieza para formatos de moneda/porcentaje latinos (ej. "100,0")
+                const cleanVal = val.replace('%', '').replace(',', '.').trim();
+                const num = parseFloat(cleanVal);
+                if (!isNaN(num)) {
+                   // Comprobar si es 1 (Factor) o 100 (Entero)
+                   if (Math.abs(num - 100) < 0.01 || Math.abs(num - 1) < 0.001) {
+                       isComplete = true;
+                   }
+                }
+            }
+
             if (isComplete) {
                 // AUTO-TIMESTAMP: FECHA TERMINO REAL
                 if (fechaTerminoIdx > -1) {
