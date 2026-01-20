@@ -1518,7 +1518,9 @@ function uploadFileToDrive(data, type, name) {
     } } 
     else { folder = DriveApp.getRootFolder();
     }
-    const blob = Utilities.newBlob(Utilities.base64Decode(data.split(',')[1]), type, name);
+    // FIX: Default to octet-stream if type is missing (e.g. .dwg, .zip)
+    const mimeType = (type && type.trim() !== "") ? type : "application/octet-stream";
+    const blob = Utilities.newBlob(Utilities.base64Decode(data.split(',')[1]), mimeType, name);
     const file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return { success: true, fileUrl: file.getUrl() };
