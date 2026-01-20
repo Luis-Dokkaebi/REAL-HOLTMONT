@@ -2967,96 +2967,102 @@
 
       // DICTATION LOGIC
       const isRecording = ref(false);
-      let recognition = null;
+      const recognition = ref(null); // Usamos ref para persistencia y evitar GC
 
       const toggleDictation = async () => {
-          if (isRecording.value) {
-              if (recognition) recognition.stop();
-              isRecording.value = false;
-              return;
-          }
-
+          // 1. Verificación Inicial
           const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
           if (!SpeechRecognition) {
               Swal.fire('No soportado', 'Tu navegador no soporta reconocimiento de voz. Intenta con Chrome.', 'error');
               return;
           }
 
-          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-              try {
-                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                  stream.getTracks().forEach(track => track.stop());
-              } catch (err) {
-                  console.error("Microphone permission denied via getUserMedia:", err);
-                  Swal.fire('Permiso Denegado', 'No se pudo acceder al micrófono. Por favor verifique los permisos del sitio.', 'error');
-                  return;
-              }
+          // 2. Si ya está grabando, detener
+          if (isRecording.value) {
+              if (recognition.value) recognition.value.stop();
+              isRecording.value = false;
+              console.log('🎤 Dictado detenido manualmente.');
+              return;
           }
 
-          recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-          recognition.lang = 'es-MX'; // Optimized for Mexican Spanish
-          recognition.continuous = false;
-          recognition.interimResults = false;
+          // 3. Inicializar instancia si no existe (Singleton)
+          if (!recognition.value) {
+              const rec = new SpeechRecognition();
+              rec.lang = 'es-MX';
+              rec.continuous = false;
+              rec.interimResults = false;
 
-          recognition.onstart = () => {
-              console.log("Escuchando... activo");
-              isRecording.value = true;
-          };
+              // --- EVENT HANDLERS ---
+              rec.onstart = () => {
+                  console.log('🎤 Voice: onstart - Escuchando...');
+                  isRecording.value = true;
+              };
 
-          recognition.onend = () => {
-              isRecording.value = false;
-
-              // Trigger Gemini Analysis automatically
-              if (workorderData.value.conceptoDesc && workorderData.value.conceptoDesc.length > 20) {
-                 // Try to get history if available
-                 let history = [];
-                 if (ppcExistingData.value && workorderData.value.cliente) {
-                     history = ppcExistingData.value.filter(item =>
-                        item.cliente &&
-                        String(item.cliente).toUpperCase().includes(String(workorderData.value.cliente).toUpperCase())
-                     ).slice(0, 5);
-                 }
-                 consultarSabioGemini(workorderData.value.conceptoDesc, history);
-              }
-          };
-
-          recognition.onresult = (event) => {
-              let newTranscript = '';
-              for (let i = event.resultIndex; i < event.results.length; ++i) {
-                  if (event.results[i].isFinal) {
-                      newTranscript += event.results[i][0].transcript;
-                  }
-              }
-
-              if (newTranscript) {
-                  const currentText = workorderData.value.conceptoDesc || '';
-                  const needsSpace = currentText.length > 0 && !currentText.match(/\s$/);
-                  workorderData.value.conceptoDesc = currentText + (needsSpace ? ' ' : '') + newTranscript;
-              }
-          };
-
-          recognition.onerror = (event) => {
-              console.error("Speech Error:", event.error);
-              if (event.error === 'not-allowed') {
+              rec.onend = () => {
+                  console.log('🎤 Voice: onend - Finalizado');
                   isRecording.value = false;
-                  Swal.fire('Permiso Denegado', 'Por favor habilita el acceso al micrófono.', 'warning');
-                  return;
-              }
-              if (event.error === 'no-speech') {
-                  return;
-              }
-              isRecording.value = false;
-              if (event.error !== 'aborted') {
-                  Swal.fire('Error', 'Error en dictado: ' + event.error, 'error');
-              }
-          };
 
-          recognition.start();
+                  // Lógica IA (Gemini)
+                  if (workorderData.value.conceptoDesc && workorderData.value.conceptoDesc.length > 20) {
+                     let history = [];
+                     if (ppcExistingData.value && workorderData.value.cliente) {
+                         history = ppcExistingData.value.filter(item =>
+                            item.cliente &&
+                            String(item.cliente).toUpperCase().includes(String(workorderData.value.cliente).toUpperCase())
+                         ).slice(0, 5);
+                     }
+                     consultarSabioGemini(workorderData.value.conceptoDesc, history);
+                  }
+              };
+
+              rec.onerror = (event) => {
+                  console.error("🎤 Voice: onerror", event.error);
+                  if (event.error === 'no-speech') {
+                      console.warn('🎤 No se detectó voz.');
+                      return; // Ignorar error para no interrumpir flujo bruscamente
+                  }
+                  if (event.error === 'not-allowed') {
+                      isRecording.value = false;
+                      Swal.fire('Permiso Denegado', 'Habilita el micrófono en tu navegador.', 'warning');
+                      return;
+                  }
+                  isRecording.value = false;
+                  if (event.error !== 'aborted') {
+                      Swal.fire('Error', 'Error en dictado: ' + event.error, 'error');
+                  }
+              };
+
+              rec.onresult = (event) => {
+                  console.log('🎤 Voice: onresult', event);
+                  let finalTranscript = '';
+                  for (let i = event.resultIndex; i < event.results.length; ++i) {
+                      if (event.results[i].isFinal) {
+                          finalTranscript += event.results[i][0].transcript;
+                      }
+                  }
+
+                  if (finalTranscript) {
+                      console.log('🎤 Texto:', finalTranscript);
+                      const currentText = workorderData.value.conceptoDesc || '';
+                      const needsSpace = currentText.length > 0 && !currentText.match(/\s$/);
+                      workorderData.value.conceptoDesc = currentText + (needsSpace ? ' ' : '') + finalTranscript;
+                  }
+              };
+
+              recognition.value = rec;
+          }
+
+          // 4. Iniciar
+          try {
+              recognition.value.start();
+          } catch (e) {
+              console.error("🎤 Error al iniciar:", e);
+          }
       };
 
       watch(currentView, () => {
-         if (isRecording.value && recognition) {
-             recognition.stop();
+         if (isRecording.value && recognition.value) {
+             recognition.value.stop();
              isRecording.value = false;
          }
       });
