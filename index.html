@@ -1434,7 +1434,7 @@
                                     <div :class="showWorkOrderLogic ? 'col-md-8' : 'col-12'">
                                          <div class="position-relative h-100">
                                             <textarea v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
-                                            <button class="btn position-absolute bottom-0 end-0 m-4 rounded-circle shadow" :class="isRecording ? 'btn-danger animate__animated animate__pulse animate__infinite' : 'btn-primary'" style="width: 40px; height: 40px;" @click="toggleDictation" :title="isRecording ? 'Detener Grabación' : 'Dictar por Voz'">
+                                            <button id="btn-microfono" class="btn position-absolute bottom-0 end-0 m-4 rounded-circle shadow" :class="isRecording ? 'btn-danger animate__animated animate__pulse animate__infinite' : 'btn-primary'" style="width: 40px; height: 40px;" @click="toggleDictation" :title="isRecording ? 'Detener Grabación' : 'Dictar por Voz'">
                                                 <i class="fas" :class="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
                                             </button>
                                          </div>
@@ -2914,10 +2914,11 @@
 
           recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
           recognition.lang = 'es-MX'; // Optimized for Mexican Spanish
-          recognition.continuous = true;
+          recognition.continuous = false;
           recognition.interimResults = false;
 
           recognition.onstart = () => {
+              console.log("Escuchando... activo");
               isRecording.value = true;
           };
 
