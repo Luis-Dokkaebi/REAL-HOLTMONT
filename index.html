@@ -11,7 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <!-- Switched to jsdelivr for better reliability -->
+  <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -2692,7 +2693,24 @@
 </div>
 
 <script>
-  window.onerror = function(msg, url, line, col, error) { if(String(msg).toLowerCase().includes("script error")) return; Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + (error ? error.message : msg) }); };
+  // Dependency Check
+  window.onload = function() {
+      if (typeof Vue === 'undefined' || typeof Swal === 'undefined') {
+          var msg = "Error CRÍTICO: No se pudieron cargar las librerías del sistema (Vue/Swal). Verifique su conexión a internet o firewall.";
+          alert(msg);
+          document.body.innerHTML = '<div style="color:white; text-align:center; padding:50px; font-family:sans-serif; background:#333;"><h1>Error de Carga</h1><p>' + msg + '</p></div>';
+      }
+  };
+
+  window.onerror = function(msg, url, line, col, error) {
+      if(String(msg).toLowerCase().includes("script error")) return;
+      if (typeof Swal !== 'undefined') {
+          Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + (error ? error.message : msg) });
+      } else {
+          console.error("Error visual (Swal missing):", msg);
+          alert("Error: " + (error ? error.message : msg));
+      }
+  };
 
   const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
   const app = createApp({
@@ -3348,15 +3366,17 @@
       const animatedTotals = Vue.reactive({ subtotal: 0, utility: 0, total: 0 });
 
       watch([dashboardSubtotal, dashboardUtility, dashboardTotal], ([newSub, newUtil, newTot]) => {
-          anime({
-              targets: animatedTotals,
-              subtotal: newSub,
-              utility: newUtil,
-              total: newTot,
-              round: 1,
-              easing: 'easeOutExpo',
-              duration: 1500
-          });
+          if (typeof anime === 'function') {
+              anime({
+                  targets: animatedTotals,
+                  subtotal: newSub,
+                  utility: newUtil,
+                  total: newTot,
+                  round: 1,
+                  easing: 'easeOutExpo',
+                  duration: 1500
+              });
+          }
       }, { immediate: true });
 
       const selectedFinancing = ref(null); // Financing toggle state
