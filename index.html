@@ -552,56 +552,56 @@
 
             <div v-else class="row g-4 h-100 overflow-auto p-2">
                 <!-- 1. PUNTUALIDAD -->
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #4472C4;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #4472C4;">1. % PUNTUALIDAD (TODO EL PERSONAL)</div>
                         <div class="card-body" style="height: 250px;"><canvas id="chartPuntualidad"></canvas></div>
                     </div>
                 </div>
                 <!-- 2. TIEMPO VISITAS -->
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #ED7D31;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #ED7D31;">2. % TIEMPO VISITAS (COTIZADORES)</div>
                         <div class="card-body" style="height: 250px;"><canvas id="chartVisitas"></canvas></div>
                     </div>
                 </div>
                 <!-- 3. INTEGRACION PRE WO -->
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #A5A5A5;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #A5A5A5;">3. % INTEGRACIÓN PRE WO (COTIZADORES)</div>
                         <div class="card-body" style="height: 250px;"><canvas id="chartPreWO"></canvas></div>
                     </div>
                 </div>
                 <!-- 4. ENTREGA A TIEMPO -->
-                <div class="col-md-6 col-lg-6">
+                <div class="col-md-6 col-lg-6 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #FFC000;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #FFC000;">4. % ENTREGA A TIEMPO COTIZACIONES</div>
                         <div class="card-body" style="height: 300px;"><canvas id="chartEntregaCotiz"></canvas></div>
                     </div>
                 </div>
                 <!-- 5. INTEGRACION ARCHIVOS -->
-                <div class="col-md-6 col-lg-6">
+                <div class="col-md-6 col-lg-6 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #5B9BD5;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #5B9BD5;">5. % ARCHIVOS AL 100% (COTIZADORES)</div>
                         <div class="card-body" style="height: 300px;"><canvas id="chartArchivos100"></canvas></div>
                     </div>
                 </div>
                 <!-- 6. ENTREGA DISEÑOS -->
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #70AD47;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #70AD47;">6. % ENTREGA DISEÑOS (DISEÑADORES)</div>
                         <div class="card-body" style="height: 250px;"><canvas id="chartDisenos"></canvas></div>
                     </div>
                 </div>
                 <!-- 7. PLANEACION -->
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #264478;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #264478;">7. % PLANEACIÓN (WO)</div>
                         <div class="card-body" style="height: 250px;"><canvas id="chartPlaneacion"></canvas></div>
                     </div>
                 </div>
                 <!-- 8. VENTAS DEPTO -->
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #9E480E;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #9E480E;">8. VENTAS POR DEPARTAMENTO</div>
                         <div class="card-body">
@@ -619,14 +619,14 @@
                     </div>
                 </div>
                 <!-- 9. CONTROL PROYECTO -->
-                <div class="col-md-6 col-lg-6">
+                <div class="col-md-6 col-lg-6 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #997300;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #997300;">9. CONTROL DE PROYECTO</div>
                         <div class="card-body" style="height: 300px;"><canvas id="chartControlProy"></canvas></div>
                     </div>
                 </div>
                 <!-- 10. LECCIONES -->
-                <div class="col-md-6 col-lg-6">
+                <div class="col-md-6 col-lg-6 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #C00000;">
                         <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #C00000;">10. LECCIONES APRENDIDAS / TARJETA ROJA</div>
                         <div class="card-body p-0 overflow-auto" style="max-height: 300px;">
@@ -3864,6 +3864,17 @@
           }
       };
 
+      const animateKPICards = () => {
+          anime({
+              targets: '.kpi-card-anim',
+              translateY: [20, 0],
+              opacity: [0, 1],
+              delay: anime.stagger(100),
+              easing: 'easeOutQuad',
+              duration: 800
+          });
+      };
+
       const loadKPIData = () => {
           kpiData.value.isLoading = true;
           // MOCK DATA GENERATION
@@ -3910,7 +3921,10 @@
                   { tema: 'Mejora en logística', tipo: 'Lección', fecha: '25/01' }
               ];
 
-              nextTick(() => { renderKPICharts(); });
+              nextTick(() => {
+                  renderKPICharts();
+                  animateKPICards();
+              });
           }, 800);
       };
 
