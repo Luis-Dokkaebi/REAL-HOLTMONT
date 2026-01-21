@@ -550,90 +550,99 @@
                 <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
             </div>
 
-            <div v-else class="row g-4 h-100 overflow-auto">
-                <!-- PANEL VENTAS -->
-                <div class="col-12">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-bottom fw-bold text-uppercase" style="color:#2c3e50">
-                            <i class="fas fa-hand-holding-usd me-2"></i>DASHBOARD VENTAS
-                        </div>
-                        <div class="card-body row">
-                            <div class="col-md-5">
-                                <table class="table table-bordered table-sm small">
-                                    <thead class="table-light"><tr><th>Colaborador</th><th class="text-center">Volumen</th><th class="text-center">Eficiencia (Días)</th></tr></thead>
-                                    <tbody>
-                                        <tr v-for="user in kpiData.ventas" :key="user.name">
-                                            <td class="fw-bold">
-                                                <div class="d-flex align-items-center">
-                                                    <img v-if="['ADMIN', 'ADMIN_CONTROL'].includes(currentRole)" :src="getAvatarUrl(user.name)" class="rounded-circle me-2 shadow-sm" style="width:32px; height:32px; object-fit:cover; border:1px solid #ccc;">
-                                                    <span>{{ user.name }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="text-center">{{ user.volume }}</td>
-                                            <td class="text-center text-primary fw-bold">{{ user.efficiency }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="col-md-7" style="height: 300px;">
-                                <canvas id="kpiChartVentas"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-
-
-
-
-                <!-- PANEL TRACKER -->
-                <div class="col-12">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-bottom fw-bold text-uppercase" style="color:#e74c3c">
-                            <i class="fas fa-tasks me-2"></i>DASHBOARD TRACKER
-                        </div>
-                        <div class="card-body row">
-                            <div class="col-md-5">
-                                <table class="table table-bordered table-sm small">
-                                    <thead class="table-light"><tr><th>Colaborador</th><th class="text-center">Volumen</th><th class="text-center">Eficiencia (Días)</th></tr></thead>
-                                    <tbody>
-                                        <tr v-for="user in kpiData.tracker" :key="user.name">
-                                            <td class="fw-bold">
-                                                <div class="d-flex align-items-center">
-                                                    <img v-if="['ADMIN', 'ADMIN_CONTROL'].includes(currentRole)" :src="getAvatarUrl(user.name)" class="rounded-circle me-2 shadow-sm" style="width:32px; height:32px; object-fit:cover; border:1px solid #ccc;">
-                                                    <span>{{ user.name }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="text-center">{{ user.volume }}</td>
-                                            <td class="text-center text-danger fw-bold">{{ user.efficiency }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="col-md-7" style="height: 300px;">
-                                <canvas id="kpiChartTracker"></canvas>
-                            </div>
-                        </div>
+            <div v-else class="row g-4 h-100 overflow-auto p-2">
+                <!-- 1. PUNTUALIDAD -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-primary">1. % PUNTUALIDAD (TODO EL PERSONAL)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartPuntualidad"></canvas></div>
                     </div>
                 </div>
-
-                <!-- PANEL PRODUCTIVIDAD DIARIA (NUEVO) -->
-                <div class="col-12">
-                    <div class="card shadow-sm border-0 h-100">
-                        <div class="card-header bg-white border-bottom fw-bold text-uppercase" style="color:#107c41">
-                            <i class="fas fa-chart-bar me-2"></i>PRODUCTIVIDAD DIARIA (ANTONIA)
-                        </div>
+                <!-- 2. TIEMPO VISITAS -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-info">2. % TIEMPO VISITAS (COTIZADORES)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartVisitas"></canvas></div>
+                    </div>
+                </div>
+                <!-- 3. INTEGRACION PRE WO -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-warning">3. % INTEGRACIÓN PRE WO (COTIZADORES)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartPreWO"></canvas></div>
+                    </div>
+                </div>
+                <!-- 4. ENTREGA A TIEMPO -->
+                <div class="col-md-6 col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-success">4. % ENTREGA A TIEMPO COTIZACIONES</div>
+                        <div class="card-body" style="height: 300px;"><canvas id="chartEntregaCotiz"></canvas></div>
+                    </div>
+                </div>
+                <!-- 5. INTEGRACION ARCHIVOS -->
+                <div class="col-md-6 col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-danger">5. % ARCHIVOS AL 100% (COTIZADORES)</div>
+                        <div class="card-body" style="height: 300px;"><canvas id="chartArchivos100"></canvas></div>
+                    </div>
+                </div>
+                <!-- 6. ENTREGA DISEÑOS -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-secondary">6. % ENTREGA DISEÑOS (DISEÑADORES)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartDisenos"></canvas></div>
+                    </div>
+                </div>
+                <!-- 7. PLANEACION -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-dark">7. % PLANEACIÓN (WO)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartPlaneacion"></canvas></div>
+                    </div>
+                </div>
+                <!-- 8. VENTAS DEPTO -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-primary">8. VENTAS POR DEPARTAMENTO</div>
                         <div class="card-body">
-                            <div style="height: 300px;">
-                                <canvas id="kpiChartProductivity"></canvas>
+                            <ul class="nav nav-tabs nav-justified mb-2" id="ventasTab" role="tablist">
+                                <li class="nav-item"><button class="nav-link active py-1 small" data-bs-toggle="tab" data-bs-target="#tabSemanal" type="button">Sem</button></li>
+                                <li class="nav-item"><button class="nav-link py-1 small" data-bs-toggle="tab" data-bs-target="#tabMensual" type="button">Mes</button></li>
+                                <li class="nav-item"><button class="nav-link py-1 small" data-bs-toggle="tab" data-bs-target="#tabAnual" type="button">Anual</button></li>
+                            </ul>
+                            <div class="tab-content h-100" id="ventasTabContent">
+                                <div class="tab-pane fade show active h-100" id="tabSemanal"><div style="height: 200px;"><canvas id="chartVentasSem"></canvas></div></div>
+                                <div class="tab-pane fade h-100" id="tabMensual"><div style="height: 200px;"><canvas id="chartVentasMes"></canvas></div></div>
+                                <div class="tab-pane fade h-100" id="tabAnual"><div style="height: 200px;"><canvas id="chartVentasAnual"></canvas></div></div>
                             </div>
                         </div>
-                    </div> <!-- End Col-12 for Buttons Logic -->
+                    </div>
                 </div>
-
-
-
+                <!-- 9. CONTROL PROYECTO -->
+                <div class="col-md-6 col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-info">9. CONTROL DE PROYECTO</div>
+                        <div class="card-body" style="height: 300px;"><canvas id="chartControlProy"></canvas></div>
+                    </div>
+                </div>
+                <!-- 10. LECCIONES -->
+                <div class="col-md-6 col-lg-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase text-danger">10. LECCIONES APRENDIDAS / TARJETA ROJA</div>
+                        <div class="card-body p-0 overflow-auto" style="max-height: 300px;">
+                            <table class="table table-striped table-sm m-0 small align-middle">
+                                <thead class="table-dark sticky-top"><tr><th>Tipo</th><th>Tema</th><th>Fecha</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="(l, i) in kpiData.lecciones" :key="i">
+                                        <td><span class="badge" :class="l.tipo==='Tarjeta Roja'?'bg-danger':'bg-success'">{{l.tipo}}</span></td>
+                                        <td>{{l.tema}}</td>
+                                        <td>{{l.fecha}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -3317,8 +3326,20 @@
       const ecgChartInstances = {};
 
       // KPI STATE
-      const kpiData = ref({ ventas: [], tracker: [], productivity: null, isLoading: false });
-      const kpiChartInstances = { ventas: null, tracker: null, productivity: null };
+      const kpiData = ref({
+          puntualidad: [],
+          visitas: [],
+          preWO: [],
+          entregaCotiz: {},
+          archivos100: [],
+          disenos: [],
+          planeacion: {},
+          ventas: { semanal: {}, mensual: {}, anual: {} },
+          controlProy: {},
+          lecciones: [],
+          isLoading: false
+      });
+      const kpiChartInstances = {};
 
       // --- GESTIÓN DE PROYECTOS (V138 - CASCADA) ---
       const showPpcSelectorModal = ref(false);
@@ -3845,109 +3866,156 @@
 
       const loadKPIData = () => {
           kpiData.value.isLoading = true;
-          google.script.run.withSuccessHandler(res => {
+          // MOCK DATA GENERATION
+          setTimeout(() => {
               kpiData.value.isLoading = false;
-              if (res.success) {
-                  kpiData.value.ventas = res.ventas;
-                  kpiData.value.tracker = res.tracker;
-                  if (res.productivity) kpiData.value.productivity = res.productivity;
-                  nextTick(() => { renderKPICharts(); });
-              } else {
-                  Swal.fire('Error', res.message || 'No se pudieron cargar los KPIs.', 'error');
-              }
-          }).apiFetchTeamKPIData(currentUsername.value);
+              kpiData.value.puntualidad = [
+                  { name: 'Antonia', value: 98 }, { name: 'Eduardo T.', value: 95 }, { name: 'Ramiro', value: 92 },
+                  { name: 'Sebastian', value: 96 }, { name: 'Judith', value: 99 }, { name: 'Angel', value: 94 },
+                  { name: 'Teresa', value: 97 }, { name: 'Eduardo M.', value: 93 }
+              ];
+              kpiData.value.visitas = [
+                  { name: 'Judith', value: 85 }, { name: 'Ramiro', value: 88 }, { name: 'Eduardo M.', value: 90 }
+              ];
+              kpiData.value.preWO = [
+                  { name: 'Judith', value: 92 }, { name: 'Ramiro', value: 85 }, { name: 'Antonia', value: 95 }
+              ];
+              kpiData.value.entregaCotiz = {
+                  labels: ['Cotizador', 'Estrategia', 'Serv. Cliente'],
+                  data: [95, 88, 92]
+              };
+              kpiData.value.archivos100 = [
+                  { name: 'Judith', value: 100 }, { name: 'Ramiro', value: 95 }, { name: 'Eduardo M.', value: 98 }
+              ];
+              kpiData.value.disenos = [
+                  { name: 'Angel', value: 96 }, { name: 'Edgar', value: 94 }
+              ];
+              kpiData.value.planeacion = {
+                  labels: ['Planeación', 'Diseño', 'Materiales', 'Herramientas', 'Análisis Riesgo'],
+                  data: [90, 85, 95, 92, 88]
+              };
+              kpiData.value.ventas = {
+                  semanal: { labels: ['Ventas', 'Const.', 'HVAC'], data: [5, 12, 8] },
+                  mensual: { labels: ['Ventas', 'Const.', 'HVAC'], data: [25, 45, 30] },
+                  anual: { labels: ['Ventas', 'Const.', 'HVAC'], data: [300, 550, 400] }
+              };
+              kpiData.value.controlProy = {
+                  labels: ['Cotizador', 'Residente'],
+                  data: [88, 92]
+              };
+              kpiData.value.lecciones = [
+                  { tema: 'Falta de EPP en visita', tipo: 'Tarjeta Roja', fecha: '15/01' },
+                  { tema: 'Retraso Material', tipo: 'Lección', fecha: '20/01' },
+                  { tema: 'Cota errónea en plano', tipo: 'Tarjeta Roja', fecha: '22/01' },
+                  { tema: 'Mejora en logística', tipo: 'Lección', fecha: '25/01' }
+              ];
+
+              nextTick(() => { renderKPICharts(); });
+          }, 800);
       };
 
       const renderKPICharts = () => {
-          // VENTAS CHART
-          const ctxVentas = document.getElementById('kpiChartVentas');
-          if (ctxVentas && kpiData.value.ventas.length) {
-               if (kpiChartInstances.ventas) kpiChartInstances.ventas.destroy();
-               const labels = kpiData.value.ventas.map(u => u.name.split(' ')[0]); // First name only
-               const dataEff = kpiData.value.ventas.map(u => u.efficiency);
-               const dataVol = kpiData.value.ventas.map(u => u.volume);
+          const createChart = (id, config) => {
+              const ctx = document.getElementById(id);
+              if (!ctx) return;
+              if (kpiChartInstances[id]) kpiChartInstances[id].destroy();
+              kpiChartInstances[id] = new Chart(ctx, config);
+          };
 
-               kpiChartInstances.ventas = new Chart(ctxVentas, {
-                   type: 'bar',
-                   data: {
-                       labels: labels,
-                       datasets: [
-                           { label: 'Eficiencia (Días)', data: dataEff, backgroundColor: '#2c3e50', yAxisID: 'y' },
-                           { label: 'Volumen', data: dataVol, type: 'line', borderColor: '#e67e22', tension: 0.1, yAxisID: 'y1' }
-                       ]
-                   },
-                   options: {
-                       responsive: true, maintainAspectRatio: false,
-                       scales: {
-                           y: { type: 'linear', display: true, position: 'left', title: { display:true, text: 'Días Promedio' } },
-                           y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display:true, text: 'Tareas' } }
-                       }
-                   }
-               });
-          }
+          // 1. PUNTUALIDAD
+          createChart('chartPuntualidad', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.puntualidad.map(d => d.name),
+                  datasets: [{ label: '% Puntualidad', data: kpiData.value.puntualidad.map(d => d.value), backgroundColor: '#0d6efd' }]
+              },
+              options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { min: 80, max: 100 } } }
+          });
 
-          // TRACKER CHART
-          const ctxTracker = document.getElementById('kpiChartTracker');
-          if (ctxTracker && kpiData.value.tracker.length) {
-               if (kpiChartInstances.tracker) kpiChartInstances.tracker.destroy();
-               const labels = kpiData.value.tracker.map(u => u.name.split(' ')[0]);
-               const dataEff = kpiData.value.tracker.map(u => u.efficiency);
-               const dataVol = kpiData.value.tracker.map(u => u.volume);
+          // 2. VISITAS
+          createChart('chartVisitas', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.visitas.map(d => d.name),
+                  datasets: [{ label: '% Tiempo', data: kpiData.value.visitas.map(d => d.value), backgroundColor: '#0dcaf0' }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
 
-               kpiChartInstances.tracker = new Chart(ctxTracker, {
-                   type: 'bar',
-                   data: {
-                       labels: labels,
-                       datasets: [
-                           { label: 'Eficiencia (Días)', data: dataEff, backgroundColor: '#e74c3c', yAxisID: 'y' },
-                           { label: 'Volumen', data: dataVol, type: 'line', borderColor: '#8e44ad', tension: 0.1, yAxisID: 'y1' }
-                       ]
-                   },
-                   options: {
-                       responsive: true, maintainAspectRatio: false,
-                       scales: {
-                           y: { type: 'linear', display: true, position: 'left', title: { display:true, text: 'Días Promedio' } },
-                           y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false }, title: { display:true, text: 'Tareas' } }
-                       }
-                   }
-               });
-          }
+          // 3. PRE WO
+          createChart('chartPreWO', {
+              type: 'doughnut',
+              data: {
+                  labels: kpiData.value.preWO.map(d => d.name),
+                  datasets: [{ data: kpiData.value.preWO.map(d => d.value), backgroundColor: ['#ffc107', '#fd7e14', '#20c997'] }]
+              },
+              options: { responsive: true, maintainAspectRatio: false }
+          });
 
-          // PRODUCTIVITY CHART (ANTONIA)
-          const ctxProd = document.getElementById('kpiChartProductivity');
-          if (ctxProd && kpiData.value.productivity) {
-               if (kpiChartInstances.productivity) kpiChartInstances.productivity.destroy();
+          // 4. ENTREGA COTIZACIONES
+          createChart('chartEntregaCotiz', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.entregaCotiz.labels,
+                  datasets: [{ label: '% A Tiempo', data: kpiData.value.entregaCotiz.data, backgroundColor: ['#198754', '#20c997', '#0dcaf0'] }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
 
-               kpiChartInstances.productivity = new Chart(ctxProd, {
-                   type: 'bar',
-                   data: {
-                       labels: kpiData.value.productivity.labels,
-                       datasets: [
-                           {
-                               label: 'Ingresos',
-                               data: kpiData.value.productivity.values,
-                               backgroundColor: '#107c41',
-                               borderColor: '#0b5d2f',
-                               borderWidth: 1
-                           }
-                       ]
-                   },
-                   options: {
-                       responsive: true, maintainAspectRatio: false,
-                       scales: {
-                           y: {
-                               beginAtZero: true,
-                               ticks: { stepSize: 1 },
-                               title: { display: true, text: 'Cantidad de Ingresos' }
-                           }
-                       },
-                       plugins: {
-                           legend: { display: false },
-                           title: { display: true, text: 'Frecuencia de Ingreso (Diciembre)' }
-                       }
-                   }
-               });
-          }
+          // 5. ARCHIVOS 100%
+          createChart('chartArchivos100', {
+              type: 'polarArea',
+              data: {
+                  labels: kpiData.value.archivos100.map(d => d.name),
+                  datasets: [{ data: kpiData.value.archivos100.map(d => d.value), backgroundColor: ['#dc3545', '#e83e8c', '#6f42c1'] }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 80 } } }
+          });
+
+          // 6. DISEÑOS
+          createChart('chartDisenos', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.disenos.map(d => d.name),
+                  datasets: [{ label: '% Entrega', data: kpiData.value.disenos.map(d => d.value), backgroundColor: '#6c757d' }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
+
+          // 7. PLANEACION
+          createChart('chartPlaneacion', {
+              type: 'radar',
+              data: {
+                  labels: kpiData.value.planeacion.labels,
+                  datasets: [{ label: '% Cumplimiento', data: kpiData.value.planeacion.data, backgroundColor: 'rgba(33, 37, 41, 0.2)', borderColor: '#212529', pointBackgroundColor: '#212529' }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 50, max: 100 } } }
+          });
+
+          // 8. VENTAS
+          const createVentasChart = (ctxId, dataObj) => {
+              createChart(ctxId, {
+                  type: 'line',
+                  data: {
+                      labels: dataObj.labels,
+                      datasets: [{ label: 'Ventas', data: dataObj.data, borderColor: '#0d6efd', tension: 0.1, fill: true, backgroundColor: 'rgba(13, 110, 253, 0.1)' }]
+                  },
+                  options: { responsive: true, maintainAspectRatio: false }
+              });
+          };
+          createVentasChart('chartVentasSem', kpiData.value.ventas.semanal);
+          createVentasChart('chartVentasMes', kpiData.value.ventas.mensual);
+          createVentasChart('chartVentasAnual', kpiData.value.ventas.anual);
+
+          // 9. CONTROL PROYECTO
+          createChart('chartControlProy', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.controlProy.labels,
+                  datasets: [{ label: '% Control', data: kpiData.value.controlProy.data, backgroundColor: ['#0dcaf0', '#6610f2'] }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
       };
 
       const closeIframe = () => currentView.value='DASHBOARD';
