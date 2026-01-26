@@ -2845,6 +2845,14 @@ function apiSaveTrackerBatch(personName, tasks, username) {
       if (isAntonia) {
           const props = PropertiesService.getScriptProperties();
           currentSeq = Number(props.getProperty(seqKey) || 1000);
+
+          // AUTO-HEALING: Scan batch for higher existing IDs to sync sequence
+          tasks.forEach(t => {
+              const fid = parseInt(t['FOLIO'] || t['ID']);
+              if (!isNaN(fid) && fid > currentSeq) {
+                  currentSeq = fid;
+              }
+          });
       }
 
       tasks.forEach(task => {
@@ -2852,6 +2860,14 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
         if (isAntonia) {
              if (!taskData['FOLIO'] && !taskData['ID']) {
+                 // GHOST BUSTING: Verificar contenido antes de asignar Folio
+                 const hasContent = (taskData['CONCEPTO'] && String(taskData['CONCEPTO']).trim() !== "") ||
+                                    (taskData['DESCRIPCION'] && String(taskData['DESCRIPCION']).trim() !== "") ||
+                                    (taskData['CLIENTE'] && String(taskData['CLIENTE']).trim() !== "") ||
+                                    (taskData['VENDEDOR'] && String(taskData['VENDEDOR']).trim() !== "");
+
+                 if (!hasContent) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
+
                  currentSeq++;
                  taskData['FOLIO'] = String(currentSeq);
              } else {
