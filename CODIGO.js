@@ -1918,6 +1918,7 @@ function onOpen() {
     .addItem('🔄 ACTUALIZAR (Fila Actual)', 'cmdActualizar')
     .addSeparator()
     .addItem('🎨 Aplicar Formato Condicional (Semaforo)', 'setupConditionalFormatting')
+    .addItem('🛠️ Reparar Duplicados (Antonia)', 'fixAntoniaDuplicates')
     .addToUi();
 }
 
@@ -2828,6 +2829,100 @@ function apiFetchDistinctClients() {
     return { success: true, data: sortedClients };
   } catch (e) {
     return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * COMANDO: REPARAR DUPLICADOS EN ANTONIA_VENTAS
+ * Busca folios repetidos y re-asigna nuevos IDs a las copias.
+ */
+function fixAntoniaDuplicates() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+     SpreadsheetApp.getUi().alert("⚠️ El sistema está ocupado. Intenta en unos segundos.");
+     return;
+  }
+
+  try {
+      const sheet = findSheetSmart("ANTONIA_VENTAS");
+      if (!sheet) {
+          SpreadsheetApp.getUi().alert("❌ No se encontró la hoja ANTONIA_VENTAS.");
+          return;
+      }
+
+      const dataRange = sheet.getDataRange();
+      const values = dataRange.getValues();
+      if (values.length < 2) return;
+
+      const headerIdx = findHeaderRow(values);
+      if (headerIdx === -1) return;
+
+      const headers = values[headerIdx].map(h => String(h).toUpperCase().trim());
+      const folioIdx = headers.indexOf("FOLIO") > -1 ? headers.indexOf("FOLIO") : headers.indexOf("ID");
+
+      if (folioIdx === -1) {
+          SpreadsheetApp.getUi().alert("❌ No se encontró columna FOLIO o ID.");
+          return;
+      }
+
+      // 1. Detectar Duplicados
+      const seen = new Map(); // Folio -> {rowIndex, count}
+      const duplicatesToFix = []; // {rowIndex, oldFolio}
+
+      // Scan rows
+      for(let i = headerIdx + 1; i < values.length; i++) {
+          const rawFolio = values[i][folioIdx];
+          if (!rawFolio) continue;
+
+          const folio = String(rawFolio).toUpperCase().trim();
+
+          if (seen.has(folio)) {
+              // Found duplicate!
+              duplicatesToFix.push({ rowIndex: i, oldFolio: folio });
+          } else {
+              seen.set(folio, true);
+          }
+      }
+
+      if (duplicatesToFix.length === 0) {
+          SpreadsheetApp.getUi().alert("✅ No se encontraron folios duplicados.");
+          return;
+      }
+
+      // 2. Reparar Duplicados
+      const props = PropertiesService.getScriptProperties();
+      // Asegurar que tenemos la secuencia más alta actual
+      let currentSeq = Number(props.getProperty('ANTONIA_SEQ') || 1000);
+
+      // Auto-heal sequence first just in case
+      values.slice(headerIdx + 1).forEach(r => {
+          const fid = parseInt(r[folioIdx]);
+          if (!isNaN(fid) && fid > currentSeq) currentSeq = fid;
+      });
+
+      let logMsg = "Se repararon los siguientes duplicados:\n";
+
+      duplicatesToFix.forEach(item => {
+          currentSeq++;
+          const newFolio = String(currentSeq);
+
+          // Update Sheet directly for safety
+          sheet.getRange(item.rowIndex + 1, folioIdx + 1).setValue(newFolio);
+
+          logMsg += `• Fila ${item.rowIndex + 1}: ${item.oldFolio} ➡️ ${newFolio}\n`;
+      });
+
+      // Update Sequence Property
+      props.setProperty('ANTONIA_SEQ', String(currentSeq));
+
+      SpreadsheetApp.getUi().alert(`✅ Reparación Completada\n\n${logMsg}`);
+      registrarLog("ADMIN", "FIX_DUPLICATES", `Reparados ${duplicatesToFix.length} folios en ANTONIA_VENTAS.`);
+
+  } catch(e) {
+      console.error(e);
+      SpreadsheetApp.getUi().alert("❌ Error: " + e.toString());
+  } finally {
+      lock.releaseLock();
   }
 }
 
