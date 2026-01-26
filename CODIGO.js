@@ -2861,10 +2861,19 @@ function apiSaveTrackerBatch(personName, tasks, username) {
         if (isAntonia) {
              if (!taskData['FOLIO'] && !taskData['ID']) {
                  // GHOST BUSTING: Verificar contenido antes de asignar Folio
-                 const hasContent = (taskData['CONCEPTO'] && String(taskData['CONCEPTO']).trim() !== "") ||
-                                    (taskData['DESCRIPCION'] && String(taskData['DESCRIPCION']).trim() !== "") ||
-                                    (taskData['CLIENTE'] && String(taskData['CLIENTE']).trim() !== "") ||
-                                    (taskData['VENDEDOR'] && String(taskData['VENDEDOR']).trim() !== "");
+                 const clean = (val) => val ? String(val).trim() : "";
+                 const c = clean(taskData['CONCEPTO']);
+                 const d = clean(taskData['DESCRIPCION']);
+                 const cl = clean(taskData['CLIENTE']);
+                 const v = clean(taskData['VENDEDOR']);
+
+                 // Ignorar si VENDEDOR es solo el default "ANTONIA_VENTAS" y no hay nada más
+                 const isVendedorDefault = v.toUpperCase() === "ANTONIA_VENTAS";
+
+                 const hasContent = (c !== "") ||
+                                    (d !== "") ||
+                                    (cl !== "") ||
+                                    (v !== "" && !isVendedorDefault);
 
                  if (!hasContent) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
 
