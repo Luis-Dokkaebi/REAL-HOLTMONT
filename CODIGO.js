@@ -882,18 +882,32 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     tasksArray.forEach(task => {
       let rowIndex = -1;
       
+      const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
+
       if (task._rowIndex) {
-        rowIndex = parseInt(task._rowIndex) - 1; 
-      } else {
-        const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase();
-        if (tFolio && folioIdx > -1) {
-           // TRIM FIX: Search with trim to handle invisible spaces in sheet
-           const searchFolio = tFolio.trim();
+        const candidateRowIndex = parseInt(task._rowIndex) - 1;
+        // 2.1 VALIDACIÓN DE SEGURIDAD (ANTI-DESPLAZAMIENTO)
+        // Verificamos que el Folio en esa fila coincida con el payload.
+        // Si hubo movimientos (filas borradas/insertadas), el índice ya no coincidirá.
+        if (candidateRowIndex > headerRowIndex && candidateRowIndex < values.length && folioIdx > -1 && tFolio) {
+             const rowFolio = String(values[candidateRowIndex][folioIdx] || "").toUpperCase().trim();
+             if (rowFolio === tFolio) {
+                 rowIndex = candidateRowIndex;
+             } else {
+                 console.warn(`[SYNC WARNING] Desplazamiento detectado. Folio Payload: ${tFolio} vs Folio Fila: ${rowFolio} (Fila ${candidateRowIndex+1}). Activando búsqueda.`);
+             }
+        } else if (!tFolio) {
+             // Si no hay folio (ej. solo fila), confiamos en el índice si es válido
+             if (candidateRowIndex > headerRowIndex && candidateRowIndex < values.length) rowIndex = candidateRowIndex;
+        }
+      }
+
+      if (rowIndex === -1 && tFolio && folioIdx > -1) {
+           // Búsqueda Robusta por Folio
            for (let i = headerRowIndex + 1; i < values.length; i++) {
              const row = values[i];
-             if (String(row[folioIdx]).toUpperCase().trim() === searchFolio) { rowIndex = i; break; }
+             if (String(row[folioIdx]).toUpperCase().trim() === tFolio) { rowIndex = i; break; }
           }
-        }
       }
 
       if (rowIndex > -1 && rowIndex < values.length) {
