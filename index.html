@@ -820,7 +820,7 @@
                              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-weight:bold; font-size:12px;">{{ row[h] ? String(row[h]).charAt(0).toUpperCase() : '' }}</div>
                              <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
                          </div>
-                         <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
+                         <input v-else-if="isCol(h, ['ID','FOLIO'])" v-model="row[h]" class="excel-input" :readonly="!isFieldEditable(h, row)" :style="{backgroundColor: isFieldEditable(h, row) ? 'white' : '#f0f0f0', color: '#555', textAlign: 'center'}">
                          <div v-else-if="String(h).toUpperCase().includes('VENDEDOR')" style="position:relative; width:100%; height:100%; background-color:#f0fdf4;">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:11px; white-space:nowrap; overflow:hidden;">{{ toInitials(row[h]) }}</div>
                              <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;">
@@ -3572,7 +3572,7 @@
               if (!row['FOLIO'] && !row['ID']) return true;
 
               const hUp = String(h).toUpperCase();
-              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %'];
+              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'FOLIO', 'ID'];
               return allowed.some(a => hUp.includes(a));
           }
           return true;
