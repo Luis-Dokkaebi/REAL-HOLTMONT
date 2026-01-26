@@ -3572,7 +3572,7 @@
               if (!row['FOLIO'] && !row['ID']) return true;
 
               const hUp = String(h).toUpperCase();
-              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'FOLIO', 'ID'];
+              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %'];
               return allowed.some(a => hUp.includes(a));
           }
           return true;
