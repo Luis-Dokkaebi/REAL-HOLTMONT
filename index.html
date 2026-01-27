@@ -4636,11 +4636,62 @@
       };
 
       const getTaskColor = (task) => {
-          const status = String(task.ESTATUS || '').toUpperCase();
+          const status = String(task.ESTATUS || task.STATUS || '').toUpperCase();
+          // 1. COMPLETADO (Verde)
           if (status.includes('DONE') || status.includes('COMPLET') || status.includes('REALIZAD') || status === '100%') return '#28a745';
+          // 2. CANCELADO (Rojo)
+          if (status.includes('DETENID') || status.includes('CANCEL')) return '#dc3545';
+
+          // 3. SEMÁFORO (Traffic Light) - Solo si hay Clasificación y Fecha
+          const clasi = String(task.CLASIFICACION || task.CLASI || '').toUpperCase().trim();
+          const dateKey = Object.keys(task).find(k => ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'ALTA', 'FECHA VISITA', 'FECHA_ALTA'].includes(String(k).toUpperCase().trim()));
+          const dateVal = dateKey ? task[dateKey] : null;
+
+          if (clasi && dateVal) {
+              let days = 0;
+              let dObj = null;
+              if (dateVal instanceof Date) {
+                  dObj = dateVal;
+              } else if (typeof dateVal === 'string') {
+                  const parts = dateVal.split('/');
+                  if (parts.length === 3) {
+                      let y = parts[2];
+                      if (y.length === 2) y = '20' + y;
+                      dObj = new Date(y, parts[1]-1, parts[0]);
+                  } else if (dateVal.includes('-')) {
+                      dObj = new Date(dateVal);
+                  }
+              }
+
+              // Prioritize explicit DIAS/RELOJ if available (backend calculated)
+              const diasKey = Object.keys(task).find(k => ['DIAS', 'RELOJ', 'DÍAS'].includes(String(k).toUpperCase().trim()));
+              if (diasKey && task[diasKey] !== "" && !isNaN(task[diasKey])) {
+                  days = parseInt(task[diasKey]);
+              } else if (dObj && !isNaN(dObj.getTime())) {
+                  const now = new Date();
+                  now.setHours(0,0,0,0);
+                  dObj.setHours(0,0,0,0);
+                  const diffTime = now - dObj;
+                  days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              }
+
+              if (true) {
+                  let limit = 0, buffer = 0;
+                  if (clasi === 'A') { limit = 3; buffer = 1; }
+                  else if (clasi === 'AA') { limit = 15; buffer = 3; }
+                  else if (clasi === 'AAA') { limit = 30; buffer = 5; }
+
+                  if (limit > 0) {
+                      if (days > limit) return '#e74c3c'; // Rojo (Vencido)
+                      if (days >= (limit - buffer)) return '#ffff00'; // Amarillo (Por Vencer)
+                      return '#2ecc71'; // Verde (A Tiempo)
+                  }
+              }
+          }
+
+          // 4. FALLBACK POR ESTATUS
           if (status.includes('PROCESO') || status.includes('ASIGNAD')) return '#0d6efd';
           if (status.includes('PENDIENTE')) return '#ffc107';
-          if (status.includes('DETENID') || status.includes('CANCEL')) return '#dc3545';
           return '#6c757d';
       };
 
