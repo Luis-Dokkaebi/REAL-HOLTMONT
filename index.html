@@ -397,6 +397,18 @@
 
     .btn-quote-save { background-color: white; border: 1px solid #dee2e6; color: #333; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
     .btn-quote-gen { background-color: #0d6efd; border: 1px solid #0d6efd; color: white; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+
+    /* CALENDAR STYLES */
+    .calendar-grid { overflow-x: auto; }
+    .calendar-day-col { min-width: 140px; background-color: #fff; border-right: 1px solid #dee2e6; transition: background-color 0.3s; }
+    .calendar-day-col:last-child { border-right: none; }
+    .today-col .day-header { background-color: #fff3cd !important; color: #856404 !important; border-bottom: 2px solid #ffc107 !important; }
+    .today-col .day-body { background-color: #fff9e6 !important; }
+    .calendar-task-card { transition: all 0.2s; cursor: pointer; border-left-width: 4px !important; }
+    .calendar-task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; z-index: 10; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background-color: #f1f1f1; }
   </style>
 </head>
 <body>
@@ -533,6 +545,57 @@
             <div class="dept-card" @click="selectDept(key)" :style="{borderTop: '4px solid '+dept.color}">
                 <i class="fas fa-2x mb-3" :class="dept.icon" :style="{color: dept.color}"></i>
                 <h6 class="fw-bold" :style="{color: dept.color}">{{dept.label}}</h6>
+            </div>
+          </div>
+
+          <!-- CALENDARIO SEMANAL -->
+          <div class="col-12">
+            <div class="card border-0 shadow-sm" style="height: 500px; overflow: hidden;">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-3 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <h5 class="fw-bold m-0 text-primary"><i class="fas fa-calendar-alt me-2"></i>Tareas Semanales</h5>
+                        <button class="btn btn-light text-primary btn-sm fw-bold border" @click="loadDashboardCalendar" title="Actualizar"><i class="fas fa-sync-alt"></i></button>
+                        <select v-if="currentRole === 'ADMIN'" v-model="calendarUserFilter" @change="loadDashboardCalendar" class="form-select form-select-sm border-secondary fw-bold" style="width: auto;">
+                            <option value="">-- MI CALENDARIO --</option>
+                            <option v-for="u in config.directory" :key="u.name" :value="u.name">{{ u.name }}</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-light border btn-sm" @click="navigateCalendar(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <button class="btn btn-light border btn-sm fw-bold px-3" @click="dashboardCalendar.currentDate = new Date()">Hoy</button>
+                        <button class="btn btn-light border btn-sm" @click="navigateCalendar(1)"><i class="fas fa-chevron-right"></i></button>
+                        <span class="ms-3 fw-bold text-secondary text-uppercase" style="min-width: 120px; text-align: right;">{{ currentMonthYearLabel }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-0 d-flex flex-column h-100 border-top">
+                     <div v-if="calendarLoading" class="d-flex justify-content-center align-items-center flex-fill">
+                         <div class="spinner-border text-primary" role="status"></div>
+                     </div>
+                     <div v-else class="calendar-grid flex-fill d-flex">
+                         <div v-for="day in weekDays" :key="day.dateStr" class="calendar-day-col flex-fill border-end" :class="{ 'today-col': day.isToday }" style="min-width: 0;">
+                             <div class="day-header text-center py-2 border-bottom" :class="{ 'bg-light text-muted': !day.isToday, 'bg-primary text-white': day.isToday }">
+                                 <div class="small fw-bold text-uppercase" style="font-size: 10px;">{{ day.name }}</div>
+                                 <div class="fs-5 fw-bold">{{ day.number }}</div>
+                             </div>
+                             <div class="day-body p-2 h-100 overflow-auto custom-scrollbar" style="background-color: #fcfcfc;">
+                                 <div v-for="task in getTasksForDay(day.dateStr)" :key="task.FOLIO" class="calendar-task-card mb-2 p-2 border rounded shadow-sm bg-white position-relative" :style="{ borderLeft: '4px solid ' + getTaskColor(task) + ' !important' }">
+                                     <div class="d-flex justify-content-between align-items-start mb-1">
+                                         <span class="badge bg-light text-secondary border fw-normal" style="font-size:8px">{{ task.FOLIO }}</span>
+                                         <i v-if="isTaskDone(task)" class="fas fa-check-circle text-success"></i>
+                                     </div>
+                                     <div class="fw-bold text-dark mb-1" style="font-size:11px; line-height:1.2; overflow-wrap: break-word;">{{ task.CLIENTE || 'Sin Cliente' }}</div>
+                                     <div class="text-muted small text-truncate" style="font-size:10px;" :title="task.CONCEPTO">{{ task.CONCEPTO || 'Sin Descripción' }}</div>
+                                     <div class="mt-1 d-flex justify-content-between align-items-center">
+                                         <span class="badge bg-secondary" style="font-size: 8px; transform: scale(0.9); transform-origin: left;">{{ task.ESTATUS }}</span>
+                                     </div>
+                                 </div>
+                                 <div v-if="getTasksForDay(day.dateStr).length === 0" class="text-center mt-4 text-muted small opacity-50">
+                                     -
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                </div>
             </div>
           </div>
         </div>
@@ -2719,6 +2782,13 @@
       const trackerSubView = ref('TASKS');
       const currentStaffName = ref('');
       const weeklyPlanData = ref({ headers: [], data: [], isLoading: false });
+
+      // CALENDAR STATE
+      const dashboardCalendar = ref({ currentDate: new Date(), tasks: [] });
+      const calendarLoading = ref(false);
+      const calendarUserFilter = ref('');
+      const calendarInterval = ref(null);
+
       const searchQuery = ref(''); const isCompact = ref(false);
       const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
       const currentTheme = ref('light');
@@ -3696,7 +3766,7 @@
 
       const handleErr = (e) => { loggingIn.value=false; isSubmitting.value=false; Swal.fire('Error',e.message,'error'); };
       const doLogin = () => { if(!loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role); loadCascadeTree(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiLogin(loginUser.value, loginPass.value); };
-      const loadConfig = (r) => { google.script.run.withSuccessHandler(d => { config.value=d; if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r); };
+      const loadConfig = (r) => { google.script.run.withSuccessHandler(d => { config.value=d; loadDashboardCalendar(); if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r); };
       const toggleSidebar = () => { isCompact.value = !isCompact.value; };
       const animateCyberpunkLogo = () => {
           anime({
@@ -3722,8 +3792,11 @@
           }
       }, { immediate: true });
 
-      const logout = () => { google.script.run.apiLogout(currentUsername.value); isLoggedIn.value=false; loginPass.value=''; loginUser.value=''; currentView.value='DASHBOARD'; };
-      const goHome = () => { currentView.value='DASHBOARD'; currentDept.value=''; currentModuleId.value=''; };
+      const logout = () => {
+          if(calendarInterval.value) clearInterval(calendarInterval.value);
+          google.script.run.apiLogout(currentUsername.value); isLoggedIn.value=false; loginPass.value=''; loginUser.value=''; currentView.value='DASHBOARD';
+      };
+      const goHome = () => { currentView.value='DASHBOARD'; currentDept.value=''; currentModuleId.value=''; loadDashboardCalendar(); };
       const selectDept = (k) => { currentDept.value=k; currentView.value='DEPT'; searchQuery.value=''; currentModuleId.value=''; };
       const goBackToDept = () => currentView.value=staffTracker.value.previousView;
 
@@ -4377,6 +4450,121 @@
           calculateDiasCounter(row);
       };
 
+      // CALENDAR LOGIC
+      const weekDays = computed(() => {
+          const startOfWeek = new Date(dashboardCalendar.value.currentDate);
+          const day = startOfWeek.getDay() || 7; // Make Sunday 7
+          startOfWeek.setHours(0,0,0,0);
+          if (day !== 1) startOfWeek.setDate(startOfWeek.getDate() - (day - 1));
+
+          const finalDays = [];
+          for (let i = 0; i < 7; i++) {
+              const d = new Date(startOfWeek);
+              d.setDate(startOfWeek.getDate() + i);
+
+              const today = new Date();
+              const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+
+              const dd = String(d.getDate()).padStart(2, '0');
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const yy = String(d.getFullYear()).slice(-2);
+              const dateStr = `${dd}/${mm}/${yy}`;
+
+              finalDays.push({
+                  name: ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][d.getDay()],
+                  number: d.getDate(),
+                  dateStr: dateStr,
+                  isToday: isToday
+              });
+          }
+          return finalDays;
+      });
+
+      const currentMonthYearLabel = computed(() => {
+          const d = dashboardCalendar.value.currentDate;
+          const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          return `${months[d.getMonth()]} De ${d.getFullYear()}`;
+      });
+
+      const navigateCalendar = (dir) => {
+          const d = new Date(dashboardCalendar.value.currentDate);
+          d.setDate(d.getDate() + (dir * 7));
+          dashboardCalendar.value.currentDate = d;
+      };
+
+      const loadDashboardCalendar = () => {
+          calendarLoading.value = true;
+          let target = currentUser.value;
+
+          // ADMIN FILTER OVERRIDE
+          if (currentRole.value === 'ADMIN' && calendarUserFilter.value) {
+              target = calendarUserFilter.value;
+          } else {
+              const mods = config.value.specialModules || [];
+              const salesMod = mods.find(m => m.type === 'mirror_staff' && String(m.target).toUpperCase().includes('VENTAS'));
+              const trackerMod = mods.find(m => m.type === 'mirror_staff' && !String(m.target).toUpperCase().includes('VENTAS'));
+
+              if (salesMod) target = salesMod.target;
+              else if (trackerMod) target = trackerMod.target;
+
+              if (currentRole.value === 'TONITA' || currentUser.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+          }
+
+          google.script.run.withSuccessHandler(res => {
+              calendarLoading.value = false;
+              if (res.success) {
+                  dashboardCalendar.value.tasks = res.data;
+              } else {
+                  console.error("Calendar Load Error", res.message);
+              }
+          }).apiFetchCombinedCalendarData(target);
+      };
+
+      onMounted(() => {
+          calendarInterval.value = setInterval(() => {
+              if (isLoggedIn.value && currentView.value === 'DASHBOARD') {
+                  // Silent update (no loading spinner for polling)
+                  let target = currentUser.value;
+                  if (currentRole.value === 'ADMIN' && calendarUserFilter.value) {
+                      target = calendarUserFilter.value;
+                  } else {
+                      const mods = config.value.specialModules || [];
+                      const salesMod = mods.find(m => m.type === 'mirror_staff' && String(m.target).toUpperCase().includes('VENTAS'));
+                      const trackerMod = mods.find(m => m.type === 'mirror_staff' && !String(m.target).toUpperCase().includes('VENTAS'));
+                      if (salesMod) target = salesMod.target;
+                      else if (trackerMod) target = trackerMod.target;
+                      if (currentRole.value === 'TONITA' || currentUser.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+                  }
+                  google.script.run.withSuccessHandler(res => {
+                      if (res.success) dashboardCalendar.value.tasks = res.data;
+                  }).apiFetchCombinedCalendarData(target);
+              }
+          }, 60000); // 60 seconds polling
+      });
+
+      const getTasksForDay = (dateStr) => {
+          if (!dashboardCalendar.value.tasks) return [];
+          return dashboardCalendar.value.tasks.filter(t => {
+              const tDate = t['FECHA'] || t['FECHA INICIO'] || t['ALTA'] || t['FECHA DE INICIO'] || t['FECHA VISITA'];
+              return tDate === dateStr;
+          });
+      };
+
+      const getTaskColor = (task) => {
+          const status = String(task.ESTATUS || '').toUpperCase();
+          if (status.includes('DONE') || status.includes('COMPLET') || status.includes('REALIZAD') || status === '100%') return '#28a745';
+          if (status.includes('PROCESO') || status.includes('ASIGNAD')) return '#0d6efd';
+          if (status.includes('PENDIENTE')) return '#ffc107';
+          if (status.includes('DETENID') || status.includes('CANCEL')) return '#dc3545';
+          return '#6c757d';
+      };
+
+      const isTaskDone = (task) => {
+          const status = String(task.ESTATUS || '').toUpperCase();
+          const avance = String(task.AVANCE || '').replace('%','').trim();
+          return status.includes('DONE') || status.includes('REALIZAD') || avance === '100' || avance === '1.0';
+      };
+
       return { deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
@@ -4394,7 +4582,8 @@
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
-      infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass };
+      infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
+      dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };

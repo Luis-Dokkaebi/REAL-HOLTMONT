@@ -2982,3 +2982,36 @@ function apiSaveTrackerBatch(personName, tasks, username) {
       return { success: false, message: "Sistema ocupado" };
   }
 }
+
+function apiFetchCombinedCalendarData(sheetName) {
+  try {
+      const results = [];
+      const baseName = String(sheetName).replace(/\s*\(VENTAS\)/i, "").trim();
+      // Si es ANTONIA_VENTAS, solo buscamos ahí (ella distribuye)
+      const targets = (baseName.toUpperCase() === "ANTONIA_VENTAS") ? ["ANTONIA_VENTAS"] : [baseName, baseName + " (VENTAS)"];
+
+      targets.forEach(t => {
+          const res = internalFetchSheetData(t);
+          if (res.success && res.data) {
+              results.push(...res.data);
+          }
+      });
+
+      // Deduplicate by ID/FOLIO
+      const uniqueTasks = {};
+      results.forEach(r => {
+          const id = r.ID || r.FOLIO || (r.CONCEPTO ? r.CONCEPTO + r.FECHA : null);
+          if (id) uniqueTasks[id] = r;
+      });
+
+      const finalData = Object.values(uniqueTasks);
+
+      // Simple Sort by Date string (DD/MM/YY) if possible, else original order
+      // internalFetchSheetData already sorts by date desc.
+      // Merging two sorted lists... roughly fine.
+
+      return { success: true, data: finalData };
+  } catch(e) {
+      return { success: false, message: e.toString() };
+  }
+}
