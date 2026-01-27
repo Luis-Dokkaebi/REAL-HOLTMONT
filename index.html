@@ -427,8 +427,6 @@
         overflow: hidden;
     }
     .calendar-task-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
         z-index: 10;
     }
 
@@ -606,7 +604,7 @@
                                  <div class="day-num">{{ day.number }}</div>
                              </div>
                              <div class="day-body p-2 h-100 overflow-auto custom-scrollbar">
-                                 <div v-for="task in getTasksForDay(day.dateStr)" :key="task.FOLIO" class="calendar-task-card task-anim-enter position-relative" :style="{ borderLeft: '4px solid ' + getTaskColor(task), backgroundColor: getTaskColor(task) + '15' }">
+                                 <div v-for="task in getTasksForDay(day.dateStr)" :key="task.FOLIO" class="calendar-task-card task-anim-enter position-relative" :style="{ borderLeft: '4px solid ' + getTaskColor(task), backgroundColor: getTaskColor(task) + '15' }" @mouseenter="animTaskHover($event.currentTarget)" @mouseleave="animTaskLeave($event.currentTarget)">
                                      <div class="d-flex justify-content-between align-items-start mb-1">
                                          <span class="badge bg-white text-secondary border fw-normal" style="font-size:8px; opacity:0.8;">{{ task.FOLIO }}</span>
                                          <i v-if="isTaskDone(task)" class="fas fa-check-circle" :style="{color: getTaskColor(task)}"></i>
@@ -4515,9 +4513,28 @@
       });
 
       const navigateCalendar = (dir) => {
-          const d = new Date(dashboardCalendar.value.currentDate);
-          d.setDate(d.getDate() + (dir * 7));
-          dashboardCalendar.value.currentDate = d;
+          anime({
+              targets: '.calendar-grid',
+              opacity: [1, 0],
+              translateX: [0, dir * -30],
+              easing: 'easeInQuad',
+              duration: 200,
+              complete: () => {
+                  const d = new Date(dashboardCalendar.value.currentDate);
+                  d.setDate(d.getDate() + (dir * 7));
+                  dashboardCalendar.value.currentDate = d;
+                  nextTick(() => {
+                      anime.set('.calendar-grid', { translateX: dir * 30, opacity: 0 });
+                      anime({
+                          targets: '.calendar-grid',
+                          opacity: [0, 1],
+                          translateX: [dir * 30, 0],
+                          easing: 'easeOutQuad',
+                          duration: 300
+                      });
+                  });
+              }
+          });
       };
 
       const animateCalendarTasks = () => {
@@ -4528,6 +4545,30 @@
               delay: anime.stagger(50),
               easing: 'easeOutCubic',
               duration: 600
+          });
+      };
+
+      const animTaskHover = (el) => {
+          anime.remove(el);
+          anime({
+              targets: el,
+              scale: 1.05,
+              boxShadow: '0 15px 30px rgba(0,0,0,0.15)',
+              zIndex: 100,
+              duration: 800,
+              easing: 'easeOutElastic(1, .6)'
+          });
+      };
+
+      const animTaskLeave = (el) => {
+          anime.remove(el);
+          anime({
+              targets: el,
+              scale: 1,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+              zIndex: 1,
+              duration: 600,
+              easing: 'easeOutElastic(1, .6)'
           });
       };
 
@@ -4627,7 +4668,7 @@
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
-      dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone };
+      dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
