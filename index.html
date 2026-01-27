@@ -399,16 +399,44 @@
     .btn-quote-gen { background-color: #0d6efd; border: 1px solid #0d6efd; color: white; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
 
     /* CALENDAR STYLES */
-    .calendar-grid { overflow-x: auto; }
-    .calendar-day-col { min-width: 140px; background-color: #fff; border-right: 1px solid #dee2e6; transition: background-color 0.3s; }
+    .calendar-grid { overflow-x: auto; background-color: #ffffff; }
+    .calendar-day-col { min-width: 140px; background-color: #fff; border-right: 1px dashed #eff2f5; transition: background-color 0.3s; }
     .calendar-day-col:last-child { border-right: none; }
-    .today-col .day-header { background-color: #fff3cd !important; color: #856404 !important; border-bottom: 2px solid #ffc107 !important; }
-    .today-col .day-body { background-color: #fff9e6 !important; }
-    .calendar-task-card { transition: all 0.2s; cursor: pointer; border-left-width: 4px !important; }
-    .calendar-task-card:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important; z-index: 10; }
+
+    .day-header { padding: 10px 0; text-align: center; border-bottom: 1px solid #f4f6f8; background: #fff; }
+    .day-header .day-name { font-size: 10px; font-weight: 700; color: #b5b5c3; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
+    .day-header .day-num {
+        font-size: 18px; font-weight: 800; color: #3f4254;
+        width: 32px; height: 32px; line-height: 32px; border-radius: 50%; margin: 0 auto;
+        transition: all 0.3s; display: flex; align-items: center; justify-content: center;
+    }
+
+    .today-col .day-header .day-num { background-color: #3699ff; color: #fff; box-shadow: 0 4px 10px rgba(54, 153, 255, 0.4); }
+    .today-col .day-body { background-color: #f9f9f9 !important; }
+
+    .calendar-task-card {
+        border-radius: 12px !important;
+        border: none !important; /* Managed by inline style */
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
+        margin-bottom: 10px;
+        padding: 10px 12px !important;
+        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        cursor: pointer;
+        background: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .calendar-task-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+        z-index: 10;
+    }
+
+    .task-anim-enter { opacity: 0; }
+
     .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 3px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background-color: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #e4e6ef; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background-color: transparent; }
   </style>
 </head>
 <body>
@@ -572,25 +600,25 @@
                          <div class="spinner-border text-primary" role="status"></div>
                      </div>
                      <div v-else class="calendar-grid flex-fill d-flex">
-                         <div v-for="day in weekDays" :key="day.dateStr" class="calendar-day-col flex-fill border-end" :class="{ 'today-col': day.isToday }" style="min-width: 0;">
-                             <div class="day-header text-center py-2 border-bottom" :class="{ 'bg-light text-muted': !day.isToday, 'bg-primary text-white': day.isToday }">
-                                 <div class="small fw-bold text-uppercase" style="font-size: 10px;">{{ day.name }}</div>
-                                 <div class="fs-5 fw-bold">{{ day.number }}</div>
+                         <div v-for="day in weekDays" :key="day.dateStr" class="calendar-day-col flex-fill" :class="{ 'today-col': day.isToday }" style="min-width: 0;">
+                             <div class="day-header">
+                                 <div class="day-name">{{ day.name }}</div>
+                                 <div class="day-num">{{ day.number }}</div>
                              </div>
-                             <div class="day-body p-2 h-100 overflow-auto custom-scrollbar" style="background-color: #fcfcfc;">
-                                 <div v-for="task in getTasksForDay(day.dateStr)" :key="task.FOLIO" class="calendar-task-card mb-2 p-2 border rounded shadow-sm bg-white position-relative" :style="{ borderLeft: '4px solid ' + getTaskColor(task) + ' !important' }">
+                             <div class="day-body p-2 h-100 overflow-auto custom-scrollbar">
+                                 <div v-for="task in getTasksForDay(day.dateStr)" :key="task.FOLIO" class="calendar-task-card task-anim-enter position-relative" :style="{ borderLeft: '4px solid ' + getTaskColor(task), backgroundColor: getTaskColor(task) + '15' }">
                                      <div class="d-flex justify-content-between align-items-start mb-1">
-                                         <span class="badge bg-light text-secondary border fw-normal" style="font-size:8px">{{ task.FOLIO }}</span>
-                                         <i v-if="isTaskDone(task)" class="fas fa-check-circle text-success"></i>
+                                         <span class="badge bg-white text-secondary border fw-normal" style="font-size:8px; opacity:0.8;">{{ task.FOLIO }}</span>
+                                         <i v-if="isTaskDone(task)" class="fas fa-check-circle" :style="{color: getTaskColor(task)}"></i>
                                      </div>
                                      <div class="fw-bold text-dark mb-1" style="font-size:11px; line-height:1.2; overflow-wrap: break-word;">{{ task.CLIENTE || 'Sin Cliente' }}</div>
                                      <div class="text-muted small text-truncate" style="font-size:10px;" :title="task.CONCEPTO">{{ task.CONCEPTO || 'Sin Descripción' }}</div>
-                                     <div class="mt-1 d-flex justify-content-between align-items-center">
-                                         <span class="badge bg-secondary" style="font-size: 8px; transform: scale(0.9); transform-origin: left;">{{ task.ESTATUS }}</span>
+                                     <div class="mt-2 d-flex justify-content-between align-items-center">
+                                         <span class="badge text-white" :style="{backgroundColor: getTaskColor(task), fontSize: '8px', transform: 'scale(0.9)', transformOrigin: 'left'}">{{ task.ESTATUS }}</span>
                                      </div>
                                  </div>
-                                 <div v-if="getTasksForDay(day.dateStr).length === 0" class="text-center mt-4 text-muted small opacity-50">
-                                     -
+                                 <div v-if="getTasksForDay(day.dateStr).length === 0" class="text-center mt-5 text-muted small opacity-25">
+                                     <i class="fas fa-calendar-minus fa-2x mb-2"></i><br>Libre
                                  </div>
                              </div>
                          </div>
@@ -4492,6 +4520,17 @@
           dashboardCalendar.value.currentDate = d;
       };
 
+      const animateCalendarTasks = () => {
+          anime({
+              targets: '.task-anim-enter',
+              translateY: [20, 0],
+              opacity: [0, 1],
+              delay: anime.stagger(50),
+              easing: 'easeOutCubic',
+              duration: 600
+          });
+      };
+
       const loadDashboardCalendar = () => {
           calendarLoading.value = true;
           let target = currentUser.value;
@@ -4514,11 +4553,16 @@
               calendarLoading.value = false;
               if (res.success) {
                   dashboardCalendar.value.tasks = res.data;
+                  nextTick(() => animateCalendarTasks());
               } else {
                   console.error("Calendar Load Error", res.message);
               }
           }).apiFetchCombinedCalendarData(target);
       };
+
+      watch(weekDays, () => {
+          nextTick(() => animateCalendarTasks());
+      });
 
       onMounted(() => {
           calendarInterval.value = setInterval(() => {
