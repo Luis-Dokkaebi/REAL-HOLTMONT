@@ -555,6 +555,10 @@
                     <div class="d-flex align-items-center gap-3">
                         <h5 class="fw-bold m-0 text-primary"><i class="fas fa-calendar-alt me-2"></i>Tareas Semanales</h5>
                         <button class="btn btn-light text-primary btn-sm fw-bold border" @click="loadDashboardCalendar" title="Actualizar"><i class="fas fa-sync-alt"></i></button>
+                        <select v-if="currentRole === 'ADMIN'" v-model="calendarUserFilter" @change="loadDashboardCalendar" class="form-select form-select-sm border-secondary fw-bold" style="width: auto;">
+                            <option value="">-- MI CALENDARIO --</option>
+                            <option v-for="u in config.directory" :key="u.name" :value="u.name">{{ u.name }}</option>
+                        </select>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <button class="btn btn-light border btn-sm" @click="navigateCalendar(-1)"><i class="fas fa-chevron-left"></i></button>
@@ -2782,6 +2786,7 @@
       // CALENDAR STATE
       const dashboardCalendar = ref({ currentDate: new Date(), tasks: [] });
       const calendarLoading = ref(false);
+      const calendarUserFilter = ref('');
 
       const searchQuery = ref(''); const isCompact = ref(false);
       const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
@@ -4486,14 +4491,20 @@
       const loadDashboardCalendar = () => {
           calendarLoading.value = true;
           let target = currentUser.value;
-          const mods = config.value.specialModules || [];
-          const salesMod = mods.find(m => m.type === 'mirror_staff' && String(m.target).toUpperCase().includes('VENTAS'));
-          const trackerMod = mods.find(m => m.type === 'mirror_staff' && !String(m.target).toUpperCase().includes('VENTAS'));
 
-          if (salesMod) target = salesMod.target;
-          else if (trackerMod) target = trackerMod.target;
+          // ADMIN FILTER OVERRIDE
+          if (currentRole.value === 'ADMIN' && calendarUserFilter.value) {
+              target = calendarUserFilter.value;
+          } else {
+              const mods = config.value.specialModules || [];
+              const salesMod = mods.find(m => m.type === 'mirror_staff' && String(m.target).toUpperCase().includes('VENTAS'));
+              const trackerMod = mods.find(m => m.type === 'mirror_staff' && !String(m.target).toUpperCase().includes('VENTAS'));
 
-          if (currentRole.value === 'TONITA' || currentUser.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+              if (salesMod) target = salesMod.target;
+              else if (trackerMod) target = trackerMod.target;
+
+              if (currentRole.value === 'TONITA' || currentUser.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+          }
 
           google.script.run.withSuccessHandler(res => {
               calendarLoading.value = false;
@@ -4546,7 +4557,7 @@
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
-      dashboardCalendar, calendarLoading, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone };
+      dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
