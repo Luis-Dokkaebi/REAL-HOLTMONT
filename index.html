@@ -2787,6 +2787,7 @@
       const dashboardCalendar = ref({ currentDate: new Date(), tasks: [] });
       const calendarLoading = ref(false);
       const calendarUserFilter = ref('');
+      const calendarInterval = ref(null);
 
       const searchQuery = ref(''); const isCompact = ref(false);
       const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
@@ -3791,7 +3792,10 @@
           }
       }, { immediate: true });
 
-      const logout = () => { google.script.run.apiLogout(currentUsername.value); isLoggedIn.value=false; loginPass.value=''; loginUser.value=''; currentView.value='DASHBOARD'; };
+      const logout = () => {
+          if(calendarInterval.value) clearInterval(calendarInterval.value);
+          google.script.run.apiLogout(currentUsername.value); isLoggedIn.value=false; loginPass.value=''; loginUser.value=''; currentView.value='DASHBOARD';
+      };
       const goHome = () => { currentView.value='DASHBOARD'; currentDept.value=''; currentModuleId.value=''; loadDashboardCalendar(); };
       const selectDept = (k) => { currentDept.value=k; currentView.value='DEPT'; searchQuery.value=''; currentModuleId.value=''; };
       const goBackToDept = () => currentView.value=staffTracker.value.previousView;
@@ -4515,6 +4519,28 @@
               }
           }).apiFetchCombinedCalendarData(target);
       };
+
+      onMounted(() => {
+          calendarInterval.value = setInterval(() => {
+              if (isLoggedIn.value && currentView.value === 'DASHBOARD') {
+                  // Silent update (no loading spinner for polling)
+                  let target = currentUser.value;
+                  if (currentRole.value === 'ADMIN' && calendarUserFilter.value) {
+                      target = calendarUserFilter.value;
+                  } else {
+                      const mods = config.value.specialModules || [];
+                      const salesMod = mods.find(m => m.type === 'mirror_staff' && String(m.target).toUpperCase().includes('VENTAS'));
+                      const trackerMod = mods.find(m => m.type === 'mirror_staff' && !String(m.target).toUpperCase().includes('VENTAS'));
+                      if (salesMod) target = salesMod.target;
+                      else if (trackerMod) target = trackerMod.target;
+                      if (currentRole.value === 'TONITA' || currentUser.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+                  }
+                  google.script.run.withSuccessHandler(res => {
+                      if (res.success) dashboardCalendar.value.tasks = res.data;
+                  }).apiFetchCombinedCalendarData(target);
+              }
+          }, 60000); // 60 seconds polling
+      });
 
       const getTasksForDay = (dateStr) => {
           if (!dashboardCalendar.value.tasks) return [];
