@@ -898,12 +898,20 @@
                 <thead>
                   <tr>
                     <th class="row-num">#</th>
-                    <th v-for="(h, idx) in staffTracker.headers" :key="idx" :style="getColumnStyle(h)">{{ getHeaderLabel(h) }}</th>
+                    <th v-for="(h, idx) in staffTracker.headers" :key="idx" :style="getColumnStyle(h)">
+                        <div>{{ getHeaderLabel(h) }}</div>
+                        <div v-if="isCol(h, ['AREA', 'ESPECIALIDAD', 'CLIENTE', 'VENDEDOR'])">
+                             <select v-model="staffTrackerFilters[h]" @click.stop class="form-select form-select-sm p-0 border-0 bg-transparent text-primary fw-bold" style="font-size:10px; height:auto; cursor:pointer; min-width: 60px;">
+                                 <option value="">TODOS</option>
+                                 <option v-for="val in getUniqueValues(h)" :key="val" :value="val">{{val}}</option>
+                             </select>
+                        </div>
+                    </th>
                     <th style="width:40px"><i class="fas fa-save"></i></th>
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in staffTracker.data" :key="i" :class="{'new-row-highlight': row._isNew}">
+                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in staffTracker.headers" :key="idx">
                          <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
@@ -2805,6 +2813,7 @@
       const currentView = ref('DASHBOARD'); const currentDept = ref('');
       const config = ref({ departments: {}, staff: [], directory: [], specialModules: [] });
       const staffTracker = ref({ name: '', data: [], history: [], headers: [], isLoading: false, previousView: 'DEPT' });
+      const staffTrackerFilters = ref({});
       const activeTrackerTab = ref('OPERATIVO');
       const trackerSubView = ref('TASKS');
       const currentStaffName = ref('');
@@ -3656,6 +3665,31 @@
 
       const isCol = (h, list) => list.includes(String(h).toUpperCase().trim());
 
+      const getUniqueValues = (h) => {
+          if (!staffTracker.value.data) return [];
+          const values = new Set();
+          staffTracker.value.data.forEach(row => {
+              if (row[h]) values.add(String(row[h]).trim());
+          });
+          return Array.from(values).sort();
+      };
+
+      const filteredStaffTrackerData = computed(() => {
+          if (!staffTracker.value.data) return [];
+          return staffTracker.value.data.filter(row => {
+              for (const key in staffTrackerFilters.value) {
+                  const filterVal = staffTrackerFilters.value[key];
+                  if (filterVal) {
+                      const rowVal = String(row[key] || '').trim();
+                      // Simple equality check (case-sensitive as values come from set) or insensitive?
+                      // Let's use exact match since options come from data.
+                      if (rowVal !== filterVal) return false;
+                  }
+              }
+              return true;
+          });
+      });
+
       const isFieldEditable = (h, row) => {
           const restrictedRoles = ['ANGEL_USER', 'TERESA_USER', 'EDUARDO_USER', 'MANZANARES_USER', 'RAMIRO_USER', 'SEBASTIAN_USER', 'EDGAR_USER'];
           if (restrictedRoles.includes(currentRole.value)) {
@@ -4149,6 +4183,7 @@
       };
 
       const loadTrackerData = () => {
+          staffTrackerFilters.value = {};
           let sheetName = currentStaffName.value;
           if (activeTrackerTab.value === 'VENTAS') {
               sheetName = sheetName + " VENTAS";
@@ -4731,7 +4766,8 @@
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
-      dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible };
+      dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
+      staffTrackerFilters, filteredStaffTrackerData, getUniqueValues };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
