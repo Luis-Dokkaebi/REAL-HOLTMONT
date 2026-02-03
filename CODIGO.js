@@ -3015,3 +3015,88 @@ function apiFetchCombinedCalendarData(sheetName) {
       return { success: false, message: e.toString() };
   }
 }
+
+/**
+ * ======================================================================
+ * MODULO: AGENDA PERSONAL (HOLTZAR INTEGRATION)
+ * ======================================================================
+ */
+
+function apiFetchUnifiedAgenda(username) {
+  // 1. Fetch Work Tasks (Existing Logic)
+  let workTasks = [];
+  try {
+     // Determine target for work tasks based on role/user
+     let target = username;
+     if (String(username).toUpperCase() === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+
+     const workRes = apiFetchCombinedCalendarData(target);
+     if (workRes.success) workTasks = workRes.data;
+  } catch(e) { console.error("Error fetching work tasks", e); }
+
+  // 2. Fetch Personal Events
+  let personalEvents = [];
+  try {
+     const sheet = findSheetSmart("AGENDA_PERSONAL");
+     if (sheet) {
+        const res = internalFetchSheetData("AGENDA_PERSONAL");
+        if(res.success) {
+            // Filter by user if possible, for now return all found
+            personalEvents = res.data.filter(r => !r.USUARIO || r.USUARIO === username);
+        }
+     } else {
+        // MOCK DATA FOR DEMO IF SHEET DOESN'T EXIST
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = today.getMonth(); // 0-indexed
+        const d = today.getDate();
+
+        personalEvents = [
+            { ID: 'P-1', TITULO: 'Rutina Mañana', TIPO: 'PERSONAL', HORA_INICIO: '06:00', HORA_FIN: '07:00', DETALLES: 'Meditación y Café', FECHA: new Date(y, m, d), CLASIFICACION: 'PERSONAL' },
+            { ID: 'P-2', TITULO: 'Gimnasio', TIPO: 'PERSONAL', HORA_INICIO: '07:30', HORA_FIN: '08:30', DETALLES: 'Cardio', FECHA: new Date(y, m, d), CLASIFICACION: 'SALUD' },
+            { ID: 'P-3', TITULO: 'Comida', TIPO: 'COMIDA', HORA_INICIO: '14:00', HORA_FIN: '15:00', DETALLES: 'Pollo y Arroz', FECHA: new Date(y, m, d), CLASIFICACION: 'SALUD' }
+        ];
+     }
+  } catch(e) { console.error("Error fetching personal events", e); }
+
+  // 3. Fetch Habits
+  let habits = [];
+  try {
+      const sheet = findSheetSmart("HABITOS_LOG");
+      if (sheet) {
+         const res = internalFetchSheetData("HABITOS_LOG");
+         if (res.success) habits = res.data.filter(r => !r.USUARIO || r.USUARIO === username);
+      } else {
+         // MOCK DATA
+         habits = [
+             { ID: 'H1', HABITO: 'Leer 30min', META: 5, LOG_JSON: JSON.stringify([true, true, false, true, false, false, false]) },
+             { ID: 'H2', HABITO: 'Ejercicio', META: 4, LOG_JSON: JSON.stringify([false, true, true, false, false, false, false]) },
+             { ID: 'H3', HABITO: 'Meditar', META: 7, LOG_JSON: JSON.stringify([true, true, true, true, true, false, false]) }
+         ];
+      }
+  } catch(e) { console.error("Error fetching habits", e); }
+
+  return { success: true, workTasks: workTasks, personalEvents: personalEvents, habits: habits };
+}
+
+function apiSavePersonalEvent(eventData) {
+    // Ensure sheet exists
+    let sheet = findSheetSmart("AGENDA_PERSONAL");
+    if (!sheet) {
+        sheet = SS.insertSheet("AGENDA_PERSONAL");
+        sheet.appendRow(["ID", "USUARIO", "TITULO", "TIPO", "FECHA", "HORA_INICIO", "HORA_FIN", "DETALLES", "CLASIFICACION", "ESTATUS"]);
+    }
+    return internalBatchUpdateTasks("AGENDA_PERSONAL", [eventData]);
+}
+
+function apiSaveHabitLog(habitData) {
+    // Ensure sheet exists
+    let sheet = findSheetSmart("HABITOS_LOG");
+    if (!sheet) {
+        sheet = SS.insertSheet("HABITOS_LOG");
+        sheet.appendRow(["ID", "USUARIO", "HABITO", "META", "LOG_JSON", "FECHA_ACTUALIZACION"]);
+    }
+    // If saving a habit update, we might need to find the existing row.
+    // internalBatchUpdateTasks handles updates by ID/FOLIO.
+    return internalBatchUpdateTasks("HABITOS_LOG", [habitData]);
+}

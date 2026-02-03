@@ -480,6 +480,12 @@
             <span class="nav-text">Dashboard</span>
         </div>
 
+        <!-- NEW PERSONAL AGENDA BUTTON -->
+        <div class="nav-item" :class="{ active: currentView === 'PERSONAL_AGENDA' }" @click="currentView = 'PERSONAL_AGENDA'; currentDept = ''; currentModuleId = ''; loadPersonalAgenda()">
+            <div class="nav-icon-col"><i class="fas fa-calendar-check" style="color: #00d2ff;"></i></div>
+            <span class="nav-text" style="color: #00d2ff; font-weight: 600;">Mi Agenda</span>
+        </div>
+
         <div class="nav-item" v-if="config.accessProjects" :class="{ active: currentView === 'PROJECTS' }" @click="currentView = 'PROJECTS'; currentDept = ''; currentModuleId = '';">
             <div class="nav-icon-col"><i class="fas fa-project-diagram"></i></div>
             <span class="nav-text">Proyectos</span>
@@ -625,6 +631,276 @@
                 </div>
             </div>
           </div>
+        </div>
+
+        <!-- PERSONAL AGENDA VIEW (HOLTZAR STYLE) -->
+        <div v-if="currentView === 'PERSONAL_AGENDA'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-bold m-0 text-dark"><i class="fas fa-calendar-check me-2 text-primary"></i>MI AGENDA PERSONAL</h4>
+                    <span class="text-muted small">Organización Inteligente | {{ currentUser }}</span>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm me-2" @click="loadPersonalAgenda"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                    <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-muted small fw-bold text-uppercase">Actividades</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ personalAgenda.metrics.totalEvents }}</h2>
+                                <small class="text-muted" style="font-size:10px;">Esta semana</small>
+                            </div>
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                <i class="fas fa-calendar text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-muted small fw-bold text-uppercase">Pendientes</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ personalAgenda.metrics.pendingTasks }}</h2>
+                                <small class="text-danger fw-bold" style="font-size:10px;">{{ personalAgenda.metrics.urgentTasks }} urgentes</small>
+                            </div>
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                <i class="fas fa-list-ul text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-muted small fw-bold text-uppercase">Hábitos</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ personalAgenda.metrics.completedHabits }}</h2>
+                                <small class="text-success fw-bold" style="font-size:10px;">Registrados hoy</small>
+                            </div>
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                <i class="fas fa-bullseye text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-muted small fw-bold text-uppercase">Progreso</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ personalAgenda.metrics.progress }}%</h2>
+                                <small class="text-info fw-bold" style="font-size:10px;">General semanal</small>
+                            </div>
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                <i class="fas fa-chart-line text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm" style="width: fit-content;">
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'TIMELINE'}" @click="personalAgenda.activeTab = 'TIMELINE'">
+                        <i class="fas fa-stream me-2"></i>Cronograma
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'TASKS'}" @click="personalAgenda.activeTab = 'TASKS'">
+                        <i class="fas fa-check-square me-2"></i>Tareas
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'HABITS'}" @click="personalAgenda.activeTab = 'HABITS'">
+                        <i class="fas fa-running me-2"></i>Hábitos
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'MEALS'}" @click="personalAgenda.activeTab = 'MEALS'">
+                        <i class="fas fa-utensils me-2"></i>Comidas
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'ANALYSIS'}" @click="personalAgenda.activeTab = 'ANALYSIS'; renderPersonalCharts()">
+                        <i class="fas fa-chart-bar me-2"></i>Análisis
+                    </button>
+                </li>
+            </ul>
+
+            <!-- DYNAMIC CONTENT CONTAINER (Placeholder for next steps) -->
+            <div class="flex-fill bg-white rounded shadow-sm p-4 position-relative" style="min-height: 400px;">
+                <div v-if="personalAgenda.isLoading" class="d-flex justify-content-center align-items-center h-100">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+
+                <!-- CONTENT WILL BE INJECTED HERE IN SUBSEQUENT STEPS -->
+                <div v-else>
+                    <div v-if="personalAgenda.activeTab === 'TIMELINE'" id="pa-timeline-view">
+                        <div class="timeline-container p-2">
+                            <div v-if="personalAgenda.timeline.length === 0" class="text-center text-muted py-5">
+                                <i class="fas fa-calendar-times fa-3x mb-3 opacity-25"></i>
+                                <h5 class="fw-bold text-secondary">Sin actividades programadas</h5>
+                                <p class="small">Tu agenda está libre para hoy.</p>
+                            </div>
+
+                            <div v-else class="timeline-list">
+                                <div v-for="(item, i) in personalAgenda.timeline" :key="item.id" class="d-flex mb-3 align-items-start animate__animated animate__fadeInUp" :style="{animationDelay: (i * 50) + 'ms'}">
+                                    <div class="me-3 text-end" style="min-width: 60px;">
+                                        <h6 class="fw-bold m-0 text-dark" style="font-family: 'Share Tech Mono', monospace;">{{ item.time }}</h6>
+                                        <small class="text-muted" style="font-size: 10px;">{{ item.date }}</small>
+                                    </div>
+                                    <div class="card border-0 shadow-sm flex-fill" :style="{borderLeft: '4px solid ' + item.color, backgroundColor: '#fff'}">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <span class="badge mb-2" :style="{backgroundColor: item.color, fontSize:'10px'}">{{ item.type === 'WORK' ? 'TRABAJO' : 'PERSONAL' }}</span>
+                                                    <h6 class="fw-bold mb-1 text-dark">{{ item.title }}</h6>
+                                                    <p class="mb-1 small text-secondary" v-if="item.client"><i class="fas fa-building me-1"></i> {{ item.client }}</p>
+                                                    <p class="mb-0 small text-muted" v-if="item.desc" style="white-space: pre-line;">{{ item.desc }}</p>
+                                                </div>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-light border-0 rounded-circle" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v text-muted"></i></button>
+                                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                                        <li v-if="item.type === 'WORK'"><a class="dropdown-item small" href="#"><i class="fas fa-check me-2 text-success"></i>Completar</a></li>
+                                                        <li><a class="dropdown-item small text-danger" href="#"><i class="fas fa-trash me-2"></i>Eliminar</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="personalAgenda.activeTab === 'TASKS'" id="pa-tasks-view">
+                        <div class="p-3">
+                            <h5 class="fw-bold mb-3">Mis Tareas Laborales</h5>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+                                        <div v-if="personalAgenda.timeline.filter(t => t.type === 'WORK').length === 0" class="p-4 text-center text-muted">
+                                            No hay tareas laborales asignadas.
+                                        </div>
+                                        <div v-for="task in personalAgenda.timeline.filter(t => t.type === 'WORK')" :key="task.id" class="list-group-item border-0 border-bottom py-3">
+                                            <div class="d-flex w-100 justify-content-between align-items-center">
+                                                <div>
+                                                    <h6 class="mb-1 fw-bold text-dark">{{ task.title }}</h6>
+                                                    <small class="text-muted"><i class="fas fa-building me-1"></i> {{ task.client }} | {{ task.date }}</small>
+                                                </div>
+                                                <div>
+                                                    <span class="badge" :style="{backgroundColor: task.color}">{{ task.status }}</span>
+                                                </div>
+                                            </div>
+                                            <p class="mb-1 small text-secondary mt-2">{{ task.desc }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="personalAgenda.activeTab === 'HABITS'" id="pa-habits-view">
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold text-dark m-0">Mis Hábitos</h5>
+                                <button class="btn btn-primary btn-sm rounded-pill px-3" @click="promptAddHabit">
+                                    <i class="fas fa-plus me-1"></i> Nuevo Hábito
+                                </button>
+                            </div>
+
+                            <div class="row g-3">
+                                <div v-if="personalAgenda.habits.length === 0" class="col-12 text-center py-5 text-muted">
+                                    <i class="fas fa-leaf fa-3x mb-3 opacity-25"></i>
+                                    <p>No tienes hábitos registrados aún.</p>
+                                </div>
+
+                                <div v-for="habit in personalAgenda.habits" :key="habit.ID" class="col-md-4 col-lg-3">
+                                    <div class="card h-100 border-0 shadow-sm" :class="{'bg-light': isHabitDone(habit), 'border-success': isHabitDone(habit)}" style="transition: all 0.2s;">
+                                        <div class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-3"
+                                                 :style="{width:'60px', height:'60px', backgroundColor: isHabitDone(habit) ? '#d4edda' : '#f8f9fa', color: isHabitDone(habit) ? '#155724' : '#6c757d', fontSize:'24px', transition: 'all 0.3s'}">
+                                                <i class="fas" :class="habit.icon || 'fa-star'"></i>
+                                            </div>
+                                            <h6 class="fw-bold mb-1">{{ habit.HABITO }}</h6>
+                                            <small class="text-muted mb-3">{{ habit.category || 'General' }}</small>
+
+                                            <button class="btn btn-sm w-100 rounded-pill fw-bold"
+                                                    :class="isHabitDone(habit) ? 'btn-success' : 'btn-outline-primary'"
+                                                    @click="toggleHabit(habit)">
+                                                <i class="fas" :class="isHabitDone(habit) ? 'fa-check' : 'fa-circle'"></i>
+                                                {{ isHabitDone(habit) ? 'Completado' : 'Marcar' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="personalAgenda.activeTab === 'MEALS'" id="pa-meals-view">
+                        <div class="p-3">
+                            <h5 class="fw-bold mb-4">Registro de Alimentación</h5>
+                            <div class="row g-4">
+                                <div class="col-md-6 col-lg-3" v-for="cat in ['Desayuno', 'Comida', 'Cena', 'Snack']" :key="cat">
+                                    <div class="card h-100 border-0 shadow-sm" style="background: #fff;">
+                                        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                                            <h6 class="fw-bold m-0" :class="{'text-warning': cat==='Desayuno', 'text-danger': cat==='Comida', 'text-primary': cat==='Cena', 'text-success': cat==='Snack'}">{{ cat }}</h6>
+                                            <button class="btn btn-sm btn-light rounded-circle" @click="addMeal(cat)"><i class="fas fa-plus"></i></button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div v-if="getMeals(cat).length === 0" class="text-muted small fst-italic text-center py-3">
+                                                Nada registrado
+                                            </div>
+                                            <ul class="list-group list-group-flush" v-else>
+                                                <li v-for="m in getMeals(cat)" :key="m.id" class="list-group-item px-0 border-0 d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <div class="small fw-bold">{{ m.desc }}</div>
+                                                        <div class="text-muted" style="font-size:10px">{{ m.time }}</div>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="personalAgenda.activeTab === 'ANALYSIS'" id="pa-analysis-view">
+                        <div class="p-3">
+                            <h5 class="fw-bold mb-4">Análisis de Rendimiento Personal</h5>
+                            <div class="row g-4">
+                                <div class="col-md-8">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-white border-0 pt-3">
+                                            <h6 class="fw-bold m-0 text-primary">Actividad Semanal</h6>
+                                        </div>
+                                        <div class="card-body" style="height: 300px;">
+                                            <canvas id="paChartActivity"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-white border-0 pt-3">
+                                            <h6 class="fw-bold m-0 text-success">Balance de Vida</h6>
+                                        </div>
+                                        <div class="card-body" style="height: 300px;">
+                                            <canvas id="paChartBalance"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div v-if="currentView === 'KPI_DASHBOARD'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px;">
@@ -2819,6 +3095,16 @@
       const currentStaffName = ref('');
       const weeklyPlanData = ref({ headers: [], data: [], isLoading: false });
 
+      // PERSONAL AGENDA STATE
+      const personalAgenda = ref({
+          activeTab: 'TIMELINE',
+          isLoading: false,
+          timeline: [],
+          habits: [],
+          meals: [],
+          metrics: { totalEvents: 0, pendingTasks: 0, urgentTasks: 0, completedHabits: 0, progress: 0 }
+      });
+
       // CALENDAR STATE
       const dashboardCalendar = ref({ currentDate: new Date(), tasks: [] });
       const calendarLoading = ref(false);
@@ -4748,7 +5034,243 @@
           return '';
       };
 
-      return { deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
+      const loadPersonalAgenda = () => {
+          personalAgenda.value.isLoading = true;
+          google.script.run.withSuccessHandler(res => {
+              personalAgenda.value.isLoading = false;
+              if (res.success) {
+                  const tasks = (res.data.workTasks || []).map(t => {
+                      let dateStr = '';
+                      const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA'];
+                      for (const k of dateKeys) {
+                          if (t[k]) { dateStr = t[k]; break; }
+                      }
+
+                      return {
+                          id: t.FOLIO || t.ID || Math.random().toString(36),
+                          type: 'WORK',
+                          title: t.CONCEPTO || 'Tarea sin descripción',
+                          client: t.CLIENTE || 'Sin Cliente',
+                          time: '09:00', // Default
+                          date: dateStr,
+                          status: t.ESTATUS || 'PENDING',
+                          original: t,
+                          color: getTaskColor(t) // Reuse existing color logic
+                      };
+                  });
+
+                  const events = (res.data.personalEvents || []).map(e => ({
+                      id: e.ID,
+                      type: 'PERSONAL',
+                      title: e.TITULO,
+                      desc: e.DESCRIPCION || e.DETALLES,
+                      time: e.HORA_INICIO || '12:00',
+                      date: e.FECHA,
+                      status: 'PENDING',
+                      original: e,
+                      color: '#00d2ff'
+                  }));
+
+                  // Combine and sort by time
+                  const timeline = [...tasks, ...events].sort((a, b) => {
+                      const timeA = a.time || '00:00';
+                      const timeB = b.time || '00:00';
+                      return timeA.localeCompare(timeB);
+                  });
+
+                  personalAgenda.value.timeline = timeline;
+                  personalAgenda.value.habits = res.data.habits || [];
+                  personalAgenda.value.habitLogs = res.data.habitLogs || [];
+
+                  // Update Metrics
+                  personalAgenda.value.metrics = {
+                      totalEvents: timeline.length,
+                      pendingTasks: tasks.filter(t => !isTaskDone(t.original)).length,
+                      urgentTasks: tasks.filter(t => t.color === '#e74c3c').length,
+                      completedHabits: (res.data.habitLogs || []).length,
+                      progress: 0 // To be calculated
+                  };
+
+                  // Calculate progress (completed items / total)
+                  const totalItems = timeline.length;
+                  const completedItems = timeline.filter(i => {
+                      if (i.type === 'WORK') return isTaskDone(i.original);
+                      return false; // Personal events don't have explicit status yet in this simple logic
+                  }).length;
+
+                  if (totalItems > 0) {
+                      personalAgenda.value.metrics.progress = Math.round((completedItems / totalItems) * 100);
+                  }
+
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiFetchUnifiedAgenda(currentUser.value);
+      };
+
+      const renderPersonalCharts = () => {
+          nextTick(() => {
+              const ctxActivity = document.getElementById('paChartActivity');
+              const ctxBalance = document.getElementById('paChartBalance');
+
+              if (ctxActivity) {
+                  if (window.paCharts) {
+                      if (window.paCharts.activity) window.paCharts.activity.destroy();
+                      if (window.paCharts.balance) window.paCharts.balance.destroy();
+                  } else {
+                      window.paCharts = {};
+                  }
+
+                  const tasksCount = personalAgenda.value.metrics.totalEvents || 0;
+                  const habitsCount = personalAgenda.value.metrics.completedHabits || 0;
+
+                  window.paCharts.activity = new Chart(ctxActivity, {
+                      type: 'bar',
+                      data: {
+                          labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                          datasets: [{
+                              label: 'Tareas Completadas',
+                              data: [5, 8, 6, tasksCount, 0, 0, 0],
+                              backgroundColor: '#3699ff',
+                              borderRadius: 4
+                          }, {
+                              label: 'Hábitos',
+                              data: [3, 4, 3, habitsCount, 0, 0, 0],
+                              backgroundColor: '#28a745',
+                              borderRadius: 4
+                          }]
+                      },
+                      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                  });
+              }
+
+              if (ctxBalance) {
+                  const workCount = personalAgenda.value.timeline.filter(i => i.type === 'WORK').length;
+                  const personalCount = personalAgenda.value.timeline.filter(i => i.type === 'PERSONAL').length;
+
+                  window.paCharts.balance = new Chart(ctxBalance, {
+                      type: 'doughnut',
+                      data: {
+                          labels: ['Trabajo', 'Personal', 'Salud/Hábitos'],
+                          datasets: [{
+                              data: [workCount, personalCount, personalAgenda.value.habits.length],
+                              backgroundColor: ['#0d6efd', '#0dcaf0', '#20c997']
+                          }]
+                      },
+                      options: { responsive: true, maintainAspectRatio: false }
+                  });
+              }
+          });
+      };
+
+      const isHabitDone = (habit) => {
+          if (!habit || !habit.LOG_JSON) return false;
+          try {
+              const log = JSON.parse(habit.LOG_JSON);
+              const today = new Date().toLocaleDateString('en-GB');
+              if (Array.isArray(log)) return false;
+              return !!log[today];
+          } catch(e) { return false; }
+      };
+
+      const toggleHabit = (habit) => {
+          let log = {};
+          try { log = JSON.parse(habit.LOG_JSON || '{}'); } catch(e){}
+          if (Array.isArray(log)) log = {};
+
+          const today = new Date().toLocaleDateString('en-GB');
+          log[today] = !log[today];
+
+          habit.LOG_JSON = JSON.stringify(log);
+
+          const payload = {
+              ID: habit.ID,
+              USUARIO: currentUser.value,
+              HABITO: habit.HABITO,
+              META: habit.META,
+              LOG_JSON: habit.LOG_JSON,
+              FECHA_ACTUALIZACION: new Date()
+          };
+          google.script.run.withFailureHandler(handleErr).apiSaveHabitLog(payload);
+
+          const doneCount = personalAgenda.value.habits.filter(h => isHabitDone(h)).length;
+          personalAgenda.value.metrics.completedHabits = doneCount;
+      };
+
+      const promptAddHabit = () => {
+          Swal.fire({
+              title: 'Nuevo Hábito',
+              input: 'text',
+              inputLabel: 'Nombre del hábito (Ej: Leer, Ejercicio)',
+              showCancelButton: true,
+              confirmButtonText: 'Crear'
+          }).then((result) => {
+              if (result.isConfirmed && result.value) {
+                  const newHabit = {
+                      ID: 'H-' + Date.now(),
+                      USUARIO: currentUser.value,
+                      HABITO: result.value,
+                      META: 7,
+                      LOG_JSON: '{}',
+                      FECHA_ACTUALIZACION: new Date()
+                  };
+                  personalAgenda.value.habits.push(newHabit);
+                  google.script.run.withFailureHandler(handleErr).apiSaveHabitLog(newHabit);
+                  Swal.fire('Hábito Creado', '', 'success');
+              }
+          });
+      };
+
+      const addMeal = (category) => {
+          Swal.fire({
+              title: `Registrar ${category}`,
+              input: 'text',
+              inputPlaceholder: 'Ej: Avena con frutas...',
+              showCancelButton: true,
+              confirmButtonText: 'Guardar'
+          }).then((result) => {
+              if(result.isConfirmed && result.value) {
+                  const newEvent = {
+                      ID: 'M-' + Date.now(),
+                      USUARIO: currentUser.value,
+                      TITULO: category,
+                      TIPO: 'COMIDA', // Special type for filtering
+                      CLASIFICACION: category, // Desayuno, Comida, etc.
+                      DETALLES: result.value,
+                      FECHA: new Date(),
+                      HORA_INICIO: new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}),
+                      ESTATUS: 'REALIZADO'
+                  };
+                  // Optimistic update
+                  const timelineItem = {
+                      id: newEvent.ID,
+                      type: 'PERSONAL', // Merged into timeline as personal
+                      title: newEvent.TITULO,
+                      desc: newEvent.DETALLES,
+                      time: newEvent.HORA_INICIO,
+                      date: newEvent.FECHA.toLocaleDateString('en-GB'),
+                      status: 'PENDING',
+                      original: newEvent,
+                      color: '#28a745' // Green for meals
+                  };
+                  personalAgenda.value.timeline.push(timelineItem);
+                  personalAgenda.value.timeline.sort((a,b) => a.time.localeCompare(b.time));
+
+                  google.script.run.apiSavePersonalEvent(newEvent);
+                  Swal.fire('Registrado', '', 'success');
+              }
+          });
+      };
+
+      const getMeals = (cat) => {
+          return personalAgenda.value.timeline.filter(i => {
+              return i.type === 'PERSONAL' &&
+                     i.original.TIPO === 'COMIDA' &&
+                     i.original.CLASIFICACION === cat;
+          });
+      };
+
+      return { addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
