@@ -728,7 +728,11 @@ function internalFetchSheetData(sheetName) {
            }
         } else if (typeof val === 'string') {
            if(val.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) val = val.replace(/\/(\d{4})$/, (match, y) => "/" + y.slice(-2));
-           else if (val.match(/\d{4}-\d{2}-\d{2}/)) { let d = new Date(val); val = Utilities.formatDate(d, SS.getSpreadsheetTimeZone(), "dd/MM/yy"); }
+           else if (val.match(/\d{4}-\d{2}-\d{2}/)) {
+               // Manual split to avoid TZ shifts
+               const p = val.split('-');
+               val = `${p[2]}/${p[1]}/${p[0].slice(-2)}`;
+           }
         }
         if (val !== "" && val !== undefined) hasData = true;
         rowObj[headerName] = val;
@@ -3000,6 +3004,19 @@ function apiFetchCombinedCalendarData(sheetName) {
           }
       });
 
+      // --- ADDED: Personal Agenda Integration for Dashboard ---
+      const personalRes = internalFetchSheetData("AGENDA_PERSONAL");
+      if (personalRes.success && personalRes.data) {
+          const myEvents = personalRes.data.filter(e => String(e.USUARIO).trim().toUpperCase() === baseName.toUpperCase());
+          const mappedEvents = myEvents.map(e => ({
+              ...e,
+              CONCEPTO: e.TITULO || e.CONCEPTO,
+              CLIENTE: "PERSONAL"
+          }));
+          results.push(...mappedEvents);
+      }
+      // --------------------------------------------------------
+
       // Deduplicate by ID/FOLIO
       const uniqueTasks = {};
       results.forEach(r => {
@@ -3034,7 +3051,10 @@ function apiFetchUnifiedAgenda(username) {
      if (String(username).toUpperCase() === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
 
      const workRes = apiFetchCombinedCalendarData(target);
-     if (workRes.success) workTasks = workRes.data;
+     if (workRes.success) {
+         // Filter out Personal Events to avoid duplication (fetched separately below)
+         workTasks = workRes.data.filter(t => t.CLIENTE !== "PERSONAL");
+     }
   } catch(e) { console.error("Error fetching work tasks", e); }
 
   // 2. Fetch Personal Events
