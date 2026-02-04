@@ -5352,7 +5352,7 @@
                       TIPO: 'COMIDA', // Special type for filtering
                       CLASIFICACION: category, // Desayuno, Comida, etc.
                       DETALLES: result.value,
-                      FECHA: new Date(),
+                      FECHA: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
                       HORA_INICIO: new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}),
                       ESTATUS: 'REALIZADO'
                   };
