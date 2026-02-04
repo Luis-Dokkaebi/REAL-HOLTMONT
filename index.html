@@ -5304,7 +5304,7 @@
               HABITO: habit.HABITO,
               META: habit.META,
               LOG_JSON: habit.LOG_JSON,
-              FECHA_ACTUALIZACION: new Date()
+              FECHA_ACTUALIZACION: new Date().toISOString()
           };
           google.script.run.withFailureHandler(handleErr).apiSaveHabitLog(payload);
 
@@ -5327,7 +5327,7 @@
                       HABITO: result.value,
                       META: 7,
                       LOG_JSON: '{}',
-                      FECHA_ACTUALIZACION: new Date()
+                      FECHA_ACTUALIZACION: new Date().toISOString()
                   };
                   personalAgenda.value.habits.push(newHabit);
                   google.script.run.withFailureHandler(handleErr).apiSaveHabitLog(newHabit);
