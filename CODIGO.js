@@ -159,6 +159,9 @@ function findHeaderRow(values) {
       return i;
     }
     if (rowStr.includes("CLIENTE") && (rowStr.includes("VENDEDOR") || rowStr.includes("AREA") || rowStr.includes("CLASIFICACION"))) return i;
+    // SOPORTE PARA AGENDA PERSONAL Y HABITOS
+    if (rowStr.includes("ID") && rowStr.includes("TITULO") && rowStr.includes("USUARIO")) return i;
+    if (rowStr.includes("ID") && rowStr.includes("HABITO") && rowStr.includes("USUARIO")) return i;
   }
   return -1;
 }
