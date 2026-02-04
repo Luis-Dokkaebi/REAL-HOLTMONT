@@ -727,8 +727,13 @@ function internalFetchSheetData(sheetName) {
               val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
            }
         } else if (typeof val === 'string') {
-           if(val.match(/\d{1,2}\/\d{1,2}\/\d{4}/)) val = val.replace(/\/(\d{4})$/, (match, y) => "/" + y.slice(-2));
-           else if (val.match(/\d{4}-\d{2}-\d{2}/)) {
+           if(val.match(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/)) {
+               val = val.replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g, (m, d, mm, y) => {
+                   const yy = (y.length === 4) ? y.slice(-2) : y;
+                   return `${d.padStart(2,'0')}/${mm.padStart(2,'0')}/${yy}`;
+               });
+           }
+           else if (val.match(/^\d{4}-\d{2}-\d{2}$/)) {
                // Manual split to avoid TZ shifts
                const p = val.split('-');
                val = `${p[2]}/${p[1]}/${p[0].slice(-2)}`;

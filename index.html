@@ -5146,7 +5146,7 @@
               if (res.success) {
                   const tasks = (res.data.workTasks || []).map(t => {
                       let dateStr = '';
-                      const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA'];
+                      const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'FECHAS'];
                       for (const k of dateKeys) {
                           if (t[k]) { dateStr = t[k]; break; }
                       }
