@@ -1431,8 +1431,13 @@ function apiSavePPCData(payload, activeUser) {
 
           // E. Programa
           if (item.programa && item.programa.length > 0) {
-             const progItems = item.programa.map(p => ({ FOLIO: id, ...p, SECCION: p.seccion || "" }));
-             saveChildData(APP_CONFIG.woProgramSheet, progItems, ["FOLIO", "DESCRIPCION", "FECHA", "DURACION", "UNIDAD_DURACION", "UNIDAD", "CANTIDAD", "PRECIO", "TOTAL", "RESPONSABLE", "SECCION"]);
+             const progItems = item.programa.map(p => ({
+                 FOLIO: id,
+                 ...p,
+                 SECCION: p.seccion || "",
+                 ESTATUS: p.checkStatus || (p.isActive ? 'APPLY' : 'PENDING')
+             }));
+             saveChildData(APP_CONFIG.woProgramSheet, progItems, ["FOLIO", "DESCRIPCION", "FECHA", "DURACION", "UNIDAD_DURACION", "UNIDAD", "CANTIDAD", "PRECIO", "TOTAL", "RESPONSABLE", "SECCION", "ESTATUS"]);
           }
 
           // F. Detalles Extra (Checklist, Costos Adicionales) - JSON
