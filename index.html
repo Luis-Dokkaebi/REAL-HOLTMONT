@@ -1577,6 +1577,29 @@
 
                 <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="overflow-y:auto;">
             <div class="p-4" style="max-width: 1400px; margin: 0 auto; width: 100%;">
+                <!-- NOMBRE DE COTIZADOR TOP -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-3">
+                         <label class="small text-muted fw-bold mb-1">Nombre de cotizador</label>
+                         <div class="position-relative">
+                             <div class="input-group input-group-sm" @click="cotizadorSearchTop = ''">
+                                 <span class="input-group-text bg-light"><i class="fas fa-user-tie text-muted"></i></span>
+                                 <input v-model="cotizadorSearchTop" class="form-control" placeholder="Buscar..." @focus="cotizadorSearchTop = ''">
+                             </div>
+                             <ul class="list-group position-absolute w-100 shadow-sm" style="z-index: 1000; max-height: 200px; overflow-y: auto;" v-if="cotizadorSearchTop">
+                                 <li v-for="p in filteredCotizadoresTop" :key="p.name" class="list-group-item list-group-item-action small py-1" style="cursor: pointer;" @click="addCotizadorTop(p.name)">
+                                     {{ p.name }}
+                                 </li>
+                             </ul>
+                             <div class="d-flex flex-wrap gap-1 mt-2">
+                                 <span v-for="(c, i) in workorderData.cotizador" :key="i" class="badge bg-light text-dark border d-flex align-items-center">
+                                     {{ c }} <i class="fas fa-times ms-2 text-danger" style="cursor: pointer;" @click="removeCotizador(i)"></i>
+                                 </span>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+
                 <!-- CHECKLIST VISITA -->
                 <div class="card border-0 shadow-sm mb-4">
                     <div class="card-header bg-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #dc3545 !important; cursor: pointer;" @click="sectionVisibility.checklist = !sectionVisibility.checklist">
@@ -3380,6 +3403,10 @@
       const filteredCotizadores = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(cotizadorSearch.value.toLowerCase()) && !workorderData.value.cotizador.includes(p.name)).slice(0,5));
       const addCotizador = (name) => { workorderData.value.cotizador.push(name); cotizadorSearch.value = ''; };
       const removeCotizador = (idx) => { workorderData.value.cotizador.splice(idx, 1); };
+
+      const cotizadorSearchTop = ref('');
+      const filteredCotizadoresTop = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(cotizadorSearchTop.value.toLowerCase()) && !workorderData.value.cotizador.includes(p.name)).slice(0,5));
+      const addCotizadorTop = (name) => { workorderData.value.cotizador.push(name); cotizadorSearchTop.value = ''; };
 
       // WORKORDER STATE
       const workorderData = ref({
@@ -5470,7 +5497,7 @@
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
       showLogic, sectionVisibility, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
-      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, isRecording, toggleDictation,
+      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, cotizadorSearchTop, filteredCotizadoresTop, addCotizadorTop, isRecording, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
