@@ -1902,7 +1902,7 @@
                                             <!-- INPUT OCULTO PARA GEMINI -->
                                             <input type="file" id="audioInputGemini" accept="audio/*" capture class="d-none" onchange="enviarAudioAGemini(this)">
 
-                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" @click="toggleDictation" title="Dictar con Gemini AI">
+                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" onclick="toggleVoiceRecording(this)" title="Click para grabar voz">
                                                 <i class="fas fa-microphone"></i>
                                             </button>
                                          </div>
@@ -3451,6 +3451,110 @@ function enviarAudioAGemini(inputElement) {
             })
             .transcribirConGemini(base64Data, mimeType);
     };
+}
+
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+async function toggleVoiceRecording(btnElement) {
+    const icon = btnElement.querySelector('i');
+
+    if (!isRecording) {
+        // Start Recording
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = () => {
+                    const base64String = reader.result.split(',')[1];
+                    const mimeType = 'audio/webm'; // Chrome records in webm
+
+                    Swal.fire({
+                        title: 'Transcribiendo...',
+                        text: 'Enviando audio a Gemini AI',
+                        didOpen: () => Swal.showLoading(),
+                        allowOutsideClick: false,
+                        background: '#1a1a1a',
+                        color: '#ffffff'
+                    });
+
+                    google.script.run
+                        .withSuccessHandler(text => {
+                            const textarea = document.getElementById('campoConcepto');
+                            if(textarea) {
+                                const current = textarea.value;
+                                textarea.value = current + (current ? " " : "") + text;
+                                textarea.dispatchEvent(new Event('input'));
+                            }
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Transcrito!',
+                                timer: 1500,
+                                showConfirmButton: false,
+                                background: '#1a1a1a',
+                                color: '#ffffff'
+                            });
+                        })
+                        .withFailureHandler(err => {
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'No se pudo transcribir: ' + err,
+                                icon: 'error',
+                                background: '#1a1a1a',
+                                color: '#ffffff'
+                            });
+                        })
+                        .transcribirConGemini(base64String, mimeType);
+                };
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+
+            // Visual Feedback
+            btnElement.classList.remove('btn-primary');
+            btnElement.classList.add('btn-danger', 'pulse-recording');
+            if(icon) {
+                icon.classList.remove('fa-microphone');
+                icon.classList.add('fa-stop');
+            }
+
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                title: 'Error de Micrófono',
+                text: 'No se pudo acceder al micrófono. Asegúrate de dar permisos.',
+                icon: 'error',
+                background: '#1a1a1a',
+                color: '#ffffff'
+            });
+        }
+    } else {
+        // Stop Recording
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+        isRecording = false;
+
+        // Visual Feedback Reset
+        btnElement.classList.remove('btn-danger', 'pulse-recording');
+        btnElement.classList.add('btn-primary');
+        if(icon) {
+            icon.classList.remove('fa-stop');
+            icon.classList.add('fa-microphone');
+        }
+    }
 }
 
   const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
