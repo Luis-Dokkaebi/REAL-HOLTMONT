@@ -2063,10 +2063,9 @@
                                 <span class="fw-bold text-dark pe-2 small">Total: {{ formatCurrency(reqCotizacionTotal) }}</span>
                             </div>
                             <div v-for="(item, idx) in projectProgram.reqCotizacion" :key="idx" class="d-flex align-items-center gap-2 mb-1 p-1 border-bottom bg-white" :style="{opacity: item.isActive ? 1 : 0.6}">
-                                <div class="me-2 cursor-pointer ms-2" @click="toggleCheckStatus(item)" style="min-width: 24px; text-align: center;">
-                                     <i class="fas fa-check-square text-success fa-lg" v-if="item.checkStatus === 'APPLY'"></i>
-                                     <i class="fas fa-window-close text-danger fa-lg" v-else-if="item.checkStatus === 'NO_APPLY'"></i>
-                                     <i class="far fa-square text-muted fa-lg" v-else></i>
+                                <div class="me-2 ms-2 d-flex gap-2" style="min-width: 50px; text-align: center;">
+                                     <i class="fas fa-check-square fa-lg cursor-pointer" :class="item.checkStatus === 'APPLY' ? 'text-success' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'APPLY')"></i>
+                                     <i class="fas fa-window-close fa-lg cursor-pointer" :class="item.checkStatus === 'NO_APPLY' ? 'text-danger' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'NO_APPLY')"></i>
                                 </div>
                                 <div class="flex-grow-1">
                                     <input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent fw-bold" style="font-size: 12px;">
@@ -2094,10 +2093,9 @@
                                 <span class="fw-bold text-dark pe-2 small">Total: {{ formatCurrency(cotPreconstruccionTotal) }}</span>
                             </div>
                             <div v-for="(item, idx) in projectProgram.cotPreconstruccion" :key="idx" class="d-flex align-items-center gap-2 mb-1 p-1 border-bottom bg-white" :style="{opacity: item.isActive ? 1 : 0.6}">
-                                <div class="me-2 cursor-pointer ms-2" @click="toggleCheckStatus(item)" style="min-width: 24px; text-align: center;">
-                                     <i class="fas fa-check-square text-success fa-lg" v-if="item.checkStatus === 'APPLY'"></i>
-                                     <i class="fas fa-window-close text-danger fa-lg" v-else-if="item.checkStatus === 'NO_APPLY'"></i>
-                                     <i class="far fa-square text-muted fa-lg" v-else></i>
+                                <div class="me-2 ms-2 d-flex gap-2" style="min-width: 50px; text-align: center;">
+                                     <i class="fas fa-check-square fa-lg cursor-pointer" :class="item.checkStatus === 'APPLY' ? 'text-success' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'APPLY')"></i>
+                                     <i class="fas fa-window-close fa-lg cursor-pointer" :class="item.checkStatus === 'NO_APPLY' ? 'text-danger' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'NO_APPLY')"></i>
                                 </div>
                                 <div class="flex-grow-1">
                                     <input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent fw-bold" style="font-size: 12px;">
@@ -3858,16 +3856,13 @@ function enviarAudioAGemini(inputElement) {
       const showResourceModal = ref(false);
       const currentResourceTab = ref('MATERIALES');
 
-      const toggleCheckStatus = (item) => {
-          if (item.checkStatus === 'APPLY') {
-              item.checkStatus = 'NO_APPLY';
-              item.isActive = false;
-          } else if (item.checkStatus === 'NO_APPLY') {
-              item.checkStatus = null; // Pending
+      const setCheckStatus = (item, status) => {
+          if (item.checkStatus === status) {
+              item.checkStatus = null;
               item.isActive = false;
           } else {
-              item.checkStatus = 'APPLY';
-              item.isActive = true;
+              item.checkStatus = status;
+              item.isActive = (status === 'APPLY');
           }
       };
 
@@ -5789,7 +5784,7 @@ function enviarAudioAGemini(inputElement) {
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
-      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, toggleCheckStatus };
+      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
