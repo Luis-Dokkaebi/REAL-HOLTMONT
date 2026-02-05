@@ -3134,7 +3134,7 @@ function apiSaveHabitLog(habitData) {
  */
 function transcribirConGemini(base64Audio, mimeType) {
   // IMPORTANTE: Reemplazar con la API Key real del proyecto
-  const API_KEY = "AQUI_VA_TU_API_KEY_DE_GOOGLE_AI_STUDIO";
+  const API_KEY = "AIzaSyA7Lv551Quq7lMCynU7kRq9T1_MIaK6kkc";
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
