@@ -1900,9 +1900,9 @@
                                             <textarea id="campoConcepto" v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
 
                                             <!-- INPUT OCULTO PARA GEMINI -->
-                                            <input type="file" id="audioInputGemini" accept="audio/*" class="d-none" onchange="enviarAudioAGemini(this)">
+                                            <input type="file" id="audioInputGemini" accept="audio/*" capture class="d-none" onchange="enviarAudioAGemini(this)">
 
-                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" onclick="document.getElementById('audioInputGemini').click()" title="Dictar con Gemini AI">
+                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" @click="toggleDictation" title="Dictar con Gemini AI">
                                                 <i class="fas fa-microphone"></i>
                                             </button>
                                          </div>
@@ -3670,43 +3670,37 @@ function enviarAudioAGemini(inputElement) {
       const currentWorkorderId = ref(null);
       const nextSequence = ref('0000');
 
-      // --- JUTSU DE ENFOQUE (Estrategia para Móviles/Desktop) ---
+      // --- JUTSU DE ENFOQUE: Dictado Inteligente (Híbrido) ---
       const toggleDictation = () => {
           const campo = document.getElementById('campoConcepto');
+          if (campo) campo.focus();
 
-          if (campo) {
-              // 1. Enfocamos el campo para invocar al Teclado Nativo
-              campo.focus();
-
-              // 2. Detectamos dispositivo para dar la instrucción correcta
-              const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-              const isMobile = /android|iPad|iPhone|iPod/i.test(userAgent);
-
-              if (isMobile) {
-                  // En móvil: El teclado sube solo. Avisamos que usen el mic del teclado.
-                  // Usamos un Toast rápido para no estorbar
-                  Swal.mixin({
-                      toast: true,
-                      position: 'top-end',
-                      showConfirmButton: false,
-                      timer: 3000,
-                      timerProgressBar: true
-                  }).fire({
-                      icon: 'info',
-                      title: '¡Usa el micrófono de tu teclado! 🎙️'
-                  });
-              } else {
-                  // En PC: Avisamos del atajo de teclado
-                  Swal.fire({
-                      title: 'Dictado por Voz',
-                      html: 'Para dictar en PC, usa el atajo de tu sistema:<br><br>Windows: <b>Win + H</b><br>Mac: <b>F5</b> (o Fn+F5)',
-                      icon: 'info',
-                      confirmButtonText: 'Entendido'
-                  });
+          Swal.fire({
+              title: 'Dictado por Voz',
+              text: 'Selecciona tu herramienta preferida:',
+              icon: 'question',
+              showDenyButton: true,
+              showCancelButton: true,
+              confirmButtonText: '🎙️ Grabar (Gemini AI)',
+              denyButtonText: '⌨️ Dictado Sistema',
+              cancelButtonText: 'Cancelar',
+              confirmButtonColor: '#0d6efd',
+              denyButtonColor: '#6c757d'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  // Gemini: Trigger hidden file input
+                  const input = document.getElementById('audioInputGemini');
+                  if (input) input.click();
+              } else if (result.isDenied) {
+                  // Sistema: Mostrar instrucciones
+                  const isMobile = /android|iPad|iPhone|iPod/i.test(navigator.userAgent);
+                  if (isMobile) {
+                      Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 }).fire({ icon: 'info', title: '¡Usa el micrófono de tu teclado! 🎙️' });
+                  } else {
+                      Swal.fire({ title: 'Dictado Sistema', html: 'Atajos:<br>Windows: <b>Win + H</b><br>Mac: <b>F5</b>', icon: 'info' });
+                  }
               }
-          } else {
-              console.error("No encontré el elemento #campoConcepto para dar foco.");
-          }
+          });
       };
 
       const fetchNextSequence = () => {
