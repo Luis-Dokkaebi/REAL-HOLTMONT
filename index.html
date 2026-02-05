@@ -1943,6 +1943,50 @@
                     </div>
                 </div>
 
+                <!-- 7. DIBUJOS PLANOS Y DIAGRAMAS (DOCUMENTACION BUTTONS - REORDERED #7) -->
+                <div class="col-12 mt-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DIBUJOS PLANOS Y DIAGRAMAS (DOCUMENTACIÓN) <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.docs = !showLogic.docs" title="Ver Lógica"></i></h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="logic-card mb-3 position-relative" v-if="showLogic.docs">
+                                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.docs = false"></button>
+                                <div class="logic-header"><span class="logic-icon"><i class="fas fa-mouse-pointer"></i></span> LÓGICA DE BOTONES</div>
+                                <div class="logic-content">Se requiere que los cotizadores puedan de forma ordenada capturar foto ordenadas con una Tablet, videos, también que puedan rallar la fotos para tomar notas muy visuales así como también puedan hacer layout dibujado digital, así como también archivar planos y los alcances del proyecto.</div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-3">
+                                <button class="btn btn-outline-dark" @click="triggerUpload('FOTOS')"><i class="fas fa-camera me-2"></i>FOTOS</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('VIDEOS')"><i class="fas fa-video me-2"></i>VIDEOS</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('LAYOUT')"><i class="fas fa-pencil-ruler me-2"></i>LAYOUT / DIBUJO</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('PLANOS')"><i class="fas fa-map me-2"></i>PLANOS</button>
+
+                                <div class="vr mx-2"></div>
+
+                                <div class="d-flex flex-column align-items-center">
+                                    <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
+                                    <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.chatgpt = !showInstr.chatgpt" title="Ver Lógica"></i>
+                                    <small v-if="showInstr.chatgpt" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
+                                </div>
+                                <div class="d-flex flex-column align-items-center">
+                                    <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
+                                    <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.neural = !showInstr.neural" title="Ver Lógica"></i>
+                                    <small v-if="showInstr.neural" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
+                                </div>
+                            </div>
+                            <div v-if="workorderData.files && workorderData.files.length" class="mt-3">
+                                <h6 class="small fw-bold text-muted">Archivos Adjuntos:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div v-for="(f, i) in workorderData.files" :key="i" class="badge bg-light text-dark border p-2">
+                                        <i class="fas fa-paperclip me-1"></i> {{ f }}
+                                        <i class="fas fa-times text-danger ms-2" style="cursor:pointer" @click="workorderData.files.splice(i,1)"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- PROGRAMA DEL PROYECTO (PROGRAMACION) - Order #5 -->
                 <div class="card border-0 shadow-sm mt-5">
                     <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
@@ -2389,50 +2433,6 @@
                             <div class="card-body">
                                 <h6 class="fw-bold text-primary mb-3 text-uppercase small" style="color: #0d6efd !important;">TRANSPORTE DE EQUIPO Y PERSONAL</h6>
                                 <input type="number" v-model="additionalCosts.transporte" class="form-control fw-bold" placeholder="0">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 7. DIBUJOS PLANOS Y DIAGRAMAS (DOCUMENTACION BUTTONS - REORDERED #7) -->
-                <div class="col-12 mt-4">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
-                            <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DIBUJOS PLANOS Y DIAGRAMAS (DOCUMENTACIÓN) <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.docs = !showLogic.docs" title="Ver Lógica"></i></h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="logic-card mb-3 position-relative" v-if="showLogic.docs">
-                                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.docs = false"></button>
-                                <div class="logic-header"><span class="logic-icon"><i class="fas fa-mouse-pointer"></i></span> LÓGICA DE BOTONES</div>
-                                <div class="logic-content">Se requiere que los cotizadores puedan de forma ordenada capturar foto ordenadas con una Tablet, videos, también que puedan rallar la fotos para tomar notas muy visuales así como también puedan hacer layout dibujado digital, así como también archivar planos y los alcances del proyecto.</div>
-                            </div>
-                            <div class="d-flex flex-wrap gap-3">
-                                <button class="btn btn-outline-dark" @click="triggerUpload('FOTOS')"><i class="fas fa-camera me-2"></i>FOTOS</button>
-                                <button class="btn btn-outline-dark" @click="triggerUpload('VIDEOS')"><i class="fas fa-video me-2"></i>VIDEOS</button>
-                                <button class="btn btn-outline-dark" @click="triggerUpload('LAYOUT')"><i class="fas fa-pencil-ruler me-2"></i>LAYOUT / DIBUJO</button>
-                                <button class="btn btn-outline-dark" @click="triggerUpload('PLANOS')"><i class="fas fa-map me-2"></i>PLANOS</button>
-
-                                <div class="vr mx-2"></div>
-
-                                <div class="d-flex flex-column align-items-center">
-                                    <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
-                                    <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.chatgpt = !showInstr.chatgpt" title="Ver Lógica"></i>
-                                    <small v-if="showInstr.chatgpt" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
-                                </div>
-                                <div class="d-flex flex-column align-items-center">
-                                    <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
-                                    <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.neural = !showInstr.neural" title="Ver Lógica"></i>
-                                    <small v-if="showInstr.neural" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
-                                </div>
-                            </div>
-                            <div v-if="workorderData.files && workorderData.files.length" class="mt-3">
-                                <h6 class="small fw-bold text-muted">Archivos Adjuntos:</h6>
-                                <div class="d-flex flex-wrap gap-2">
-                                    <div v-for="(f, i) in workorderData.files" :key="i" class="badge bg-light text-dark border p-2">
-                                        <i class="fas fa-paperclip me-1"></i> {{ f }}
-                                        <i class="fas fa-times text-danger ms-2" style="cursor:pointer" @click="workorderData.files.splice(i,1)"></i>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
