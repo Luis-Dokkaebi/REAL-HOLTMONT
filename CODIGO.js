@@ -3128,3 +3128,47 @@ function apiSaveHabitLog(habitData) {
     // internalBatchUpdateTasks handles updates by ID/FOLIO.
     return internalBatchUpdateTasks("HABITOS_LOG", [habitData]);
 }
+
+/**
+ * Jutsu de Transcripción con Gemini Flash
+ */
+function transcribirConGemini(base64Audio, mimeType) {
+  // IMPORTANTE: Reemplazar con la API Key real del proyecto
+  const API_KEY = "AQUI_VA_TU_API_KEY_DE_GOOGLE_AI_STUDIO";
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+  const payload = {
+    contents: [{
+      parts: [
+        { text: "Transcribe el siguiente audio exactamente como se escucha. Corrige ortografía básica. Solo dame el texto limpio en español." },
+        {
+          inline_data: {
+            mime_type: mimeType || "audio/mp3",
+            data: base64Audio
+          }
+        }
+      ]
+    }]
+  };
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const json = JSON.parse(response.getContentText());
+
+    if (json.candidates && json.candidates[0].content) {
+      return json.candidates[0].content.parts[0].text;
+    } else {
+      return "Error: No pude escuchar el audio claramente.";
+    }
+  } catch (e) {
+    return "Error en el sistema: " + e.toString();
+  }
+}

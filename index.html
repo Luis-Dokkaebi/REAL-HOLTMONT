@@ -1898,7 +1898,11 @@
                                     <div :class="showWorkOrderLogic ? 'col-md-8' : 'col-12'">
                                          <div class="position-relative h-100">
                                             <textarea id="campoConcepto" v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
-                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" @click="toggleDictation" title="Dictar por Voz">
+
+                                            <!-- INPUT OCULTO PARA GEMINI -->
+                                            <input type="file" id="audioInputGemini" accept="audio/*" class="d-none" onchange="enviarAudioAGemini(this)">
+
+                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" onclick="document.getElementById('audioInputGemini').click()" title="Dictar con Gemini AI">
                                                 <i class="fas fa-microphone"></i>
                                             </button>
                                          </div>
@@ -3203,6 +3207,55 @@
 
 <script>
   window.onerror = function(msg, url, line, col, error) { if(String(msg).toLowerCase().includes("script error")) return; Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + (error ? error.message : msg) }); };
+
+function enviarAudioAGemini(inputElement) {
+    const file = inputElement.files[0];
+    if (!file) return;
+
+    // Alerta de carga
+    Swal.fire({
+        title: 'Procesando Voz...',
+        text: 'La IA está transcribiendo tu audio.',
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick: false,
+        background: '#1a1a1a',
+        color: '#ffffff'
+    });
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = function() {
+        // Limpiamos el prefijo data:audio...;base64,
+        const base64Data = reader.result.split(',')[1];
+        const mimeType = file.type;
+
+        // Llamada al Backend
+        google.script.run
+            .withSuccessHandler(function(textoTranscrito) {
+                // Actualizar el Textarea y notificar a Vue
+                const textarea = document.getElementById('campoConcepto');
+                if(textarea) {
+                    const textoActual = textarea.value;
+                    textarea.value = textoActual + (textoActual ? " " : "") + textoTranscrito;
+                    textarea.dispatchEvent(new Event('input')); // Forzar actualización v-model
+                }
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Listo!',
+                    text: 'Texto agregado correctamente.',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1a1a1a',
+                    color: '#ffffff'
+                });
+            })
+            .withFailureHandler(function(err) {
+                Swal.fire('Error', 'Falló la transcripción: ' + err, 'error');
+            })
+            .transcribirConGemini(base64Data, mimeType);
+    };
+}
 
   const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
   const app = createApp({
