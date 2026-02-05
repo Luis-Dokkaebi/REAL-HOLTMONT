@@ -1898,9 +1898,9 @@
                                 <div class="row mb-4">
                                     <div :class="showWorkOrderLogic ? 'col-md-8' : 'col-12'">
                                          <div class="position-relative h-100">
-                                            <textarea v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
-                                            <button class="btn position-absolute bottom-0 end-0 m-4 rounded-circle shadow" :class="isRecording ? 'btn-danger animate__animated animate__pulse animate__infinite' : 'btn-primary'" style="width: 40px; height: 40px;" @click="toggleDictation" :title="isRecording ? 'Detener Grabación' : 'Dictar por Voz'">
-                                                <i class="fas" :class="isRecording ? 'fa-stop' : 'fa-microphone'"></i>
+                                            <textarea id="campoConcepto" v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
+                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" @click="toggleDictation" title="Dictar por Voz">
+                                                <i class="fas fa-microphone"></i>
                                             </button>
                                          </div>
                                     </div>
@@ -3422,87 +3422,44 @@
       const currentWorkorderId = ref(null);
       const nextSequence = ref('0000');
 
-      // DICTATION LOGIC
-      const isRecording = ref(false);
-      let recognition = null;
+      // --- JUTSU DE ENFOQUE (Estrategia para Móviles/Desktop) ---
+      const toggleDictation = () => {
+          const campo = document.getElementById('campoConcepto');
 
-      const toggleDictation = async () => {
-          if (isRecording.value) {
-              if (recognition) recognition.stop();
-              isRecording.value = false;
-              return;
+          if (campo) {
+              // 1. Enfocamos el campo para invocar al Teclado Nativo
+              campo.focus();
+
+              // 2. Detectamos dispositivo para dar la instrucción correcta
+              const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+              const isMobile = /android|iPad|iPhone|iPod/i.test(userAgent);
+
+              if (isMobile) {
+                  // En móvil: El teclado sube solo. Avisamos que usen el mic del teclado.
+                  // Usamos un Toast rápido para no estorbar
+                  Swal.mixin({
+                      toast: true,
+                      position: 'top-end',
+                      showConfirmButton: false,
+                      timer: 3000,
+                      timerProgressBar: true
+                  }).fire({
+                      icon: 'info',
+                      title: '¡Usa el micrófono de tu teclado! 🎙️'
+                  });
+              } else {
+                  // En PC: Avisamos del atajo de teclado
+                  Swal.fire({
+                      title: 'Dictado por Voz',
+                      html: 'Para dictar en PC, usa el atajo de tu sistema:<br><br>Windows: <b>Win + H</b><br>Mac: <b>F5</b> (o Fn+F5)',
+                      icon: 'info',
+                      confirmButtonText: 'Entendido'
+                  });
+              }
+          } else {
+              console.error("No encontré el elemento #campoConcepto para dar foco.");
           }
-
-          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-          if (!SpeechRecognition) {
-              Swal.fire('No soportado', 'Tu navegador no soporta reconocimiento de voz. Intenta con Chrome.', 'error');
-              return;
-          }
-
-          if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-              try {
-                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                  stream.getTracks().forEach(track => track.stop());
-              } catch (err) {
-                  console.error("Microphone permission denied via getUserMedia:", err);
-                  Swal.fire('Permiso Denegado', 'No se pudo acceder al micrófono. Por favor verifique los permisos del sitio.', 'error');
-                  return;
-              }
-          }
-
-          recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-          recognition.lang = 'es-MX'; // Optimized for Mexican Spanish
-          recognition.continuous = true;
-          recognition.interimResults = false;
-
-          recognition.onstart = () => {
-              isRecording.value = true;
-          };
-
-          recognition.onend = () => {
-              isRecording.value = false;
-          };
-
-          recognition.onresult = (event) => {
-              let newTranscript = '';
-              for (let i = event.resultIndex; i < event.results.length; ++i) {
-                  if (event.results[i].isFinal) {
-                      newTranscript += event.results[i][0].transcript;
-                  }
-              }
-
-              if (newTranscript) {
-                  const currentText = workorderData.value.conceptoDesc || '';
-                  const needsSpace = currentText.length > 0 && !currentText.match(/\s$/);
-                  workorderData.value.conceptoDesc = currentText + (needsSpace ? ' ' : '') + newTranscript;
-              }
-          };
-
-          recognition.onerror = (event) => {
-              console.error("Speech Error:", event.error);
-              if (event.error === 'not-allowed') {
-                  isRecording.value = false;
-                  Swal.fire('Permiso Denegado', 'Por favor habilita el acceso al micrófono.', 'warning');
-                  return;
-              }
-              if (event.error === 'no-speech') {
-                  return;
-              }
-              isRecording.value = false;
-              if (event.error !== 'aborted') {
-                  Swal.fire('Error', 'Error en dictado: ' + event.error, 'error');
-              }
-          };
-
-          recognition.start();
       };
-
-      watch(currentView, () => {
-         if (isRecording.value && recognition) {
-             recognition.stop();
-             isRecording.value = false;
-         }
-      });
 
       const fetchNextSequence = () => {
           google.script.run.withSuccessHandler(seq => {
@@ -5497,7 +5454,7 @@
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
       showLogic, sectionVisibility, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
-      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, cotizadorSearchTop, filteredCotizadoresTop, addCotizadorTop, isRecording, toggleDictation,
+      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, cotizadorSearchTop, filteredCotizadoresTop, addCotizadorTop, toggleDictation,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
