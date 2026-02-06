@@ -3177,3 +3177,19 @@ function transcribirConGemini(base64Audio, mimeType) {
     return "Error en el sistema: " + e.toString();
   }
 }
+
+/**
+ * JUTSU DE AUTORIZACIÓN FORZADA
+ * Ejecuta esto manualmente desde el editor en la PC una vez.
+ */
+function forzarPermisos() {
+  console.log("Concentrando chakra para conectar con el exterior...");
+  // Solo llamamos a esto para que Google detecte que necesitamos el permiso
+  // No importa si falla la URL, lo que importa es que pida el permiso.
+  try {
+    UrlFetchApp.fetch("https://www.google.com");
+    console.log("¡Conexión establecida! Chakra fluyendo.");
+  } catch (e) {
+    console.log("Error (esperado si no hay internet, pero ya tienes permisos): " + e.toString());
+  }
+}
