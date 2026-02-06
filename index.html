@@ -3790,36 +3790,12 @@ async function toggleVoiceRecording(btnElement) {
       const currentWorkorderId = ref(null);
       const nextSequence = ref('0000');
 
-      // --- JUTSU NATIVO PARA TABLET (Enfoque de Teclado) ---
-      const toggleDictation = () => {
-          const campo = document.getElementById('campoConcepto');
-
-          if (campo) {
-              // 1. Golde de Chakra: Enfocamos el campo
-              // Esto obliga a la Tablet a abrir el teclado virtual inmediatamente.
-              campo.focus();
-
-              // 2. Click simulado (Doble seguridad para iOS/iPad a veces necios)
-              campo.click();
-
-              // 3. Guía Visual (Toast Rápido)
-              // Le dice al usuario exactamente qué tecla presionar en su teclado.
-              const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-              const isApple = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
-
-              Swal.mixin({
-                  toast: true,
-                  position: 'top-end', // O 'center' si prefieres que se vea más
-                  showConfirmButton: false,
-                  timer: 2500,
-                  background: '#1a1a1a',
-                  color: '#fff'
-              }).fire({
-                  icon: 'info',
-                  // Mensaje personalizado según si es iPad (tecla abajo) o Android (tecla arriba)
-                  title: isApple ? '👇 ¡Toca el micrófono en tu teclado!' : '🎙️ ¡Usa el micrófono de tu teclado!'
-              });
-          }
+      // --- DICTADO VIA GEMINI AI ---
+      const toggleDictation = (event) => {
+          // Llama a la funcion global de grabacion (Gemini AI)
+          // Se pasa el boton para la animacion visual
+          const btn = event.currentTarget || event.target.closest('button');
+          toggleVoiceRecording(btn);
       };
 
       const fetchNextSequence = () => {
