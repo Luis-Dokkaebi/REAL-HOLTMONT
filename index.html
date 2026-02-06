@@ -1902,7 +1902,7 @@
                                             <!-- INPUT OCULTO PARA GEMINI -->
                                             <input type="file" id="audioInputGemini" accept="audio/*" capture class="d-none" onchange="enviarAudioAGemini(this)">
 
-                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" onclick="toggleVoiceRecording(this)" title="Click para grabar voz">
+                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" @click="toggleDictation" title="Click para grabar voz">
                                                 <i class="fas fa-microphone"></i>
                                             </button>
                                          </div>
@@ -3774,37 +3774,36 @@ async function toggleVoiceRecording(btnElement) {
       const currentWorkorderId = ref(null);
       const nextSequence = ref('0000');
 
-      // --- JUTSU DE ENFOQUE: Dictado Inteligente (Híbrido) ---
+      // --- JUTSU NATIVO PARA TABLET (Enfoque de Teclado) ---
       const toggleDictation = () => {
           const campo = document.getElementById('campoConcepto');
-          if (campo) campo.focus();
 
-          Swal.fire({
-              title: 'Dictado por Voz',
-              text: 'Selecciona tu herramienta preferida:',
-              icon: 'question',
-              showDenyButton: true,
-              showCancelButton: true,
-              confirmButtonText: '🎙️ Grabar (Gemini AI)',
-              denyButtonText: '⌨️ Dictado Sistema',
-              cancelButtonText: 'Cancelar',
-              confirmButtonColor: '#0d6efd',
-              denyButtonColor: '#6c757d'
-          }).then((result) => {
-              if (result.isConfirmed) {
-                  // Gemini: Trigger hidden file input
-                  const input = document.getElementById('audioInputGemini');
-                  if (input) input.click();
-              } else if (result.isDenied) {
-                  // Sistema: Mostrar instrucciones
-                  const isMobile = /android|iPad|iPhone|iPod/i.test(navigator.userAgent);
-                  if (isMobile) {
-                      Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 }).fire({ icon: 'info', title: '¡Usa el micrófono de tu teclado! 🎙️' });
-                  } else {
-                      Swal.fire({ title: 'Dictado Sistema', html: 'Atajos:<br>Windows: <b>Win + H</b><br>Mac: <b>F5</b>', icon: 'info' });
-                  }
-              }
-          });
+          if (campo) {
+              // 1. Golde de Chakra: Enfocamos el campo
+              // Esto obliga a la Tablet a abrir el teclado virtual inmediatamente.
+              campo.focus();
+
+              // 2. Click simulado (Doble seguridad para iOS/iPad a veces necios)
+              campo.click();
+
+              // 3. Guía Visual (Toast Rápido)
+              // Le dice al usuario exactamente qué tecla presionar en su teclado.
+              const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+              const isApple = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+
+              Swal.mixin({
+                  toast: true,
+                  position: 'top-end', // O 'center' si prefieres que se vea más
+                  showConfirmButton: false,
+                  timer: 2500,
+                  background: '#1a1a1a',
+                  color: '#fff'
+              }).fire({
+                  icon: 'info',
+                  // Mensaje personalizado según si es iPad (tecla abajo) o Android (tecla arriba)
+                  title: isApple ? '👇 ¡Toca el micrófono en tu teclado!' : '🎙️ ¡Usa el micrófono de tu teclado!'
+              });
+          }
       };
 
       const fetchNextSequence = () => {
