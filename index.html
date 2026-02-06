@@ -3460,6 +3460,15 @@ let isRecording = false;
 async function toggleVoiceRecording(btnElement) {
     const icon = btnElement.querySelector('i');
 
+    // MOBILE STRATEGY: Bypass getUserMedia on mobile to avoid permission issues
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+    if (isMobile) {
+        document.getElementById('audioInputGemini').click();
+        return;
+    }
+
     if (!isRecording) {
         // Start Recording
         try {
@@ -3532,11 +3541,18 @@ async function toggleVoiceRecording(btnElement) {
         } catch (err) {
             console.error(err);
             Swal.fire({
-                title: 'Error de Micrófono',
-                text: 'No se pudo acceder al micrófono. Asegúrate de dar permisos.',
-                icon: 'error',
+                title: 'Permiso Requerido',
+                text: 'Acceso web denegado. ¿Usar grabadora nativa?',
+                icon: 'warning',
                 background: '#1a1a1a',
-                color: '#ffffff'
+                color: '#ffffff',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Abrir',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('audioInputGemini').click();
+                }
             });
         }
     } else {
