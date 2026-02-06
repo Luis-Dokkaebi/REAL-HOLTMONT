@@ -1902,7 +1902,14 @@
                                             <!-- INPUT OCULTO PARA GEMINI -->
                                             <input type="file" id="audioInputGemini" accept="audio/*" capture class="d-none" onchange="enviarAudioAGemini(this)">
 
-                                            <button id="btn-micro-campoConcepto" class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" onclick="iniciarDictadoNativo('campoConcepto')" title="Dictar (Modo Nativo)"> <i class="fas fa-microphone"></i>
+                                            <button
+                                                class="btn position-absolute bottom-0 end-0 m-4 rounded-circle shadow d-flex align-items-center justify-content-center"
+                                                :class="isRecording ? 'btn-danger animate__animated animate__pulse animate__infinite' : 'btn-primary'"
+                                                style="width: 50px; height: 50px; transition: all 0.3s ease;"
+                                                @click="toggleDictation"
+                                                title="Dictar voz a texto">
+
+                                                <i class="fas" :class="isRecording ? 'fa-stop' : 'fa-microphone'" style="font-size: 1.2rem;"></i>
                                             </button>
                                          </div>
                                     </div>
@@ -3598,6 +3605,8 @@ async function toggleVoiceRecording(btnElement) {
   const app = createApp({
     setup() {
       // ESTADO GLOBAL
+      const isRecording = ref(false);
+      let recognition = null;
       const isLoggedIn = ref(false); const loginPass = ref(''); const loginUser = ref(''); const loggingIn = ref(false); const currentUser = ref(''); const currentUsername = ref('');
       const currentRole = ref(''); // NUEVO: Estado para el rol del usuario
       const currentView = ref('DASHBOARD'); const currentDept = ref('');
@@ -3810,14 +3819,6 @@ async function toggleVoiceRecording(btnElement) {
       const workorderTypes = ['Construcción', 'Remodelación', 'Reparación', 'Mantenimiento', 'Reconfiguración', 'Póliza', 'Inspección'];
       const currentWorkorderId = ref(null);
       const nextSequence = ref('0000');
-
-      // --- DICTADO VIA GEMINI AI ---
-      const toggleDictation = (event) => {
-          // Llama a la funcion global de grabacion (Gemini AI)
-          // Se pasa el boton para la animacion visual
-          const btn = event.currentTarget || event.target.closest('button');
-          toggleVoiceRecording(btn);
-      };
 
       const fetchNextSequence = () => {
           google.script.run.withSuccessHandler(seq => {
@@ -5887,6 +5888,63 @@ async function toggleVoiceRecording(btnElement) {
           if(el) el.focus();
       };
 
+      const toggleDictation = () => {
+          // 1. Verificar soporte del navegador (El Chakra del Navegador)
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+          if (!SpeechRecognition) {
+              Swal.fire('Error de Jutsu', 'Tu navegador no soporta reconocimiento de voz nativo. Intenta usar Chrome.', 'error');
+              return;
+          }
+
+          // 2. Si ya estamos grabando, detenemos el jutsu
+          if (isRecording.value) {
+              if (recognition) recognition.stop();
+              isRecording.value = false;
+              return;
+          }
+
+          // 3. Iniciar el Jutsu de Escucha
+          try {
+              recognition = new SpeechRecognition();
+              recognition.lang = 'es-MX'; // Idioma de la Aldea (México)
+              recognition.interimResults = false; // Solo queremos el resultado final
+              recognition.maxAlternatives = 1;
+
+              recognition.onstart = () => {
+                  isRecording.value = true;
+                  // Opcional: Sonido de inicio o vibración si es tablet
+                  if(window.navigator && window.navigator.vibrate) window.navigator.vibrate(100);
+              };
+
+              recognition.onend = () => {
+                  isRecording.value = false;
+              };
+
+              recognition.onresult = (event) => {
+                  const transcript = event.results[0][0].transcript;
+
+                  // Concatenamos el texto con un espacio si ya hay algo escrito
+                  const currentText = workorderData.value.conceptoDesc || '';
+                  workorderData.value.conceptoDesc = currentText + (currentText.length > 0 ? ' ' : '') + transcript;
+              };
+
+              recognition.onerror = (event) => {
+                  console.error("Error en reconocimiento:", event.error);
+                  isRecording.value = false;
+                  if (event.error === 'not-allowed') {
+                      Swal.fire('Permiso Denegado', 'Necesitas dar permiso al micrófono para usar este Jutsu.', 'warning');
+                  }
+              };
+
+              recognition.start();
+
+          } catch (error) {
+              console.error("Error al invocar SpeechRecognition", error);
+              isRecording.value = false;
+          }
+      };
+
       const syncReqToMat = (idx, text) => {
           while (requiredMaterials.value.items.length <= idx) {
               addMaterialItem();
@@ -5894,7 +5952,7 @@ async function toggleVoiceRecording(btnElement) {
           requiredMaterials.value.items[idx].description = text;
       };
 
-      return { focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow,
+      return { focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
@@ -5908,7 +5966,7 @@ async function toggleVoiceRecording(btnElement) {
       addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
       eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
       showLogic, sectionVisibility, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
-      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, cotizadorSearchTop, filteredCotizadoresTop, addCotizadorTop, toggleDictation,
+      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, cotizadorSearchTop, filteredCotizadoresTop, addCotizadorTop,
       trackerTable, projectTable, ppcDraftTable,
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
