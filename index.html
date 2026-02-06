@@ -2061,16 +2061,37 @@
                                 <span class="fw-bold text-dark small text-uppercase ps-2">2. Requerimiento para Cotización</span>
                                 <span class="fw-bold text-dark pe-2 small">Total: {{ formatCurrency(reqCotizacionTotal) }}</span>
                             </div>
-                            <div v-for="(item, idx) in projectProgram.reqCotizacion" :key="idx" class="d-flex align-items-center gap-2 mb-1 p-1 border-bottom bg-white" :style="{opacity: item.isActive ? 1 : 0.6}">
-                                <div class="me-2 ms-2 d-flex gap-2" style="min-width: 50px; text-align: center;">
+                            <div v-for="(item, idx) in projectProgram.reqCotizacion" :key="idx" class="d-flex flex-wrap align-items-center gap-1 mb-1 p-1 border-bottom bg-white" :style="{opacity: item.isActive ? 1 : 0.6}">
+                                <div class="me-1 ms-1 d-flex gap-1" style="min-width: 40px; text-align: center;">
                                      <i class="fas fa-check-square fa-lg cursor-pointer" :class="item.checkStatus === 'APPLY' ? 'text-success' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'APPLY')"></i>
                                      <i class="fas fa-window-close fa-lg cursor-pointer" :class="item.checkStatus === 'NO_APPLY' ? 'text-danger' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'NO_APPLY')"></i>
                                 </div>
-                                <div class="flex-grow-1">
+                                <div class="flex-grow-1" style="min-width: 200px;">
                                     <input v-model="item.description" @input="syncReqToMat(idx, item.description)" class="form-control form-control-sm border-0 bg-transparent fw-bold" style="font-size: 12px;">
                                 </div>
+
+                                <template v-if="item.isActive">
+                                    <!-- Tiempo Estimado -->
+                                    <div class="d-flex" style="width: 100px;">
+                                         <input type="number" v-model="item.duration" class="form-control form-control-sm text-center p-0" placeholder="T" style="width: 40px; font-size: 11px;">
+                                         <select v-model="item.durationUnit" class="form-select form-select-sm p-0 ps-1 border-0 bg-light" style="font-size:10px;">
+                                             <option value="dias">Días</option>
+                                             <option value="horas">Hrs</option>
+                                             <option value="semanas">Sem</option>
+                                         </select>
+                                    </div>
+                                    <!-- Unidad -->
+                                    <input v-model="item.unit" class="form-control form-control-sm p-1 text-center" placeholder="Und" style="width: 45px; font-size: 11px;">
+                                    <!-- Cantidad -->
+                                    <input type="number" v-model="item.quantity" @input="updateProjectRowTotal(item)" class="form-control form-control-sm p-1 text-center" placeholder="Cant" style="width: 45px; font-size: 11px;">
+                                    <!-- Precio -->
+                                    <input type="number" v-model="item.price" @input="updateProjectRowTotal(item)" class="form-control form-control-sm p-1 text-end" placeholder="P.U." style="width: 60px; font-size: 11px;">
+                                    <!-- Total -->
+                                    <input v-model="item.total" class="form-control form-control-sm text-end fw-bold text-success bg-light" placeholder="Total" style="width: 70px; font-size: 11px;" readonly>
+                                </template>
+
                                 <!-- Responsible -->
-                                <div style="width: 100px; position:relative;">
+                                <div style="width: 90px; position:relative;">
                                     <div class="form-control form-control-sm p-1 text-center" style="font-size: 10px; cursor:pointer; height: 28px; white-space: nowrap; overflow: hidden;" @click="openRespDropdown('req'+idx, item)">{{ Array.isArray(item.responsable) ? (item.responsable.length ? item.responsable[0].substring(0,8)+'...' : '-') : (item.responsable || '-') }}</div>
                                     <div v-if="projectRespDropdownOpen === ('req'+idx)" class="position-absolute bg-white border shadow rounded p-2" style="z-index: 1000; width: 250px; max-height: 200px; overflow-y: auto; right: 0;">
                                         <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1"><small class="fw-bold">Resp:</small><button class="btn btn-sm btn-link p-0 text-secondary" @click="projectRespDropdownOpen = null"><i class="fas fa-times"></i></button></div>
@@ -3908,14 +3929,14 @@ async function toggleVoiceRecording(btnElement) {
       // PROTOTYPES STATE
       // DEFAULTS FOR FIXED SECTIONS
       const defaultReqCotizacion = [
-          { description: 'Pre diseño Arquitectura para definir el cuarto 6x6 con 2 ventanas, doble puerta, y plafón', isActive: false, checkStatus: null },
-          { description: 'pre Diseño Eléctrico estudio de iluminación, calculo eléctrico para instalación de Equipo', isActive: false, checkStatus: null },
-          { description: 'Pre Diseño de HVAC, calculo de cargas térmicas, tomado encuenta si la nave tiene clima', isActive: false, checkStatus: null },
-          { description: 'Pre Analisis de Riesgo', isActive: false, checkStatus: null },
-          { description: 'Precios Unitarios Gerente mapear la cotización', isActive: false, checkStatus: null },
-          { description: 'Cotizador Jr Hvac', isActive: false, checkStatus: null },
-          { description: 'Cotizador Jr Eléctrico', isActive: false, checkStatus: null },
-          { description: 'Cotizador Jr Construcción', isActive: false, checkStatus: null }
+          { description: 'Pre diseño Arquitectura para definir el cuarto 6x6 con 2 ventanas, doble puerta, y plafón', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'pre Diseño Eléctrico estudio de iluminación, calculo eléctrico para instalación de Equipo', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Pre Diseño de HVAC, calculo de cargas térmicas, tomado encuenta si la nave tiene clima', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Pre Analisis de Riesgo', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Precios Unitarios Gerente mapear la cotización', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Cotizador Jr Hvac', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Cotizador Jr Eléctrico', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Cotizador Jr Construcción', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 }
       ];
       const defaultCotPreconstruccion = [
           { description: 'Junta Preoperativa Work Order', isActive: false, checkStatus: null },
@@ -5258,7 +5279,15 @@ async function toggleVoiceRecording(btnElement) {
                 ...projectProgram.value.cotTrabajo.map(i => ({...i, seccion: 'TRABAJO'}))
             ].map(i => ({
                 ...i,
-                responsable: Array.isArray(i.responsable) ? i.responsable.join(', ') : i.responsable
+                DESCRIPCION: i.description,
+                FECHA: i.date,
+                DURACION: i.duration,
+                UNIDAD_DURACION: i.durationUnit,
+                UNIDAD: i.unit,
+                CANTIDAD: i.quantity,
+                PRECIO: i.price,
+                TOTAL: i.total,
+                RESPONSABLE: Array.isArray(i.responsable) ? i.responsable.join(', ') : i.responsable
             })),
             checkList: JSON.parse(JSON.stringify(workorderData.value.checkList)),
             additionalCosts: JSON.parse(JSON.stringify(additionalCosts.value))
