@@ -1902,7 +1902,7 @@
                                             <!-- INPUT OCULTO PARA GEMINI -->
                                             <input type="file" id="audioInputGemini" accept="audio/*" capture class="d-none" onchange="enviarAudioAGemini(this)">
 
-                                            <button class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" onclick="iniciarDictadoNativo('campoConcepto')" title="Dictar (Modo Nativo)"> <i class="fas fa-microphone"></i>
+                                            <button id="btn-micro-campoConcepto" class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow" style="width: 40px; height: 40px;" onclick="iniciarDictadoNativo('campoConcepto')" title="Dictar (Modo Nativo)"> <i class="fas fa-microphone"></i>
                                             </button>
                                          </div>
                                     </div>
@@ -5946,6 +5946,7 @@ function iniciarDictadoNativo(campoDestinoId) {
             } else {
                 campo.value = textoFinal;
             }
+            campo.dispatchEvent(new Event('input'));
         }
     };
 
