@@ -1161,7 +1161,7 @@ function internalUpdateTask(personName, taskData, username) {
              // 1. AUTO-INCREMENT FOLIO (Before Saving)
              if (!taskData['FOLIO'] && !taskData['ID']) {
                  // NEW TASK -> GENERATE ID
-                 taskData['FOLIO'] = generateNumericSequence('ANTONIA_SEQ');
+                 taskData['FOLIO'] = generateSafeSequence('ANTONIA_SEQ', 'ANTONIA_VENTAS');
              } else {
                  // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
                  // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
@@ -2071,19 +2071,68 @@ function apiCreateStandardStructure(siteId, user) {
 
 /**
  * GENERADOR DE FOLIO NUMÉRICO SECUENCIAL (NUEVO)
+ * Wrapper sobre generateSafeSequence para compatibilidad.
  */
 function generateNumericSequence(key) {
+  // Solo usa PropertiesService, sin escaneo de hoja (sheetName=null)
+  return generateSafeSequence(key, null);
+}
+
+/**
+ * GENERADOR DE FOLIO ROBUSTO (ANTI-TIMESTAMPS)
+ * Intenta Lock de Propiedades (30s). Si falla, escanea la hoja para encontrar MAX+1.
+ * Si todo falla, lanza error en lugar de crear un ID corrupto.
+ */
+function generateSafeSequence(key, sheetName) {
   const lock = LockService.getScriptLock();
+
+  // 1. INTENTO PRIMARIO: Properties Service (Rápido)
   try {
-    if (lock.tryLock(5000)) {
+    if (lock.tryLock(30000)) { // 30s Wait
        const props = PropertiesService.getScriptProperties();
        let val = Number(props.getProperty(key) || 1000);
        val++;
        props.setProperty(key, String(val));
        return String(val);
     }
-  } catch(e) { console.error(e); } finally { lock.releaseLock(); }
-  return String(new Date().getTime());
+  } catch(e) {
+    console.warn("Property Lock timeout/error para " + key + ". Intentando fallback...");
+  } finally {
+    lock.releaseLock();
+  }
+
+  // 2. INTENTO SECUNDARIO: Escaneo de Hoja (Lento pero seguro)
+  if (sheetName) {
+     try {
+       const sheet = findSheetSmart(sheetName);
+       if (sheet) {
+           const data = sheet.getDataRange().getValues();
+           const headerRow = findHeaderRow(data);
+           if (headerRow > -1) {
+               const headers = data[headerRow].map(h => String(h).toUpperCase().trim());
+               const fIdx = headers.indexOf('FOLIO') > -1 ? headers.indexOf('FOLIO') : headers.indexOf('ID');
+               if (fIdx > -1) {
+                   let max = 1000;
+                   // Escanear todas las filas
+                   for (let i = headerRow + 1; i < data.length; i++) {
+                       const v = parseInt(data[i][fIdx]);
+                       // Filtrar timestamps (> 1 billón) y nulos
+                       if (!isNaN(v) && v < 1000000000) {
+                           if (v > max) max = v;
+                       }
+                   }
+                   console.log(`[SAFE SEQ] Generado desde hoja ${sheetName}: ${max + 1}`);
+                   // Opcional: Intentar actualizar property para la próxima (sin lock, fire-and-forget)
+                   try { PropertiesService.getScriptProperties().setProperty(key, String(max + 1)); } catch(e){}
+                   return String(max + 1);
+               }
+           }
+       }
+     } catch(e) { console.error("Sheet scan failed: " + e.toString()); }
+  }
+
+  // 3. FALLO TOTAL: No devolver Timestamp.
+  throw new Error("⚠️ El sistema está saturado y no pudo generar un Folio. Por favor intenta guardar de nuevo en unos segundos.");
 }
 
 /**
