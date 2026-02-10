@@ -1445,6 +1445,7 @@
                                 <div v-else-if="String(h).toUpperCase().includes('COMENTARIOS') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES')" class="text-start">
                                     <input v-model="row[h]" class="excel-input" spellcheck="false" style="text-align:left;">
                                 </div>
+                                <div v-else-if="String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')" class="px-1" style="white-space:normal; overflow:hidden; text-align:left; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;" :title="row[h]">{{ row[h] }}</div>
                                 <div v-else class="px-1" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;" :title="row[h]">{{ row[h] }}</div>
                             </td>
                              <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-primary" @click="savePPCV3Row(row)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
@@ -4657,7 +4658,13 @@ async function toggleVoiceRecording(btnElement) {
 
       const getColumnStyle = (h) => {
           const up = String(h).toUpperCase().trim(); let w = '120px'; let fs = '12px'; let pad = '8px 4px'; let align = 'left';
-          if (up === 'CONCEPTO' || up.includes('DESCRIP')) { w = (staffTracker.value.name === 'ANTONIA_VENTAS') ? '600px' : '380px'; }
+          if (up === 'CONCEPTO' || up.includes('DESCRIP')) {
+              if (currentView.value === 'WEEKLY_PLAN') {
+                  w = '250px';
+              } else {
+                  w = (staffTracker.value.name === 'ANTONIA_VENTAS') ? '600px' : '380px';
+              }
+          }
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
           else if (isCol(h, ['ID', 'FOLIO'])) { w = '40px'; fs = '10px'; align = 'center'; }
           else if (up.includes('CUMPLIMIENTO')) { w = '50px'; align = 'center'; fs = '11px'; }
