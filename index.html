@@ -971,6 +971,89 @@
             </div>
 
             <div v-else class="row g-4 h-100 overflow-auto p-2">
+
+                <!-- KPI LUIS_CARLOS -->
+                <div class="col-12 mb-2">
+                   <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-user-tie me-2"></i>DASHBOARD LUIS CARLOS</h5>
+                </div>
+
+                <!-- DASHBOARD VENTAS -->
+                <div class="col-12 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #FF5722;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase d-flex justify-content-between align-items-center" style="color: #FF5722;">
+                            <span><i class="fas fa-briefcase me-2"></i>DASHBOARD VENTAS</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row h-100 align-items-center">
+                                <div class="col-md-5 overflow-auto" style="max-height: 300px;">
+                                    <table class="table table-sm table-hover small align-middle">
+                                        <thead class="table-light text-secondary"><tr><th>Colaborador</th><th class="text-center">Volumen</th><th class="text-center">Eficiencia (Días)</th></tr></thead>
+                                        <tbody>
+                                            <tr v-for="(item, index) in kpiData.dashboardVentas" :key="index">
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <img :src="getAvatarUrl(item.name)" class="rounded-circle me-2 shadow-sm" style="width: 30px; height: 30px; object-fit: cover;">
+                                                        <div class="text-truncate fw-bold text-dark" style="max-width: 150px; font-size: 0.9em;" :title="item.name">{{ item.name }}</div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center fw-bold">{{ item.volumen }}</td>
+                                                <td class="text-center text-primary fw-bold">{{ item.eficiencia }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-7">
+                                    <div style="height: 300px; width: 100%;"><canvas id="chartDashboardVentas"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRODUCTIVIDAD DIARIA (ANTONIA) -->
+                <div class="col-12 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #009688;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #009688;">
+                            <i class="fas fa-calendar-day me-2"></i>PRODUCTIVIDAD DIARIA (ANTONIA)
+                        </div>
+                        <div class="card-body" style="height: 300px;"><canvas id="chartProductividadDiaria"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- DASHBOARD TRACKER -->
+                <div class="col-12 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #673AB7;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase d-flex justify-content-between align-items-center" style="color: #673AB7;">
+                            <span><i class="fas fa-tasks me-2"></i>DASHBOARD TRACKER</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row h-100 align-items-center">
+                                <div class="col-md-5 overflow-auto" style="max-height: 300px;">
+                                    <table class="table table-sm table-hover small align-middle">
+                                        <thead class="table-light text-secondary"><tr><th>Colaborador</th><th class="text-center">Volumen</th><th class="text-center">Eficiencia (Días)</th></tr></thead>
+                                        <tbody>
+                                            <tr v-for="(item, index) in kpiData.dashboardTracker" :key="index">
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <img :src="getAvatarUrl(item.name)" class="rounded-circle me-2 shadow-sm" style="width: 30px; height: 30px; object-fit: cover;">
+                                                        <div class="text-truncate fw-bold text-dark" style="max-width: 150px; font-size: 0.9em;" :title="item.name">{{ item.name }}</div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center fw-bold">{{ item.volumen }}</td>
+                                                <td class="text-center text-primary fw-bold">{{ item.eficiencia }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-7">
+                                    <div style="height: 300px; width: 100%;"><canvas id="chartDashboardTracker"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- FIN KPI LUIS_CARLOS -->
+
                 <!-- 1. PUNTUALIDAD -->
                 <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
                     <div class="card shadow-sm h-100" style="border-top: 4px solid #4472C4;">
@@ -4262,6 +4345,9 @@ async function toggleVoiceRecording(btnElement) {
 
       // KPI STATE
       const kpiData = ref({
+          dashboardVentas: [],
+          productividadDiaria: {},
+          dashboardTracker: [],
           puntualidad: [],
           visitas: [],
           preWO: [],
@@ -4843,6 +4929,40 @@ async function toggleVoiceRecording(btnElement) {
           // MOCK DATA GENERATION
           setTimeout(() => {
               kpiData.value.isLoading = false;
+
+              // --- NUEVOS KPI'S LUIS_CARLOS ---
+              kpiData.value.dashboardVentas = [
+                  { name: 'JUDITH ECHAVARRIA', volumen: 15, eficiencia: 1.2 },
+                  { name: 'EDUARDO MANZANARES', volumen: 12, eficiencia: 1.5 },
+                  { name: 'RAMIRO RODRIGUEZ', volumen: 10, eficiencia: 1.8 },
+                  { name: 'SEBASTIAN PADILLA', volumen: 14, eficiencia: 1.1 },
+                  { name: 'CESAR GOMEZ', volumen: 8, eficiencia: 2.0 },
+                  { name: 'ALFONSO CORREA', volumen: 6, eficiencia: 2.5 },
+                  { name: 'TERESA GARZA', volumen: 9, eficiencia: 1.9 },
+                  { name: 'GUILLERMO DAMICO', volumen: 7, eficiencia: 2.1 },
+                  { name: 'ANGEL SALINAS', volumen: 11, eficiencia: 1.6 },
+                  { name: 'JUAN JOSE SANCHEZ', volumen: 5, eficiencia: 2.8 }
+              ];
+
+              kpiData.value.productividadDiaria = {
+                  labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie'],
+                  data: [12, 18, 15, 20, 16]
+              };
+
+              kpiData.value.dashboardTracker = [
+                  { name: 'EDUARDO MANZANARES', volumen: 20, eficiencia: 0.8 },
+                  { name: 'JUAN JOSE SANCHEZ', volumen: 18, eficiencia: 0.9 },
+                  { name: 'SELENE BALDONADO', volumen: 15, eficiencia: 1.0 },
+                  { name: 'ROLANDO MORENO', volumen: 14, eficiencia: 1.1 },
+                  { name: 'MIGUEL GALLARDO', volumen: 12, eficiencia: 1.2 },
+                  { name: 'SEBASTIAN PADILLA', volumen: 16, eficiencia: 1.0 },
+                  { name: 'JEHU MARTINEZ', volumen: 10, eficiencia: 1.5 },
+                  { name: 'MIGUEL GONZALEZ', volumen: 8, eficiencia: 2.0 },
+                  { name: 'ALICIA RIVERA', volumen: 9, eficiencia: 1.8 },
+                  { name: 'RICARDO MENDO', volumen: 7, eficiencia: 2.2 }
+              ];
+              // --------------------------------
+
               kpiData.value.puntualidad = [
                   { name: 'Antonia', value: 98 }, { name: 'Eduardo T.', value: 95 }, { name: 'Ramiro', value: 92 },
                   { name: 'Sebastian', value: 96 }, { name: 'Judith', value: 99 }, { name: 'Angel', value: 94 },
@@ -4898,6 +5018,123 @@ async function toggleVoiceRecording(btnElement) {
               if (kpiChartInstances[id]) kpiChartInstances[id].destroy();
               kpiChartInstances[id] = new Chart(ctx, config);
           };
+
+          // --- NUEVOS GRAFICOS LUIS_CARLOS ---
+          // DASHBOARD VENTAS
+          createChart('chartDashboardVentas', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.dashboardVentas.map(d => d.name.split(' ')[0]), // Primer nombre
+                  datasets: [
+                      {
+                          label: 'Eficiencia (Días)',
+                          data: kpiData.value.dashboardVentas.map(d => d.eficiencia),
+                          type: 'line',
+                          borderColor: '#4472C4',
+                          backgroundColor: '#4472C4',
+                          borderWidth: 2,
+                          tension: 0.1,
+                          yAxisID: 'y'
+                      },
+                      {
+                          label: 'Volumen',
+                          data: kpiData.value.dashboardVentas.map(d => d.volumen),
+                          backgroundColor: 'rgba(255, 87, 34, 0.6)',
+                          yAxisID: 'y1'
+                      }
+                  ]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: {
+                          type: 'linear',
+                          display: true,
+                          position: 'left',
+                          title: { display: true, text: 'Días Promedio' },
+                          beginAtZero: true
+                      },
+                      y1: {
+                          type: 'linear',
+                          display: true,
+                          position: 'right',
+                          title: { display: true, text: 'Tareas' },
+                          grid: { drawOnChartArea: false },
+                          beginAtZero: true
+                      }
+                  }
+              }
+          });
+
+          // PRODUCTIVIDAD DIARIA (ANTONIA)
+          createChart('chartProductividadDiaria', {
+              type: 'line',
+              data: {
+                  labels: kpiData.value.productividadDiaria.labels,
+                  datasets: [{
+                      label: 'Tareas Completadas',
+                      data: kpiData.value.productividadDiaria.data,
+                      borderColor: '#009688',
+                      backgroundColor: 'rgba(0, 150, 136, 0.2)',
+                      fill: true,
+                      tension: 0.3
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: { y: { beginAtZero: true } }
+              }
+          });
+
+          // DASHBOARD TRACKER
+          createChart('chartDashboardTracker', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.dashboardTracker.map(d => d.name.split(' ')[0]),
+                  datasets: [
+                      {
+                          label: 'Eficiencia (Días)',
+                          data: kpiData.value.dashboardTracker.map(d => d.eficiencia),
+                          type: 'line',
+                          borderColor: '#673AB7',
+                          backgroundColor: '#673AB7',
+                          borderWidth: 2,
+                          tension: 0.1,
+                          yAxisID: 'y'
+                      },
+                      {
+                          label: 'Volumen',
+                          data: kpiData.value.dashboardTracker.map(d => d.volumen),
+                          backgroundColor: 'rgba(103, 58, 183, 0.6)',
+                          yAxisID: 'y1'
+                      }
+                  ]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: {
+                          type: 'linear',
+                          display: true,
+                          position: 'left',
+                          title: { display: true, text: 'Días Promedio' },
+                          beginAtZero: true
+                      },
+                      y1: {
+                          type: 'linear',
+                          display: true,
+                          position: 'right',
+                          title: { display: true, text: 'Tareas' },
+                          grid: { drawOnChartArea: false },
+                          beginAtZero: true
+                      }
+                  }
+              }
+          });
+          // -----------------------------------
 
           // 1. PUNTUALIDAD
           createChart('chartPuntualidad', {
