@@ -648,7 +648,7 @@
                                          <i v-if="isTaskDone(task)" class="fas fa-check-circle" :style="{color: getTaskColor(task)}"></i>
                                      </div>
                                      <div class="fw-bold text-dark mb-1" style="font-size:11px; line-height:1.2; overflow-wrap: break-word;">{{ task.CLIENTE || 'Sin Cliente' }}</div>
-                                     <div class="text-muted small text-truncate" style="font-size:10px;" :title="task.CONCEPTO">{{ task.CONCEPTO || 'Sin Descripción' }}</div>
+                                     <div class="text-muted small" style="font-size:9px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.1;" :title="task.CONCEPTO">{{ task.CONCEPTO || 'Sin Descripción' }}</div>
                                      <div class="mt-2 d-flex justify-content-between align-items-center">
                                          <span class="badge text-white" :style="{backgroundColor: getTaskColor(task), fontSize: '8px', transform: 'scale(0.9)', transformOrigin: 'left'}">{{ task.ESTATUS }}</span>
                                          <span class="text-secondary text-truncate ms-2" style="font-size:9px; font-weight:bold; max-width: 80px;" :title="getResponsible(task)">{{ getResponsible(task) }}</span>
