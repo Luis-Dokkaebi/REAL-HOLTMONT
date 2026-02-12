@@ -3058,7 +3058,8 @@ function apiFetchUnifiedAgenda(username) {
   try {
      // Determine target for work tasks based on role/user
      let target = username;
-     if (String(username).toUpperCase() === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+     const uUpper = String(username).toUpperCase().trim();
+     if (uUpper === 'ANTONIA_VENTAS' || uUpper === 'VENTAS') target = "ANTONIA_VENTAS";
 
      const workRes = apiFetchCombinedCalendarData(target);
      if (workRes.success) {
