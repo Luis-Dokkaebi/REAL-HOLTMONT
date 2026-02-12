@@ -1424,7 +1424,7 @@
             </div>
             <div class="excel-container flex-fill">
                 <div v-if="weeklyPlanData.isLoading" class="text-center p-5 text-muted"><div class="spinner-border text-primary mb-2" role="status"></div><div>Cargando datos...</div></div>
-                <table v-else class="table-excel">
+                <table v-else class="table-excel" style="table-layout: auto; width: auto; min-width: 0;">
                     <thead>
                       <tr>
                         <th class="row-num">#</th>
@@ -4660,7 +4660,7 @@ async function toggleVoiceRecording(btnElement) {
           const up = String(h).toUpperCase().trim(); let w = '120px'; let fs = '12px'; let pad = '8px 4px'; let align = 'left';
           if (up === 'CONCEPTO' || up.includes('DESCRIP')) {
               if (currentView.value === 'WEEKLY_PLAN') {
-                  w = '250px';
+                  w = '150px';
               } else {
                   w = (staffTracker.value.name === 'ANTONIA_VENTAS') ? '600px' : '380px';
               }
@@ -4687,6 +4687,14 @@ async function toggleVoiceRecording(btnElement) {
           else if (up.includes('LAYOUT') || up.includes('TIMELINE')) { w = '70px'; fs = '10px'; align='center'; }
           else if (up.includes('VENDEDOR')) { w = '50px'; fs = '10px'; align='center'; }
           else if (up === 'CLIENTE') w = '100px';
+
+          // OVERRIDE FOR PPCV3 (WEEKLY_PLAN)
+          if (currentView.value === 'WEEKLY_PLAN') {
+              if (['ESPECIALIDAD', 'RESPONSABLE', 'FECHA', 'RELOJ', 'CUMPLIMIENTO'].includes(up)) {
+                  w = 'auto';
+              }
+          }
+
           return { width: w, fontSize: fs, padding: pad, textAlign: align, overflow: 'hidden', textOverflow: 'ellipsis' };
       };
 
