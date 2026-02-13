@@ -2761,8 +2761,10 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
 
     if (targetMonth === undefined) return { success: false, message: "Mes inválido" };
 
-    // Filtrar datos
-    const filtered = res.data.filter(row => {
+    // Filtrar datos (Incluyendo historial para no perder tareas al 100%)
+    const allRows = [...res.data, ...res.history];
+
+    const filtered = allRows.filter(row => {
        // Helper para buscar valores insensible a mayúsculas
        const keys = Object.keys(row);
        const upperKeys = keys.map(k => k.toUpperCase().trim());
@@ -2848,7 +2850,10 @@ function apiFetchDistinctClients() {
     // Let's check headers to find 'CLIENTE'
     // internalFetchSheetData returns objects with keys uppercased and trimmed.
     
-    res.data.forEach(row => {
+    // Incluir historial para clientes con puros proyectos terminados
+    const allRows = [...res.data, ...res.history];
+
+    allRows.forEach(row => {
         if (row['CLIENTE']) {
             const c = String(row['CLIENTE']).trim().toUpperCase();
             if (c) clients.add(c);
