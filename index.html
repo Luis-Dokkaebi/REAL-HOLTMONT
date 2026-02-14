@@ -3742,12 +3742,12 @@ async function toggleVoiceRecording(btnElement) {
       const infoBankState = ref({ view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false });
       const ibYears = ['2025', '2026'];
       const ibMonths = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const ibCompanies = [
+      const ibCompanies = ref([
           'ALCOM', 'BSC', 'CHULA BRAND', 'COMERCIAL TREVIÑO', 'CONVATEC', 'CORNING 1', 'DANFOSS 2', 'DANFOSS 4', 'DANFOSS MTY', 'DANHIL', 'DANHIL MTY',
           'DEL BRAVO', 'DEL BRAVO STORAGE', 'EATON 1', 'EATON 3', 'EATON 5', 'ESSITY', 'J&E COMPANIES', 'LG', 'MAIZ MIER', 'MARMON',
           'MASTERBRAND MISION', 'MASTERBRAND WESLACO', 'MEGATECH', 'MEGATECH 2', 'NETAFIM', 'NIDEC', 'PANASONIC', 'PANASONIC MTY', 'PANASONIC NORTE',
           'PENTAIR', 'REXNORD 1', 'REXNORD 1 MTY', 'REXNORD 2', 'REXNORD USA', 'SEASON GROUP', 'UNIFORM GROUP', 'VERTIV', 'WC RB', 'WC RY', 'WESLACO', 'XB SOLUCIONES'
-      ].sort();
+      ].sort());
       const ibFolders = [
           { name: 'SCOPE', icon: 'fa-crosshairs', color: '#007bff' },
           { name: 'CORREOS', icon: 'fa-envelope', color: '#ffc107' },
@@ -3761,19 +3761,7 @@ async function toggleVoiceRecording(btnElement) {
       ];
 
       const filteredIbCompanies = computed(() => {
-          const y = infoBankState.value.selectedYear;
-          const m = infoBankState.value.selectedMonth;
-
-          if (y === '2025') {
-              if (m === 'Octubre') return ['DANFOSS 4'];
-              if (m === 'Noviembre') return ['PANASONIC MTY', 'PANASONIC NORTE', 'ALCOM'];
-              if (m === 'Diciembre') return ['VERTIV', 'CORNING 1', 'PANASONIC MTY', 'PANASONIC'];
-          }
-          if (y === '2026') {
-              if (m === 'Enero') return ['EATON 3', 'WC RY', 'CORNING 1'];
-          }
-
-          return ibCompanies;
+          return ibCompanies.value;
       });
 
       const selectIbYear = (y) => { infoBankState.value.selectedYear = y; infoBankState.value.view = 'MONTHS'; };
@@ -3827,7 +3815,16 @@ async function toggleVoiceRecording(btnElement) {
           else if (infoBankState.value.view === 'MONTHS') { infoBankState.value.view = 'YEARS'; infoBankState.value.selectedYear = ''; }
           else if (infoBankState.value.view === 'FILES') { infoBankState.value.view = 'FOLDERS'; infoBankState.value.selectedFolder = ''; infoBankState.value.files = []; }
       };
-      const resetInfoBank = () => { infoBankState.value = { view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false }; };
+      const resetInfoBank = () => {
+          infoBankState.value = { view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false };
+          google.script.run.withSuccessHandler(res => {
+              if (res.success && res.data.length > 0) {
+                  const current = new Set(ibCompanies.value);
+                  res.data.forEach(c => current.add(c));
+                  ibCompanies.value = Array.from(current).sort();
+              }
+          }).apiFetchDistinctClients();
+      };
 
       // REFS FOR TABLES (Pulse Effect)
       const trackerTable = ref(null);
