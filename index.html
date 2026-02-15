@@ -3581,6 +3581,18 @@ let audioChunks = [];
 let isRecording = false;
 
 async function toggleVoiceRecording(btnElement) {
+    // 1. DETECCIÓN MÓVIL (JUTSU DE ACTIVACIÓN)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Si es móvil, activamos el input nativo directamente
+    if (isMobile) {
+        const fileInput = document.getElementById('audioInputGemini');
+        if (fileInput) {
+            fileInput.click();
+            return;
+        }
+    }
+
     const icon = btnElement.querySelector('i');
 
     // MOBILE STRATEGY: Bypass getUserMedia on mobile to avoid permission issues
@@ -3663,6 +3675,23 @@ async function toggleVoiceRecording(btnElement) {
 
         } catch (err) {
             console.error(err);
+            // Fallback silencioso al input de archivo si falla el micrófono
+            const fileInput = document.getElementById('audioInputGemini');
+            if (fileInput) {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: 'Usando grabadora nativa...',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    background: '#1a1a1a',
+                    color: '#ffffff'
+                });
+                fileInput.click();
+                return;
+            }
+
             Swal.fire({
                 title: 'Permiso Requerido',
                 text: 'Acceso web denegado. ¿Usar grabadora nativa?',
