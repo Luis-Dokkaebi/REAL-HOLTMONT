@@ -120,7 +120,7 @@ const USER_DB = {
   "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares" },
   "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" },
   "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla" },
-  "EDGAR_LOPEZ":      { pass: "edgar2025", role: "EDGAR_USER", label: "Edgar Lopez" },
+  "EDGAR_LOPEZ":      { pass: "edgar2026", role: "EDGAR_USER", label: "Edgar Lopez" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder" }
 };
 
@@ -3191,5 +3191,27 @@ function forzarPermisos() {
     console.log("¡Conexión establecida! Chakra fluyendo.");
   } catch (e) {
     console.log("Error (esperado si no hay internet, pero ya tienes permisos): " + e.toString());
+  }
+}
+
+/**
+ * JUTSU: SETUP EDGAR LOPEZ
+ * Ejecutar esto una vez para asegurar que las tablas de Edgar existan.
+ */
+function setupEdgarTables() {
+  try {
+      console.log("Creando tablas para EDGAR LOPEZ...");
+
+      // 1. Tabla Principal
+      ensureSheetWithHeaders("EDGAR LOPEZ", DEFAULT_TRACKER_HEADERS);
+
+      // 2. Tabla Ventas (Por si acaso, dado su rol híbrido)
+      ensureSheetWithHeaders("EDGAR LOPEZ (VENTAS)", DEFAULT_SALES_HEADERS);
+
+      registrarLog("ADMIN", "SETUP_EDGAR", "Tablas de Edgar Lopez creadas/verificadas.");
+      console.log("✅ Tablas de EDGAR LOPEZ listas.");
+
+  } catch(e) {
+      console.error("Error setup Edgar: " + e.toString());
   }
 }
