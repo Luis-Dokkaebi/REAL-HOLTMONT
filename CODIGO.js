@@ -347,7 +347,7 @@ function apiDeleteEmployee(name) {
     }
 }
 
-function getSystemConfig(role) {
+function getSystemConfig(role, username) {
   const fullDirectory = getDirectoryFromDB();
 
   const allDepts = {
@@ -363,6 +363,11 @@ function getSystemConfig(role) {
   };
 
   const ppcModuleMaster = { id: "PPC_MASTER", label: "PPC Maestro", icon: "fa-tasks", color: "#fd7e14", type: "ppc_native" };
+
+  if (String(username).toUpperCase().trim() === 'JESUS_CANTU') {
+      ppcModuleMaster.label = "REUNION INTERDICIPLINARIO";
+  }
+
   const ppcModuleWeekly = { id: "WEEKLY_PLAN", label: "Planeación Semanal", icon: "fa-calendar-alt", color: "#6f42c1", type: "weekly_plan_view" };
   // const ecgModule = { id: "ECG_SALES", label: "Monitor Vivos", icon: "fa-heartbeat", color: "#d63384", type: "ecg_dashboard" };
   const kpiModule = { id: "KPI_DASHBOARD", label: "KPI Performance", icon: "fa-chart-line", color: "#d63384", type: "kpi_dashboard_view" };
@@ -3191,5 +3196,29 @@ function forzarPermisos() {
     console.log("¡Conexión establecida! Chakra fluyendo.");
   } catch (e) {
     console.log("Error (esperado si no hay internet, pero ya tienes permisos): " + e.toString());
+  }
+}
+
+function test_SystemConfig_Label() {
+  console.log("🛠️ INICIANDO TEST: Etiquetas de Configuración de Sistema");
+
+  // Caso 1: JESUS_CANTU
+  const configJesus = getSystemConfig('PPC_ADMIN', 'JESUS_CANTU');
+  const ppcModJesus = configJesus.specialModules.find(m => m.id === 'PPC_MASTER');
+
+  if (ppcModJesus && ppcModJesus.label === 'REUNION INTERDICIPLINARIO') {
+      console.log("✅ JESUS_CANTU: Etiqueta correcta 'REUNION INTERDICIPLINARIO'");
+  } else {
+      console.error("❌ JESUS_CANTU: Fallo. Etiqueta actual: " + (ppcModJesus ? ppcModJesus.label : 'N/A'));
+  }
+
+  // Caso 2: ANTONIA_VENTAS
+  const configAntonia = getSystemConfig('TONITA', 'ANTONIA_VENTAS');
+  const ppcModAntonia = configAntonia.specialModules.find(m => m.id === 'PPC_MASTER');
+
+  if (ppcModAntonia && ppcModAntonia.label === 'PPC Maestro') {
+      console.log("✅ ANTONIA_VENTAS: Etiqueta correcta 'PPC Maestro'");
+  } else {
+      console.error("❌ ANTONIA_VENTAS: Fallo. Etiqueta actual: " + (ppcModAntonia ? ppcModAntonia.label : 'N/A'));
   }
 }
