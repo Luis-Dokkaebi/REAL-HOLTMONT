@@ -881,7 +881,14 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         'CLASIFICACION': ['CLASIFICACION', 'CLASI'],
         'COMENTARIOS': ['COMENTARIOS', 'COMENTARIO', 'COMENTARIOS SEMANA EN CURSO', 'OBSERVACIONES', 'NOTAS', 'DETALLES'],
         'PREVIOS': ['COMENTARIOS PREVIOS', 'PREVIOS', 'COMENTARIOS SEMANA PREVIA'],
-        'FECHA_TERMINO': ['FECHA TERMINO', 'FECHA REAL', 'TERMINO', 'REALIZADO']
+        'FECHA_TERMINO': ['FECHA TERMINO', 'FECHA REAL', 'TERMINO', 'REALIZADO'],
+        'DIAS_L': ['DIAS_L', 'L'],
+        'DIAS_M': ['DIAS_M', 'M'],
+        'DIAS_X': ['DIAS_X', 'X', 'MI', 'MIERCOLES', 'MIÉRCOLES'],
+        'DIAS_J': ['DIAS_J', 'J'],
+        'DIAS_V': ['DIAS_V', 'V'],
+        'DIAS_S': ['DIAS_S', 'S'],
+        'DIAS_D': ['DIAS_D', 'D']
       };
       for (let main in aliases) {
         if (aliases[main].includes(k)) {
@@ -1716,9 +1723,18 @@ function apiFetchWeeklyPlanData(username) {
         const result = rows.map((r, i) => {
             const rowObj = { _rowIndex: headerRowIdx + i + 2 };
             // Helper to find value in row by fuzzy header match
-            const getVal = (candidates) => {
+            const getVal = (candidates, strict = false) => {
+                // 1. Try EXACT match first (Always)
                 for (let c of candidates) {
-                    const idx = originalHeaders.findIndex(h => h.toUpperCase().trim() === c.toUpperCase().trim() || h.toUpperCase().trim().includes(c.toUpperCase().trim()));
+                    const idx = originalHeaders.findIndex(h => h.toUpperCase().trim() === c.toUpperCase().trim());
+                    if (idx > -1) return r[idx];
+                }
+
+                if (strict) return "";
+
+                // 2. Try FUZZY match (Only if not strict)
+                for (let c of candidates) {
+                    const idx = originalHeaders.findIndex(h => h.toUpperCase().trim().includes(c.toUpperCase().trim()));
                     if (idx > -1) return r[idx];
                 }
                 return "";
@@ -1743,13 +1759,16 @@ function apiFetchWeeklyPlanData(username) {
 
             rowObj['RESPONSABLE'] = getVal(['RESPONSABLE', 'ENCARGADO', 'PERSONA RESPONSABLE']);
             rowObj['CONTRATISTA'] = getVal(['CONTRATISTA', 'PROVEEDOR']);
-            rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L']);
-            rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M']);
-            rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI']);
-            rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J']);
-            rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V']);
-            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S']);
-            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D']);
+
+            // STRICT MATCHING FOR DAYS (Fix: Avoid matching 'L' in 'ELECTROMECANICA')
+            rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L'], true);
+            rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M'], true);
+            rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI'], true);
+            rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J'], true);
+            rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V'], true);
+            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S'], true);
+            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D'], true);
+
             rowObj['CUMPLIMIENTO'] = getVal(['CUMPLIMIENTO']);
 
             // Add ID if available for saving
