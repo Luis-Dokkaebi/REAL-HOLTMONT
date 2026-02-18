@@ -365,7 +365,7 @@ function getSystemConfig(role, username) {
   const ppcModuleMaster = { id: "PPC_MASTER", label: "PPC Maestro", icon: "fa-tasks", color: "#fd7e14", type: "ppc_native" };
 
   if (String(username).toUpperCase().trim() === 'JESUS_CANTU') {
-      ppcModuleMaster.label = "REUNION INTERDICIPLINARIO";
+      ppcModuleMaster.label = "INTERDICIPLINARIA";
   }
 
   const ppcModuleWeekly = { id: "WEEKLY_PLAN", label: "Planeación Semanal", icon: "fa-calendar-alt", color: "#6f42c1", type: "weekly_plan_view" };

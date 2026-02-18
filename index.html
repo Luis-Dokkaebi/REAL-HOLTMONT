@@ -2867,7 +2867,7 @@
         </div>
 <div v-if="currentView === 'PPC_FORM'" class="h-100 d-flex flex-column" style="background:white; padding:20px;">
            <div class="d-flex justify-content-between align-items-center mb-3">
-               <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'REUNION INTERDICIPLINARIO' : 'PPC Maestro') }}</h5><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
+               <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'INTERDICIPLINARIA' : 'PPC Maestro') }}</h5><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
                <div><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
            </div>
            <div class="d-flex mb-3 align-items-end justify-content-center position-relative" style="min-height: 90px;">
@@ -2880,17 +2880,22 @@
                <table v-if="currentUsername === 'JESUS_CANTU'" class="table-excel">
                    <thead>
                        <tr>
-                           <th class="row-num">#</th>
-                           <th style="width:60px">Ruta C.</th>
-                           <th style="width:80px">Zona</th>
-                           <th style="width:100px">Especialidad</th>
-                           <th style="min-width:300px">Descripción Actividad</th>
-                           <th style="width:150px" colspan="2">Cuantificación (Req / Real)</th>
-                           <th style="width:120px">Responsable</th>
-                           <th style="width:120px">Contratista</th>
-                           <th style="width:20px">L</th><th style="width:20px">M</th><th style="width:20px">X</th><th style="width:20px">J</th><th style="width:20px">V</th><th style="width:20px">S</th><th style="width:20px">D</th>
-                           <th style="width:60px">Cumpl.</th>
-                           <th style="width:50px"></th>
+                           <th class="row-num" rowspan="2">#</th>
+                           <th style="width:60px" rowspan="2">Ruta critica</th>
+                           <th style="width:80px" rowspan="2">Zona</th>
+                           <th style="width:100px" rowspan="2">Especialidad</th>
+                           <th style="min-width:300px" rowspan="2">Descripción Actividad</th>
+                           <th style="width:150px" colspan="2">CUANTIFICACIÓN</th>
+                           <th style="width:120px" rowspan="2">PERSONA RESPONSABLE</th>
+                           <th style="width:120px" rowspan="2">CONTRATISTA</th>
+                           <th colspan="5">DÍAS DE LA SEMANA</th>
+                           <th style="width:60px" rowspan="2">Cumpl.</th>
+                           <th style="width:50px" rowspan="2"></th>
+                       </tr>
+                       <tr>
+                           <th style="width:75px">REQUERIDO</th>
+                           <th style="width:75px">REAL</th>
+                           <th style="width:20px">L</th><th style="width:20px">M</th><th style="width:20px">M</th><th style="width:20px">J</th><th style="width:20px">V</th>
                        </tr>
                    </thead>
                    <tbody>
@@ -2909,8 +2914,6 @@
                            <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.x"></td>
                            <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.j"></td>
                            <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.v"></td>
-                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.s"></td>
-                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.d"></td>
                            <td><select v-model="ppcData.cumplimiento" class="excel-input"><option value="NO">NO</option><option value="SI">SI</option></select></td>
                            <td class="text-center"><button class="btn btn-primary btn-sm py-0" @click="confirmAddToQueue" title="Agregar">+</button></td>
                        </tr>
@@ -2929,8 +2932,6 @@
                            <td class="text-center">{{ item.dias && item.dias.x ? 'X' : '' }}</td>
                            <td class="text-center">{{ item.dias && item.dias.j ? 'X' : '' }}</td>
                            <td class="text-center">{{ item.dias && item.dias.v ? 'X' : '' }}</td>
-                           <td class="text-center">{{ item.dias && item.dias.s ? 'X' : '' }}</td>
-                           <td class="text-center">{{ item.dias && item.dias.d ? 'X' : '' }}</td>
                            <td>{{ item.cumplimiento }}</td>
                            <td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer" @click="activityQueue.splice(idx,1); syncQueueToBackend();"></i></td>
                        </tr>
