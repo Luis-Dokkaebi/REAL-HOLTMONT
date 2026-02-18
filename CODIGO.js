@@ -1474,21 +1474,21 @@ function apiSavePPCData(payload, activeUser) {
           // Mapeo Explícito para PPCV3
           const taskData = {
                  'FOLIO': id,
-                 'CONCEPTO': item.concepto,
-                 'CLASIFICACION': item.clasificacion || "Media",
-                 'AREA': item.especialidad,
-                 'INVOLUCRADOS': item.responsable,
+                 'CONCEPTO': item.concepto || item.CONCEPTO,
+                 'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "Media",
+                 'AREA': item.especialidad || item.ESPECIALIDAD,
+                 'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
                  'FECHA': fechaStr,
-                 'RELOJ': item.horas,
+                 'RELOJ': item.horas || item.RELOJ,
                  'ESTATUS': "ASIGNADO",
-                 'PRIORIDAD': item.prioridad || item.prioridades,
+                 'PRIORIDAD': item.prioridad || item.prioridades || item.PRIORIDAD,
                  'RESTRICCIONES': item.restricciones,
-                 'RIESGOS': item.riesgos,
+                 'RIESGOS': item.riesgos || item.RIESGOS,
                  'FECHA_RESPUESTA': item.fechaRespuesta,
                  'AVANCE': "0%",
                  'COMENTARIOS': comentarios,
                  'ARCHIVO': item.archivoUrl,
-                 'CUMPLIMIENTO': item.cumplimiento,
+                 'CUMPLIMIENTO': item.cumplimiento || item.CUMPLIMIENTO,
                  'COMENTARIOS PREVIOS': item.comentariosPrevios || "",
                  'REQUISITOR': item.requisitor,
                  'CONTACTO': item.contacto,
@@ -1497,19 +1497,19 @@ function apiSavePPCData(payload, activeUser) {
                  'CLIENTE': item.cliente,
                  'TRABAJO': item.TRABAJO,
                  'DETALLES_EXTRA': detallesExtra, // Nueva Columna
-                 // CAMPOS ESPECIFICOS JESUS_CANTU
-                 'RUTA_CRITICA': item.rutaCritica,
-                 'ZONA': item.zona,
-                 'CONTRATISTA': item.contratista,
-                 'CUANT_REQUERIDO': item.cuantReq,
-                 'CUANT_REAL': item.cuantReal,
-                 'DIAS_L': item.dias ? (item.dias.l ? "x" : "") : "",
-                 'DIAS_M': item.dias ? (item.dias.m ? "x" : "") : "",
-                 'DIAS_X': item.dias ? (item.dias.x ? "x" : "") : "",
-                 'DIAS_J': item.dias ? (item.dias.j ? "x" : "") : "",
-                 'DIAS_V': item.dias ? (item.dias.v ? "x" : "") : "",
-                 'DIAS_S': item.dias ? (item.dias.s ? "x" : "") : "",
-                 'DIAS_D': item.dias ? (item.dias.d ? "x" : "") : ""
+                 // CAMPOS ESPECIFICOS JESUS_CANTU (Mapping Uppercase from Front)
+                 'RUTA_CRITICA': item.rutaCritica || item.RUTA_CRITICA,
+                 'ZONA': item.zona || item.ZONA,
+                 'CONTRATISTA': item.contratista || item.CONTRATISTA,
+                 'CUANT_REQUERIDO': item.cuantReq || item.CUANT_REQUERIDO,
+                 'CUANT_REAL': item.cuantReal || item.CUANT_REAL,
+                 'DIAS_L': item.dias ? (item.dias.l ? "x" : "") : (item.DIAS_L || ""),
+                 'DIAS_M': item.dias ? (item.dias.m ? "x" : "") : (item.DIAS_M || ""),
+                 'DIAS_X': item.dias ? (item.dias.x ? "x" : "") : (item.DIAS_X || ""),
+                 'DIAS_J': item.dias ? (item.dias.j ? "x" : "") : (item.DIAS_J || ""),
+                 'DIAS_V': item.dias ? (item.dias.v ? "x" : "") : (item.DIAS_V || ""),
+                 'DIAS_S': item.dias ? (item.dias.s ? "x" : "") : (item.DIAS_S || ""),
+                 'DIAS_D': item.dias ? (item.dias.d ? "x" : "") : (item.DIAS_D || "")
           };
           
           // A. Persistencia en PPC Maestro (PPCV3)
@@ -1533,10 +1533,28 @@ function apiSavePPCData(payload, activeUser) {
           addTaskToSheet("ADMINISTRADOR", taskData);
 
           // C. Distribución al Staff (Tracker Personal)
-          const responsables = String(item.responsable || "").split(",").map(s => s.trim()).filter(s => s);
+          const responsables = String(item.responsable || item.RESPONSABLE || "").split(",").map(s => s.trim()).filter(s => s);
+
           responsables.forEach(personName => {
               if (!personName.toUpperCase().includes("(VENTAS)")) {
-                  addTaskToSheet(personName, taskData);
+                  // LOGICA ESPECIAL JESUS_CANTU: Filtrar columnas para evitar rotura en Tracker
+                  if (activeUser === 'JESUS_CANTU') {
+                      const staffData = {
+                          'FOLIO': taskData.FOLIO,
+                          'CONCEPTO': taskData.CONCEPTO,
+                          'AREA': taskData.AREA,
+                          'RESPONSABLE': taskData.INVOLUCRADOS,
+                          'FECHA': taskData.FECHA,
+                          'ESTATUS': taskData.ESTATUS,
+                          'AVANCE': taskData.AVANCE,
+                          'CLASIFICACION': taskData.CLASIFICACION,
+                          'PRIORIDAD': taskData.PRIORIDAD
+                          // Se omiten RUTA_CRITICA, ZONA, DIAS_X, etc.
+                      };
+                      addTaskToSheet(personName, staffData);
+                  } else {
+                      addTaskToSheet(personName, taskData);
+                  }
               }
           });
 
@@ -1706,6 +1724,13 @@ function apiFetchWeeklyPlanData(username) {
             // Add ID if available for saving
             rowObj['ID'] = getVal(['ID', 'FOLIO']);
             rowObj['FOLIO'] = rowObj['ID'];
+
+            // HIDDEN FIELDS PRESERVATION (CRITICAL FOR SYNC)
+            rowObj['FECHA'] = getVal(['FECHA', 'ALTA', 'FECHA INICIO']);
+            rowObj['ESTATUS'] = getVal(['ESTATUS', 'STATUS']);
+            rowObj['AVANCE'] = getVal(['AVANCE', 'AVANCE %']);
+            rowObj['CLASIFICACION'] = getVal(['CLASIFICACION']);
+            rowObj['PRIORIDAD'] = getVal(['PRIORIDAD']);
 
             return rowObj;
         }).filter(r => r["CONCEPTO"] || r["ID"]);
