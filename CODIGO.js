@@ -1707,7 +1707,7 @@ function apiFetchWeeklyPlanData(username) {
         const jesusHeaders = [
             'RUTA_CRITICA', 'ZONA', 'ESPECIALIDAD', 'CONCEPTO',
             'CUANT_REQUERIDO', 'CUANT_REAL', 'RESPONSABLE', 'CONTRATISTA',
-            'DIAS_L', 'DIAS_M', 'DIAS_X', 'DIAS_J', 'DIAS_V', 'DIAS_S', 'DIAS_D',
+            'DIAS_L', 'DIAS_M', 'DIAS_X', 'DIAS_J', 'DIAS_V',
             'CUMPLIMIENTO'
         ];
 
@@ -1737,8 +1737,6 @@ function apiFetchWeeklyPlanData(username) {
             rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI']);
             rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J']);
             rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V']);
-            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S']);
-            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D']);
             rowObj['CUMPLIMIENTO'] = getVal(['CUMPLIMIENTO']);
 
             // Add ID if available for saving
