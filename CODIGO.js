@@ -1716,9 +1716,14 @@ function apiFetchWeeklyPlanData(username) {
         const result = rows.map((r, i) => {
             const rowObj = { _rowIndex: headerRowIdx + i + 2 };
             // Helper to find value in row by fuzzy header match
-            const getVal = (candidates) => {
+            const getVal = (candidates, strict = false) => {
                 for (let c of candidates) {
-                    const idx = originalHeaders.findIndex(h => h.toUpperCase().trim() === c.toUpperCase().trim() || h.toUpperCase().trim().includes(c.toUpperCase().trim()));
+                    const idx = originalHeaders.findIndex(h => {
+                        const hUp = h.toUpperCase().trim();
+                        const cUp = c.toUpperCase().trim();
+                        if (strict) return hUp === cUp;
+                        return hUp === cUp || hUp.includes(cUp);
+                    });
                     if (idx > -1) return r[idx];
                 }
                 return "";
@@ -1743,13 +1748,13 @@ function apiFetchWeeklyPlanData(username) {
 
             rowObj['RESPONSABLE'] = getVal(['RESPONSABLE', 'ENCARGADO', 'PERSONA RESPONSABLE']);
             rowObj['CONTRATISTA'] = getVal(['CONTRATISTA', 'PROVEEDOR']);
-            rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L']);
-            rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M']);
-            rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI']);
-            rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J']);
-            rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V']);
-            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S']);
-            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D']);
+            rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L'], true);
+            rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M'], true);
+            rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI'], true);
+            rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J'], true);
+            rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V'], true);
+            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S'], true);
+            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D'], true);
             rowObj['CUMPLIMIENTO'] = getVal(['CUMPLIMIENTO']);
 
             // Add ID if available for saving

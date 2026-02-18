@@ -1473,13 +1473,13 @@
                                 <td class="text-center">{{ row['CUANT_REAL'] }}</td>
                                 <td>{{ row['RESPONSABLE'] }}</td>
                                 <td>{{ row['CONTRATISTA'] }}</td>
-                                <td class="text-center">{{ row['DIAS_L'] }}</td>
-                                <td class="text-center">{{ row['DIAS_M'] }}</td>
-                                <td class="text-center">{{ row['DIAS_X'] }}</td>
-                                <td class="text-center">{{ row['DIAS_J'] }}</td>
-                                <td class="text-center">{{ row['DIAS_V'] }}</td>
-                                <td class="text-center">{{ row['DIAS_S'] }}</td>
-                                <td class="text-center">{{ row['DIAS_D'] }}</td>
+                                <td class="text-center" @click="toggleDay(row, 'DIAS_L')" style="cursor:pointer; font-weight:bold;">{{ String(row['DIAS_L']).toLowerCase() === 'x' ? 'X' : '' }}</td>
+                                <td class="text-center" @click="toggleDay(row, 'DIAS_M')" style="cursor:pointer; font-weight:bold;">{{ String(row['DIAS_M']).toLowerCase() === 'x' ? 'X' : '' }}</td>
+                                <td class="text-center" @click="toggleDay(row, 'DIAS_X')" style="cursor:pointer; font-weight:bold;">{{ String(row['DIAS_X']).toLowerCase() === 'x' ? 'X' : '' }}</td>
+                                <td class="text-center" @click="toggleDay(row, 'DIAS_J')" style="cursor:pointer; font-weight:bold;">{{ String(row['DIAS_J']).toLowerCase() === 'x' ? 'X' : '' }}</td>
+                                <td class="text-center" @click="toggleDay(row, 'DIAS_V')" style="cursor:pointer; font-weight:bold;">{{ String(row['DIAS_V']).toLowerCase() === 'x' ? 'X' : '' }}</td>
+                                <td class="text-center" @click="toggleDay(row, 'DIAS_S')" style="cursor:pointer; font-weight:bold;">{{ String(row['DIAS_S']).toLowerCase() === 'x' ? 'X' : '' }}</td>
+                                <td class="text-center" @click="toggleDay(row, 'DIAS_D')" style="cursor:pointer; font-weight:bold;">{{ String(row['DIAS_D']).toLowerCase() === 'x' ? 'X' : '' }}</td>
                                 <td class="text-center">
                                     <div style="position:relative; width:100%; height:100%;">
                                         <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:1;">
@@ -4192,6 +4192,11 @@ async function toggleVoiceRecording(btnElement) {
           }
       };
 
+      const toggleDay = (row, key) => {
+          const current = String(row[key] || '').toLowerCase();
+          row[key] = (current === 'x') ? '' : 'x';
+      };
+
       const addProjectItem = (section) => {
           if (!projectProgram.value[section]) projectProgram.value[section] = [];
           // Unique ID for Cotización Trabajo rows to link resources
@@ -6355,7 +6360,7 @@ async function toggleVoiceRecording(btnElement) {
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
-      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus };
+      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, toggleDay };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
