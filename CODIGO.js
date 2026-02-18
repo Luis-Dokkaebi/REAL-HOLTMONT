@@ -1725,13 +1725,24 @@ function apiFetchWeeklyPlanData(username) {
             };
 
             rowObj['RUTA_CRITICA'] = getVal(['RUTA_CRITICA', 'RUTA CRITICA', 'CRITICA']);
-            rowObj['ZONA'] = getVal(['ZONA']);
-            rowObj['ESPECIALIDAD'] = getVal(['ESPECIALIDAD', 'AREA']);
-            rowObj['CONCEPTO'] = getVal(['CONCEPTO', 'DESCRIPCION']);
+            rowObj['ZONA'] = getVal(['ZONA', 'UBICACION', 'AREA GEOGRAFICA']);
+            rowObj['ESPECIALIDAD'] = getVal(['ESPECIALIDAD', 'AREA', 'DISCIPLINA']);
+            rowObj['CONCEPTO'] = getVal(['CONCEPTO', 'DESCRIPCION', 'DEFINIDA', 'ATERRIZADA', 'ACTIVIDAD']);
+
+            // CUANTIFICACION LOGIC (Handle Merged Headers)
             rowObj['CUANT_REQUERIDO'] = getVal(['CUANT_REQUERIDO', 'REQUERIDO']);
             rowObj['CUANT_REAL'] = getVal(['CUANT_REAL', 'REAL']);
-            rowObj['RESPONSABLE'] = getVal(['RESPONSABLE', 'ENCARGADO']);
-            rowObj['CONTRATISTA'] = getVal(['CONTRATISTA']);
+
+            if (!rowObj['CUANT_REQUERIDO']) {
+                const qIdx = originalHeaders.findIndex(h => h.toUpperCase().includes('CUANTIFICACIÓN') || h.toUpperCase().includes('CUANTIFICACION'));
+                if (qIdx > -1) {
+                    rowObj['CUANT_REQUERIDO'] = r[qIdx];
+                    rowObj['CUANT_REAL'] = r[qIdx + 1];
+                }
+            }
+
+            rowObj['RESPONSABLE'] = getVal(['RESPONSABLE', 'ENCARGADO', 'PERSONA RESPONSABLE']);
+            rowObj['CONTRATISTA'] = getVal(['CONTRATISTA', 'PROVEEDOR']);
             rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L']);
             rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M']);
             rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI']);
