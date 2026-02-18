@@ -1267,12 +1267,26 @@ function apiFetchDrafts() {
     const rows = sheet.getDataRange().getValues();
     if (rows.length < 1) return { success: true, data: [] }; 
     const startRow = (rows[0][0] === "ESPECIALIDAD") ? 1 : 0;
-    const drafts = rows.slice(startRow).map(r => ({
-      especialidad: r[0], concepto: r[1], responsable: r[2], horas: r[3], cumplimiento: r[4],
-      archivoUrl: r[5], comentarios: r[6], comentariosPrevios: r[7], 
-      prioridades: r[8], riesgos: r[9], restricciones: r[10], fechaRespuesta: r[11], 
-      clasificacion: r[12], fechaAlta: r[13] 
-    })).filter(d => d.concepto);
+    const drafts = rows.slice(startRow).map(r => {
+      let diasObj = {l:false, m:false, x:false, j:false, v:false, s:false, d:false};
+      try {
+          if (r[19]) diasObj = JSON.parse(r[19]);
+      } catch(e) {}
+
+      return {
+        especialidad: r[0], concepto: r[1], responsable: r[2], horas: r[3], cumplimiento: r[4],
+        archivoUrl: r[5], comentarios: r[6], comentariosPrevios: r[7],
+        prioridades: r[8], riesgos: r[9], restricciones: r[10], fechaRespuesta: r[11],
+        clasificacion: r[12], fechaAlta: r[13],
+        // New Fields
+        rutaCritica: r[14] || "",
+        zona: r[15] || "",
+        contratista: r[16] || "",
+        cuantReq: r[17] || "",
+        cuantReal: r[18] || "",
+        dias: diasObj
+      };
+    }).filter(d => d.concepto);
     return { success: true, data: drafts };
   } catch(e) { return { success: false, message: e.toString() };
   }
@@ -1285,13 +1299,19 @@ function apiSyncDrafts(drafts) {
       let sheet = findSheetSmart(APP_CONFIG.draftSheetName);
       if (!sheet) { sheet = SS.insertSheet(APP_CONFIG.draftSheetName); }
       sheet.clear();
-      const headers = ["ESPECIALIDAD", "CONCEPTO", "RESPONSABLE", "HORAS", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "PREVIOS", "PRIORIDAD", "RIESGOS", "RESTRICCIONES", "FECHA_RESP", "CLASIFICACION", "FECHA_ALTA"];
+      const headers = [
+          "ESPECIALIDAD", "CONCEPTO", "RESPONSABLE", "HORAS", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "PREVIOS",
+          "PRIORIDAD", "RIESGOS", "RESTRICCIONES", "FECHA_RESP", "CLASIFICACION", "FECHA_ALTA",
+          "RUTA_CRITICA", "ZONA", "CONTRATISTA", "CUANT_REQ", "CUANT_REAL", "DIAS_JSON"
+      ];
       if (drafts && drafts.length > 0) {
         const rows = drafts.map(d => [
           d.especialidad || "", d.concepto || "", d.responsable || "", d.horas || "", d.cumplimiento || "NO",
           d.archivoUrl || "", d.comentarios || "", d.comentariosPrevios || "",
           d.prioridades || "", d.riesgos || "", d.restricciones || "", d.fechaRespuesta || "", 
-          d.clasificacion || "", d.fechaAlta || new Date() 
+          d.clasificacion || "", d.fechaAlta || new Date(),
+          d.rutaCritica || "", d.zona || "", d.contratista || "", d.cuantReq || "", d.cuantReal || "",
+          JSON.stringify(d.dias || {})
         ]);
         sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
         sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
