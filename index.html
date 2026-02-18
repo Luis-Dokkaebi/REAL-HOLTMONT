@@ -1471,11 +1471,21 @@
                                 <td class="text-center">{{ row['CUANT_REAL'] }}</td>
                                 <td>{{ row['RESPONSABLE'] }}</td>
                                 <td>{{ row['CONTRATISTA'] }}</td>
-                                <td class="text-center">{{ row['DIAS_L'] }}</td>
-                                <td class="text-center">{{ row['DIAS_M'] }}</td>
-                                <td class="text-center">{{ row['DIAS_X'] }}</td>
-                                <td class="text-center">{{ row['DIAS_J'] }}</td>
-                                <td class="text-center">{{ row['DIAS_V'] }}</td>
+                                <td class="text-center" style="cursor:pointer;" @click="toggleDay(row, 'DIAS_L')">
+                                    <i class="fas" :class="row['DIAS_L'] ? 'fa-check-square text-success' : 'fa-square text-muted opacity-25'"></i>
+                                </td>
+                                <td class="text-center" style="cursor:pointer;" @click="toggleDay(row, 'DIAS_M')">
+                                    <i class="fas" :class="row['DIAS_M'] ? 'fa-check-square text-success' : 'fa-square text-muted opacity-25'"></i>
+                                </td>
+                                <td class="text-center" style="cursor:pointer;" @click="toggleDay(row, 'DIAS_X')">
+                                    <i class="fas" :class="row['DIAS_X'] ? 'fa-check-square text-success' : 'fa-square text-muted opacity-25'"></i>
+                                </td>
+                                <td class="text-center" style="cursor:pointer;" @click="toggleDay(row, 'DIAS_J')">
+                                    <i class="fas" :class="row['DIAS_J'] ? 'fa-check-square text-success' : 'fa-square text-muted opacity-25'"></i>
+                                </td>
+                                <td class="text-center" style="cursor:pointer;" @click="toggleDay(row, 'DIAS_V')">
+                                    <i class="fas" :class="row['DIAS_V'] ? 'fa-check-square text-success' : 'fa-square text-muted opacity-25'"></i>
+                                </td>
                                 <td class="text-center">
                                     <div style="position:relative; width:100%; height:100%;">
                                         <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:1;">
@@ -4908,6 +4918,13 @@ async function toggleVoiceRecording(btnElement) {
       const goBackToDept = () => currentView.value=staffTracker.value.previousView;
 
       const loadWeeklyPlan = () => { weeklyPlanData.value.isLoading = true; google.script.run.withSuccessHandler(res => { weeklyPlanData.value.isLoading = false; if(res.success){ weeklyPlanData.value.headers = res.headers; weeklyPlanData.value.data = res.data; selectedWeek.value = ''; } else Swal.fire('Error', res.message, 'error'); }).apiFetchWeeklyPlanData(currentUsername.value); };
+      const toggleDay = (row, field) => {
+          if (row._isSaving) return;
+          // Toggle logic: If set (e.g., 'x'), unset it. If empty, set 'x'.
+          row[field] = row[field] ? "" : "x";
+          savePPCV3Row(row);
+      };
+
       const savePPCV3Row = (row, event) => {
           if (row._isSaving) return;
           row._isSaving = true;
@@ -6350,7 +6367,7 @@ async function toggleVoiceRecording(btnElement) {
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
-      staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
+      staffTrackerFilters, filteredStaffTrackerData, getUniqueValues, toggleDay,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus };
     }
   });
