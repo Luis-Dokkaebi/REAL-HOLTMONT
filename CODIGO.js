@@ -1354,6 +1354,23 @@ function apiSavePPCData(payload, activeUser) {
         sheetPPC.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
       }
 
+      // 1.0.1 AUTO-MIGRACIÓN PARA JESUS_CANTU (Añadir columnas faltantes)
+      if (activeUser === 'JESUS_CANTU') {
+          const newCols = [
+              "RUTA_CRITICA", "ZONA", "CUANT_REQUERIDO", "CUANT_REAL", "CONTRATISTA",
+              "DIAS_L", "DIAS_M", "DIAS_X", "DIAS_J", "DIAS_V", "DIAS_S", "DIAS_D"
+          ];
+          const currentHeaders = sheetPPC.getRange(1, 1, 1, sheetPPC.getLastColumn()).getValues()[0].map(h => String(h).toUpperCase().trim());
+          const missing = newCols.filter(c => !currentHeaders.includes(c));
+
+          if (missing.length > 0) {
+              const startCol = sheetPPC.getLastColumn() + 1;
+              sheetPPC.getRange(1, startCol, 1, missing.length).setValues([missing])
+                      .setFontWeight("bold")
+                      .setBackground("#e6e6e6");
+          }
+      }
+
       // 1.1 VERIFICACIÓN CRÍTICA DE PPCV4 (Para ANTONIA_VENTAS)
       if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
           let sheetPPC4 = findSheetSmart('PPCV4');
@@ -1479,7 +1496,20 @@ function apiSavePPCData(payload, activeUser) {
                  'FECHA_COTIZACION': item.fechaCotizacion,
                  'CLIENTE': item.cliente,
                  'TRABAJO': item.TRABAJO,
-                 'DETALLES_EXTRA': detallesExtra // Nueva Columna
+                 'DETALLES_EXTRA': detallesExtra, // Nueva Columna
+                 // CAMPOS ESPECIFICOS JESUS_CANTU
+                 'RUTA_CRITICA': item.rutaCritica,
+                 'ZONA': item.zona,
+                 'CONTRATISTA': item.contratista,
+                 'CUANT_REQUERIDO': item.cuantReq,
+                 'CUANT_REAL': item.cuantReal,
+                 'DIAS_L': item.dias ? (item.dias.l ? "x" : "") : "",
+                 'DIAS_M': item.dias ? (item.dias.m ? "x" : "") : "",
+                 'DIAS_X': item.dias ? (item.dias.x ? "x" : "") : "",
+                 'DIAS_J': item.dias ? (item.dias.j ? "x" : "") : "",
+                 'DIAS_V': item.dias ? (item.dias.v ? "x" : "") : "",
+                 'DIAS_S': item.dias ? (item.dias.s ? "x" : "") : "",
+                 'DIAS_D': item.dias ? (item.dias.d ? "x" : "") : ""
           };
           
           // A. Persistencia en PPC Maestro (PPCV3)
@@ -1623,6 +1653,7 @@ function apiFetchPPCData() {
 
 function apiFetchWeeklyPlanData(username) {
   try {
+    const isJesus = String(username).toUpperCase().trim() === 'JESUS_CANTU';
     const sheetName = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
     const sheet = findSheetSmart(sheetName);
     if (!sheet) return { success: false, message: "No existe la hoja " + sheetName };
@@ -1632,6 +1663,56 @@ function apiFetchWeeklyPlanData(username) {
     if (headerRowIdx === -1) return { success: false, message: "Cabeceras no encontradas en PPCV3." };
     const originalHeaders = data[headerRowIdx].map(h => String(h).trim());
     
+    // CUSTOM VIEW FOR JESUS_CANTU
+    if (isJesus) {
+        // Define fixed header structure for the customized view
+        const jesusHeaders = [
+            'RUTA_CRITICA', 'ZONA', 'ESPECIALIDAD', 'CONCEPTO',
+            'CUANT_REQUERIDO', 'CUANT_REAL', 'RESPONSABLE', 'CONTRATISTA',
+            'DIAS_L', 'DIAS_M', 'DIAS_X', 'DIAS_J', 'DIAS_V', 'DIAS_S', 'DIAS_D',
+            'CUMPLIMIENTO'
+        ];
+
+        // Map data rows to these headers based on column matching
+        const rows = data.slice(headerRowIdx + 1);
+        const result = rows.map((r, i) => {
+            const rowObj = { _rowIndex: headerRowIdx + i + 2 };
+            // Helper to find value in row by fuzzy header match
+            const getVal = (candidates) => {
+                for (let c of candidates) {
+                    const idx = originalHeaders.findIndex(h => h.toUpperCase().trim() === c.toUpperCase().trim() || h.toUpperCase().trim().includes(c.toUpperCase().trim()));
+                    if (idx > -1) return r[idx];
+                }
+                return "";
+            };
+
+            rowObj['RUTA_CRITICA'] = getVal(['RUTA_CRITICA', 'RUTA CRITICA', 'CRITICA']);
+            rowObj['ZONA'] = getVal(['ZONA']);
+            rowObj['ESPECIALIDAD'] = getVal(['ESPECIALIDAD', 'AREA']);
+            rowObj['CONCEPTO'] = getVal(['CONCEPTO', 'DESCRIPCION']);
+            rowObj['CUANT_REQUERIDO'] = getVal(['CUANT_REQUERIDO', 'REQUERIDO']);
+            rowObj['CUANT_REAL'] = getVal(['CUANT_REAL', 'REAL']);
+            rowObj['RESPONSABLE'] = getVal(['RESPONSABLE', 'ENCARGADO']);
+            rowObj['CONTRATISTA'] = getVal(['CONTRATISTA']);
+            rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L']);
+            rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M']);
+            rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI']);
+            rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J']);
+            rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V']);
+            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S']);
+            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D']);
+            rowObj['CUMPLIMIENTO'] = getVal(['CUMPLIMIENTO']);
+
+            // Add ID if available for saving
+            rowObj['ID'] = getVal(['ID', 'FOLIO']);
+            rowObj['FOLIO'] = rowObj['ID'];
+
+            return rowObj;
+        }).filter(r => r["CONCEPTO"] || r["ID"]);
+
+        return { success: true, headers: jesusHeaders, data: result.reverse() };
+    }
+
     const mappedHeaders = originalHeaders.map(h => {
         const up = h.toUpperCase();
         if (up.includes("ESPECIALIDAD") || up.includes("AREA") || up.includes("DEPARTAMENTO")) return "ESPECIALIDAD";

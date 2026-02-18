@@ -1425,7 +1425,35 @@
             <div class="excel-container flex-fill">
                 <div v-if="weeklyPlanData.isLoading" class="text-center p-5 text-muted"><div class="spinner-border text-primary mb-2" role="status"></div><div>Cargando datos...</div></div>
                 <table v-else class="table-excel" style="table-layout: auto; width: auto; min-width: 0;">
-                    <thead>
+                    <!-- CUSTOM HEADER FOR JESUS_CANTU -->
+                    <thead v-if="currentUsername === 'JESUS_CANTU'">
+                        <tr>
+                            <th class="row-num" rowspan="2">#</th>
+                            <th style="width:60px" rowspan="2">Ruta critica</th>
+                            <th style="width:80px" rowspan="2">Zona</th>
+                            <th style="width:100px" rowspan="2">Especialidad</th>
+                            <th style="min-width:300px" rowspan="2">DESCRIPCIÓN DE ACTIVIDAD</th>
+                            <th colspan="2" class="text-center">CUANTIFICACIÓN</th>
+                            <th style="width:150px" rowspan="2">PERSONA RESPONSABLE</th>
+                            <th style="width:150px" rowspan="2">CONTRATISTA</th>
+                            <th colspan="7" class="text-center">DÍAS DE LA SEMANA</th>
+                            <th style="width:80px" rowspan="2">Cumplimiento</th>
+                            <th style="width:40px" rowspan="2"><i class="fas fa-save"></i></th>
+                        </tr>
+                        <tr>
+                            <th style="width:70px">Requerido</th>
+                            <th style="width:70px">Real</th>
+                            <th style="width:25px">L</th>
+                            <th style="width:25px">M</th>
+                            <th style="width:25px">X</th>
+                            <th style="width:25px">J</th>
+                            <th style="width:25px">V</th>
+                            <th style="width:25px">S</th>
+                            <th style="width:25px">D</th>
+                        </tr>
+                    </thead>
+                    <!-- DEFAULT HEADER -->
+                    <thead v-else>
                       <tr>
                         <th class="row-num">#</th>
                         <th v-for="(h, idx) in weeklyPlanData.headers" :key="idx" :style="getColumnStyle(h)">{{ getHeaderLabel(h) }}</th>
@@ -1435,19 +1463,48 @@
                     <tbody>
                         <tr v-for="(row, i) in filteredWeeklyData" :key="i">
                             <td class="row-num">{{ i + 1 }}</td>
-                            <td v-for="(h, idx) in weeklyPlanData.headers" :key="idx" class="text-center">
-                                <div v-if="h === 'SEMANA'" style="font-weight:bold; color:#0d6efd; background-color:#f8f9fa; font-size:10px;">S{{ row[h] }}</div>
-                                <div v-else-if="h.includes('CUMPLIMIENTO')" style="position:relative; width:100%; height:100%;">
-                                    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:1;"><span class="badge rounded-pill" :class="String(row[h]).toUpperCase() === 'SI' ? 'bg-success' : 'bg-danger'" style="font-size:10px; width:40px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">{{ row[h] || 'NO' }}</span></div>
-                                    <select v-model="row[h]" @change="savePPCV3Row(row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:10;"><option value="SI">SI</option><option value="NO">NO</option></select>
-                                </div>
-                                <div v-else-if="h.includes('ARCHIVO') || h.includes('CLIP')"><a v-if="row[h]" :href="row[h]" target="_blank" class="btn btn-sm text-primary"><i class="fas fa-paperclip"></i></a></div>
-                                <div v-else-if="String(h).toUpperCase().includes('COMENTARIOS') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES')" class="text-start">
-                                    <input v-model="row[h]" class="excel-input" spellcheck="false" style="text-align:left;">
-                                </div>
-                                <div v-else-if="String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')" class="px-1" style="white-space:normal; overflow:hidden; text-align:left; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;" :title="row[h]">{{ row[h] }}</div>
-                                <div v-else class="px-1" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;" :title="row[h]">{{ row[h] }}</div>
-                            </td>
+                            <!-- JESUS CANTU CELLS -->
+                            <template v-if="currentUsername === 'JESUS_CANTU'">
+                                <td class="text-center" :style="{backgroundColor: String(row['RUTA_CRITICA']).toUpperCase() === 'SI' ? '#ffcccc' : ''}">{{ row['RUTA_CRITICA'] }}</td>
+                                <td>{{ row['ZONA'] }}</td>
+                                <td>{{ row['ESPECIALIDAD'] }}</td>
+                                <td>{{ row['CONCEPTO'] }}</td>
+                                <td class="text-center">{{ row['CUANT_REQUERIDO'] }}</td>
+                                <td class="text-center">{{ row['CUANT_REAL'] }}</td>
+                                <td>{{ row['RESPONSABLE'] }}</td>
+                                <td>{{ row['CONTRATISTA'] }}</td>
+                                <td class="text-center">{{ row['DIAS_L'] }}</td>
+                                <td class="text-center">{{ row['DIAS_M'] }}</td>
+                                <td class="text-center">{{ row['DIAS_X'] }}</td>
+                                <td class="text-center">{{ row['DIAS_J'] }}</td>
+                                <td class="text-center">{{ row['DIAS_V'] }}</td>
+                                <td class="text-center">{{ row['DIAS_S'] }}</td>
+                                <td class="text-center">{{ row['DIAS_D'] }}</td>
+                                <td class="text-center">
+                                    <div style="position:relative; width:100%; height:100%;">
+                                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:1;">
+                                            <span class="badge rounded-pill" :class="String(row['CUMPLIMIENTO']).toUpperCase() === 'SI' ? 'bg-success' : 'bg-danger'">{{ row['CUMPLIMIENTO'] || 'NO' }}</span>
+                                        </div>
+                                        <select v-model="row['CUMPLIMIENTO']" @change="savePPCV3Row(row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:10;"><option value="SI">SI</option><option value="NO">NO</option></select>
+                                    </div>
+                                </td>
+                            </template>
+                            <!-- DEFAULT CELLS -->
+                            <template v-else>
+                                <td v-for="(h, idx) in weeklyPlanData.headers" :key="idx" class="text-center">
+                                    <div v-if="h === 'SEMANA'" style="font-weight:bold; color:#0d6efd; background-color:#f8f9fa; font-size:10px;">S{{ row[h] }}</div>
+                                    <div v-else-if="h.includes('CUMPLIMIENTO')" style="position:relative; width:100%; height:100%;">
+                                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:1;"><span class="badge rounded-pill" :class="String(row[h]).toUpperCase() === 'SI' ? 'bg-success' : 'bg-danger'" style="font-size:10px; width:40px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">{{ row[h] || 'NO' }}</span></div>
+                                        <select v-model="row[h]" @change="savePPCV3Row(row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:10;"><option value="SI">SI</option><option value="NO">NO</option></select>
+                                    </div>
+                                    <div v-else-if="h.includes('ARCHIVO') || h.includes('CLIP')"><a v-if="row[h]" :href="row[h]" target="_blank" class="btn btn-sm text-primary"><i class="fas fa-paperclip"></i></a></div>
+                                    <div v-else-if="String(h).toUpperCase().includes('COMENTARIOS') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES')" class="text-start">
+                                        <input v-model="row[h]" class="excel-input" spellcheck="false" style="text-align:left;">
+                                    </div>
+                                    <div v-else-if="String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')" class="px-1" style="white-space:normal; overflow:hidden; text-align:left; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;" :title="row[h]">{{ row[h] }}</div>
+                                    <div v-else class="px-1" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;" :title="row[h]">{{ row[h] }}</div>
+                                </td>
+                            </template>
                              <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-primary" @click="savePPCV3Row(row)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                         </tr>
                     </tbody>
@@ -2819,7 +2876,69 @@
                </div>
            </div>
            <div class="excel-container flex-fill mb-3" ref="ppcDraftTable">
-               <table class="table-excel">
+               <!-- TABLA PERSONALIZADA PARA JESUS_CANTU -->
+               <table v-if="currentUsername === 'JESUS_CANTU'" class="table-excel">
+                   <thead>
+                       <tr>
+                           <th class="row-num">#</th>
+                           <th style="width:60px">Ruta C.</th>
+                           <th style="width:80px">Zona</th>
+                           <th style="width:100px">Especialidad</th>
+                           <th style="min-width:300px">Descripción Actividad</th>
+                           <th style="width:150px" colspan="2">Cuantificación (Req / Real)</th>
+                           <th style="width:120px">Responsable</th>
+                           <th style="width:120px">Contratista</th>
+                           <th style="width:20px">L</th><th style="width:20px">M</th><th style="width:20px">X</th><th style="width:20px">J</th><th style="width:20px">V</th><th style="width:20px">S</th><th style="width:20px">D</th>
+                           <th style="width:60px">Cumpl.</th>
+                           <th style="width:50px"></th>
+                       </tr>
+                   </thead>
+                   <tbody>
+                       <tr class="input-row">
+                           <td class="row-num">></td>
+                           <td><select v-model="ppcData.rutaCritica" class="excel-input" :style="{backgroundColor: ppcData.rutaCritica === 'SI' ? '#ffcccc' : ''}"><option value="NO">NO</option><option value="SI">SI</option></select></td>
+                           <td><input v-model="ppcData.zona" class="excel-input" placeholder="Zona..."></td>
+                           <td><select v-model="ppcData.especialidad" class="excel-input"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td>
+                           <td><input v-model="ppcData.concepto" class="excel-input" placeholder="Descripción..."></td>
+                           <td><input v-model="ppcData.cuantReq" class="excel-input" placeholder="Req"></td>
+                           <td><input v-model="ppcData.cuantReal" class="excel-input" placeholder="Real"></td>
+                           <td style="position:relative;"><div class="chip-container" @click="$refs.chipInJ.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}}<i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipInJ" v-model="staffSearch" style="border:none;outline:none;min-width:40px;font-size:12px;background:transparent;" placeholder="+"></div><ul class="list-group position-absolute w-100 shadow" style="z-index:100;max-height:150px;overflow:auto;top:100%;left:0" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" @click="addResponsable(p.name)">{{p.name}}</li></ul></td>
+                           <td><input v-model="ppcData.contratista" class="excel-input" placeholder="Contratista"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.l"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.m"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.x"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.j"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.v"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.s"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.d"></td>
+                           <td><select v-model="ppcData.cumplimiento" class="excel-input"><option value="NO">NO</option><option value="SI">SI</option></select></td>
+                           <td class="text-center"><button class="btn btn-primary btn-sm py-0" @click="confirmAddToQueue" title="Agregar">+</button></td>
+                       </tr>
+                       <tr v-for="(item, idx) in activityQueue" :key="idx">
+                           <td class="row-num">{{ idx + 1 }}</td>
+                           <td class="text-center" :style="{backgroundColor: item.rutaCritica === 'SI' ? '#ffcccc' : ''}">{{ item.rutaCritica }}</td>
+                           <td>{{ item.zona }}</td>
+                           <td>{{ item.especialidad }}</td>
+                           <td>{{ item.concepto }}</td>
+                           <td>{{ item.cuantReq }}</td>
+                           <td>{{ item.cuantReal }}</td>
+                           <td>{{ item.responsable }}</td>
+                           <td>{{ item.contratista }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.l ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.m ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.x ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.j ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.v ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.s ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.d ? 'X' : '' }}</td>
+                           <td>{{ item.cumplimiento }}</td>
+                           <td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer" @click="activityQueue.splice(idx,1); syncQueueToBackend();"></i></td>
+                       </tr>
+                   </tbody>
+               </table>
+
+               <!-- TABLA STANDAR PARA LOS DEMAS -->
+               <table v-else class="table-excel">
                    <thead><tr><th class="row-num">#</th><th v-if="currentUsername === 'PREWORK_ORDER'" style="width:60px">Cliente</th><th style="width:100px">Depto</th><th style="min-width:400px">Descripción Actividad</th><th style="width:150px">Responsable</th><th style="width:80px">Fecha</th><th style="width:40px">Reloj</th><th style="width:50px">Cumpl.</th><th style="width:40px">Clip</th><th style="min-width:150px">Comentarios</th><th style="min-width:150px">Previos</th><th style="width:50px"></th></tr></thead>
                    <tbody>
                        <tr class="input-row"><td class="row-num">></td><td v-if="currentUsername === 'PREWORK_ORDER'"><input v-model="ppcData.cliente" class="excel-input" placeholder="MB" style="background:#f0fdf4; text-align:center;"></td><td><select v-model="ppcData.especialidad" class="excel-input" style="background:#f0fdf4"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td><td><input v-model="ppcData.concepto" class="excel-input" placeholder="Descripción..." style="background:#f0fdf4"></td><td style="background:#f0fdf4; position:relative;"><div class="chip-container" @click="$refs.chipIn.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}}<i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipIn" v-model="staffSearch" style="border:none;outline:none;min-width:40px;font-size:12px;background:transparent;" placeholder="+"></div><ul class="list-group position-absolute w-100 shadow" style="z-index:100;max-height:150px;overflow:auto;top:100%;left:0" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" @click="addResponsable(p.name)">{{p.name}}</li></ul></td><td class="text-center small text-muted">HOY</td><td><input v-model="ppcData.horas" class="excel-input" style="background:#f0fdf4; text-align:center;"></td><td><select v-model="ppcData.cumplimiento" class="excel-input" style="background:#f0fdf4"><option value="NO">NO</option><option value="SI">SI</option></select></td><td class="text-center" style="background:#f0fdf4"><button class="btn-attach" :class="{'has-file': uploadSuccess}" @click="openFileDialog"><i class="fas" :class="uploadSuccess ? 'fa-check' : 'fa-paperclip'"></i></button><input type="file" ref="fileInput" class="file-input-hidden" accept="*" @change="handleFileSelect"></td><td><input v-model="ppcData.comentarios" class="excel-input" placeholder="..." style="background:#f0fdf4"></td><td><input v-model="ppcData.comentariosPrevios" class="excel-input" placeholder="..." style="background:#f0fdf4"></td><td class="text-center"><button class="btn btn-primary btn-sm py-0" @click="promptExtraData" title="Más Detalles">+</button></td></tr>
@@ -3886,7 +4005,7 @@ async function toggleVoiceRecording(btnElement) {
           });
       };
 
-      const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'' });
+      const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'', zona: '', contratista: '', rutaCritica: 'NO', cuantReq: '', cuantReal: '', dias: {l:false, m:false, x:false, j:false, v:false, s:false, d:false} });
 
       const isSubmitting = ref(false);
       const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
@@ -6215,7 +6334,7 @@ async function toggleVoiceRecording(btnElement) {
           requiredMaterials.value.items[idx].description = text;
       };
 
-      return { focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
+      return { focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
