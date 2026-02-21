@@ -1692,18 +1692,117 @@ function apiFetchPPCData() {
 function apiFetchWeeklyPlanData(username) {
   try {
     const isJesus = String(username).toUpperCase().trim() === 'JESUS_CANTU';
-    const sheetName = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
-    const sheet = findSheetSmart(sheetName);
-    if (!sheet) return { success: false, message: "No existe la hoja " + sheetName };
-    const data = sheet.getDataRange().getValues();
-    if (data.length < 2) return { success: true, headers: [], data: [] };
-    const headerRowIdx = findHeaderRow(data);
-    if (headerRowIdx === -1) return { success: false, message: "Cabeceras no encontradas en PPCV3." };
-    const originalHeaders = data[headerRowIdx].map(h => String(h).trim());
-    
-    // CUSTOM VIEW FOR JESUS_CANTU
+    let sheet;
+
     if (isJesus) {
-        // Define fixed header structure for the customized view
+        // EXTERNAL SOURCE PARSING (CUSTOM LOGIC FOR STACKED BLOCKS)
+        try {
+            const extSS = SpreadsheetApp.openById('1HBE_uaSMvc_eEN4MyMP9idsGR-WBqxNf');
+            sheet = extSS.getSheetByName('PPC') || extSS.getSheets()[0];
+        } catch(e) {
+            console.error("Error abriendo hoja externa: " + e.message);
+            return { success: false, message: "Error conectando con hoja externa: " + e.message };
+        }
+
+        const dataExt = sheet.getDataRange().getValues();
+        if (dataExt.length < 2) return { success: true, headers: [], data: [] };
+
+        // 1. Find Headers & Map (Dynamic)
+        let headerRowIdx = -1;
+        let colMap = {};
+
+        for (let i = 0; i < Math.min(50, dataExt.length); i++) {
+            const row = dataExt[i].map(c => String(c).toUpperCase().trim());
+            if (row.includes('DISCIPLINA') || row.includes('ACTIVIDAD') || row.includes('DEFINIDA')) {
+                headerRowIdx = i;
+                row.forEach((h, idx) => {
+                    if (['DEFINIDA', 'ATERRIZADA', 'ACTIVIDAD', 'CONCEPTO'].some(k => h.includes(k))) colMap['CONCEPTO'] = idx;
+                    if (['UBICACION', 'AREA', 'ZONA'].some(k => h.includes(k))) colMap['ZONA'] = idx;
+                    if (['DISCIPLINA', 'ESPECIALIDAD'].some(k => h.includes(k))) colMap['ESPECIALIDAD'] = idx;
+                    if (['RESPONSABLE', 'ENCARGADO'].some(k => h.includes(k))) colMap['RESPONSABLE'] = idx;
+                    if (['RUTA CRITICA', 'CRITICA'].some(k => h.includes(k))) colMap['RUTA_CRITICA'] = idx;
+                    if (['CONTRATISTA', 'PROVEEDOR'].some(k => h.includes(k))) colMap['CONTRATISTA'] = idx;
+                    if (h === 'REQUERIDO') colMap['CUANT_REQ'] = idx;
+                    if (h === 'REAL') colMap['CUANT_REAL'] = idx;
+                    if (['CUMPLIMIENTO', 'CUMPL'].some(k => h.includes(k))) colMap['CUMPLIMIENTO'] = idx;
+
+                    if (h === 'L' || h === 'LUNES') colMap['DIAS_L'] = idx;
+                    if (h === 'M' || h === 'MARTES') colMap['DIAS_M'] = idx;
+                    if (h === 'X' || h === 'MIERCOLES' || h === 'MIÉRCOLES') colMap['DIAS_X'] = idx;
+                    if (h === 'J' || h === 'JUEVES') colMap['DIAS_J'] = idx;
+                    if (h === 'V' || h === 'VIERNES') colMap['DIAS_V'] = idx;
+                    if (h === 'S' || h === 'SABADO' || h === 'SÁBADO') colMap['DIAS_S'] = idx;
+                    if (h === 'D' || h === 'DOMINGO') colMap['DIAS_D'] = idx;
+                });
+                break;
+            }
+        }
+
+        if (headerRowIdx === -1) return { success: false, message: "No se encontraron cabeceras en hoja externa." };
+
+        let currentMondayDate = null;
+        let processedData = [];
+
+        for (let i = headerRowIdx + 1; i < dataExt.length; i++) {
+            const row = dataExt[i];
+            const rowStr = row.join(" ").toUpperCase();
+
+            // Detect Week Block
+            if (rowStr.includes("PLAN DE TRABAJO SEMANAL")) {
+                const match = rowStr.match(/DEL\s+(\d{1,2})\s+(?:AL|A)\s+\d{1,2}\s+DE\s+([A-Z]+)/);
+                if (match) {
+                    const day = parseInt(match[1]);
+                    const monthName = match[2];
+                    const monthMap = { 'ENERO': 0, 'FEBRERO': 1, 'MARZO': 2, 'ABRIL': 3, 'MAYO': 4, 'JUNIO': 5, 'JULIO': 6, 'AGOSTO': 7, 'SEPTIEMBRE': 8, 'OCTUBRE': 9, 'NOVIEMBRE': 10, 'DICIEMBRE': 11 };
+                    if (monthMap[monthName] !== undefined) {
+                        const now = new Date();
+                        let year = now.getFullYear();
+                        currentMondayDate = new Date(year, monthMap[monthName], day);
+                    }
+                }
+                continue;
+            }
+
+            if (!currentMondayDate) continue;
+
+            const concepto = (colMap['CONCEPTO'] !== undefined) ? row[colMap['CONCEPTO']] : "";
+            if (!concepto || String(concepto).trim() === "" || String(concepto).toUpperCase().includes("PLAN DE TRABAJO")) continue;
+
+            const getVal = (key) => (colMap[key] !== undefined) ? row[colMap[key]] : "";
+            const checkDay = (key) => {
+                const val = getVal(key);
+                return (val === true || String(val).toUpperCase() === 'X' || String(val).trim().length > 0) ? "x" : "";
+            };
+
+            const rowObj = {
+                _rowIndex: headerRowIdx + i + 2,
+                CONCEPTO: concepto,
+                ZONA: getVal('ZONA'),
+                ESPECIALIDAD: getVal('ESPECIALIDAD'),
+                RESPONSABLE: getVal('RESPONSABLE'),
+                RUTA_CRITICA: getVal('RUTA_CRITICA'),
+                CONTRATISTA: getVal('CONTRATISTA'),
+                CUANT_REQUERIDO: getVal('CUANT_REQ'),
+                CUANT_REAL: getVal('CUANT_REAL'),
+                CUMPLIMIENTO: getVal('CUMPLIMIENTO'),
+                DIAS_L: checkDay('DIAS_L'),
+                DIAS_M: checkDay('DIAS_M'),
+                DIAS_X: checkDay('DIAS_X'),
+                DIAS_J: checkDay('DIAS_J'),
+                DIAS_V: checkDay('DIAS_V'),
+                DIAS_S: checkDay('DIAS_S'),
+                DIAS_D: checkDay('DIAS_D'),
+                FECHA: Utilities.formatDate(currentMondayDate, Session.getScriptTimeZone(), "dd/MM/yy"),
+                ID: `EXT-${String(concepto).replace(/[^a-zA-Z0-9]/g,'').substring(0,10)}-${currentMondayDate.getDate()}`,
+                ESTATUS: 'ASIGNADO',
+                AVANCE: '0%',
+                CLASIFICACION: 'Media',
+                PRIORIDAD: 'Media'
+            };
+            rowObj.FOLIO = rowObj.ID;
+            processedData.push(rowObj);
+        }
+
         const jesusHeaders = [
             'RUTA_CRITICA', 'ZONA', 'ESPECIALIDAD', 'CONCEPTO',
             'CUANT_REQUERIDO', 'CUANT_REAL', 'RESPONSABLE', 'CONTRATISTA',
@@ -1711,63 +1810,19 @@ function apiFetchWeeklyPlanData(username) {
             'CUMPLIMIENTO'
         ];
 
-        // Map data rows to these headers based on column matching
-        const rows = data.slice(headerRowIdx + 1);
-        const result = rows.map((r, i) => {
-            const rowObj = { _rowIndex: headerRowIdx + i + 2 };
-            // Helper to find value in row by fuzzy header match
-            const getVal = (candidates) => {
-                for (let c of candidates) {
-                    const idx = originalHeaders.findIndex(h => h.toUpperCase().trim() === c.toUpperCase().trim() || h.toUpperCase().trim().includes(c.toUpperCase().trim()));
-                    if (idx > -1) return r[idx];
-                }
-                return "";
-            };
-
-            rowObj['RUTA_CRITICA'] = getVal(['RUTA_CRITICA', 'RUTA CRITICA', 'CRITICA']);
-            rowObj['ZONA'] = getVal(['ZONA', 'UBICACION', 'AREA GEOGRAFICA']);
-            rowObj['ESPECIALIDAD'] = getVal(['ESPECIALIDAD', 'AREA', 'DISCIPLINA']);
-            rowObj['CONCEPTO'] = getVal(['CONCEPTO', 'DESCRIPCION', 'DEFINIDA', 'ATERRIZADA', 'ACTIVIDAD']);
-
-            // CUANTIFICACION LOGIC (Handle Merged Headers)
-            rowObj['CUANT_REQUERIDO'] = getVal(['CUANT_REQUERIDO', 'REQUERIDO']);
-            rowObj['CUANT_REAL'] = getVal(['CUANT_REAL', 'REAL']);
-
-            if (!rowObj['CUANT_REQUERIDO']) {
-                const qIdx = originalHeaders.findIndex(h => h.toUpperCase().includes('CUANTIFICACIÓN') || h.toUpperCase().includes('CUANTIFICACION'));
-                if (qIdx > -1) {
-                    rowObj['CUANT_REQUERIDO'] = r[qIdx];
-                    rowObj['CUANT_REAL'] = r[qIdx + 1];
-                }
-            }
-
-            rowObj['RESPONSABLE'] = getVal(['RESPONSABLE', 'ENCARGADO', 'PERSONA RESPONSABLE']);
-            rowObj['CONTRATISTA'] = getVal(['CONTRATISTA', 'PROVEEDOR']);
-            rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L']);
-            rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M']);
-            rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI']);
-            rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J']);
-            rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V']);
-            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S']);
-            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D']);
-            rowObj['CUMPLIMIENTO'] = getVal(['CUMPLIMIENTO']);
-
-            // Add ID if available for saving
-            rowObj['ID'] = getVal(['ID', 'FOLIO']);
-            rowObj['FOLIO'] = rowObj['ID'];
-
-            // HIDDEN FIELDS PRESERVATION (CRITICAL FOR SYNC)
-            rowObj['FECHA'] = getVal(['FECHA', 'ALTA', 'FECHA INICIO']);
-            rowObj['ESTATUS'] = getVal(['ESTATUS', 'STATUS']);
-            rowObj['AVANCE'] = getVal(['AVANCE', 'AVANCE %']);
-            rowObj['CLASIFICACION'] = getVal(['CLASIFICACION']);
-            rowObj['PRIORIDAD'] = getVal(['PRIORIDAD']);
-
-            return rowObj;
-        }).filter(r => r["CONCEPTO"] || r["ID"]);
-
-        return { success: true, headers: jesusHeaders, data: result.reverse() };
+        return { success: true, headers: jesusHeaders, data: processedData.reverse() };
+    } else {
+        // INTERNAL SOURCE FOR OTHERS
+        const sheetName = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
+        sheet = findSheetSmart(sheetName);
     }
+
+    if (!sheet) return { success: false, message: "No se encontró la hoja de origen." };
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return { success: true, headers: [], data: [] };
+    const headerRowIdx = findHeaderRow(data);
+    if (headerRowIdx === -1) return { success: false, message: "Cabeceras no encontradas en PPCV3." };
+    const originalHeaders = data[headerRowIdx].map(h => String(h).trim());
 
     const mappedHeaders = originalHeaders.map(h => {
         const up = h.toUpperCase();
