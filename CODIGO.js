@@ -1498,7 +1498,7 @@ function apiSavePPCData(payload, activeUser) {
                  'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "Media",
                  'AREA': item.especialidad || item.ESPECIALIDAD,
                  'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
-                 'FECHA': fechaStr,
+                 'FECHA': item.fecha || item.FECHA || fechaStr,
                  'RELOJ': item.horas || item.RELOJ,
                  'ESTATUS': "ASIGNADO",
                  'PRIORIDAD': item.prioridad || item.prioridades || item.PRIORIDAD,
@@ -3358,4 +3358,148 @@ function test_SystemConfig_Label() {
   } else {
       console.error("❌ ANTONIA_VENTAS: Fallo. Etiqueta actual: " + (ppcModAntonia ? ppcModAntonia.label : 'N/A'));
   }
+}
+
+/**
+ * ======================================================================
+ * IMPORTACION EXTERNA: PPC SEMANAL
+ * ======================================================================
+ */
+function importarPPCExterno() {
+  const SHEET_ID = '1HBE_uaSMvc_eEN4MyMP9idsGR-WBqxNf';
+  let ssExternal;
+  try {
+    ssExternal = SpreadsheetApp.openById(SHEET_ID);
+  } catch (e) {
+    console.error("No se pudo abrir la hoja externa: " + e.message);
+    return { success: false, message: "No se pudo abrir la hoja externa. " + e.message };
+  }
+
+  const sheet = ssExternal.getSheetByName('PPC') || ssExternal.getSheets()[0];
+  const data = sheet.getDataRange().getValues();
+
+  if (data.length < 2) return { success: false, message: "Hoja vacía" };
+
+  // 1. Find Headers (Global or dynamic?)
+  let headerRowIdx = -1;
+  let colMap = {};
+
+  for (let i = 0; i < Math.min(20, data.length); i++) {
+    const row = data[i].map(c => String(c).toUpperCase().trim());
+    if (row.includes('DISCIPLINA') || row.includes('ACTIVIDAD') || row.includes('DEFINIDA')) {
+        headerRowIdx = i;
+        // Build Map
+        row.forEach((h, idx) => {
+            if (['DEFINIDA', 'ATERRIZADA', 'ACTIVIDAD', 'CONCEPTO'].some(k => h.includes(k))) colMap['CONCEPTO'] = idx;
+            if (['UBICACION', 'AREA', 'ZONA'].some(k => h.includes(k))) colMap['ZONA'] = idx;
+            if (['DISCIPLINA', 'ESPECIALIDAD'].some(k => h.includes(k))) colMap['ESPECIALIDAD'] = idx;
+            if (['RESPONSABLE', 'ENCARGADO'].some(k => h.includes(k))) colMap['RESPONSABLE'] = idx;
+            if (['RUTA CRITICA', 'CRITICA'].some(k => h.includes(k))) colMap['RUTA_CRITICA'] = idx;
+            if (['CONTRATISTA', 'PROVEEDOR'].some(k => h.includes(k))) colMap['CONTRATISTA'] = idx;
+            if (h === 'REQUERIDO') colMap['CUANT_REQ'] = idx;
+            if (h === 'REAL') colMap['CUANT_REAL'] = idx;
+
+            // Days
+            if (h === 'L' || h === 'LUNES') colMap['DIAS_L'] = idx;
+            if (h === 'M' || h === 'MARTES') colMap['DIAS_M'] = idx;
+            if (h === 'X' || h === 'MIERCOLES' || h === 'MIÉRCOLES') colMap['DIAS_X'] = idx;
+            if (h === 'J' || h === 'JUEVES') colMap['DIAS_J'] = idx;
+            if (h === 'V' || h === 'VIERNES') colMap['DIAS_V'] = idx;
+            if (h === 'S' || h === 'SABADO' || h === 'SÁBADO') colMap['DIAS_S'] = idx;
+            if (h === 'D' || h === 'DOMINGO') colMap['DIAS_D'] = idx;
+        });
+        break;
+    }
+  }
+
+  if (headerRowIdx === -1 || colMap['CONCEPTO'] === undefined) {
+      console.error("No se encontraron cabeceras válidas.");
+      return { success: false, message: "Estructura de columnas no reconocida." };
+  }
+
+  let currentMondayDate = null;
+  let processedCount = 0;
+
+  for (let i = headerRowIdx + 1; i < data.length; i++) {
+    const row = data[i];
+    const rowStr = row.join(" ").toUpperCase();
+
+    // 2. Detect Week Block
+    if (rowStr.includes("PLAN DE TRABAJO SEMANAL")) {
+        // Parse Date: "DEL 3 AL 9 DE MARZO"
+        const match = rowStr.match(/DEL\s+(\d{1,2})\s+(?:AL|A)\s+\d{1,2}\s+DE\s+([A-Z]+)/);
+        if (match) {
+            const day = parseInt(match[1]);
+            const monthName = match[2];
+            const monthMap = {
+                'ENERO': 0, 'FEBRERO': 1, 'MARZO': 2, 'ABRIL': 3, 'MAYO': 4, 'JUNIO': 5,
+                'JULIO': 6, 'AGOSTO': 7, 'SEPTIEMBRE': 8, 'OCTUBRE': 9, 'NOVIEMBRE': 10, 'DICIEMBRE': 11
+            };
+
+            if (monthMap[monthName] !== undefined) {
+                const now = new Date();
+                let year = now.getFullYear();
+                currentMondayDate = new Date(year, monthMap[monthName], day);
+                console.log(`Semana detectada: ${day} de ${monthName} -> ${currentMondayDate}`);
+            }
+        }
+        continue;
+    }
+
+    // 3. Process Task Row
+    if (!currentMondayDate) continue;
+
+    const concepto = row[colMap['CONCEPTO']];
+    if (!concepto || String(concepto).trim() === "") continue;
+    if (String(concepto).toUpperCase().includes("PLAN DE TRABAJO")) continue;
+
+    const getVal = (key) => (colMap[key] !== undefined) ? row[colMap[key]] : "";
+
+    const checkDay = (key) => {
+        const val = getVal(key);
+        return (val === true || String(val).toUpperCase() === 'X' || String(val).trim().length > 0);
+    };
+
+    const dias = {
+        l: checkDay('DIAS_L'),
+        m: checkDay('DIAS_M'),
+        x: checkDay('DIAS_X'),
+        j: checkDay('DIAS_J'),
+        v: checkDay('DIAS_V'),
+        s: checkDay('DIAS_S'),
+        d: checkDay('DIAS_D')
+    };
+
+    // Hash-like ID for deduplication
+    const dateStr = Utilities.formatDate(currentMondayDate, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    const safeConcept = String(concepto).replace(/[^a-zA-Z0-9]/g,'').toUpperCase().substring(0,30);
+    const rawId = `EXT-${safeConcept}-${dateStr}`;
+
+    const payload = {
+        id: rawId,
+        concepto: concepto,
+        zona: getVal('ZONA'),
+        especialidad: getVal('ESPECIALIDAD'),
+        responsable: getVal('RESPONSABLE'),
+        rutaCritica: getVal('RUTA_CRITICA'),
+        contratista: getVal('CONTRATISTA'),
+        cuantReq: getVal('CUANT_REQ'),
+        cuantReal: getVal('CUANT_REAL'),
+        dias: dias,
+        fecha: Utilities.formatDate(currentMondayDate, Session.getScriptTimeZone(), "dd/MM/yy"),
+        estatus: 'ASIGNADO',
+        avance: '0%',
+        clasificacion: 'Media',
+        prioridad: 'Media'
+    };
+
+    try {
+        apiSavePPCData(payload, 'JESUS_CANTU');
+        processedCount++;
+    } catch (e) {
+        console.error(`Error guardando tarea ${concepto}: ${e.message}`);
+    }
+  }
+
+  return { success: true, message: `Importación completada. Tareas procesadas: ${processedCount}` };
 }
