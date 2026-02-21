@@ -1692,11 +1692,150 @@ function apiFetchPPCData() {
 function apiFetchWeeklyPlanData(username) {
   try {
     const isJesus = String(username).toUpperCase().trim() === 'JESUS_CANTU';
-    let sheet;
 
-    // INTERNAL SOURCE (OPTIMIZED)
-    // Se elimina la lectura externa directa para evitar lentitud ("Cargando datos...").
-    // Ahora se lee de PPCV3, donde 'importarPPCExterno' ya debió haber guardado los datos.
+    // --- LÓGICA ESPECIAL PARA JESUS_CANTU: LECTURA EXTERNA CON CACHÉ ---
+    if (isJesus) {
+        const cache = CacheService.getScriptCache();
+        const cachedData = cache.get("WEEKLY_PLAN_JESUS_CACHE");
+
+        if (cachedData) {
+            console.log("Serving from Cache (Fast)");
+            return JSON.parse(cachedData);
+        }
+
+        console.log("Cache Miss. Fetching External Sheet (Slow)");
+        // LECTURA DIRECTA DE HOJA EXTERNA (SOLICITUD USUARIO)
+        const SHEET_ID = '1HBE_uaSMvc_eEN4MyMP9idsGR-WBqxNf';
+        let ssExternal;
+        try {
+            ssExternal = SpreadsheetApp.openById(SHEET_ID);
+        } catch (e) {
+            return { success: false, message: "Error conectando con hoja externa: " + e.message };
+        }
+
+        const sheet = ssExternal.getSheetByName('PPC') || ssExternal.getSheets()[0];
+        const dataExt = sheet.getDataRange().getValues();
+
+        if (dataExt.length < 2) return { success: true, headers: [], data: [] };
+
+        // 1. Find Headers & Map (Dynamic)
+        let headerRowIdx = -1;
+        let colMap = {};
+
+        for (let i = 0; i < Math.min(50, dataExt.length); i++) {
+            const row = dataExt[i].map(c => String(c).toUpperCase().trim());
+            if (row.includes('DISCIPLINA') || row.includes('ACTIVIDAD') || row.includes('DEFINIDA')) {
+                headerRowIdx = i;
+                row.forEach((h, idx) => {
+                    if (['DEFINIDA', 'ATERRIZADA', 'ACTIVIDAD', 'CONCEPTO'].some(k => h.includes(k))) colMap['CONCEPTO'] = idx;
+                    if (['UBICACION', 'AREA', 'ZONA'].some(k => h.includes(k))) colMap['ZONA'] = idx;
+                    if (['DISCIPLINA', 'ESPECIALIDAD'].some(k => h.includes(k))) colMap['ESPECIALIDAD'] = idx;
+                    if (['RESPONSABLE', 'ENCARGADO'].some(k => h.includes(k))) colMap['RESPONSABLE'] = idx;
+                    if (['RUTA CRITICA', 'CRITICA'].some(k => h.includes(k))) colMap['RUTA_CRITICA'] = idx;
+                    if (['CONTRATISTA', 'PROVEEDOR'].some(k => h.includes(k))) colMap['CONTRATISTA'] = idx;
+                    if (h === 'REQUERIDO') colMap['CUANT_REQ'] = idx;
+                    if (h === 'REAL') colMap['CUANT_REAL'] = idx;
+                    if (['CUMPLIMIENTO', 'CUMPL'].some(k => h.includes(k))) colMap['CUMPLIMIENTO'] = idx;
+
+                    if (h === 'L' || h === 'LUNES') colMap['DIAS_L'] = idx;
+                    if (h === 'M' || h === 'MARTES') colMap['DIAS_M'] = idx;
+                    if (h === 'X' || h === 'MIERCOLES' || h === 'MIÉRCOLES') colMap['DIAS_X'] = idx;
+                    if (h === 'J' || h === 'JUEVES') colMap['DIAS_J'] = idx;
+                    if (h === 'V' || h === 'VIERNES') colMap['DIAS_V'] = idx;
+                    if (h === 'S' || h === 'SABADO' || h === 'SÁBADO') colMap['DIAS_S'] = idx;
+                    if (h === 'D' || h === 'DOMINGO') colMap['DIAS_D'] = idx;
+                });
+                break;
+            }
+        }
+
+        if (headerRowIdx === -1) return { success: false, message: "No se encontraron cabeceras en hoja externa." };
+
+        let currentMondayDate = null;
+        let processedData = [];
+
+        for (let i = headerRowIdx + 1; i < dataExt.length; i++) {
+            const row = dataExt[i];
+            const rowStr = row.join(" ").toUpperCase();
+
+            // Detect Week Block
+            if (rowStr.includes("PLAN DE TRABAJO SEMANAL")) {
+                const match = rowStr.match(/DEL\s+(\d{1,2})\s+(?:AL|A)\s+\d{1,2}\s+DE\s+([A-Z]+)/);
+                if (match) {
+                    const day = parseInt(match[1]);
+                    const monthName = match[2];
+                    const monthMap = { 'ENERO': 0, 'FEBRERO': 1, 'MARZO': 2, 'ABRIL': 3, 'MAYO': 4, 'JUNIO': 5, 'JULIO': 6, 'AGOSTO': 7, 'SEPTIEMBRE': 8, 'OCTUBRE': 9, 'NOVIEMBRE': 10, 'DICIEMBRE': 11 };
+                    if (monthMap[monthName] !== undefined) {
+                        const now = new Date();
+                        let year = now.getFullYear();
+                        currentMondayDate = new Date(year, monthMap[monthName], day);
+                    }
+                }
+                continue;
+            }
+
+            if (!currentMondayDate) continue;
+
+            const concepto = (colMap['CONCEPTO'] !== undefined) ? row[colMap['CONCEPTO']] : "";
+            if (!concepto || String(concepto).trim() === "" || String(concepto).toUpperCase().includes("PLAN DE TRABAJO")) continue;
+
+            const getVal = (key) => (colMap[key] !== undefined) ? row[colMap[key]] : "";
+            const checkDay = (key) => {
+                const val = getVal(key);
+                return (val === true || String(val).toUpperCase() === 'X' || String(val).trim().length > 0) ? "x" : "";
+            };
+
+            const rowObj = {
+                _rowIndex: headerRowIdx + i + 2, // External Index (Read Only Context)
+                CONCEPTO: concepto,
+                ZONA: getVal('ZONA'),
+                ESPECIALIDAD: getVal('ESPECIALIDAD'),
+                RESPONSABLE: getVal('RESPONSABLE'),
+                RUTA_CRITICA: getVal('RUTA_CRITICA'),
+                CONTRATISTA: getVal('CONTRATISTA'),
+                CUANT_REQUERIDO: getVal('CUANT_REQ'),
+                CUANT_REAL: getVal('CUANT_REAL'),
+                CUMPLIMIENTO: getVal('CUMPLIMIENTO'),
+                DIAS_L: checkDay('DIAS_L'),
+                DIAS_M: checkDay('DIAS_M'),
+                DIAS_X: checkDay('DIAS_X'),
+                DIAS_J: checkDay('DIAS_J'),
+                DIAS_V: checkDay('DIAS_V'),
+                DIAS_S: checkDay('DIAS_S'),
+                DIAS_D: checkDay('DIAS_D'),
+                FECHA: Utilities.formatDate(currentMondayDate, Session.getScriptTimeZone(), "dd/MM/yy"),
+                // Generate a robust ID for potential local matching
+                ID: `EXT-${String(concepto).replace(/[^a-zA-Z0-9]/g,'').substring(0,10)}-${currentMondayDate.getDate()}`,
+                ESTATUS: 'ASIGNADO',
+                AVANCE: '0%',
+                CLASIFICACION: 'Media',
+                PRIORIDAD: 'Media',
+                FOLIO: `EXT-${String(concepto).replace(/[^a-zA-Z0-9]/g,'').substring(0,10)}-${currentMondayDate.getDate()}`
+            };
+            processedData.push(rowObj);
+        }
+
+        const jesusHeaders = [
+            'RUTA_CRITICA', 'ZONA', 'ESPECIALIDAD', 'CONCEPTO',
+            'CUANT_REQUERIDO', 'CUANT_REAL', 'RESPONSABLE', 'CONTRATISTA',
+            'DIAS_L', 'DIAS_M', 'DIAS_X', 'DIAS_J', 'DIAS_V', 'DIAS_S', 'DIAS_D',
+            'CUMPLIMIENTO'
+        ];
+
+        const responsePayload = { success: true, headers: jesusHeaders, data: processedData.reverse() };
+
+        // SAVE TO CACHE (EXPIRATION: 10 MINUTES)
+        try {
+            cache.put("WEEKLY_PLAN_JESUS_CACHE", JSON.stringify(responsePayload), 600);
+        } catch(e) {
+            console.warn("Cache Warning: Payload too large or error: " + e.message);
+        }
+
+        return responsePayload;
+    }
+
+    // --- LÓGICA ESTÁNDAR PARA OTROS USUARIOS ---
+    let sheet;
     const sheetName = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
     sheet = findSheetSmart(sheetName);
 
@@ -2029,10 +2168,6 @@ function onOpen() {
     .addItem('🔄 ACTUALIZAR (Fila Actual)', 'cmdActualizar')
     .addSeparator()
     .addItem('🎨 Aplicar Formato Condicional (Semaforo)', 'setupConditionalFormatting');
-
-  // Solo mostrar opción de importar a Admin o Jesus Cantu (simplificado: visible globalmente pero seguro)
-  menu.addSeparator()
-      .addItem('📥 Importar PPC Externo (Jesus Cantu)', 'importarPPCExterno');
 
   menu.addToUi();
 }
