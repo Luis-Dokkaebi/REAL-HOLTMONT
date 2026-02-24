@@ -1291,7 +1291,7 @@
         <div v-if="currentView === 'STAFF_TRACKER'" class="h-100 d-flex flex-column">
           <div class="d-flex bg-white px-3 pt-3 gap-2 align-items-end border-bottom">
              <!-- VISTA PERSONALIZADA ANTONIA_VENTAS -->
-             <template v-if="currentUser === 'ANTONIA_VENTAS'">
+             <template v-if="currentUsername === 'ANTONIA_VENTAS'">
                  <div class="cursor-pointer px-4 py-2 fw-bold"
                       :class="activeTrackerTab === 'OPERATIVO' && trackerSubView === 'TASKS' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
                       @click="switchTrackerTab('OPERATIVO'); trackerSubView = 'TASKS'">
@@ -1336,7 +1336,7 @@
             <div class="d-flex align-items-center">
                 <button class="btn btn-light btn-sm border me-2" @click="goBackToDept"><i class="fas fa-arrow-left"></i></button>
 
-                <template v-if="currentUser === 'ANTONIA_VENTAS'">
+                <template v-if="currentUsername === 'ANTONIA_VENTAS'">
                     <div class="d-flex align-items-center me-2">
                         <img src="https://lh3.googleusercontent.com/d/1TPJFNNWSWuppbzUTdP8dFtjZUqtPcFAQ" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover; border: 1px solid #ccc;">
                         <span class="small fw-bold" style="color: var(--primary)">COTIZACIONES ANTONIA</span>
@@ -1348,7 +1348,7 @@
 
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
                 <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
-                <button v-if="['TONITA'].includes(currentRole) || currentUser === 'ANTONIA_VENTAS' || salesStaff.includes(currentUser)" class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
+                <button v-if="['TONITA'].includes(currentRole) || currentUsername === 'ANTONIA_VENTAS' || salesStaff.includes(currentUser)" class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
             </div>
             <div></div>
           </div>
@@ -1371,7 +1371,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUser === 'ANTONIA_VENTAS'}">
+                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in staffTracker.headers" :key="idx">
                          <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
@@ -1408,11 +1408,11 @@
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
                          </div>
-                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || (currentUser === 'ANTONIA_VENTAS' && String(h).toUpperCase() === 'F. ENTREGA')" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
+                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || (currentUsername === 'ANTONIA_VENTAS' && String(h).toUpperCase() === 'F. ENTREGA')" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
-                         <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUser === 'ANTONIA_VENTAS'">
+                         <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                    </tr>
@@ -4831,10 +4831,10 @@ async function toggleVoiceRecording(btnElement) {
                   w = (staffTracker.value.name === 'ANTONIA_VENTAS') ? '600px' : '380px';
               }
           }
-          else if (currentUser.value === 'ANTONIA_VENTAS' && up === 'F. ENTREGA') { w = '75px'; fs = '10px'; }
-          else if (currentUser.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'F. ENTREGA') { w = '75px'; fs = '10px'; }
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
-          else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUser.value === 'ANTONIA_VENTAS') ? '60px' : '40px'; fs = '10px'; align = 'center'; }
+          else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUsername.value === 'ANTONIA_VENTAS') ? '70px' : '40px'; fs = '10px'; align = 'center'; }
           else if (up.includes('CUMPLIMIENTO')) { w = '50px'; align = 'center'; fs = '11px'; }
           else if (up.includes('ARCHIVO') || up.includes('CLIP')) { w = '40px'; align = 'center'; }
           else if (up === 'SEMANA') { w = '50px'; align = 'center'; }
@@ -4868,7 +4868,7 @@ async function toggleVoiceRecording(btnElement) {
 
       const getHeaderLabel = (h) => {
           const up = String(h).toUpperCase().trim();
-          if (up === 'DIAS' && currentUser.value === 'ANTONIA_VENTAS') return 'Días Finaliz. Cotiz';
+          if (up === 'DIAS' && currentUsername.value === 'ANTONIA_VENTAS') return 'Días Finaliz. Cotiz';
           if (up === 'CLASIFICACION') return 'CLASI';
           if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN';
           if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN';
@@ -5893,7 +5893,7 @@ async function toggleVoiceRecording(btnElement) {
               if (salesMod) target = salesMod.target;
               else if (trackerMod) target = trackerMod.target;
 
-              if (currentRole.value === 'TONITA' || currentUser.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+              if (currentRole.value === 'TONITA' || currentUsername.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
           }
 
           google.script.run.withSuccessHandler(res => {
@@ -5924,7 +5924,7 @@ async function toggleVoiceRecording(btnElement) {
                       const trackerMod = mods.find(m => m.type === 'mirror_staff' && !String(m.target).toUpperCase().includes('VENTAS'));
                       if (salesMod) target = salesMod.target;
                       else if (trackerMod) target = trackerMod.target;
-                      if (currentRole.value === 'TONITA' || currentUser.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+                      if (currentRole.value === 'TONITA' || currentUsername.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
                   }
                   google.script.run.withSuccessHandler(res => {
                       if (res.success) dashboardCalendar.value.tasks = res.data;
