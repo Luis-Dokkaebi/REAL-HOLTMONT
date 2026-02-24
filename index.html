@@ -1284,16 +1284,47 @@
 
         <div v-if="currentView === 'STAFF_TRACKER'" class="h-100 d-flex flex-column">
           <div class="d-flex bg-white px-3 pt-3 gap-2 align-items-end border-bottom">
-             <div class="cursor-pointer px-4 py-2 fw-bold"
-                  :class="activeTrackerTab === 'OPERATIVO' && trackerSubView === 'TASKS' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                  @click="switchTrackerTab('OPERATIVO'); trackerSubView = 'TASKS'">
-                  <i class="fas fa-tasks me-2"></i>OPERATIVO
-             </div>
-             <div class="cursor-pointer px-4 py-2 fw-bold"
-                  :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                  @click="trackerSubView = 'HISTORY'">
-                  <i class="fas fa-history me-2"></i>HISTORIAL
-             </div>
+             <!-- VISTA PERSONALIZADA ANTONIA_VENTAS -->
+             <template v-if="currentUser === 'ANTONIA_VENTAS'">
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'OPERATIVO' && trackerSubView === 'TASKS' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('OPERATIVO'); trackerSubView = 'TASKS'">
+                      <i class="fas fa-tasks me-2"></i>COTIZACIONES EN PROCESO
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'RESUMEN_EJECUTIVO' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('RESUMEN_EJECUTIVO'); trackerSubView = 'TASKS'">
+                      <i class="fas fa-file-alt me-2"></i>RESUMEN EJECUTIVO
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'BANCO_COTIZACIONES' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('BANCO_COTIZACIONES'); trackerSubView = 'TASKS'">
+                      <i class="fas fa-database me-2"></i>BANCO DE COTIZACIONES
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'PAPA_CALIENTE' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('PAPA_CALIENTE'); trackerSubView = 'TASKS'">
+                      <i class="fas fa-fire me-2"></i>PAPA CALIENTE DE COTIZACION
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="trackerSubView = 'HISTORY'">
+                      <i class="fas fa-history me-2"></i>COTIZACIONES ENVIADAS PERDIDAS
+                 </div>
+             </template>
+             <!-- VISTA ESTANDAR -->
+             <template v-else>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'OPERATIVO' && trackerSubView === 'TASKS' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('OPERATIVO'); trackerSubView = 'TASKS'">
+                      <i class="fas fa-tasks me-2"></i>OPERATIVO
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="trackerSubView = 'HISTORY'">
+                      <i class="fas fa-history me-2"></i>HISTORIAL
+                 </div>
+             </template>
           </div>
           <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white border rounded mt-2">
             <div class="d-flex align-items-center">
@@ -5384,6 +5415,12 @@ async function toggleVoiceRecording(btnElement) {
           let sheetName = currentStaffName.value;
           if (activeTrackerTab.value === 'VENTAS') {
               sheetName = sheetName + " VENTAS";
+          } else if (activeTrackerTab.value === 'RESUMEN_EJECUTIVO') {
+              sheetName = sheetName + " RESUMEN EJECUTIVO";
+          } else if (activeTrackerTab.value === 'BANCO_COTIZACIONES') {
+              sheetName = sheetName + " BANCO DE COTIZACIONES";
+          } else if (activeTrackerTab.value === 'PAPA_CALIENTE') {
+              sheetName = sheetName + " PAPA CALIENTE DE COTIZACION";
           }
           staffTracker.value.name = sheetName;
           staffTracker.value.isLoading = true;
