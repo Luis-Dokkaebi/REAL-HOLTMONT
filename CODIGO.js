@@ -769,6 +769,18 @@ function internalFetchSheetData(sheetName) {
 }
 
 function apiFetchStaffTrackerData(personName) {
+  // AUTO-CREATE FOR ANTONIA'S SPECIAL TABS
+  if (String(personName).toUpperCase().startsWith("ANTONIA_VENTAS")) {
+      const allowedTabs = [
+          "ANTONIA_VENTAS RESUMEN EJECUTIVO",
+          "ANTONIA_VENTAS BANCO DE COTIZACIONES",
+          "ANTONIA_VENTAS PAPA CALIENTE DE COTIZACION"
+      ];
+      const upperName = String(personName).toUpperCase().trim();
+      if (allowedTabs.includes(upperName)) {
+          ensureSheetWithHeaders(upperName, DEFAULT_SALES_HEADERS);
+      }
+  }
   return internalFetchSheetData(personName);
 }
 
