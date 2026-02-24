@@ -89,7 +89,7 @@ const INITIAL_DIRECTORY = [
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
-const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT', 'AVANCE'];
+const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'F. ENTREGA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT', 'AVANCE'];
 
 // --- ESTRUCTURA ESTÁNDAR DE PROYECTOS (MODIFICADO) ---
 // Aquí definimos los sub-proyectos automáticos.
@@ -769,6 +769,18 @@ function internalFetchSheetData(sheetName) {
 }
 
 function apiFetchStaffTrackerData(personName) {
+  // AUTO-CREATE FOR ANTONIA'S SPECIAL TABS
+  if (String(personName).toUpperCase().startsWith("ANTONIA_VENTAS")) {
+      const allowedTabs = [
+          "ANTONIA_VENTAS RESUMEN EJECUTIVO",
+          "ANTONIA_VENTAS BANCO DE COTIZACIONES",
+          "ANTONIA_VENTAS PAPA CALIENTE DE COTIZACION"
+      ];
+      const upperName = String(personName).toUpperCase().trim();
+      if (allowedTabs.includes(upperName)) {
+          ensureSheetWithHeaders(upperName, DEFAULT_SALES_HEADERS);
+      }
+  }
   return internalFetchSheetData(personName);
 }
 
