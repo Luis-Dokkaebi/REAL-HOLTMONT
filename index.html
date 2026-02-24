@@ -469,9 +469,29 @@
     .task-meta { font-size: 11px; color: #888; display: flex; gap: 8px; align-items: center; }
 
     /* ANTONIA CUSTOM STYLES */
-    .antonia-font td, .antonia-font .excel-input, .antonia-font select {
+    .antonia-font td {
         font-family: 'Arial', sans-serif !important;
         font-size: 11px !important;
+        height: auto !important;
+        min-height: 30px;
+    }
+    .antonia-font .excel-input, .antonia-font select {
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
+    }
+    .antonia-font textarea {
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        resize: none;
+        padding: 4px 6px;
+        background: transparent;
+        line-height: 1.2;
+        overflow: hidden;
+        display: block;
     }
   </style>
 </head>
@@ -598,7 +618,11 @@
 
     <main class="content-wrapper">
       <div class="top-bar" v-if="currentView !== 'WORKORDER_FORM'">
-        <h6 class="m-0 fw-bold text-secondary">{{ pageTitle }}</h6>
+        <div v-if="currentView === 'STAFF_TRACKER' && currentUsername === 'ANTONIA_VENTAS'" class="d-flex align-items-center">
+             <img src="https://lh3.googleusercontent.com/d/1TPJFNNWSWuppbzUTdP8dFtjZUqtPcFAQ" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover; border: 1px solid #ccc;">
+             <h6 class="m-0 fw-bold text-secondary">Cotizaciones Antonia</h6>
+        </div>
+        <h6 v-else class="m-0 fw-bold text-secondary">{{ pageTitle }}</h6>
         <span class="badge bg-light text-dark border">{{ currentUser }}</span>
       </div>
 
@@ -1337,10 +1361,7 @@
                 <button class="btn btn-light btn-sm border me-2" @click="goBackToDept"><i class="fas fa-arrow-left"></i></button>
 
                 <template v-if="currentUsername === 'ANTONIA_VENTAS'">
-                    <div class="d-flex align-items-center me-2">
-                        <img src="https://lh3.googleusercontent.com/d/1TPJFNNWSWuppbzUTdP8dFtjZUqtPcFAQ" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover; border: 1px solid #ccc;">
-                        <span class="small fw-bold" style="color: var(--primary)">COTIZACIONES ANTONIA</span>
-                    </div>
+                     <span class="small fw-bold me-2" style="color: var(--primary)"><i class="fas fa-file-excel me-1"></i> ANTONIA_VENTAS</span>
                 </template>
                 <template v-else>
                     <span class="small fw-bold me-2" :style="{color: currentDeptData.color || 'var(--primary)'}"><i class="fas fa-file-excel me-1"></i> {{ staffTracker.name }}</span>
@@ -1408,10 +1429,11 @@
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
                          </div>
-                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || (currentUsername === 'ANTONIA_VENTAS' && String(h).toUpperCase() === 'F. ENTREGA')" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
+                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || (currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'F. ENTREGA' || String(h).toUpperCase() === 'F. VISITA' || String(h).toUpperCase() === 'FECHA VISITA'))" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
+                         <textarea v-else-if="currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP'))" v-model="row[h]" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
                          <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
@@ -4828,10 +4850,10 @@ async function toggleVoiceRecording(btnElement) {
               if (currentView.value === 'WEEKLY_PLAN') {
                   w = '150px';
               } else {
-                  w = (staffTracker.value.name === 'ANTONIA_VENTAS') ? '600px' : '380px';
+                  w = (currentUsername.value === 'ANTONIA_VENTAS') ? '350px' : '380px';
               }
           }
-          else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'F. ENTREGA') { w = '75px'; fs = '10px'; }
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'F. ENTREGA' || up === 'F. VISITA' || up === 'FECHA VISITA')) { w = '60px'; fs = '10px'; }
           else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
           else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUsername.value === 'ANTONIA_VENTAS') ? '70px' : '40px'; fs = '10px'; align = 'center'; }
