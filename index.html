@@ -467,6 +467,12 @@
     .task-info-col { flex-grow: 1; min-width: 0; }
     .task-title { font-weight: bold; font-size: 13px; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .task-meta { font-size: 11px; color: #888; display: flex; gap: 8px; align-items: center; }
+
+    /* ANTONIA CUSTOM STYLES */
+    .antonia-font td, .antonia-font .excel-input, .antonia-font select {
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
+    }
   </style>
 </head>
 <body>
@@ -1329,7 +1335,17 @@
           <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white border rounded mt-2">
             <div class="d-flex align-items-center">
                 <button class="btn btn-light btn-sm border me-2" @click="goBackToDept"><i class="fas fa-arrow-left"></i></button>
-                <span class="small fw-bold me-2" :style="{color: currentDeptData.color || 'var(--primary)'}"><i class="fas fa-file-excel me-1"></i> {{ staffTracker.name }}</span>
+
+                <template v-if="currentUser === 'ANTONIA_VENTAS'">
+                    <div class="d-flex align-items-center me-2">
+                        <img src="https://lh3.googleusercontent.com/d/1TPJFNNWSWuppbzUTdP8dFtjZUqtPcFAQ" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover; border: 1px solid #ccc;">
+                        <span class="small fw-bold" style="color: var(--primary)">COTIZACIONES ANTONIA</span>
+                    </div>
+                </template>
+                <template v-else>
+                    <span class="small fw-bold me-2" :style="{color: currentDeptData.color || 'var(--primary)'}"><i class="fas fa-file-excel me-1"></i> {{ staffTracker.name }}</span>
+                </template>
+
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
                 <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
                 <button v-if="['TONITA'].includes(currentRole) || currentUser === 'ANTONIA_VENTAS' || salesStaff.includes(currentUser)" class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
@@ -1355,7 +1371,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew}">
+                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUser === 'ANTONIA_VENTAS'}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in staffTracker.headers" :key="idx">
                          <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
@@ -1389,11 +1405,11 @@
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
                          </div>
-                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA')" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
+                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || (currentUser === 'ANTONIA_VENTAS' && String(h).toUpperCase() === 'F. ENTREGA')" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
-                         <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" spellcheck="false">
+                         <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUser === 'ANTONIA_VENTAS'">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                    </tr>
@@ -4812,8 +4828,10 @@ async function toggleVoiceRecording(btnElement) {
                   w = (staffTracker.value.name === 'ANTONIA_VENTAS') ? '600px' : '380px';
               }
           }
+          else if (currentUser.value === 'ANTONIA_VENTAS' && up === 'F. ENTREGA') { w = '75px'; fs = '10px'; }
+          else if (currentUser.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
-          else if (isCol(h, ['ID', 'FOLIO'])) { w = '40px'; fs = '10px'; align = 'center'; }
+          else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUser.value === 'ANTONIA_VENTAS') ? '60px' : '40px'; fs = '10px'; align = 'center'; }
           else if (up.includes('CUMPLIMIENTO')) { w = '50px'; align = 'center'; fs = '11px'; }
           else if (up.includes('ARCHIVO') || up.includes('CLIP')) { w = '40px'; align = 'center'; }
           else if (up === 'SEMANA') { w = '50px'; align = 'center'; }
@@ -4845,7 +4863,14 @@ async function toggleVoiceRecording(btnElement) {
           return { width: w, fontSize: fs, padding: pad, textAlign: align, overflow: 'hidden', textOverflow: 'ellipsis' };
       };
 
-      const getHeaderLabel = (h) => { const up = String(h).toUpperCase().trim(); if (up === 'CLASIFICACION') return 'CLASI'; if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN'; if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN'; return h; };
+      const getHeaderLabel = (h) => {
+          const up = String(h).toUpperCase().trim();
+          if (up === 'DIAS' && currentUser.value === 'ANTONIA_VENTAS') return 'Días Finaliz. Cotiz';
+          if (up === 'CLASIFICACION') return 'CLASI';
+          if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN';
+          if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN';
+          return h;
+      };
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
       const getTrafficStyle = (row) => { 
           const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); 
