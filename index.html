@@ -1401,11 +1401,15 @@
                          </div>
                          <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
                          <div v-else-if="String(h).toUpperCase().includes('VENDEDOR')" style="position:relative; width:100%; height:100%; background-color:#f0fdf4;">
-                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:11px; white-space:nowrap; overflow:hidden;">{{ toInitials(row[h]) }}</div>
-                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000; z-index:1;">{{ toInitials(row[h]) }}</div>
+                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:2;">
                                  <option value="">-</option>
                                  <option v-for="s in salesStaff" :key="s" :value="s">{{s}}</option>
                              </select>
+                         </div>
+                         <div v-else-if="String(h).toUpperCase().includes('PRIORIDAD') || String(h).toUpperCase().includes('PRIO')" style="position:relative; width:100%; height:100%;">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:10px; font-weight:bold;">{{ row[h] }}</div>
+                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option value="NORMAL">NORMAL</option><option value="MEDIA">MEDIA</option><option value="ALTA">ALTA</option><option value="URGENTE">URGENTE</option><option value="ESTRATEGICA">ESTRATEGICA</option></select>
                          </div>
                          <div v-else-if="isMediaColumn(h)" class="text-center" style="padding-top:4px; display:flex; gap:2px; flex-wrap:wrap; justify-content:center; align-items:center; height:100%;">
                              <template v-if="row[h]">
@@ -1429,11 +1433,11 @@
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
                          </div>
-                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || (currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'F. ENTREGA' || String(h).toUpperCase() === 'F. VISITA' || String(h).toUpperCase() === 'FECHA VISITA'))" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
+                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || (currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase().trim() === 'F. ENTREGA' || String(h).toUpperCase().trim() === 'F. VISITA' || String(h).toUpperCase().trim() === 'FECHA VISITA' || String(h).toUpperCase().trim() === 'F. INICIO'))" style="position:relative; width:100%; height:100%;" :style="isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
-                         <textarea v-else-if="currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP'))" v-model="row[h]" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
+                         <textarea v-else-if="currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP') || String(h).toUpperCase().includes('COMENTARIO'))" v-model="row[h]" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
                          <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
@@ -4853,7 +4857,7 @@ async function toggleVoiceRecording(btnElement) {
                   w = (currentUsername.value === 'ANTONIA_VENTAS') ? '350px' : '380px';
               }
           }
-          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'F. ENTREGA' || up === 'F. VISITA' || up === 'FECHA VISITA')) { w = '60px'; fs = '10px'; }
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'F. ENTREGA' || up === 'F. VISITA' || up === 'FECHA VISITA' || up === 'F. INICIO')) { w = '60px'; fs = '10px'; }
           else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
           else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUsername.value === 'ANTONIA_VENTAS') ? '70px' : '40px'; fs = '10px'; align = 'center'; }
@@ -4914,7 +4918,7 @@ async function toggleVoiceRecording(btnElement) {
       };
 
       const getFechaInicioTrafficStyle = (row) => {
-          const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','ALTA'].includes(String(k).toUpperCase().trim()));
+          const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','ALTA','F. INICIO'].includes(String(k).toUpperCase().trim()));
           if (!startKey) return {};
           const val = row[startKey];
           if (!val) return {};
@@ -4944,7 +4948,7 @@ async function toggleVoiceRecording(btnElement) {
           if(days >= (limit - buffer)) return {backgroundColor:'#ffff00', color:'black', fontWeight:'bold'};
           return {backgroundColor:'#2ecc71', color:'white'};
       };
-      const getFechaRespuestaStyle = (row) => { const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO'].includes(String(k).toUpperCase().trim())); const startDateVal = startKey ? row[startKey] : null; const style = { backgroundColor: '#ffc107', color: 'black' }; if (!startDateVal) return style; let startDate = null; if (typeof startDateVal === 'string') { const parts = startDateVal.split('/'); if (parts.length === 3) { let y = parts[2].length === 2 ? '20' + parts[2] : parts[2]; startDate = new Date(`${y}-${parts[1]}-${parts[0]}`); } } else if (startDateVal instanceof Date) { startDate = startDateVal; } if (startDate && !isNaN(startDate.getTime())) { const diff = new Date() - startDate; if (Math.floor(diff / (1000 * 60 * 60 * 24)) > 3) { style.backgroundColor = '#dc3545'; style.color = 'white'; } } return style; };
+      const getFechaRespuestaStyle = (row) => { const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','F. INICIO'].includes(String(k).toUpperCase().trim())); const startDateVal = startKey ? row[startKey] : null; const style = { backgroundColor: '#ffc107', color: 'black' }; if (!startDateVal) return style; let startDate = null; if (typeof startDateVal === 'string') { const parts = startDateVal.split('/'); if (parts.length === 3) { let y = parts[2].length === 2 ? '20' + parts[2] : parts[2]; startDate = new Date(`${y}-${parts[1]}-${parts[0]}`); } } else if (startDateVal instanceof Date) { startDate = startDateVal; } if (startDate && !isNaN(startDate.getTime())) { const diff = new Date() - startDate; if (Math.floor(diff / (1000 * 60 * 60 * 24)) > 3) { style.backgroundColor = '#dc3545'; style.color = 'white'; } } return style; };
 
       const toInitials = (name) => {
         if (!name) return '';
