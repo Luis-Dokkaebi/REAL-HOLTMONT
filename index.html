@@ -598,7 +598,11 @@
 
     <main class="content-wrapper">
       <div class="top-bar" v-if="currentView !== 'WORKORDER_FORM'">
-        <h6 class="m-0 fw-bold text-secondary">{{ pageTitle }}</h6>
+        <div v-if="currentView === 'STAFF_TRACKER' && currentUsername === 'ANTONIA_VENTAS'" class="d-flex align-items-center">
+             <img src="https://lh3.googleusercontent.com/d/1TPJFNNWSWuppbzUTdP8dFtjZUqtPcFAQ" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover; border: 1px solid #ccc;">
+             <h6 class="m-0 fw-bold text-secondary">Cotizaciones Antonia</h6>
+        </div>
+        <h6 v-else class="m-0 fw-bold text-secondary">{{ pageTitle }}</h6>
         <span class="badge bg-light text-dark border">{{ currentUser }}</span>
       </div>
 
@@ -1337,10 +1341,7 @@
                 <button class="btn btn-light btn-sm border me-2" @click="goBackToDept"><i class="fas fa-arrow-left"></i></button>
 
                 <template v-if="currentUsername === 'ANTONIA_VENTAS'">
-                    <div class="d-flex align-items-center me-2">
-                        <img src="https://lh3.googleusercontent.com/d/1TPJFNNWSWuppbzUTdP8dFtjZUqtPcFAQ" class="rounded-circle me-2" style="width: 30px; height: 30px; object-fit: cover; border: 1px solid #ccc;">
-                        <span class="small fw-bold" style="color: var(--primary)">COTIZACIONES ANTONIA</span>
-                    </div>
+                     <span class="small fw-bold me-2" style="color: var(--primary)"><i class="fas fa-file-excel me-1"></i> ANTONIA_VENTAS</span>
                 </template>
                 <template v-else>
                     <span class="small fw-bold me-2" :style="{color: currentDeptData.color || 'var(--primary)'}"><i class="fas fa-file-excel me-1"></i> {{ staffTracker.name }}</span>
