@@ -1360,6 +1360,11 @@
                       <i class="fas fa-tasks me-2"></i>COTIZACIONES EN PROCESO
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="trackerSubView = 'HISTORY'">
+                      <i class="fas fa-history me-2"></i>COTIZACIONES ENVIADAS PERDIDAS
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
                       :class="activeTrackerTab === 'RESUMEN_EJECUTIVO' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
                       @click="switchTrackerTab('RESUMEN_EJECUTIVO'); trackerSubView = 'EXECUTIVE_SUMMARY'; loadExecutiveSummary()">
                       <i class="fas fa-file-alt me-2"></i>RESUMEN EJECUTIVO
@@ -1373,11 +1378,6 @@
                       :class="activeTrackerTab === 'PAPA_CALIENTE' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
                       @click="openHotPotatoView()">
                       <i class="fas fa-fire me-2"></i>PAPA CALIENTE DE COTIZACION
-                 </div>
-                 <div class="cursor-pointer px-4 py-2 fw-bold"
-                      :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                      @click="trackerSubView = 'HISTORY'">
-                      <i class="fas fa-history me-2"></i>COTIZACIONES ENVIADAS PERDIDAS
                  </div>
              </template>
              <!-- VISTA ESTANDAR -->
