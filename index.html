@@ -4965,7 +4965,9 @@ async function toggleVoiceRecording(btnElement) {
         if (!name) return '';
         // Soporta múltiples nombres separados por coma
         return String(name).split(',').map(n => {
-            return n.trim().split(/\s+/).map(p => p[0]).join('').toUpperCase().substring(0, 2);
+            const parts = n.trim().split(/\s+/);
+            if (parts.length === 0 || (parts.length === 1 && parts[0] === '')) return '';
+            return parts.map(p => p.charAt(0)).join('').toUpperCase().substring(0, 2);
         }).join('/');
       };
 
