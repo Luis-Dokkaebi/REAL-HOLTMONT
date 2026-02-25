@@ -1454,7 +1454,7 @@
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
                 <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
                 <button v-if="['TONITA'].includes(currentRole) || currentUsername === 'ANTONIA_VENTAS' || salesStaff.includes(currentUser)" class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
-                <button v-if="trackerSubView === 'HISTORY'" class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="openProcessFlow" title="Ver Flujo"><i class="fas fa-project-diagram me-1"></i> FLUJO PROCESO</button>
+                <button v-if="trackerSubView === 'HISTORY'" class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="openProcessFlow" title="Ver Flujo"><i class="fas fa-project-diagram me-1"></i> FLUJO PROCESO COTIZACION</button>
             </div>
             <div></div>
           </div>
@@ -4246,93 +4246,6 @@
       </div>
   </div>
 
-  <div v-if="showProcessFlow" class="custom-modal-overlay" style="z-index: 3000;">
-    <div class="custom-modal flow-modal">
-        <div class="custom-modal-header">
-            <span><i class="fas fa-project-diagram me-2"></i>FLUJO PROCESO COTIZACION</span>
-            <button class="btn-close" @click="showProcessFlow = false"></button>
-        </div>
-        <div class="custom-modal-body p-4 overflow-auto" style="background: #f8f9fa;">
-            <div class="flow-container">
-                <div class="flow-node start">Inicio</div>
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                <div class="flow-node">Recepción de Solicitud</div>
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                <div class="flow-node">Análisis de Requisitos</div>
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-
-                <div class="flow-node decision">
-                    <span>¿Requisitos Claros?</span>
-                </div>
-                <div class="flow-branch-container">
-                    <div class="flow-branch">
-                        <div class="flow-label">NO</div>
-                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                        <div class="flow-node">Solicitar Información Adicional</div>
-                        <div class="flow-arrow"><i class="fas fa-undo"></i></div>
-                    </div>
-                    <div class="flow-branch">
-                        <div class="flow-label">SI</div>
-                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                        <div class="flow-node">Estimación de Costos</div>
-                    </div>
-                </div>
-
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                <div class="flow-node">Preparación de Cotización</div>
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                <div class="flow-node">Revisión Interna</div>
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-
-                <div class="flow-node decision">
-                    <span>¿Aprobado?</span>
-                </div>
-                <div class="flow-branch-container">
-                    <div class="flow-branch">
-                        <div class="flow-label">NO</div>
-                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                        <div class="flow-node">Correcciones</div>
-                        <div class="flow-arrow"><i class="fas fa-undo"></i></div>
-                    </div>
-                    <div class="flow-branch">
-                        <div class="flow-label">SI</div>
-                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                        <div class="flow-node">Envío al Cliente</div>
-                    </div>
-                </div>
-
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                <div class="flow-node">Seguimiento</div>
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-
-                <div class="flow-node decision">
-                    <span>¿Aceptada?</span>
-                </div>
-                <div class="flow-branch-container">
-                    <div class="flow-branch">
-                        <div class="flow-label">NO</div>
-                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                        <div class="flow-node">Negociación</div>
-                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                        <div class="flow-node decision" style="width:120px; height:60px;"><span>¿Acuerdo?</span></div>
-                        <div class="flow-branch-container" style="width:100%">
-                             <div class="flow-branch"><span class="flow-label">SI</span><i class="fas fa-arrow-right"></i></div>
-                             <div class="flow-branch"><span class="flow-label">NO</span><div class="flow-node end">Fin</div></div>
-                        </div>
-                    </div>
-                    <div class="flow-branch">
-                        <div class="flow-label">SI</div>
-                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                        <div class="flow-node">Confirmación del Pedido</div>
-                    </div>
-                </div>
-
-                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
-                <div class="flow-node end">Fin</div>
-            </div>
-        </div>
-    </div>
-  </div>
 </div>
 
 <script>
