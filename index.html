@@ -1400,7 +1400,7 @@
                              <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
                          </div>
                          <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
-                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR')" style="position:relative; width:100%; height:100%; background-color:#f0fdf4;" @click="openVendorSelector(row, h)">
+                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR') || (currentRole === 'TONITA' && String(h).toUpperCase() === 'RESPONSABLE')" style="position:relative; width:100%; height:100%; min-height:30px; background-color:#f0fdf4;" @click="openVendorSelector(row, h)">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000; cursor:pointer;">{{ toInitials(row[h]) }}</div>
                          </div>
                          <div v-else-if="String(h).toUpperCase().includes('PRIORIDAD') || String(h).toUpperCase().includes('PRIO')" style="position:relative; width:100%; height:100%;">
@@ -4818,7 +4818,7 @@ async function toggleVoiceRecording(btnElement) {
               if (!row['FOLIO'] && !row['ID']) return true;
 
               const hUp = String(h).toUpperCase();
-              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'ARCHIVO', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'ENTREGA'];
+              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'ARCHIVO', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'ENTREGA', 'VENDEDOR', 'RESPONSABLE'];
               return allowed.some(a => hUp.includes(a));
           }
           return true;
