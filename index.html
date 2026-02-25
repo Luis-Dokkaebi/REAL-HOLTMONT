@@ -4856,7 +4856,7 @@ async function toggleVoiceRecording(btnElement) {
       };
 
       const getColumnStyle = (h) => {
-          const up = String(h).toUpperCase().trim(); let w = '120px'; let fs = '12px'; let pad = '8px 4px'; let align = 'left';
+          const up = String(h).toUpperCase().trim(); let w = '120px'; let fs = '12px'; let pad = '8px 4px'; let align = 'left'; let colColor = '#333';
           if (up === 'CONCEPTO' || up.includes('DESCRIP')) {
               if (currentView.value === 'WEEKLY_PLAN') {
                   w = '150px';
@@ -4864,7 +4864,7 @@ async function toggleVoiceRecording(btnElement) {
                   w = (currentUsername.value === 'ANTONIA_VENTAS') ? '350px' : '380px';
               }
           }
-          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'F. ENTREGA' || up === 'F. VISITA' || up === 'FECHA VISITA' || up === 'F. INICIO')) { w = '60px'; fs = '10px'; }
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'F. ENTREGA' || up === 'F. VISITA' || up === 'FECHA VISITA' || up === 'F. INICIO')) { w = '60px'; fs = '10px'; colColor = '#000'; }
           else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
           else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUsername.value === 'ANTONIA_VENTAS') ? '70px' : '40px'; fs = '10px'; align = 'center'; }
@@ -4886,7 +4886,7 @@ async function toggleVoiceRecording(btnElement) {
           else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; }
           else if (up.includes('TIMEOUT') || up.includes('TIME OUT')) { w = '70px'; fs = '10px'; align='center'; }
           else if (up.includes('LAYOUT') || up.includes('TIMELINE')) { w = '70px'; fs = '10px'; align='center'; }
-          else if (up.includes('VENDEDOR')) { w = '50px'; fs = '10px'; align='center'; }
+          else if (up.includes('VENDEDOR')) { w = '50px'; fs = '10px'; align='center'; colColor = '#000'; }
           else if (up === 'CLIENTE') w = '100px';
 
           // OVERRIDE FOR PPCV3 (WEEKLY_PLAN)
@@ -4896,7 +4896,7 @@ async function toggleVoiceRecording(btnElement) {
               }
           }
 
-          return { width: w, fontSize: fs, padding: pad, textAlign: align, overflow: 'hidden', textOverflow: 'ellipsis' };
+          return { width: w, fontSize: fs, padding: pad, textAlign: align, overflow: 'hidden', textOverflow: 'ellipsis', color: colColor };
       };
 
       const getHeaderLabel = (h) => {
