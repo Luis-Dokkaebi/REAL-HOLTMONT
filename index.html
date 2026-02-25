@@ -1455,7 +1455,18 @@
                 <tbody>
                     <tr v-for="(row, i) in staffTracker.history" :key="i">
                         <td class="row-num">H{{i+1}}</td>
-                        <td v-for="(h, idx) in staffTracker.headers" :key="idx" :style="getColumnStyle(h)">{{row[h]}}</td>
+                        <td v-for="(h, idx) in staffTracker.headers" :key="idx" :style="getColumnStyle(h)">
+                            <div v-if="isMediaColumn(h)" class="d-flex flex-wrap justify-content-center gap-1">
+                                <template v-if="row[h]">
+                                     <a v-for="(url, uIdx) in String(row[h]).split(/[\n\s]+/).filter(u => u.startsWith('http'))"
+                                        :key="uIdx" :href="url" target="_blank"
+                                        class="btn btn-sm btn-outline-primary py-0 px-1" style="font-size:9px;" title="Ver archivo">
+                                        <i class="fas fa-paperclip"></i>
+                                     </a>
+                                </template>
+                            </div>
+                            <div v-else>{{row[h]}}</div>
+                        </td>
                         <td style="width:40px;text-align:center"><i class="fas fa-check text-muted small"></i></td>
                     </tr>
                 </tbody>
