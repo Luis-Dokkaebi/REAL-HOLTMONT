@@ -1216,33 +1216,36 @@ function internalUpdateTask(personName, taskData, username) {
 
              const vendedorKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
              if (vendedorKey && taskData[vendedorKey]) {
-                 const vendedorName = String(taskData[vendedorKey]).trim();
-                 if (vendedorName.toUpperCase() !== "ANTONIA_VENTAS") {
-                     try { 
-                        // TRAFFIC SPLITTING REFACTORIZADO
-                        let targetSheet = vendedorName;
-                        let hasSuffix = targetSheet.toUpperCase().includes("(VENTAS)");
-                        let finalTarget = null;
+                 const vendedores = String(taskData[vendedorKey]).split(',').map(s => s.trim());
 
-                        if (hasSuffix) {
-                            finalTarget = targetSheet;
-                        } else {
-                            let potentialSheet = targetSheet + " (VENTAS)";
-                            if (findSheetSmart(potentialSheet)) {
-                                finalTarget = potentialSheet;
+                 vendedores.forEach(vName => {
+                     if (vName.toUpperCase() !== "ANTONIA_VENTAS") {
+                         try {
+                            // TRAFFIC SPLITTING REFACTORIZADO
+                            let targetSheet = vName;
+                            let hasSuffix = targetSheet.toUpperCase().includes("(VENTAS)");
+                            let finalTarget = null;
+
+                            if (hasSuffix) {
+                                finalTarget = targetSheet;
+                            } else {
+                                let potentialSheet = targetSheet + " (VENTAS)";
+                                if (findSheetSmart(potentialSheet)) {
+                                    finalTarget = potentialSheet;
+                                }
                             }
-                        }
 
-                        if (finalTarget) {
-                             const vRes = internalBatchUpdateTasks(finalTarget, [distData]);
-                             if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + finalTarget + ": " + vRes.message);
-                        } else {
-                             registrarLog("ANTONIA", "DIST_SKIP", "Omitido " + vendedorName + " - No se encontró tabla (VENTAS).");
-                        }
-                     } catch(e){
-                        registrarLog("ANTONIA", "DIST_ERROR", e.toString());
+                            if (finalTarget) {
+                                 const vRes = internalBatchUpdateTasks(finalTarget, [distData]);
+                                 if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + finalTarget + ": " + vRes.message);
+                            } else {
+                                 registrarLog("ANTONIA", "DIST_SKIP", "Omitido " + vName + " - No se encontró tabla (VENTAS).");
+                            }
+                         } catch(e){
+                            registrarLog("ANTONIA", "DIST_ERROR", e.toString());
+                         }
                      }
-                 }
+                 });
              }
 
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
@@ -1258,6 +1261,32 @@ function internalUpdateTask(personName, taskData, username) {
                  if (!syncRes.success) {
                      console.warn("Fallo sincronización inversa a ANTONIA_VENTAS: " + syncRes.message);
                  }
+
+                 // Sincronización Lateral (Peer-to-Peer via VENDEDOR field)
+                 const vKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
+                 if (vKey && taskData[vKey]) {
+                     const vList = String(taskData[vKey]).split(',').map(s => s.trim());
+                     vList.forEach(otherVendor => {
+                         // Ignorar si es el mismo usuario que está editando
+                         // "personName" es la hoja actual (e.g. "JUAN (VENTAS)")
+                         if (otherVendor.toUpperCase() === "ANTONIA_VENTAS") return;
+
+                         // Normalizar nombres para comparación
+                         const currentSheetNorm = String(personName).toUpperCase().replace(/\s*\(VENTAS\)/, "").trim();
+                         const otherVendorNorm = String(otherVendor).toUpperCase().replace(/\s*\(VENTAS\)/, "").trim();
+
+                         if (currentSheetNorm !== otherVendorNorm) {
+                             // Distribuir a este otro vendedor
+                             let targetSheet = otherVendor;
+                             if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
+                                 let potential = targetSheet + " (VENTAS)";
+                                 if (findSheetSmart(potential)) targetSheet = potential;
+                             }
+                             internalBatchUpdateTasks(targetSheet, [syncData]);
+                         }
+                     });
+                 }
+
              } catch (e) {
                  console.error("Error en sincronización inversa: " + e.toString());
              }
@@ -3107,21 +3136,23 @@ function apiSaveTrackerBatch(personName, tasks, username) {
               distributionTasks.forEach(t => {
                   const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR");
                   if (vendedorKey && t[vendedorKey]) {
-                       const vName = String(t[vendedorKey]).trim();
-                       if (vName.toUpperCase() !== "ANTONIA_VENTAS") {
-                           let target = vName;
-                           // Logic to find target sheet (suffix check)
-                           let finalTarget = null;
-                           if (target.toUpperCase().includes("(VENTAS)")) finalTarget = target;
-                           else {
-                               if (findSheetSmart(target + " (VENTAS)")) finalTarget = target + " (VENTAS)";
-                           }
+                       const vNames = String(t[vendedorKey]).split(',').map(s => s.trim());
+                       vNames.forEach(vName => {
+                           if (vName.toUpperCase() !== "ANTONIA_VENTAS") {
+                               let target = vName;
+                               // Logic to find target sheet (suffix check)
+                               let finalTarget = null;
+                               if (target.toUpperCase().includes("(VENTAS)")) finalTarget = target;
+                               else {
+                                   if (findSheetSmart(target + " (VENTAS)")) finalTarget = target + " (VENTAS)";
+                               }
 
-                           if (finalTarget) {
-                               if (!byVendor[finalTarget]) byVendor[finalTarget] = [];
-                               byVendor[finalTarget].push(t);
+                               if (finalTarget) {
+                                   if (!byVendor[finalTarget]) byVendor[finalTarget] = [];
+                                   byVendor[finalTarget].push(t);
+                               }
                            }
-                       }
+                       });
                   }
               });
 
@@ -3137,6 +3168,34 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           // Handle Reverse Sync (Vendor -> Antonia)
           if (String(personName).toUpperCase().includes("(VENTAS)") && !isAntonia && distributionTasks.length > 0) {
                internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
+
+               // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)
+               const peerUpdates = {};
+               distributionTasks.forEach(t => {
+                   const vKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR");
+                   if(vKey && t[vKey]) {
+                       const vList = String(t[vKey]).split(',').map(s => s.trim());
+                       vList.forEach(otherVendor => {
+                           if (otherVendor.toUpperCase() === "ANTONIA_VENTAS") return;
+                           const currentSheetNorm = String(personName).toUpperCase().replace(/\s*\(VENTAS\)/, "").trim();
+                           const otherVendorNorm = String(otherVendor).toUpperCase().replace(/\s*\(VENTAS\)/, "").trim();
+
+                           if (currentSheetNorm !== otherVendorNorm) {
+                               let targetSheet = otherVendor;
+                               if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
+                                   let potential = targetSheet + " (VENTAS)";
+                                   if (findSheetSmart(potential)) targetSheet = potential;
+                               }
+                               if(!peerUpdates[targetSheet]) peerUpdates[targetSheet] = [];
+                               peerUpdates[targetSheet].push(t);
+                           }
+                       });
+                   }
+               });
+
+               for (const [target, tasks] of Object.entries(peerUpdates)) {
+                   internalBatchUpdateTasks(target, tasks, false);
+               }
           }
 
           registrarLog(username, "BATCH_UPDATE", `Actualizadas ${tasks.length} tareas en ${personName}`);
