@@ -1332,7 +1332,7 @@
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
                       :class="activeTrackerTab === 'BANCO_COTIZACIONES' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                      @click="switchTrackerTab('BANCO_COTIZACIONES'); trackerSubView = 'TASKS'">
+                      @click="switchTrackerTab('BANCO_COTIZACIONES'); trackerSubView = 'INFO_BANK'; resetInfoBank()">
                       <i class="fas fa-database me-2"></i>BANCO DE COTIZACIONES
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
@@ -1377,6 +1377,146 @@
             </div>
             <div></div>
           </div>
+          <div class="flex-fill d-flex flex-column" v-if="activeTrackerTab === 'BANCO_COTIZACIONES'" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center">
+                    <h4 class="fw-bold m-0 text-info"><i class="fas fa-database me-2"></i>BANCO DE INFORMACION {{ infoBankState.selectedYear || '' }}</h4>
+                    <nav aria-label="breadcrumb" class="ms-4" v-if="infoBankState.view !== 'YEARS'">
+                        <ol class="breadcrumb m-0">
+                             <li class="breadcrumb-item" v-if="infoBankState.view !== 'YEARS'"><a href="#" @click.prevent="resetInfoBank">Año {{ infoBankState.selectedYear }}</a></li>
+                             <li class="breadcrumb-item" v-if="infoBankState.selectedMonth && infoBankState.view !== 'MONTHS'"><a href="#" @click.prevent="infoBankState.view = 'COMPANIES'">{{infoBankState.selectedMonth}}</a></li>
+                             <li class="breadcrumb-item active" v-if="infoBankState.selectedCompany">{{infoBankState.selectedCompany}}</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- VIEW: YEARS -->
+            <div v-if="infoBankState.view === 'YEARS'" class="animate__animated animate__fadeIn">
+                 <h5 class="fw-bold text-secondary mb-3">Selecciona el Año</h5>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="y in ibYears" :key="y">
+                         <div class="card shadow-sm border-0 h-100 btn-month" style="cursor:pointer; transition:all 0.2s;" @click="selectIbYear(y)" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                             <div class="card-body text-center py-4 bg-white rounded">
+                                 <h5 class="fw-bold m-0 text-primary">{{y}}</h5>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: MONTHS -->
+            <div v-if="infoBankState.view === 'MONTHS'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">Selecciona el Mes - {{ infoBankState.selectedYear }}</h5>
+                 </div>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="m in ibMonths" :key="m">
+                         <div class="card shadow-sm border-0 h-100 btn-month" style="cursor:pointer; transition:all 0.2s;" @click="selectIbMonth(m)" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                             <div class="card-body text-center py-4 bg-white rounded">
+                                 <h5 class="fw-bold m-0 text-primary">{{m}}</h5>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: COMPANIES -->
+            <div v-if="infoBankState.view === 'COMPANIES'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">Empresas - {{infoBankState.selectedMonth}} {{ infoBankState.selectedYear }}</h5>
+                 </div>
+                 <div class="row g-2">
+                     <div class="col-12 col-md-6 col-lg-4" v-for="c in filteredIbCompanies" :key="c">
+                         <div class="list-group-item list-group-item-action border rounded shadow-sm p-3 d-flex align-items-center justify-content-between" style="cursor:pointer; background:white;" @click="selectIbCompany(c)">
+                             <span class="fw-bold text-dark">{{c}}</span>
+                             <i class="fas fa-chevron-right text-muted"></i>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: FOLDERS -->
+            <div v-if="infoBankState.view === 'FOLDERS'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">{{infoBankState.selectedCompany}} - Carpetas</h5>
+                 </div>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="f in ibFolders" :key="f.name">
+                         <div class="card shadow-sm border-0 h-100 text-center" style="cursor:pointer; transition:all 0.2s;" @click="openIbFolder(f)" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                             <div class="card-body d-flex flex-column align-items-center justify-content-center py-4 bg-white rounded">
+                                 <i class="fas fa-3x mb-3" :class="f.icon" :style="{color: f.color}"></i>
+                                 <h6 class="fw-bold text-dark m-0">{{f.name}}</h6>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: FILES -->
+            <div v-if="infoBankState.view === 'FILES'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">{{infoBankState.selectedCompany}} / {{infoBankState.selectedFolder}}</h5>
+                 </div>
+
+                 <div v-if="infoBankState.isLoading" class="text-center p-5">
+                      <div class="spinner-border text-primary mb-2" role="status"></div>
+                      <div class="text-muted small">Buscando archivos en Base de Datos...</div>
+                 </div>
+                 <div v-else-if="infoBankState.files.length === 0" class="text-center p-5 bg-white border rounded shadow-sm">
+                      <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                      <p class="text-muted fw-bold">No se encontraron registros para este mes y cliente.</p>
+                 </div>
+                 <div v-else class="card border-0 shadow-sm">
+                     <div class="card-body p-0">
+                         <div class="table-responsive">
+                             <table class="table table-hover mb-0 align-middle">
+                                 <thead class="table-light small text-uppercase">
+                                     <tr>
+                                         <th style="min-width:90px">FECHA INICIO</th>
+                                         <th style="min-width:100px">AREA</th>
+                                         <th>CONCEPTO</th>
+                                         <th style="min-width:120px">VENDEDOR</th>
+                                         <th class="text-center" style="min-width:100px">ESTATUS</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody class="info-bank-list">
+                                     <tr v-for="(file, idx) in infoBankState.files" :key="idx" class="info-bank-row" style="opacity:0">
+                                         <td style="font-size:12px; font-weight:bold;">{{ formatDisplayDate(file.FECHA_INICIO) }}</td>
+                                         <td style="font-size:11px;"><span class="badge bg-light text-secondary border">{{ file.AREA || 'N/A' }}</span></td>
+                                         <td style="font-size:12px;">
+                                             <div class="fw-bold text-dark">{{ file.CONCEPTO || 'Sin Descripción' }}</div>
+                                             <div class="small text-muted d-flex align-items-center gap-2">
+                                                 <span>{{ file.FOLIO }}</span>
+                                                 <a v-if="file.COTIZACION" :href="file.COTIZACION" target="_blank" class="text-primary text-decoration-none fw-bold" style="font-size:10px;">
+                                                     <i class="fas fa-paperclip me-1"></i>VER ARCHIVO
+                                                 </a>
+                                             </div>
+                                         </td>
+                                         <td style="font-size:11px;">
+                                             <div class="d-flex align-items-center">
+                                                 <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width:20px; height:20px; font-size:9px;">
+                                                     {{ toInitials(file.VENDEDOR) }}
+                                                 </div>
+                                                 <span class="text-truncate" style="max-width:120px;">{{ file.VENDEDOR }}</span>
+                                             </div>
+                                         </td>
+                                         <td class="text-center">
+                                             <span class="badge" :class="getBadgeClass(file.ESTATUS)">{{ file.ESTATUS || 'N/A' }}</span>
+                                         </td>
+                                     </tr>
+                                 </tbody>
+                             </table>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+          </div>
+
           <div class="excel-container flex-fill mb-2" ref="trackerTable" v-if="trackerSubView === 'TASKS'">
              <div v-if="staffTracker.isLoading" class="text-center p-5 text-muted">Cargando datos...</div>
              <table v-else class="table-excel">
