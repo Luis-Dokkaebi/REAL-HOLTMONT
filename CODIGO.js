@@ -705,11 +705,19 @@ function internalFetchSheetData(sheetName) {
     if (values.length < 2) return { success: true, data: [], history: [], headers: [], message: "Vacía" };
     const headerRowIndex = findHeaderRow(values);
     if (headerRowIndex === -1) return { success: true, data: [], headers: [], message: "Sin formato válido" };
-    const rawHeaders = values[headerRowIndex].map(h => String(h).trim());
+    const rawHeaders = values[headerRowIndex].map(h => String(h).replace(/\n/g, " ").replace(/\s+/g, " ").trim());
     const validIndices = [];
     const cleanHeaders = [];
+    const usedHeaders = new Set();
     rawHeaders.forEach((h, index) => {
-      if(h !== "") { validIndices.push(index); cleanHeaders.push(h); }
+      if(h !== "") {
+          const hUpper = h.toUpperCase();
+          if (!usedHeaders.has(hUpper)) {
+              validIndices.push(index);
+              cleanHeaders.push(h);
+              usedHeaders.add(hUpper);
+          }
+      }
     });
     const dataRows = values.slice(headerRowIndex + 1);
     const activeTasks = [];
