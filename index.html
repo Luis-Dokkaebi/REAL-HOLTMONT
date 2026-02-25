@@ -1400,12 +1400,8 @@
                              <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
                          </div>
                          <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
-                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR')" style="position:relative; width:100%; height:100%; background-color:#f0fdf4;">
-                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000; z-index:1;">{{ toInitials(row[h]) }}</div>
-                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:2;">
-                                 <option value="">-</option>
-                                 <option v-for="s in salesStaff" :key="s" :value="s">{{s}}</option>
-                             </select>
+                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR')" style="position:relative; width:100%; height:100%; background-color:#f0fdf4;" @click="openVendorSelector(row, h)">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000; cursor:pointer;">{{ toInitials(row[h]) }}</div>
                          </div>
                          <div v-else-if="String(h).toUpperCase().includes('PRIORIDAD') || String(h).toUpperCase().includes('PRIO')" style="position:relative; width:100%; height:100%;">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:10px; font-weight:bold;">{{ row[h] }}</div>
@@ -1459,7 +1455,18 @@
                 <tbody>
                     <tr v-for="(row, i) in staffTracker.history" :key="i">
                         <td class="row-num">H{{i+1}}</td>
-                        <td v-for="(h, idx) in staffTracker.headers" :key="idx" :style="getColumnStyle(h)">{{row[h]}}</td>
+                        <td v-for="(h, idx) in staffTracker.headers" :key="idx" :style="getColumnStyle(h)">
+                            <div v-if="isMediaColumn(h)" class="d-flex flex-wrap justify-content-center gap-1">
+                                <template v-if="row[h]">
+                                     <a v-for="(url, uIdx) in String(row[h]).split(/[\n\s]+/).filter(u => u.startsWith('http'))"
+                                        :key="uIdx" :href="url" target="_blank"
+                                        class="btn btn-sm btn-outline-primary py-0 px-1" style="font-size:9px;" title="Ver archivo">
+                                        <i class="fas fa-paperclip"></i>
+                                     </a>
+                                </template>
+                            </div>
+                            <div v-else>{{row[h]}}</div>
+                        </td>
                         <td style="width:40px;text-align:center"><i class="fas fa-check text-muted small"></i></td>
                     </tr>
                 </tbody>
@@ -4811,7 +4818,7 @@ async function toggleVoiceRecording(btnElement) {
               if (!row['FOLIO'] && !row['ID']) return true;
 
               const hUp = String(h).toUpperCase();
-              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'ARCHIVO', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE'];
+              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'ARCHIVO', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'ENTREGA'];
               return allowed.some(a => hUp.includes(a));
           }
           return true;
@@ -4952,8 +4959,10 @@ async function toggleVoiceRecording(btnElement) {
 
       const toInitials = (name) => {
         if (!name) return '';
-        // Convierte "Judith Echavarria" en "JE", o "Maria Del Carmen" en "MC"
-        return String(name).trim().split(/\s+/).map(p => p[0]).join('').toUpperCase().substring(0, 3);
+        // Soporta múltiples nombres separados por coma
+        return String(name).split(',').map(n => {
+            return n.trim().split(/\s+/).map(p => p[0]).join('').toUpperCase().substring(0, 2);
+        }).join('/');
       };
 
       const handleErr = (e) => { loggingIn.value=false; isSubmitting.value=false; Swal.fire('Error',e.message,'error'); };
@@ -6422,6 +6431,45 @@ async function toggleVoiceRecording(btnElement) {
           requiredMaterials.value.items[idx].description = text;
       };
 
+      const openVendorSelector = (row, field) => {
+          if (!isFieldEditable(field, row)) return;
+
+          const currentVals = row[field] ? String(row[field]).split(',').map(s => s.trim()) : [];
+
+          let htmlContent = '<div style="text-align:left; max-height:300px; overflow-y:auto;">';
+          salesStaff.value.forEach(staff => {
+              const checked = currentVals.includes(staff) ? 'checked' : '';
+              htmlContent += `
+                  <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="${staff}" id="chk_${staff.replace(/\s+/g,'_')}" ${checked}>
+                      <label class="form-check-label" for="chk_${staff.replace(/\s+/g,'_')}">
+                          ${staff}
+                      </label>
+                  </div>
+              `;
+          });
+          htmlContent += '</div>';
+
+          Swal.fire({
+              title: 'Asignar Vendedores',
+              html: htmlContent,
+              showCancelButton: true,
+              confirmButtonText: 'Aplicar',
+              preConfirm: () => {
+                  const selected = [];
+                  salesStaff.value.forEach(staff => {
+                      const el = document.getElementById('chk_' + staff.replace(/\s+/g,'_'));
+                      if (el && el.checked) selected.push(staff);
+                  });
+                  return selected.join(', ');
+              }
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  row[field] = result.value;
+              }
+          });
+      };
+
       return { focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
@@ -6442,7 +6490,7 @@ async function toggleVoiceRecording(btnElement) {
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
-      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus };
+      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
