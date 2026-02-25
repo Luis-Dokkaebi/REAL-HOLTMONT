@@ -531,6 +531,23 @@
     .exec-anim-enter {
         opacity: 0;
     }
+
+    /* FLOW PROCESS DIAGRAM STYLES */
+    .flow-modal { width: 80% !important; max-width: 900px !important; height: 90% !important; display: flex; flex-direction: column; }
+    .flow-container { display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 15px; width: 100%; }
+    .flow-node {
+        background: white; border: 2px solid #333; border-radius: 8px; padding: 10px 20px;
+        font-weight: bold; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        text-align: center; min-width: 200px; position: relative; z-index: 2;
+    }
+    .flow-node.start { background: #2ecc71; color: white; border-color: #27ae60; border-radius: 20px; }
+    .flow-node.end { background: #e74c3c; color: white; border-color: #c0392b; border-radius: 20px; }
+    .flow-node.decision { background: #f1c40f; color: #333; border-color: #d4ac0d; border-radius: 0; width: 160px; height: 80px; display:flex; align-items:center; justify-content:center; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
+    .flow-node.decision span { font-size: 11px; line-height: 1.1; }
+    .flow-arrow { font-size: 20px; color: #555; z-index: 1; }
+    .flow-branch-container { display: flex; width: 100%; justify-content: space-around; position: relative; gap: 20px; }
+    .flow-branch { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; }
+    .flow-label { font-size: 10px; font-weight: bold; color: #666; background: #fff; padding: 2px 5px; border-radius: 4px; border: 1px solid #ccc; margin-top: -10px; z-index: 3; }
   </style>
 </head>
 <body>
@@ -1408,6 +1425,7 @@
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
                 <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
                 <button v-if="['TONITA'].includes(currentRole) || currentUsername === 'ANTONIA_VENTAS' || salesStaff.includes(currentUser)" class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
+                <button v-if="trackerSubView === 'HISTORY'" class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="openProcessFlow" title="Ver Flujo"><i class="fas fa-project-diagram me-1"></i> FLUJO PROCESO</button>
             </div>
             <div></div>
           </div>
@@ -4117,6 +4135,93 @@
       </div>
   </div>
 
+  <div v-if="showProcessFlow" class="custom-modal-overlay" style="z-index: 3000;">
+    <div class="custom-modal flow-modal">
+        <div class="custom-modal-header">
+            <span><i class="fas fa-project-diagram me-2"></i>FLUJO PROCESO COTIZACION</span>
+            <button class="btn-close" @click="showProcessFlow = false"></button>
+        </div>
+        <div class="custom-modal-body p-4 overflow-auto" style="background: #f8f9fa;">
+            <div class="flow-container">
+                <div class="flow-node start">Inicio</div>
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                <div class="flow-node">Recepción de Solicitud</div>
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                <div class="flow-node">Análisis de Requisitos</div>
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+
+                <div class="flow-node decision">
+                    <span>¿Requisitos Claros?</span>
+                </div>
+                <div class="flow-branch-container">
+                    <div class="flow-branch">
+                        <div class="flow-label">NO</div>
+                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="flow-node">Solicitar Información Adicional</div>
+                        <div class="flow-arrow"><i class="fas fa-undo"></i></div>
+                    </div>
+                    <div class="flow-branch">
+                        <div class="flow-label">SI</div>
+                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="flow-node">Estimación de Costos</div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                <div class="flow-node">Preparación de Cotización</div>
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                <div class="flow-node">Revisión Interna</div>
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+
+                <div class="flow-node decision">
+                    <span>¿Aprobado?</span>
+                </div>
+                <div class="flow-branch-container">
+                    <div class="flow-branch">
+                        <div class="flow-label">NO</div>
+                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="flow-node">Correcciones</div>
+                        <div class="flow-arrow"><i class="fas fa-undo"></i></div>
+                    </div>
+                    <div class="flow-branch">
+                        <div class="flow-label">SI</div>
+                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="flow-node">Envío al Cliente</div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                <div class="flow-node">Seguimiento</div>
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+
+                <div class="flow-node decision">
+                    <span>¿Aceptada?</span>
+                </div>
+                <div class="flow-branch-container">
+                    <div class="flow-branch">
+                        <div class="flow-label">NO</div>
+                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="flow-node">Negociación</div>
+                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="flow-node decision" style="width:120px; height:60px;"><span>¿Acuerdo?</span></div>
+                        <div class="flow-branch-container" style="width:100%">
+                             <div class="flow-branch"><span class="flow-label">SI</span><i class="fas fa-arrow-right"></i></div>
+                             <div class="flow-branch"><span class="flow-label">NO</span><div class="flow-node end">Fin</div></div>
+                        </div>
+                    </div>
+                    <div class="flow-branch">
+                        <div class="flow-label">SI</div>
+                        <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                        <div class="flow-node">Confirmación del Pedido</div>
+                    </div>
+                </div>
+
+                <div class="flow-arrow"><i class="fas fa-arrow-down"></i></div>
+                <div class="flow-node end">Fin</div>
+            </div>
+        </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -7189,6 +7294,20 @@ async function toggleVoiceRecording(btnElement) {
           staffTracker.value.isLoading = false;
       };
 
+      const showProcessFlow = ref(false);
+      const openProcessFlow = () => {
+          showProcessFlow.value = true;
+          nextTick(() => {
+              anime({
+                  targets: '.flow-node, .flow-arrow, .flow-decision',
+                  translateY: [20, 0],
+                  opacity: [0, 1],
+                  delay: anime.stagger(100),
+                  easing: 'easeOutQuad'
+              });
+          });
+      };
+
       return { focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
@@ -7209,7 +7328,7 @@ async function toggleVoiceRecording(btnElement) {
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
-      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView };
+      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
