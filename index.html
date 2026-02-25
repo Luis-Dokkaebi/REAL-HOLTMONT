@@ -1482,22 +1482,22 @@
                           <thead>
                               <tr>
                                   <th class="exec-header-blue">Cotizado del mes</th>
-                                  <th>2024</th>
                                   <th>2025</th>
+                                  <th>2026</th>
                                   <th>Pronostico con metodo de suavizacion</th>
                               </tr>
                           </thead>
                           <tbody>
                               <tr v-for="m in executiveSummaryData.monthly" :key="m.month">
                                   <td>{{ m.month }}</td>
-                                  <td class="text-end">{{ formatCurrency(m.v2024) }}</td>
                                   <td class="text-end">{{ formatCurrency(m.v2025) }}</td>
+                                  <td class="text-end">{{ formatCurrency(m.v2026) }}</td>
                                   <td class="text-end">{{ formatCurrency(m.forecast) }}</td>
                               </tr>
                               <tr class="total-row">
                                   <td>TOTAL</td>
-                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotal2024) }}</td>
                                   <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotal2025) }}</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotal2026) }}</td>
                                   <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotalForecast) }}</td>
                               </tr>
                           </tbody>
@@ -5836,21 +5836,21 @@ async function toggleVoiceRecording(btnElement) {
           executiveSummaryData.value.vendorsTotalAmount = 3660720.85;
 
           executiveSummaryData.value.monthly = [
-              {month: 'ENERO', v2024: 26245680.93, v2025: 3660720.85, forecast: 26245680.93},
-              {month: 'FEBRERO', v2024: 33911547.89, v2025: 0, forecast: 30078614.41},
-              {month: 'MARZO', v2024: 16258865.91, v2025: 0, forecast: 23168740.16},
-              {month: 'ABRIL', v2024: 26662791.36, v2025: 0, forecast: 24915765.76},
-              {month: 'MAYO', v2024: 11582533.75, v2025: 0, forecast: 18249149.76},
-              {month: 'JUNIO', v2024: 14660284.03, v2025: 0, forecast: 16454716.89},
-              {month: 'JULIO', v2024: 28124530.98, v2025: 0, forecast: 22289623.94},
-              {month: 'AGOSTO', v2024: 13615686.55, v2025: 0, forecast: 17952655.24},
-              {month: 'SEPTIEMBRE', v2024: 12429716.58, v2025: 0, forecast: 15191185.91},
-              {month: 'OCTUBRE', v2024: 18231948.14, v2025: 0, forecast: 16711567.03},
-              {month: 'NOVIEMBRE', v2024: 39601797.11, v2025: 0, forecast: 28156682.07},
-              {month: 'DICIEMBRE', v2024: 52190345.61, v2025: 0, forecast: 40173513.84}
+              {month: 'ENERO', v2025: 26245680.93, v2026: 3660720.85, forecast: 26245680.93},
+              {month: 'FEBRERO', v2025: 33911547.89, v2026: 0, forecast: 30078614.41},
+              {month: 'MARZO', v2025: 16258865.91, v2026: 0, forecast: 23168740.16},
+              {month: 'ABRIL', v2025: 26662791.36, v2026: 0, forecast: 24915765.76},
+              {month: 'MAYO', v2025: 11582533.75, v2026: 0, forecast: 18249149.76},
+              {month: 'JUNIO', v2025: 14660284.03, v2026: 0, forecast: 16454716.89},
+              {month: 'JULIO', v2025: 28124530.98, v2026: 0, forecast: 22289623.94},
+              {month: 'AGOSTO', v2025: 13615686.55, v2026: 0, forecast: 17952655.24},
+              {month: 'SEPTIEMBRE', v2025: 12429716.58, v2026: 0, forecast: 15191185.91},
+              {month: 'OCTUBRE', v2025: 18231948.14, v2026: 0, forecast: 16711567.03},
+              {month: 'NOVIEMBRE', v2025: 39601797.11, v2026: 0, forecast: 28156682.07},
+              {month: 'DICIEMBRE', v2025: 52190345.61, v2026: 0, forecast: 40173513.84}
           ];
-          executiveSummaryData.value.monthlyTotal2024 = 293515728.84;
-          executiveSummaryData.value.monthlyTotal2025 = 3660720.85;
+          executiveSummaryData.value.monthlyTotal2025 = 293515728.84;
+          executiveSummaryData.value.monthlyTotal2026 = 3660720.85;
           executiveSummaryData.value.monthlyTotalForecast = 279587895.93;
 
           executiveSummaryData.value.areas = [
@@ -5916,7 +5916,7 @@ async function toggleVoiceRecording(btnElement) {
                   data: {
                       labels: executiveSummaryData.value.monthly.map(m => m.month.substring(0,3)),
                       datasets: [
-                          { label: 'Real', data: executiveSummaryData.value.monthly.map(m => m.v2024), borderColor: colorBlue, backgroundColor: colorBlue, tension: 0 },
+                          { label: 'Real', data: executiveSummaryData.value.monthly.map(m => m.v2025), borderColor: colorBlue, backgroundColor: colorBlue, tension: 0 },
                           { label: 'Pronóstico', data: executiveSummaryData.value.monthly.map(m => m.forecast), borderColor: colorOrange, backgroundColor: colorOrange, tension: 0, borderDash: [5,5] }
                       ]
                   },
