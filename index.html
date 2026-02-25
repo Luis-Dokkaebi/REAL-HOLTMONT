@@ -1829,10 +1829,16 @@
                   </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(row, i) in staffTracker.history" :key="i">
+                    <tr v-for="(row, i) in staffTracker.history" :key="i" :class="{'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
                         <td class="row-num">H{{i+1}}</td>
                         <td v-for="(h, idx) in staffTracker.headers" :key="idx" :style="getColumnStyle(h)">
-                            <div v-if="isMediaColumn(h)" class="d-flex flex-wrap justify-content-center gap-1">
+                            <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px;">
+                                {{ row[h] ? String(row[h]).charAt(0).toUpperCase() : '' }}
+                            </div>
+                            <div v-else-if="String(h).toUpperCase().includes('VENDEDOR') || (currentUsername === 'ANTONIA_VENTAS' && String(h).toUpperCase().includes('RESPONSABLE'))" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000 !important;">
+                                {{ toInitials(row[h]) }}
+                            </div>
+                            <div v-else-if="isMediaColumn(h)" class="d-flex flex-wrap justify-content-center gap-1">
                                 <template v-if="row[h]">
                                      <a v-for="(url, uIdx) in String(row[h]).split(/[\n\s]+/).filter(u => u.startsWith('http'))"
                                         :key="uIdx" :href="url" target="_blank"
@@ -1840,6 +1846,20 @@
                                         <i class="fas fa-paperclip"></i>
                                      </a>
                                 </template>
+                            </div>
+                            <div v-else-if="String(h).toUpperCase().includes('AVANCE')" style="text-align:center; font-weight:bold; color:#217346;">
+                                {{ row[h] }}%
+                            </div>
+                            <div v-else-if="isCol(h, ['ESTATUS','STATUS']) && currentUsername === 'ANTONIA_VENTAS'"
+                                 style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; padding:0 4px; text-align:center; white-space:normal; line-height:1.1;"
+                                 :style="getAntoniaStatusStyle(row[h])">
+                                 {{ row[h] }}
+                            </div>
+                            <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; padding-left:4px; display:flex; align-items:center; color: #000 !important;" :style="Object.assign({color: '#000'}, isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA', 'F. ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row))">
+                                 {{ formatDisplayDate(row[h]) }}
+                            </div>
+                            <div v-else-if="isCol(h, ['DIAS','RELOJ'])" style="text-align:center; font-weight:bold; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" :style="getTrafficStyle(row)">
+                                {{ row[h] }}
                             </div>
                             <div v-else>{{row[h]}}</div>
                         </td>
