@@ -1404,7 +1404,7 @@
                              <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
                          </div>
                          <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
-                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR')" style="position:relative; width:100%; height:100%; background-color:#f0fdf4;" @click="openVendorSelector(row, h)">
+                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR') || (currentUsername === 'ANTONIA_VENTAS' && String(h).toUpperCase().includes('RESPONSABLE'))" style="position:relative; width:100%; height:100%; background-color:#f0fdf4;" @click="openVendorSelector(row, h)">
                              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000 !important; cursor:pointer;">{{ toInitials(row[h]) }}</div>
                          </div>
                          <div v-else-if="String(h).toUpperCase().includes('PRIORIDAD') || String(h).toUpperCase().includes('PRIO')" style="position:relative; width:100%; height:100%;">
@@ -4890,7 +4890,7 @@ async function toggleVoiceRecording(btnElement) {
           else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; }
           else if (up.includes('TIMEOUT') || up.includes('TIME OUT')) { w = '70px'; fs = '10px'; align='center'; }
           else if (up.includes('LAYOUT') || up.includes('TIMELINE')) { w = '70px'; fs = '10px'; align='center'; }
-          else if (up.includes('VENDEDOR')) { w = '50px'; fs = '10px'; align='center'; colColor = '#000'; }
+          else if (up.includes('VENDEDOR') || (currentUsername.value === 'ANTONIA_VENTAS' && up.includes('RESPONSABLE'))) { w = '50px'; fs = '10px'; align='center'; colColor = '#000'; }
           else if (up === 'CLIENTE') w = '100px';
 
           // OVERRIDE FOR PPCV3 (WEEKLY_PLAN)
