@@ -1371,7 +1371,7 @@
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
                       :class="activeTrackerTab === 'PAPA_CALIENTE' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                      @click="switchTrackerTab('PAPA_CALIENTE'); trackerSubView = 'TASKS'">
+                      @click="openHotPotatoView()">
                       <i class="fas fa-fire me-2"></i>PAPA CALIENTE DE COTIZACION
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
@@ -1692,6 +1692,49 @@
                      </div>
                  </div>
             </div>
+          </div>
+
+          <!-- VISTA PAPA CALIENTE DE COTIZACION (MOCK) -->
+          <div v-if="trackerSubView === 'HOT_POTATO'" class="flex-fill d-flex flex-column overflow-auto p-4 bg-white" style="font-family: 'Arial', sans-serif;">
+              <div class="row g-0 flex-nowrap h-100" style="min-width: 100%;">
+                  <div v-for="(col, cIdx) in hotPotatoData.columns" :key="cIdx" class="col px-1 h-100" style="min-width: 200px;">
+                      <div class="border border-dark h-100 d-flex flex-column" :class="col.bgClass || (col.isYellow ? 'bg-warning' : '')">
+                          <div class="fw-bold text-center border-bottom border-dark py-1" style="font-size: 12px; background: white;" v-if="!col.isYellow">
+                              {{ col.title }}
+                          </div>
+                          <div class="fw-bold text-center border-bottom border-dark py-1" style="font-size: 12px;" v-else>
+                              {{ col.title }}
+                          </div>
+
+                          <div v-if="col.subHeader" class="text-center border-bottom border-dark py-1 small text-muted bg-light">
+                              {{ col.subHeader }}
+                          </div>
+
+                          <div class="p-1 flex-fill overflow-auto">
+                              <div v-for="(item, iIdx) in col.items" :key="iIdx" class="d-flex justify-content-between align-items-center mb-1 px-1" :style="{backgroundColor: item.highlight ? 'yellow' : 'transparent', fontWeight: item.highlight ? 'bold' : 'normal'}">
+                                  <template v-if="item.isFooter">
+                                       <div class="fw-bold w-100 text-center mt-4 border-top border-dark pt-2">{{ item.name }}</div>
+                                  </template>
+                                  <template v-else>
+                                      <span style="font-size: 11px;">{{ item.name }}</span>
+                                      <div class="text-end" style="font-size: 11px;">
+                                          <span class="fw-bold">{{ item.level }}</span>
+                                          <span v-if="item.extra" class="ms-1 small text-muted">{{ item.extra }}</span>
+                                      </div>
+                                  </template>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Notes Section -->
+              <div class="mt-3 border-top pt-3">
+                  <div v-for="(note, nIdx) in hotPotatoData.notes" :key="nIdx" class="d-flex align-items-baseline mb-1" style="font-size: 11px;">
+                      <span class="fw-bold me-2" style="min-width: 80px;">{{ note.label || note.author }}</span>
+                      <span :class="{'text-danger': note.text.includes('Tarjera Roja')}">{{ note.text }}</span>
+                  </div>
+              </div>
           </div>
 
           <div class="excel-container flex-fill mb-2" ref="trackerTable" v-if="trackerSubView === 'TASKS'">
@@ -4239,6 +4282,110 @@ async function toggleVoiceRecording(btnElement) {
       const currentView = ref('DASHBOARD'); const currentDept = ref('');
       const config = ref({ departments: {}, staff: [], directory: [], specialModules: [] });
       const staffTracker = ref({ name: '', data: [], history: [], headers: [], isLoading: false, previousView: 'DEPT' });
+
+      // MOCK DATA FOR ANTONIA_VENTAS - PAPA CALIENTE
+      const hotPotatoData = ref({
+          columns: [
+            {
+              title: "Levantamiento de Cotización",
+              subHeader: "Conocimiento",
+              items: [
+                { name: "Teresa", level: "AAA" },
+                { name: "Ramiro", level: "AAA" },
+                { name: "Correa", level: "AA" },
+                { name: "Cesar Garcia", level: "A" },
+                { name: "Reynaldo", level: "AA", highlight: true },
+                { name: "Cesar Gomez", level: "A" },
+                { name: "Judith", level: "AA", highlight: true },
+                { name: "Gallardo", level: "AAA" },
+                { name: "Sebastian", level: "AA" },
+                { name: "Jehu", level: "A" },
+                { name: "Eduardo Manz", level: "AAA" },
+                { name: "Emiliano", level: "A" },
+                { name: "Ing Edgar", level: "AAA" },
+                { name: "Luis Ramirez", level: "AA" }
+              ]
+            },
+            {
+              title: "Diseño",
+              items: [
+                { name: "Arq Angel", level: "AAA" },
+                { name: "Ramiro", level: "A" },
+                { name: "Reynaldo", level: "AAA", highlight: true },
+                { name: "Judith", level: "AA", highlight: true },
+                { name: "Teresa", level: "A" },
+                { name: "Jehu", level: "AA" },
+                { name: "Gaallardo", level: "AAA" },
+                { name: "Sebastian", level: "AA" },
+                { name: "Eduardo Ma", level: "A" },
+                { name: "Ing Edgar", level: "AAA" }
+              ]
+            },
+            {
+              title: "Calculo",
+              items: [
+                 { name: "Ramiro", level: "AA" },
+                 { name: "Reynaldo", level: "AAA" },
+                 { name: "Gaallardo", level: "AAA" },
+                 { name: "Sebastian", level: "AA" },
+                 { name: "Eduardo Ma", level: "AA" },
+                 { name: "Ing Edgar", level: "AAA" },
+                 { name: "Luis Ramirez", level: "AA A", extra: "Excel" }
+              ]
+            },
+            {
+              title: "Presupuestos",
+              items: [
+                { name: "Teresa", level: "AAA Alto", extra: "Opwr" },
+                { name: "Ramiro", level: "AAA Alto", extra: "Opwr" },
+                { name: "Correa", level: "AA", extra: "Opwr" },
+                { name: "Cesar Garcia", level: "A", extra: "excel" },
+                { name: "Cesar Gomez", level: "A", extra: "excel" },
+                { name: "Judith", level: "AAA B" },
+                { name: "Geraldin", level: "A" },
+                { name: "Valeria", level: "A Baja" },
+                { name: "Gallardo", level: "AAA", extra: "Excel" },
+                { name: "Sebastian", level: "AA A", extra: "Opwr" },
+                { name: "Jehu", level: "A", extra: "Opwr" },
+                { name: "Eduardo Manz", level: "AAA", extra: "Excel" },
+                { name: "Emiliano", level: "A", extra: "Excel" },
+                { name: "Luis Ramirez", level: "AA A", extra: "Excel" }
+              ]
+            },
+            {
+                title: "Ejecución de Obra",
+                isYellow: true,
+                items: [
+                    { name: "Correa", level: "AA" },
+                    { name: "Cesar Garcia", level: "A" },
+                    { name: "Reynaldo", level: "AA" },
+                    { name: "Gilberto" },
+                    { name: "Jose Manuel" },
+                    { name: "Emiliano Arredondeo" },
+                    { name: "Luis Ramirez" },
+                    { name: "REFORZAR", isFooter: true }
+                ]
+            }
+          ],
+          notes: [
+              { label: "Nota:", text: "Se requiere personal Capacitado Luis Carlos Utilizar Scanner" },
+              { label: "Olivo", text: "Se requiere Personal para dar atención al cl Luis Carlos Utilizar render IA" },
+              { label: "Olivo", text: "Formación de Atencion al cliente OLIVO REFORZAR HOME OFFICE Teresa REFORZAR HOME OFFICE" },
+              { label: "Luis Carlos", text: "Estandarizar como Holtmont Requiere la formación 1 AA 1 AAA" },
+              { label: "Luis Carlos", text: "Desarrrollar el Sentido Comun 2 a 3 meses 3 a 5 meses" },
+              { label: "Luis Carlos", text: "Identificar Territorio Apache" },
+              { label: "Luis Carlos", text: "Identificar el sentido de Urgencia y Necesidad del cliente Teresa Flexibil Aptabilidad" },
+              { label: "Luis Carlos", text: "Mantener la Comunicación Luis Carlos Ramo Industrial" },
+              { label: "", text: "Manejar Opus" },
+              { label: "Luis Carlos", text: "Se requiere un responsable del Proceso 1 er Etapa Adaptarlo" },
+              { label: "", text: "2da Etapa Home office" },
+              { label: "Juan Jose", text: "SE requiere Contratar Personal Zonificar Presupuestos por maquiladora" },
+              { label: "", text: "MTY 1 hvac y Eléctrico" },
+              { label: "", text: "MTY 1 Construcción REY 2 Cotizadores" },
+              { label: "", text: "Zonificar Venta o maquiladora" },
+              { label: "", text: "REY 2 Cotizadores" }
+          ]
+      });
       const staffTrackerFilters = ref({});
       const activeTrackerTab = ref('OPERATIVO');
       const trackerSubView = ref('TASKS');
@@ -5979,6 +6126,12 @@ async function toggleVoiceRecording(btnElement) {
           staffTracker.value.name = sheetName;
           staffTracker.value.isLoading = true;
 
+          // MOCK DATA BYPASS FOR PAPA_CALIENTE
+          if (activeTrackerTab.value === 'PAPA_CALIENTE') {
+              staffTracker.value.isLoading = false;
+              return;
+          }
+
           google.script.run.withSuccessHandler(res => {
               staffTracker.value.isLoading = false;
               if (res.success) {
@@ -7009,6 +7162,13 @@ async function toggleVoiceRecording(btnElement) {
           });
       };
 
+      const openHotPotatoView = () => {
+          activeTrackerTab.value = 'PAPA_CALIENTE';
+          trackerSubView.value = 'HOT_POTATO';
+          // Force reset of loading state just in case
+          staffTracker.value.isLoading = false;
+      };
+
       return { focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
@@ -7029,7 +7189,7 @@ async function toggleVoiceRecording(btnElement) {
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
-      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector };
+      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
