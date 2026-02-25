@@ -533,21 +533,50 @@
     }
 
     /* FLOW PROCESS DIAGRAM STYLES */
-    .flow-modal { width: 80% !important; max-width: 900px !important; height: 90% !important; display: flex; flex-direction: column; }
-    .flow-container { display: flex; flex-direction: column; align-items: center; padding: 20px; gap: 15px; width: 100%; }
-    .flow-node {
-        background: white; border: 2px solid #333; border-radius: 8px; padding: 10px 20px;
-        font-weight: bold; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        text-align: center; min-width: 200px; position: relative; z-index: 2;
+    .flow-modal { width: 95vw !important; max-width: 1400px !important; height: 90vh !important; display: flex; flex-direction: column; }
+    .swimlane-grid {
+        display: grid;
+        grid-template-rows: 40px repeat(5, 1fr); /* Header + 5 Lanes */
+        grid-template-columns: 80px repeat(8, 1fr); /* 1 Header Col + 8 Data Cols */
+        gap: 10px;
+        width: 100%;
+        height: 100%;
+        min-width: 1000px;
+        position: relative;
+        padding: 20px;
+        background: white;
     }
-    .flow-node.start { background: #2ecc71; color: white; border-color: #27ae60; border-radius: 20px; }
-    .flow-node.end { background: #e74c3c; color: white; border-color: #c0392b; border-radius: 20px; }
-    .flow-node.decision { background: #f1c40f; color: #333; border-color: #d4ac0d; border-radius: 0; width: 160px; height: 80px; display:flex; align-items:center; justify-content:center; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); }
-    .flow-node.decision span { font-size: 11px; line-height: 1.1; }
-    .flow-arrow { font-size: 20px; color: #555; z-index: 1; }
-    .flow-branch-container { display: flex; width: 100%; justify-content: space-around; position: relative; gap: 20px; }
-    .flow-branch { display: flex; flex-direction: column; align-items: center; gap: 10px; flex: 1; }
-    .flow-label { font-size: 10px; font-weight: bold; color: #666; background: #fff; padding: 2px 5px; border-radius: 4px; border: 1px solid #ccc; margin-top: -10px; z-index: 3; }
+    .lane-header {
+        font-weight: bold; text-align: center; display: flex; align-items: center; justify-content: center;
+        font-size: 11px; border: 1px solid #999; text-transform: uppercase; padding: 5px;
+    }
+    .flow-node {
+        display: flex; align-items: center; justify-content: center; text-align: center;
+        font-size: 10px; font-weight: bold; padding: 5px;
+        border: 1px solid #333; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        z-index: 2; position: relative;
+        opacity: 0; /* For animation */
+        line-height: 1.2;
+    }
+    .node-oval { border-radius: 50%; }
+    .node-rect { border-radius: 4px; }
+    .node-cyl { border-radius: 10px / 20px; }
+    .node-para { transform: skew(-20deg); }
+    .node-para span { transform: skew(20deg); display: block; }
+    .node-diamond { transform: rotate(45deg); width: 80px; height: 80px; justify-self: center; align-self: center; }
+    .node-diamond span { transform: rotate(-45deg); display: block; }
+
+    .bg-blue { background: #4472C4; color: white; }
+    .bg-yellow { background: #FFC000; color: black; }
+
+    .flow-connections {
+        position: absolute; inset: 0; pointer-events: none; z-index: 1;
+        width: 100%; height: 100%;
+    }
+    .connection-line {
+        stroke: #666; stroke-width: 2; fill: none;
+        stroke-dasharray: 1000; stroke-dashoffset: 1000;
+    }
   </style>
 </head>
 <body>
@@ -1710,6 +1739,88 @@
                      </div>
                  </div>
             </div>
+          </div>
+
+          <!-- PROCESS FLOW MODAL -->
+          <div v-if="showProcessFlow" class="custom-modal-overlay" @click.self="showProcessFlow = false">
+              <div class="custom-modal flow-modal animate__animated animate__zoomIn">
+                  <div class="custom-modal-header bg-primary text-white">
+                      <span><i class="fas fa-project-diagram me-2"></i>FLUJO DE PROCESO DE COTIZACIÓN</span>
+                      <button class="btn btn-sm btn-link text-white" @click="showProcessFlow = false"><i class="fas fa-times"></i></button>
+                  </div>
+                  <div class="custom-modal-body p-0 overflow-auto bg-light position-relative">
+                      <div class="swimlane-grid">
+                          <!-- Lane Headers -->
+                          <div class="lane-header bg-primary text-white" style="grid-row: 2; grid-column: 1;">CLIENTE</div>
+                          <div class="lane-header bg-warning text-dark" style="grid-row: 3; grid-column: 1;">PRESUPUESTOS</div>
+                          <div class="lane-header bg-primary text-white" style="grid-row: 4; grid-column: 1;">VENDEDOR</div>
+                          <div class="lane-header bg-warning text-dark" style="grid-row: 5; grid-column: 1;">COORDINADOR</div>
+                          <div class="lane-header bg-primary text-white" style="grid-row: 6; grid-column: 1;">PRECIOS UNIT.</div>
+
+                          <!-- Lane Backgrounds -->
+                          <div style="grid-row: 2; grid-column: 1/-1; border-bottom:1px solid #ccc; background:#f0f8ff;"></div>
+                          <div style="grid-row: 3; grid-column: 1/-1; border-bottom:1px solid #ccc; background:#fffbf0;"></div>
+                          <div style="grid-row: 4; grid-column: 1/-1; border-bottom:1px solid #ccc; background:#f0f8ff;"></div>
+                          <div style="grid-row: 5; grid-column: 1/-1; border-bottom:1px solid #ccc; background:#fffbf0;"></div>
+                          <div style="grid-row: 6; grid-column: 1/-1; background:#f0f8ff;"></div>
+
+                          <!-- Nodes -->
+                          <!-- R1: CLIENTE -->
+                          <div class="flow-node node-oval bg-blue" style="grid-row: 2; grid-column: 2;">CONTINUACION<br>PROCESO 2 Y 2.1</div>
+                          <div class="flow-node node-diamond bg-blue" style="grid-row: 2; grid-column: 5;"><span>Requisitor<br>o Compras</span></div>
+                          <div class="flow-node node-para bg-yellow" style="grid-row: 2; grid-column: 6;"><span>Perdida<br>Cotización</span></div>
+                          <div class="flow-node node-para bg-yellow" style="grid-row: 2; grid-column: 7;"><span>Solicitud<br>Descuento</span></div>
+                          <div class="flow-node node-para bg-yellow" style="grid-row: 2; grid-column: 8;"><span>Anuncio de<br>Ganadores</span></div>
+
+                          <!-- R2: PRESUPUESTOS -->
+                          <div class="flow-node node-cyl bg-yellow" style="grid-row: 3; grid-column: 2;">Consulta Carpetas<br>Red Unidad</div>
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 3; grid-column: 4;">REVISION DE<br>PROPUESTA</div>
+                          <div class="flow-node node-cyl bg-yellow" style="grid-row: 3; grid-column: 6;">Retroalimentacion<br>Presupuesto</div>
+                          <div class="flow-node node-cyl bg-yellow" style="grid-row: 3; grid-column: 8;">Retroalimentacion<br>Presupuesto</div>
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 3; grid-column: 9;">Enviar Correo<br>a Coordinador <i class="fas fa-envelope"></i></div>
+
+                          <!-- R3: VENDEDOR -->
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 4; grid-column: 4;">REVISION DE<br>PROPUESTA</div>
+
+                          <!-- R4: COORDINADOR -->
+                          <div class="flow-node node-rect bg-yellow" style="grid-row: 5; grid-column: 4;">REVISION DE<br>PROPUESTA</div>
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 5; grid-column: 7;">OTORGAR<br>DESCUENTO</div>
+                          <div class="flow-node node-cyl bg-yellow" style="grid-row: 5; grid-column: 8;">Llenado de<br>Carpetas</div>
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 5; grid-column: 9;">Incluir Informe<br>Reunión</div>
+
+                          <!-- R5: PRECIOS -->
+                          <div class="flow-node node-rect bg-yellow" style="grid-row: 6; grid-column: 6;">Encontrar<br>Oportunidades <i class="fas fa-file-excel"></i></div>
+                          <div class="flow-node node-oval bg-blue" style="grid-row: 6; grid-column: 9;">CIERRE DE<br>PROCESO 3</div>
+
+                          <!-- SVG Connections -->
+                          <svg class="flow-connections">
+                              <defs>
+                                  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                                  </marker>
+                              </defs>
+                              <path class="connection-line" d="M 15% 18% L 15% 30%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 15% 34% L 25% 34% L 25% 32% L 32% 32%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 25% 34% L 25% 49% L 32% 49%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 25% 34% L 25% 66% L 32% 66%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 38% 32% L 42% 32% L 42% 18% L 44% 18%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 38% 49% L 42% 49% L 42% 18%" />
+                              <path class="connection-line" d="M 38% 66% L 42% 66% L 42% 18%" />
+                              <path class="connection-line" d="M 48% 18% L 54% 18%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 48% 18% L 64% 18%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 48% 18% L 74% 18%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 55% 20% L 55% 30%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 55% 35% L 55% 80%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 65% 20% L 65% 64%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 68% 66% L 74% 66%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 75% 20% L 75% 30%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 78% 32% L 84% 32%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 87% 35% L 87% 64%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 87% 68% L 87% 80%" marker-end="url(#arrowhead)" />
+                          </svg>
+                      </div>
+                  </div>
+              </div>
           </div>
 
           <!-- VISTA PAPA CALIENTE DE COTIZACION (MOCK) -->
@@ -7299,11 +7410,18 @@ async function toggleVoiceRecording(btnElement) {
           showProcessFlow.value = true;
           nextTick(() => {
               anime({
-                  targets: '.flow-node, .flow-arrow, .flow-decision',
-                  translateY: [20, 0],
+                  targets: '.flow-node',
+                  scale: [0, 1],
                   opacity: [0, 1],
                   delay: anime.stagger(100),
-                  easing: 'easeOutQuad'
+                  easing: 'spring(1, 80, 10, 0)'
+              });
+              anime({
+                  targets: '.connection-line',
+                  strokeDashoffset: [anime.setDashoffset, 0],
+                  easing: 'easeInOutSine',
+                  duration: 2000,
+                  delay: 500
               });
           });
       };
