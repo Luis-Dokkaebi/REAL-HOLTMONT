@@ -497,6 +497,40 @@
     .antonia-font .excel-input, .antonia-font input {
         color: #000 !important;
     }
+
+    /* EXECUTIVE SUMMARY STYLES */
+    .exec-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Arial', sans-serif;
+        font-size: 11px;
+        background: white;
+    }
+    .exec-table th {
+        background-color: #B4C6E7; /* Excel Light Blue */
+        border: 1px solid #000;
+        padding: 4px;
+        text-align: center;
+        font-weight: bold;
+        color: #000;
+    }
+    .exec-table td {
+        border: 1px solid #000;
+        padding: 4px;
+        color: #000;
+    }
+    .exec-table .total-row td {
+        background-color: #333;
+        color: white;
+        font-weight: bold;
+        border-top: 2px solid #000;
+    }
+    .exec-header-blue {
+        background-color: #8EA9DB !important; /* Darker Blue */
+    }
+    .exec-anim-enter {
+        opacity: 0;
+    }
   </style>
 </head>
 <body>
@@ -1327,7 +1361,7 @@
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
                       :class="activeTrackerTab === 'RESUMEN_EJECUTIVO' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                      @click="switchTrackerTab('RESUMEN_EJECUTIVO'); trackerSubView = 'TASKS'">
+                      @click="switchTrackerTab('RESUMEN_EJECUTIVO'); trackerSubView = 'EXECUTIVE_SUMMARY'; loadExecutiveSummary()">
                       <i class="fas fa-file-alt me-2"></i>RESUMEN EJECUTIVO
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
@@ -1377,6 +1411,149 @@
             </div>
             <div></div>
           </div>
+          <div class="flex-fill d-flex flex-column" v-if="trackerSubView === 'EXECUTIVE_SUMMARY'" style="background-color:#fff; padding:20px; overflow-y:auto;">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                  <h4 class="fw-bold m-0 text-dark"><i class="fas fa-chart-line me-2 text-primary"></i>RESUMEN EJECUTIVO</h4>
+                  <button class="btn btn-outline-primary btn-sm" @click="loadExecutiveSummary"><i class="fas fa-sync-alt"></i> Actualizar</button>
+              </div>
+
+              <div class="row g-4">
+                  <!-- ROW 1 -->
+                  <div class="col-md-4 exec-anim-enter">
+                      <table class="exec-table">
+                          <thead>
+                              <tr><th class="exec-header-blue text-start">Cotizado X CLIENTE</th><th>$</th></tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="c in executiveSummaryData.clients" :key="c.name">
+                                  <td class="fw-bold">{{ c.name }}</td>
+                                  <td class="text-end">{{ formatCurrency(c.amount) }}</td>
+                              </tr>
+                              <tr class="total-row">
+                                  <td class="text-end">TOTAL</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.clientsTotal) }}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  <div class="col-md-8 exec-anim-enter">
+                      <table class="exec-table">
+                          <thead>
+                              <tr>
+                                  <th class="exec-header-blue">Vendedor</th>
+                                  <th>N° de cotizaciones realizadas</th>
+                                  <th>Acumulado cotizado Enero</th>
+                                  <th>% Acumulado presente</th>
+                                  <th>Restante</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="v in executiveSummaryData.vendors" :key="v.name">
+                                  <td>{{ v.name }}</td>
+                                  <td class="text-center">{{ v.count }}</td>
+                                  <td class="text-end">{{ formatCurrency(v.amount) }}</td>
+                                  <td class="text-center">{{ v.percent }}%</td>
+                                  <td class="text-end text-danger">{{ formatCurrency(v.remaining) }}</td>
+                              </tr>
+                              <tr class="total-row">
+                                  <td>TOTAL</td>
+                                  <td class="text-center">{{ executiveSummaryData.vendorsTotalCount }}</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.vendorsTotalAmount) }}</td>
+                                  <td class="text-center">100.00%</td>
+                                  <td></td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+
+                  <!-- ROW 2 -->
+                  <div class="col-12 exec-anim-enter">
+                      <div class="card border-0 shadow-sm">
+                          <div class="card-body">
+                              <h6 class="text-center fw-bold text-secondary mb-3">PRONOSTICO VENTA 24 DICI A 07 ENE 2025</h6>
+                              <div style="height: 300px;"><canvas id="chartExecVenta"></canvas></div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- ROW 3 -->
+                  <div class="col-md-6 exec-anim-enter">
+                      <table class="exec-table">
+                          <thead>
+                              <tr>
+                                  <th class="exec-header-blue">Cotizado del mes</th>
+                                  <th>2025</th>
+                                  <th>2026</th>
+                                  <th>Pronostico con metodo de suavizacion</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="m in executiveSummaryData.monthly" :key="m.month">
+                                  <td>{{ m.month }}</td>
+                                  <td class="text-end">{{ formatCurrency(m.v2025) }}</td>
+                                  <td class="text-end">{{ formatCurrency(m.v2026) }}</td>
+                                  <td class="text-end">{{ formatCurrency(m.forecast) }}</td>
+                              </tr>
+                              <tr class="total-row">
+                                  <td>TOTAL</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotal2025) }}</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotal2026) }}</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotalForecast) }}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  <div class="col-md-6 exec-anim-enter">
+                      <div class="card border-0 shadow-sm h-100">
+                          <div class="card-body">
+                              <h6 class="text-center fw-bold text-secondary mb-3">Pronostico anual con metodo de suavizacion exponencial</h6>
+                              <div style="height: 300px;"><canvas id="chartExecAnual"></canvas></div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- ROW 4 -->
+                  <div class="col-md-4 exec-anim-enter">
+                      <table class="exec-table mb-3">
+                          <thead>
+                              <tr><th class="exec-header-blue text-start">COTIZADO POR ÁREA</th><th>$</th></tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="a in executiveSummaryData.areas" :key="a.name">
+                                  <td>{{ a.name }}</td>
+                                  <td class="text-end">{{ formatCurrency(a.amount) }}</td>
+                              </tr>
+                              <tr class="total-row">
+                                  <td>TOTAL</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.areasTotal) }}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+
+                      <table class="exec-table">
+                          <thead>
+                              <tr><th class="exec-header-blue text-start">PRONOSTICO X ÁREA</th><th>COTIZADO</th><th>VENTA</th></tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="a in executiveSummaryData.areaForecast" :key="a.name">
+                                  <td>{{ a.name }}</td>
+                                  <td class="text-end">{{ formatCurrency(a.quoted) }}</td>
+                                  <td class="text-end">{{ formatCurrency(a.sold) }}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  <div class="col-md-8 exec-anim-enter">
+                      <div class="card border-0 shadow-sm h-100">
+                          <div class="card-body">
+                              <h6 class="text-center fw-bold text-secondary mb-3">COTIZADO MENSUAL</h6>
+                              <div style="height: 300px;"><canvas id="chartExecMensual"></canvas></div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
           <div class="flex-fill d-flex flex-column" v-if="activeTrackerTab === 'BANCO_COTIZACIONES'" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div class="d-flex align-items-center">
@@ -4718,6 +4895,23 @@ async function toggleVoiceRecording(btnElement) {
       });
       const kpiChartInstances = {};
 
+      // EXECUTIVE SUMMARY DATA
+      const executiveSummaryData = ref({
+          clients: [],
+          clientsTotal: 0,
+          vendors: [],
+          vendorsTotalCount: 0,
+          vendorsTotalAmount: 0,
+          monthly: [],
+          monthlyTotal2024: 0,
+          monthlyTotal2025: 0,
+          monthlyTotalForecast: 0,
+          areas: [],
+          areasTotal: 0,
+          areaForecast: []
+      });
+      const execChartInstances = {};
+
       // --- GESTIÓN DE PROYECTOS (V138 - CASCADA) ---
       const showPpcSelectorModal = ref(false);
       const ppcMode = ref('SELECT');
@@ -5614,6 +5808,144 @@ async function toggleVoiceRecording(btnElement) {
               },
               options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
           });
+      };
+
+      const loadExecutiveSummary = () => {
+          // MOCK DATA
+          executiveSummaryData.value.clients = [
+              {name: 'BRUNSWICK', amount: 0},
+              {name: 'BSN MEDICAL', amount: 0},
+              {name: 'COM TREVIÑO REY', amount: 0},
+              {name: 'COM TREVIÑO LA', amount: 3270280.85},
+              {name: 'CORNING 1', amount: 0},
+              {name: 'CORNING RAM', amount: 0},
+              {name: 'EATON 1 MARKET P', amount: 0},
+              {name: 'REXNORD MTY', amount: 83590.00},
+              {name: 'WOODC RY', amount: 306850.00},
+              {name: 'OTROS', amount: 0}
+          ];
+          executiveSummaryData.value.clientsTotal = 3660720.85;
+
+          executiveSummaryData.value.vendors = [
+              {name: 'Ramiro Rodriguez', count: 1, amount: 220800.00, percent: 4.42, remaining: 4779200.00},
+              {name: 'Juan Alvarado', count: 4, amount: 2072774.85, percent: 41.46, remaining: 2927225.15},
+              {name: 'Juan Jose Sanchez', count: 3, amount: 1367146.00, percent: 27.34, remaining: 3632854.00},
+              {name: 'Luis Carlos Holt', count: 0, amount: 0, percent: 0.00, remaining: 5000000.00}
+          ];
+          executiveSummaryData.value.vendorsTotalCount = 8;
+          executiveSummaryData.value.vendorsTotalAmount = 3660720.85;
+
+          executiveSummaryData.value.monthly = [
+              {month: 'ENERO', v2025: 26245680.93, v2026: 3660720.85, forecast: 26245680.93},
+              {month: 'FEBRERO', v2025: 33911547.89, v2026: 0, forecast: 30078614.41},
+              {month: 'MARZO', v2025: 16258865.91, v2026: 0, forecast: 23168740.16},
+              {month: 'ABRIL', v2025: 26662791.36, v2026: 0, forecast: 24915765.76},
+              {month: 'MAYO', v2025: 11582533.75, v2026: 0, forecast: 18249149.76},
+              {month: 'JUNIO', v2025: 14660284.03, v2026: 0, forecast: 16454716.89},
+              {month: 'JULIO', v2025: 28124530.98, v2026: 0, forecast: 22289623.94},
+              {month: 'AGOSTO', v2025: 13615686.55, v2026: 0, forecast: 17952655.24},
+              {month: 'SEPTIEMBRE', v2025: 12429716.58, v2026: 0, forecast: 15191185.91},
+              {month: 'OCTUBRE', v2025: 18231948.14, v2026: 0, forecast: 16711567.03},
+              {month: 'NOVIEMBRE', v2025: 39601797.11, v2026: 0, forecast: 28156682.07},
+              {month: 'DICIEMBRE', v2025: 52190345.61, v2026: 0, forecast: 40173513.84}
+          ];
+          executiveSummaryData.value.monthlyTotal2025 = 293515728.84;
+          executiveSummaryData.value.monthlyTotal2026 = 3660720.85;
+          executiveSummaryData.value.monthlyTotalForecast = 279587895.93;
+
+          executiveSummaryData.value.areas = [
+              {name: 'HVAC eventual', amount: 1367146.00},
+              {name: 'Construccion', amount: 220800.00},
+              {name: 'Electromecanica', amount: 2072774.85}
+          ];
+          executiveSummaryData.value.areasTotal = 3660720.85;
+
+          executiveSummaryData.value.areaForecast = [
+              {name: 'HVAC eventual', quoted: 1367146.00, sold: 136714.00},
+              {name: 'Construccion', quoted: 220800.00, sold: 22080.00},
+              {name: 'Electromecanica', quoted: 2072774.85, sold: 0.00}
+          ];
+
+          nextTick(() => {
+              renderExecutiveCharts();
+              anime({
+                  targets: '.exec-anim-enter',
+                  translateY: [20, 0],
+                  opacity: [0, 1],
+                  delay: anime.stagger(100),
+                  easing: 'easeOutQuad',
+                  duration: 800
+              });
+          });
+      };
+
+      const renderExecutiveCharts = () => {
+          // Chart Colors
+          const colorBlue = '#4472C4'; // Excel Blue
+          const colorOrange = '#ED7D31'; // Excel Orange
+
+          // 1. PRONOSTICO VENTA (Bar)
+          const ctxVenta = document.getElementById('chartExecVenta');
+          if(ctxVenta) {
+              if(execChartInstances['venta']) execChartInstances['venta'].destroy();
+              execChartInstances['venta'] = new Chart(ctxVenta, {
+                  type: 'bar',
+                  data: {
+                      labels: ['HVAC eventual', 'Construccion', 'Electromecanica'],
+                      datasets: [
+                          { label: 'COTIZADO', data: [1367146, 220800, 2072774], backgroundColor: colorBlue },
+                          { label: 'VENTA', data: [136714, 22080, 0], backgroundColor: colorOrange }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          legend: { position: 'right' }
+                      }
+                  }
+              });
+          }
+
+          // 2. PRONOSTICO ANUAL (Line)
+          const ctxAnual = document.getElementById('chartExecAnual');
+          if(ctxAnual) {
+              if(execChartInstances['anual']) execChartInstances['anual'].destroy();
+              execChartInstances['anual'] = new Chart(ctxAnual, {
+                  type: 'line',
+                  data: {
+                      labels: executiveSummaryData.value.monthly.map(m => m.month.substring(0,3)),
+                      datasets: [
+                          { label: 'Real', data: executiveSummaryData.value.monthly.map(m => m.v2025), borderColor: colorBlue, backgroundColor: colorBlue, tension: 0 },
+                          { label: 'Pronóstico', data: executiveSummaryData.value.monthly.map(m => m.forecast), borderColor: colorOrange, backgroundColor: colorOrange, tension: 0, borderDash: [5,5] }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false
+                  }
+              });
+          }
+
+          // 3. COTIZADO MENSUAL (Line)
+          const ctxMensual = document.getElementById('chartExecMensual');
+          if(ctxMensual) {
+              if(execChartInstances['mensual']) execChartInstances['mensual'].destroy();
+              execChartInstances['mensual'] = new Chart(ctxMensual, {
+                  type: 'line',
+                  data: {
+                      labels: executiveSummaryData.value.monthly.map(m => m.month),
+                      datasets: [
+                          { label: 'Cotizado', data: [10000000, 15000000, 12000000, 20000000, 15000000, 18000000, 25000000, 20000000, 22000000, 28000000, 35000000, 45000000], borderColor: colorOrange, backgroundColor: colorOrange, tension: 0.1 }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } }
+                  }
+              });
+          }
       };
 
       const closeIframe = () => currentView.value='DASHBOARD';
@@ -6678,7 +7010,7 @@ async function toggleVoiceRecording(btnElement) {
       };
 
       return { focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
