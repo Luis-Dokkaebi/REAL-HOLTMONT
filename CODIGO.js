@@ -1214,6 +1214,16 @@ function internalUpdateTask(personName, taskData, username) {
              registrarLog(username, action, `Update Task ID: ${taskData['ID']||taskData['FOLIO']} en ${personName}`);
         }
 
+        // --- SMART ARCHIVING TRIGGER (SINGLE EDIT) ---
+        if ((isAntonia || String(personName).toUpperCase().includes("ANTONIA_VENTAS")) && res.success) {
+            try {
+                if (taskData['COTIZACION'] || taskData['ARCHIVO']) {
+                    processQuoteRow(taskData);
+                }
+            } catch(e) { console.error("Single-Edit Archiving Error: " + e.toString()); }
+        }
+        // ---------------------------------------------
+
         if (isAntonia) {
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex; 
@@ -2140,6 +2150,7 @@ function onOpen() {
     .addItem('🔄 ACTUALIZAR (Fila Actual)', 'cmdActualizar')
     .addSeparator()
     .addItem('🎨 Aplicar Formato Condicional (Semaforo)', 'setupConditionalFormatting')
+    .addItem('🗂️ Organizar Banco (Retroactivo)', 'runFullArchivingBatch')
     .addToUi();
 }
 
@@ -3137,6 +3148,22 @@ function apiSaveTrackerBatch(personName, tasks, username) {
       const res = internalBatchUpdateTasks(personName, processedTasks, false); // Already locked
 
       if (res.success) {
+          // --- SMART ARCHIVING TRIGGER (ANTONIA) ---
+          // "Trigger the archiver logic whenever Antonia saves data"
+          if (isAntonia || String(personName).toUpperCase().includes("ANTONIA_VENTAS")) {
+              try {
+                  processedTasks.forEach(row => {
+                      // Only process if it has a file
+                      if (row['COTIZACION'] || row['ARCHIVO']) {
+                          processQuoteRow(row);
+                      }
+                  });
+              } catch (archErr) {
+                  console.error("Auto-Archiving Error: " + archErr.toString());
+              }
+          }
+          // -----------------------------------------
+
           // Handle Distribution for Antonia
           if (isAntonia && distributionTasks.length > 0) {
               // Group by vendor to batch updates
@@ -3437,4 +3464,168 @@ function test_SystemConfig_Label() {
   } else {
       console.error("❌ ANTONIA_VENTAS: Fallo. Etiqueta actual: " + (ppcModAntonia ? ppcModAntonia.label : 'N/A'));
   }
+}
+
+/*
+ * ======================================================================
+ * MODULE: SMART ARCHIVER (BANCO DE COTIZACIONES)
+ * ======================================================================
+ */
+
+function getOrCreateFolder(parent, name) {
+  const folders = parent.getFoldersByName(name);
+  if (folders.hasNext()) {
+    return folders.next();
+  } else {
+    return parent.createFolder(name);
+  }
+}
+
+function getBankRootFolder() {
+  // Use config ID if available, otherwise find/create "Banco de Cotizaciones" in Root
+  if (APP_CONFIG.folderIdUploads && APP_CONFIG.folderIdUploads.trim() !== "") {
+      try {
+          return DriveApp.getFolderById(APP_CONFIG.folderIdUploads);
+      } catch(e) {
+          console.warn("Invalid Config Folder ID, falling back to Root search.");
+      }
+  }
+
+  const rootName = "Banco de Cotizaciones";
+  const folders = DriveApp.getFoldersByName(rootName);
+  if (folders.hasNext()) {
+      return folders.next();
+  } else {
+      return DriveApp.createFolder(rootName);
+  }
+}
+
+function archiveFile(fileUrl, targetFolder) {
+  try {
+      if (!fileUrl || !String(fileUrl).includes("drive.google.com")) return { success: false, message: "No Drive URL" };
+
+      // Extract ID
+      let id = "";
+      const match = fileUrl.match(/[-\w]{25,}/);
+      if (match) id = match[0];
+
+      if (!id) return { success: false, message: "Invalid ID extraction" };
+
+      const file = DriveApp.getFileById(id);
+      if (!file) return { success: false, message: "File not found" };
+
+      // Check if file is already in target folder
+      const parents = file.getParents();
+      let alreadyThere = false;
+      while (parents.hasNext()) {
+          const p = parents.next();
+          if (p.getId() === targetFolder.getId()) {
+              alreadyThere = true;
+              break;
+          }
+      }
+
+      if (!alreadyThere) {
+          // Move file (Standard: Move to organized folder to ensure structure)
+          file.moveTo(targetFolder);
+          return { success: true, message: "Moved" };
+      }
+      return { success: true, message: "Already there" };
+
+  } catch (e) {
+      console.error("Archive Error: " + e.toString());
+      return { success: false, message: e.toString() };
+  }
+}
+
+function processQuoteRow(row) {
+    try {
+        // 1. Validate Data
+        // Header mapping from internalFetchSheetData aliases:
+        // CLIENTE -> row['CLIENTE']
+        // FECHA -> row['FECHA'] or row['FECHA INICIO'] ...
+        // ARCHIVO -> row['ARCHIVO'] or row['COTIZACION']
+
+        const client = row['CLIENTE'];
+        const dateVal = row['FECHA'] || row['FECHA INICIO'] || row['ALTA'] || row['FECHA_ALTA'];
+        const fileVal = row['COTIZACION'] || row['ARCHIVO'] || row['LINK'] || row['EVIDENCIA'];
+
+        if (!client || !dateVal || !fileVal) return { success: false, message: "Missing Data" };
+
+        // 2. Parse Date
+        let dateObj = null;
+        if (dateVal instanceof Date) {
+            dateObj = dateVal;
+        } else if (typeof dateVal === 'string') {
+            const parts = dateVal.split('/');
+            if (parts.length === 3) {
+               let y = parseInt(parts[2]);
+               if (y < 100) y += 2000;
+               dateObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+            }
+        }
+
+        if (!dateObj || isNaN(dateObj.getTime())) return { success: false, message: "Invalid Date" };
+
+        const year = String(dateObj.getFullYear());
+        const months = ["01 - ENERO", "02 - FEBRERO", "03 - MARZO", "04 - ABRIL", "05 - MAYO", "06 - JUNIO",
+                        "07 - JULIO", "08 - AGOSTO", "09 - SEPTIEMBRE", "10 - OCTUBRE", "11 - NOVIEMBRE", "12 - DICIEMBRE"];
+        const month = months[dateObj.getMonth()];
+        const clientName = String(client).toUpperCase().trim().replace(/[\/\\]/g, "-"); // Sanitize
+
+        // 3. Folder Logic
+        const root = getBankRootFolder();
+        const yearFolder = getOrCreateFolder(root, year);
+        const monthFolder = getOrCreateFolder(yearFolder, month);
+        const clientFolder = getOrCreateFolder(monthFolder, clientName);
+
+        // 4. File Logic (Handle multiple files)
+        const urls = String(fileVal).split(/[\n\s,]+/).filter(u => u.toUpperCase().startsWith("HTTP"));
+        let count = 0;
+
+        urls.forEach(url => {
+            const res = archiveFile(url, clientFolder);
+            if (res.success) count++;
+        });
+
+        return { success: true, processed: count };
+
+    } catch (e) {
+        console.error("Process Row Error: " + e.toString());
+        return { success: false, message: e.toString() };
+    }
+}
+
+function batchArchiveExistingQuotes() {
+    const sheetName = "ANTONIA_VENTAS"; // Explicit target
+    const res = internalFetchSheetData(sheetName);
+
+    if (!res.success) {
+        return { success: false, message: "Error reading sheet: " + res.message };
+    }
+
+    let processedTotal = 0;
+    const errors = [];
+
+    res.data.forEach(row => {
+        const result = processQuoteRow(row);
+        if (result.success) processedTotal += (result.processed || 0);
+        else if (result.message !== "Missing Data") errors.push(result.message);
+    });
+
+    const logMsg = `Batch Archive: ${processedTotal} files processed. Errors: ${errors.length}`;
+    console.log(logMsg);
+    registrarLog("SYSTEM", "BATCH_ARCHIVE", logMsg);
+
+    return { success: true, message: logMsg };
+}
+
+function runFullArchivingBatch() {
+    const res = batchArchiveExistingQuotes();
+    const ui = SpreadsheetApp.getUi();
+    if (res.success) {
+        ui.alert("✅ Organización Completa\n\n" + res.message);
+    } else {
+        ui.alert("❌ Error: " + res.message);
+    }
 }
