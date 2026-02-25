@@ -2985,7 +2985,7 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
 
        // 2. Date Match (Prioridad: FECHA INICIO)
        // Se prioriza 'FECHA INICIO' tal cual pidió el usuario, luego fallbacks.
-       const dateVal = getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
+       const dateVal = getVal(['FECHA INICIO', 'F. INICIO', 'F. VISITA', 'F. ENTREGA', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
 
        if (!dateVal) return false;
        
@@ -3547,7 +3547,7 @@ function processQuoteRow(row) {
         // ARCHIVO -> row['ARCHIVO'] or row['COTIZACION']
 
         const client = row['CLIENTE'];
-        const dateVal = row['FECHA'] || row['FECHA INICIO'] || row['ALTA'] || row['FECHA_ALTA'];
+        const dateVal = row['FECHA'] || row['FECHA INICIO'] || row['F. INICIO'] || row['F. VISITA'] || row['F. ENTREGA'] || row['ALTA'] || row['FECHA_ALTA'];
         const fileVal = row['COTIZACION'] || row['ARCHIVO'] || row['LINK'] || row['EVIDENCIA'];
 
         if (!client || !dateVal || !fileVal) return { success: false, message: "Missing Data" };
