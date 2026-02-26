@@ -2947,6 +2947,66 @@ function test_Antonia_Distribution_Manual() {
 
 }
 
+function apiFetchInfoBankCompanies(year, monthName) {
+  try {
+    const sheetName = "ANTONIA_VENTAS";
+    const res = internalFetchSheetData(sheetName);
+    if (!res.success) return { success: false, message: res.message };
+
+    const monthMap = {
+        'ENERO': 0, 'FEBRERO': 1, 'MARZO': 2, 'ABRIL': 3, 'MAYO': 4, 'JUNIO': 5,
+        'JULIO': 6, 'AGOSTO': 7, 'SEPTIEMBRE': 8, 'OCTUBRE': 9, 'NOVIEMBRE': 10, 'DICIEMBRE': 11
+    };
+    const targetMonth = monthMap[String(monthName).toUpperCase().trim()];
+    const targetYear = parseInt(year) || new Date().getFullYear();
+
+    if (targetMonth === undefined) return { success: false, message: "Mes inválido" };
+
+    const clients = new Set();
+
+    res.data.forEach(row => {
+       // Helper para buscar valores insensible a mayúsculas
+       const keys = Object.keys(row);
+       const upperKeys = keys.map(k => k.toUpperCase().trim());
+       const getVal = (targetKeys) => {
+           for (const t of targetKeys) {
+               const idx = upperKeys.indexOf(t);
+               if (idx > -1) return row[keys[idx]];
+           }
+           return null;
+       };
+
+       const dateVal = getVal(['FECHA INICIO', 'F. INICIO', 'F. VISITA', 'F. ENTREGA', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
+
+       if (!dateVal) return;
+
+       let dObj = null;
+       if (dateVal instanceof Date) {
+           dObj = dateVal;
+       } else {
+           // Try parsing string dd/mm/yy
+           const parts = String(dateVal).split('/');
+           if (parts.length === 3) {
+               let y = parseInt(parts[2]);
+               if (y < 100) y += 2000;
+               dObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+           }
+       }
+
+       if (!dObj || isNaN(dObj.getTime())) return;
+       if (dObj.getMonth() !== targetMonth) return;
+       if (dObj.getFullYear() !== targetYear) return;
+
+       const c = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
+       if (c) clients.add(c);
+    });
+
+    return { success: true, data: Array.from(clients).sort() };
+  } catch(e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
 function apiFetchInfoBankData(year, monthName, companyName, folderName) {
   try {
     const sheetName = "ANTONIA_VENTAS";
