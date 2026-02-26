@@ -1652,7 +1652,16 @@
                      <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
                      <h5 class="fw-bold text-secondary m-0">Empresas - {{infoBankState.selectedMonth}} {{ infoBankState.selectedYear }}</h5>
                  </div>
-                 <div class="row g-2">
+
+                 <div v-if="infoBankState.isLoading" class="text-center p-5">
+                      <div class="spinner-border text-primary mb-2" role="status"></div>
+                      <div class="text-muted small">Buscando clientes...</div>
+                 </div>
+                 <div v-else-if="filteredIbCompanies.length === 0" class="text-center p-5 bg-white border rounded shadow-sm">
+                      <i class="fas fa-search-minus fa-3x text-muted mb-3"></i>
+                      <p class="text-muted fw-bold">No se encontraron clientes con cotizaciones en este mes.</p>
+                 </div>
+                 <div v-else class="row g-2">
                      <div class="col-12 col-md-6 col-lg-4" v-for="c in filteredIbCompanies" :key="c">
                          <div class="list-group-item list-group-item-action border rounded shadow-sm p-3 d-flex align-items-center justify-content-between" style="cursor:pointer; background:white;" @click="selectIbCompany(c)">
                              <span class="fw-bold text-dark">{{c}}</span>
@@ -4664,12 +4673,7 @@ async function toggleVoiceRecording(btnElement) {
       const infoBankState = ref({ view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false });
       const ibYears = ['2025', '2026'];
       const ibMonths = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const ibCompanies = [
-          'ALCOM', 'BSC', 'CHULA BRAND', 'COMERCIAL TREVIÑO', 'CONVATEC', 'CORNING 1', 'DANFOSS 2', 'DANFOSS 4', 'DANFOSS MTY', 'DANHIL', 'DANHIL MTY',
-          'DEL BRAVO', 'DEL BRAVO STORAGE', 'EATON 1', 'EATON 3', 'EATON 5', 'ESSITY', 'J&E COMPANIES', 'LG', 'MAIZ MIER', 'MARMON',
-          'MASTERBRAND MISION', 'MASTERBRAND WESLACO', 'MEGATECH', 'MEGATECH 2', 'NETAFIM', 'NIDEC', 'PANASONIC', 'PANASONIC MTY', 'PANASONIC NORTE',
-          'PENTAIR', 'REXNORD 1', 'REXNORD 1 MTY', 'REXNORD 2', 'REXNORD USA', 'SEASON GROUP', 'UNIFORM GROUP', 'VERTIV', 'WC RB', 'WC RY', 'WESLACO', 'XB SOLUCIONES'
-      ].sort();
+      const ibCompanies = ref([]);
       const ibFolders = [
           { name: 'SCOPE', icon: 'fa-crosshairs', color: '#007bff' },
           { name: 'CORREOS', icon: 'fa-envelope', color: '#ffc107' },
@@ -4683,23 +4687,28 @@ async function toggleVoiceRecording(btnElement) {
       ];
 
       const filteredIbCompanies = computed(() => {
-          const y = infoBankState.value.selectedYear;
-          const m = infoBankState.value.selectedMonth;
-
-          if (y === '2025') {
-              if (m === 'Octubre') return ['DANFOSS 4'];
-              if (m === 'Noviembre') return ['PANASONIC MTY', 'PANASONIC NORTE', 'ALCOM'];
-              if (m === 'Diciembre') return ['VERTIV', 'CORNING 1', 'PANASONIC MTY', 'PANASONIC'];
-          }
-          if (y === '2026') {
-              if (m === 'Enero') return ['EATON 3', 'WC RY', 'CORNING 1'];
-          }
-
-          return ibCompanies;
+          return ibCompanies.value;
       });
 
       const selectIbYear = (y) => { infoBankState.value.selectedYear = y; infoBankState.value.view = 'MONTHS'; };
-      const selectIbMonth = (m) => { infoBankState.value.selectedMonth = m; infoBankState.value.view = 'COMPANIES'; };
+      const selectIbMonth = (m) => {
+          infoBankState.value.selectedMonth = m;
+          infoBankState.value.view = 'COMPANIES';
+          fetchInfoBankCompanies();
+      };
+
+      const fetchInfoBankCompanies = () => {
+          infoBankState.value.isLoading = true;
+          ibCompanies.value = [];
+          google.script.run.withSuccessHandler(res => {
+              infoBankState.value.isLoading = false;
+              if (res.success) {
+                  ibCompanies.value = res.data;
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiFetchInfoBankCompanies(infoBankState.value.selectedYear, infoBankState.value.selectedMonth);
+      };
       const selectIbCompany = (c) => { infoBankState.value.selectedCompany = c; infoBankState.value.view = 'FOLDERS'; };
 
       const openIbFolder = (f) => {
