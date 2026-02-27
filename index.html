@@ -7364,9 +7364,15 @@ async function toggleVoiceRecording(btnElement) {
 
       const getProcessBtnClass = (row) => {
           const status = getProcessStatus(row);
+          // NEW TERMINAL STATES
+          if (status === 'PERDIDA') return 'btn-danger text-white';
+          if (status === 'DESCUENTO') return 'btn-primary text-white'; // Blue
+          if (status === 'GANADA') return 'btn-success text-white';
+
           const idx = PROCESS_STEPS.indexOf(status);
           if (idx === -1) return 'btn-outline-secondary';
-          if (idx === PROCESS_STEPS.length - 1) return 'btn-success text-white';
+          // "Revision de Cotizacion Cliente" (Last step) now triggers selection
+          if (idx === PROCESS_STEPS.length - 1) return 'btn-warning text-dark fw-bold';
 
           const colors = [
               'btn-outline-primary', 'btn-outline-info', 'btn-outline-warning text-dark',
@@ -7375,9 +7381,84 @@ async function toggleVoiceRecording(btnElement) {
           return colors[idx] || 'btn-outline-primary';
       };
 
+      const updateProcess = (row, current, nextStep) => {
+          let log = [];
+          try {
+              log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
+          } catch(e) { log = []; }
+
+          if (!Array.isArray(log)) log = [];
+
+          log.push({
+              from: current,
+              to: nextStep,
+              timestamp: new Date().getTime(),
+              dateStr: new Date().toLocaleString()
+          });
+
+          row.PROCESO = nextStep;
+          row.PROCESO_LOG = JSON.stringify(log);
+          saveRow(row);
+      };
+
       const advanceProcess = (row) => {
           const current = getProcessStatus(row);
+
+          // 1. CHECK TERMINAL STATES (READ ONLY HISTORY)
+          if (['PERDIDA', 'DESCUENTO', 'GANADA'].includes(current)) {
+              let log = [];
+              try { log = JSON.parse(row.PROCESO_LOG); } catch(e){}
+
+              let htmlLog = '<ul style="text-align:left; list-style:none; padding:0; font-size:12px;">';
+              log.forEach(l => {
+                  htmlLog += `<li style="margin-bottom:5px; border-bottom:1px solid #eee; padding-bottom:2px;">
+                      <strong>${l.to}</strong><br>
+                      <span class="text-muted">${l.dateStr}</span>
+                  </li>`;
+              });
+              htmlLog += '</ul>';
+
+              Swal.fire({
+                  title: `Historial: ${current}`,
+                  html: htmlLog,
+                  icon: 'info'
+              });
+              return;
+          }
+
           const idx = PROCESS_STEPS.indexOf(current);
+
+          // 2. CHECK "REVISION DE COTIZACION CLIENTE" (LAST STEP)
+          if (current === "Revision de Cotizacion Cliente") {
+              Swal.fire({
+                  title: 'Resultado Final',
+                  text: 'Selecciona el resultado de la cotización:',
+                  icon: 'question',
+                  showCancelButton: true,
+                  showConfirmButton: false, // We use custom buttons
+                  cancelButtonText: 'Cancelar',
+                  html: `
+                      <div class="d-flex flex-column gap-2 mt-3">
+                          <button id="btn-perdida" class="btn btn-danger w-100 fw-bold">PERDIDA (ROJO)</button>
+                          <button id="btn-descuento" class="btn btn-primary w-100 fw-bold">DESCUENTO (AZUL)</button>
+                          <button id="btn-ganada" class="btn btn-success w-100 fw-bold">GANADA (VERDE)</button>
+                      </div>
+                  `,
+                  didOpen: () => {
+                      const handleSelection = (status) => {
+                          Swal.close();
+                          updateProcess(row, current, status);
+                      };
+                      const btnP = document.getElementById('btn-perdida');
+                      const btnD = document.getElementById('btn-descuento');
+                      const btnG = document.getElementById('btn-ganada');
+                      if(btnP) btnP.addEventListener('click', () => handleSelection('PERDIDA'));
+                      if(btnD) btnD.addEventListener('click', () => handleSelection('DESCUENTO'));
+                      if(btnG) btnG.addEventListener('click', () => handleSelection('GANADA'));
+                  }
+              });
+              return;
+          }
 
           if (idx < PROCESS_STEPS.length - 1) {
               const nextStep = PROCESS_STEPS[idx + 1];
@@ -7390,25 +7471,7 @@ async function toggleVoiceRecording(btnElement) {
                   confirmButtonText: 'Sí, Avanzar'
               }).then((result) => {
                   if (result.isConfirmed) {
-                      row.PROCESO = nextStep;
-
-                      let log = [];
-                      try {
-                          log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
-                      } catch(e) { log = []; }
-
-                      if (!Array.isArray(log)) log = [];
-
-                      log.push({
-                          from: current,
-                          to: nextStep,
-                          timestamp: new Date().getTime(),
-                          dateStr: new Date().toLocaleString()
-                      });
-
-                      row.PROCESO_LOG = JSON.stringify(log);
-
-                      saveRow(row);
+                      updateProcess(row, current, nextStep);
                   }
               });
           } else {
