@@ -1843,11 +1843,12 @@
                       <thead>
                           <tr>
                               <th class="row-num">#</th>
-                              <th style="width: 200px;">CLIENTE</th>
-                              <th style="width: 100px;">VENDEDOR</th>
-                              <th style="width: 80px;">F. INICIO</th>
-                              <th style="width: 80px;">F. VISITA</th>
-                              <th style="width: 80px;">F. ENTREGA</th>
+                              <th style="width: 130px;">CLIENTE</th>
+                              <th style="width: 250px;">CONCEPTO</th>
+                              <th style="width: 50px;">VENDEDOR</th>
+                              <th style="width: 65px;">F. INICIO</th>
+                              <th style="width: 65px;">F. VISITA</th>
+                              <th style="width: 65px;">F. ENTREGA</th>
                               <th style="width: 350px;">PROCESO</th>
                           </tr>
                       </thead>
@@ -1855,6 +1856,11 @@
                           <tr v-for="(row, i) in staffTracker.data" :key="i">
                               <td class="row-num">{{ i + 1 }}</td>
                               <td><input v-model="row.CLIENTE" class="excel-input" readonly></td>
+                              <td class="p-1 align-middle" style="height: auto !important;">
+                                  <div style="font-size: 11px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: normal; color: #333;">
+                                      {{ row.CONCEPTO || row.DESCRIPCION || '' }}
+                                  </div>
+                              </td>
                               <td class="text-center">
                                   <div class="d-flex align-items-center justify-content-center h-100">
                                       <span class="badge bg-light text-dark border" style="font-size: 10px;">{{ toInitials(row.VENDEDOR) }}</span>
@@ -1863,7 +1869,7 @@
                               <td><input :value="row['F. INICIO'] || row['FECHA'] || row['ALTA'] || row['FECHA INICIO'] || row['FECHA_INICIO']" class="excel-input text-center" readonly></td>
                               <td><input :value="row['F. VISITA'] || row['FECHA VISITA']" class="excel-input text-center" readonly></td>
                               <td><input :value="row['F. ENTREGA'] || row['FECHA ENTREGA']" class="excel-input text-center" readonly></td>
-                              <td class="p-1 text-center">
+                              <td class="p-1 text-center" style="height: auto !important;">
                                   <div class="d-flex flex-column align-items-center gap-1">
                                       <button class="btn btn-sm fw-bold border shadow-sm px-3 rounded-pill w-100"
                                               :class="getProcessBtnClass(row)"
