@@ -7355,7 +7355,8 @@ async function toggleVoiceRecording(btnElement) {
           "Cotizacion Interna",
           "Estrategia Ventas",
           "Cotizacion Enviada al cliente",
-          "Revision de Cotizacion Cliente"
+          "Revision de Cotizacion Cliente",
+          "Proceso Completado"
       ];
 
       const getProcessStatus = (row) => {
@@ -7366,11 +7367,16 @@ async function toggleVoiceRecording(btnElement) {
           const status = getProcessStatus(row);
           const idx = PROCESS_STEPS.indexOf(status);
           if (idx === -1) return 'btn-outline-secondary';
-          if (idx === PROCESS_STEPS.length - 1) return 'btn-success text-white';
+          if (status === "Proceso Completado") return 'btn-success text-white fw-bold';
 
           const colors = [
-              'btn-outline-primary', 'btn-outline-info', 'btn-outline-warning text-dark',
-              'btn-outline-danger', 'btn-outline-dark', 'btn-primary text-white'
+              'btn-outline-primary',
+              'btn-outline-info',
+              'btn-outline-warning text-dark',
+              'btn-outline-danger',
+              'btn-outline-dark',
+              'btn-primary text-white',
+              'btn-info text-dark'
           ];
           return colors[idx] || 'btn-outline-primary';
       };
