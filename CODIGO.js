@@ -788,6 +788,29 @@ function apiFetchStaffTrackerData(personName) {
       if (allowedTabs.includes(upperName)) {
           ensureSheetWithHeaders(upperName, DEFAULT_SALES_HEADERS);
       }
+
+      // AUTO-ADD COLUMNS FOR 'ANTONIA_VENTAS' (PAPA CALIENTE SUPPORT)
+      if (upperName === "ANTONIA_VENTAS") {
+          try {
+              const sheet = findSheetSmart("ANTONIA_VENTAS");
+              if (sheet) {
+                  const lastCol = sheet.getLastColumn();
+                  if (lastCol > 0) {
+                      const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).toUpperCase().trim());
+                      const missingCols = [];
+                      if (!headers.includes("PROCESO")) missingCols.push("PROCESO");
+                      if (!headers.includes("PROCESO_LOG")) missingCols.push("PROCESO_LOG");
+
+                      if (missingCols.length > 0) {
+                          sheet.getRange(1, lastCol + 1, 1, missingCols.length)
+                               .setValues([missingCols])
+                               .setFontWeight("bold")
+                               .setBackground("#e6e6e6");
+                      }
+                  }
+              }
+          } catch(e) { console.error("Error adding columns to ANTONIA_VENTAS: " + e.toString()); }
+      }
   }
   return internalFetchSheetData(personName);
 }
