@@ -5478,7 +5478,7 @@ async function toggleVoiceRecording(btnElement) {
               if (!row['FOLIO'] && !row['ID']) return true;
 
               const hUp = String(h).toUpperCase();
-              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'ARCHIVO', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'ENTREGA', 'VENDEDOR', 'RESPONSABLE'];
+              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'ARCHIVO', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'ENTREGA', 'VENDEDOR', 'RESPONSABLE', 'INFO CLIENTE', 'INFO. CLIENTE'];
               return allowed.some(a => hUp.includes(a));
           }
           return true;
