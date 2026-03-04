@@ -7273,15 +7273,17 @@ async function toggleVoiceRecording(btnElement) {
       };
 
       const ANTONIA_STATUS_OPTIONS = [
-          { label: 'PENDIENTE', bg: '#ffffff', color: '#000000', border: '1px solid #ccc' },
-          { label: 'EN REVISION', bg: '#FFCDD2', color: '#B71C1C' },
-          { label: 'FALTA INFORMACION', bg: '#FFE0B2', color: '#E65100' },
-          { label: 'PENDIENTE VISITA', bg: '#FFF9C4', color: '#F57F17' },
-          { label: 'EN ESPERA DE OTRO DEPARTAMENTO', bg: '#C8E6C9', color: '#1B5E20' },
-          { label: 'PERDIDA X TIEMPO', bg: '#B71C1C', color: '#ffffff' },
-          { label: 'CANCELADA X PLANTA', bg: '#006064', color: '#ffffff' },
-          { label: 'No se asistio a la visita', bg: '#1B5E20', color: '#ffffff' },
-          { label: 'ASIGNADO', bg: '#2E7D32', color: '#ffffff' }
+          { label: 'Pendiente', bg: '#ffffff', color: '#000000', border: '1px solid #ccc' },
+          { label: 'En Revisión', bg: '#FFCDD2', color: '#B71C1C' },
+          { label: 'Falta Información', bg: '#FFE0B2', color: '#E65100' },
+          { label: 'Pendiente Visita', bg: '#FFF9C4', color: '#F57F17' },
+          { label: 'En Espera de Otro Departamento', bg: '#C8E6C9', color: '#1B5E20' },
+          { label: 'Perdida x Tiempo', bg: '#B71C1C', color: '#ffffff' },
+          { label: 'Perdida x Precio', bg: '#D32F2F', color: '#ffffff' },
+          { label: 'Cancelada x Planta', bg: '#006064', color: '#ffffff' },
+          { label: 'No se Asistió a la Visita', bg: '#1B5E20', color: '#ffffff' },
+          { label: 'Asignado', bg: '#2E7D32', color: '#ffffff' },
+          { label: 'Enviada', bg: '#4CAF50', color: '#ffffff' }
       ];
 
       const getAntoniaStatusStyle = (val) => {
