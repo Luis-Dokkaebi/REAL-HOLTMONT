@@ -1848,7 +1848,7 @@
                               <th style="width: 80px;">F. INICIO</th>
                               <th style="width: 80px;">F. VISITA</th>
                               <th style="width: 80px;">F. ENTREGA</th>
-                              <th style="width: 350px;">PROCESO</th>
+                              <th style="width: 150px;">PROCESO</th>
                           </tr>
                       </thead>
                       <tbody>
@@ -1868,6 +1868,7 @@
                                       <button class="btn btn-sm fw-bold border shadow-sm px-3 rounded-pill w-100"
                                               :class="getProcessBtnClass(row)"
                                               style="font-size: 11px; white-space: normal;"
+                                              :title="getFullProcessName(getProcessStatus(row))"
                                               @click="advanceProcess(row)">
                                           {{ getProcessStatus(row) }}
                                       </button>
@@ -7350,17 +7351,46 @@ async function toggleVoiceRecording(btnElement) {
 
       // --- PAPA CALIENTE LOGIC (PROCESO) ---
       const PROCESS_STEPS = [
-          "Levantamiento",
-          "Calculo y Diseño",
-          "Elaboracion Presupuesto",
-          "Cotizacion Interna",
-          "Estrategia Ventas",
-          "Cotizacion Enviada al cliente",
-          "Revision de Cotizacion Cliente"
+          "L",
+          "CD",
+          "EP",
+          "CI",
+          "EV",
+          "CEC",
+          "RCC"
       ];
 
+      const FULL_PROCESS_NAMES = {
+          "L": "Levantamiento",
+          "CD": "Calculo y Diseño",
+          "EP": "Elaboracion Presupuesto",
+          "CI": "Cotizacion Interna",
+          "EV": "Estrategia Ventas",
+          "CEC": "Cotizacion Enviada al cliente",
+          "RCC": "Revision de Cotizacion Cliente"
+      };
+
+      const LEGACY_PROCESS_MAP = {
+          "Levantamiento": "L",
+          "Calculo y Diseño": "CD",
+          "Elaboracion Presupuesto": "EP",
+          "Cotizacion Interna": "CI",
+          "Estrategia Ventas": "EV",
+          "Cotizacion Enviada al cliente": "CEC",
+          "Revision de Cotizacion Cliente": "RCC"
+      };
+
+      const getFullProcessName = (abbr) => {
+          return FULL_PROCESS_NAMES[abbr] || abbr;
+      };
+
       const getProcessStatus = (row) => {
-          return row.PROCESO || PROCESS_STEPS[0];
+          let val = row.PROCESO;
+          if (!val) return PROCESS_STEPS[0];
+          if (LEGACY_PROCESS_MAP[val]) {
+              val = LEGACY_PROCESS_MAP[val];
+          }
+          return val;
       };
 
       const getProcessBtnClass = (row) => {
@@ -7384,8 +7414,8 @@ async function toggleVoiceRecording(btnElement) {
               const nextStep = PROCESS_STEPS[idx + 1];
 
               Swal.fire({
-                  title: `¿Avanzar a ${nextStep}?`,
-                  text: `Estado actual: ${current}`,
+                  title: `¿Avanzar a ${getFullProcessName(nextStep)} (${nextStep})?`,
+                  text: `Estado actual: ${getFullProcessName(current)} (${current})`,
                   icon: 'question',
                   showCancelButton: true,
                   confirmButtonText: 'Sí, Avanzar'
@@ -7458,7 +7488,7 @@ async function toggleVoiceRecording(btnElement) {
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
-      getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate };
+      getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
