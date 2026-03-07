@@ -7684,6 +7684,10 @@ const filteredStaffTrackerData = computed(() => {
                           row["MAP COT"] = nextStep;
                       }
 
+                      if (nextStep === 'CD') {
+                          row._justTransitionedToCD = true;
+                      }
+
                       saveRow(row);
                   }
               });
