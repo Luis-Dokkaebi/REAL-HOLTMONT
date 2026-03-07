@@ -643,6 +643,53 @@
   </style>
 </head>
 <body>
+<script>
+window.google = {
+  script: {
+    run: {
+      withSuccessHandler: function(callback) {
+        return {
+          withFailureHandler: function(errCallback) {
+            return this;
+          },
+          getSystemConfig: function(role, user) {
+            callback({
+              departments: {},
+              allDepartments: {},
+              staff: [{name: 'ANTONIA_VENTAS', dept: 'VENTAS'}],
+              directory: [{name: 'TERESA GARZA', dept: 'VENTAS'}],
+              specialModules: []
+            });
+          },
+          apiFetchStaffTrackerData: function(name) {
+            callback({
+              success: true,
+              data: [
+                  { FOLIO: '1', CLIENTE: 'CLIENTE_1', CONCEPTO: 'Test Concept 1', VENDEDOR: 'TERESA GARZA', PROCESO: 'L', 'MAP COT': 'L', PROCESO_LOG: '[]' }
+              ],
+              history: [],
+              headers: ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'PROCESO', 'MAP COT', 'PROCESO_LOG']
+            });
+          },
+          apiFetchCombinedCalendarData: function() { callback({success: true, data: []}); },
+          apiFetchCascadeTree: function() { callback({success: true, data: []}); },
+          apiLogin: function(user, pass) {
+            callback({ success: true, role: 'TONITA', name: 'Antonia', username: 'ANTONIA_VENTAS' });
+          }
+        };
+      },
+      withFailureHandler: function(errCallback) {
+        return {
+          withSuccessHandler: function(callback) {
+            return this;
+          }
+        }
+      }
+    }
+  }
+};
+</script>
+
 
 <div id="app">
   <div v-if="!isLoggedIn" class="login-overlay">
@@ -5581,14 +5628,14 @@ const filteredStaffTrackerData = computed(() => {
 
       const calculateDiasCounter = (row) => {
           // Permite ejecutar en cualquier hoja que tenga las columnas
-          // if (!staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) return; 
-          
+          // if (!staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) return;
+
           const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ']));
           if (!hDias) return;
-          
+
           const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO']));
           if (!hFecha || !row[hFecha]) return;
-          
+
           let dObj = null;
           const val = row[hFecha];
           if (val instanceof Date) dObj = val;
@@ -5666,11 +5713,11 @@ const filteredStaffTrackerData = computed(() => {
           return h;
       };
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
-      const getTrafficStyle = (row) => { 
-          const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); 
-          const d = parseInt(row['DIAS']||row['RELOJ']||0); 
-          if (isNaN(d)) return {}; 
-          
+      const getTrafficStyle = (row) => {
+          const t = String(row['CLASIFICACION']||'').trim().toUpperCase();
+          const d = parseInt(row['DIAS']||row['RELOJ']||0);
+          if (isNaN(d)) return {};
+
           let limit = 0, buffer = 0;
           if(t==='A') { limit=3; buffer=1; }
           else if(t==='AA') { limit=15; buffer=3; }
@@ -7754,7 +7801,7 @@ function iniciarDictadoNativo(campoDestinoId) {
 
     // 2. Invocamos al espíritu del reconocimiento
     const recognition = new SpeechRecognition();
-    
+
     // Configuración del Jutsu
     recognition.lang = 'es-MX'; // Español de México (puedes cambiarlo a es-ES, etc.)
     recognition.continuous = false; // Se detiene cuando dejas de hablar
@@ -7764,11 +7811,11 @@ function iniciarDictadoNativo(campoDestinoId) {
     recognition.onstart = function() {
         // Aquí puedes cambiar el icono del micrófono a "Escuchando..." o ponerlo rojo
         // Ejemplo visual simple:
-        const btn = document.getElementById('btn-micro-' + campoDestinoId); 
-        if(btn) btn.style.color = 'red'; 
-        
+        const btn = document.getElementById('btn-micro-' + campoDestinoId);
+        if(btn) btn.style.color = 'red';
+
         // Usamos Toast de Google si está disponible, o un console.log
-        try { google.script.host.editor.focus(); } catch(e){} 
+        try { google.script.host.editor.focus(); } catch(e){}
         console.log("🎤 Escuchando... habla ahora.");
     };
 
@@ -7792,7 +7839,7 @@ function iniciarDictadoNativo(campoDestinoId) {
 
         // Obtenemos el texto sagrado
         const transcript = event.results[0][0].transcript;
-        
+
         // Capitalizamos la primera letra (estética ninja)
         const textoFinal = transcript.charAt(0).toUpperCase() + transcript.slice(1);
 
@@ -7813,7 +7860,7 @@ function iniciarDictadoNativo(campoDestinoId) {
 
     // ¡EJECUTAR!
     recognition.start();
-}  
+}
 </script>
 </body>
 </html>

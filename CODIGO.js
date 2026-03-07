@@ -1252,7 +1252,9 @@ function internalUpdateTask(personName, taskData, username) {
 
         if (isAntonia) {
              const distData = JSON.parse(JSON.stringify(taskData));
-             delete distData._rowIndex; 
+             delete distData._rowIndex;
+             delete distData['PROCESO_LOG'];
+                          delete distData['PROCESO'];
 
              // MODIFICADO: Se comenta la distribución a vendedores para evitar duplicidad y tráfico innecesario.
              // "ya no mandará la misma tarea a la hoja de los vendedores"
@@ -1298,7 +1300,9 @@ function internalUpdateTask(personName, taskData, username) {
              // Si el vendedor actualiza su tabla, replicamos el cambio a la maestra de ANTONIA
              try {
                  const syncData = JSON.parse(JSON.stringify(taskData));
-                 delete syncData._rowIndex; // Evitar conflictos de índice de fila
+                 delete syncData._rowIndex;
+                 delete syncData['PROCESO_LOG'];
+                                  delete syncData['PROCESO']; // Evitar conflictos de índice de fila
 
                  // Intentamos actualizar en ANTONIA_VENTAS
                  const syncRes = internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
@@ -3233,11 +3237,15 @@ function apiSaveTrackerBatch(personName, tasks, username) {
              // Prepare distribution data
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex;
+             delete distData['PROCESO_LOG'];
+                          delete distData['PROCESO'];
              distributionTasks.push(distData);
         } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
              // REVERSE SYNC PREPARATION
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex;
+             delete distData['PROCESO_LOG'];
+                          delete distData['PROCESO'];
              distributionTasks.push(distData);
         }
         processedTasks.push(taskData);
