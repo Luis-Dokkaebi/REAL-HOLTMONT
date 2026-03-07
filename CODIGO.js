@@ -1279,7 +1279,7 @@ function internalUpdateTask(personName, taskData, username) {
                  try {
                      const angelData = JSON.parse(JSON.stringify(distData));
                      if (taskData._justTransitionedToCD) {
-                         angelData['ESTATUS'] = 'ASIGNADO';
+                         angelData['ESTATUS'] = 'PENDIENTE';
                          angelData['AVANCE'] = '0%';
                      } else {
                          delete angelData['ESTATUS'];
@@ -3385,7 +3385,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
              if (currentStep === 'CD') {
                  const angelData = JSON.parse(JSON.stringify(distData));
                  if (taskData._justTransitionedToCD) {
-                     angelData['ESTATUS'] = 'ASIGNADO';
+                     angelData['ESTATUS'] = 'PENDIENTE';
                      angelData['AVANCE'] = '0%';
                  } else {
                      delete angelData['ESTATUS'];
@@ -3425,7 +3425,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
              if (currentStep === 'CD') {
                  const angelData = JSON.parse(JSON.stringify(distData));
                  if (taskData._justTransitionedToCD) {
-                     angelData['ESTATUS'] = 'ASIGNADO';
+                     angelData['ESTATUS'] = 'PENDIENTE';
                      angelData['AVANCE'] = '0%';
                  } else {
                      delete angelData['ESTATUS'];
