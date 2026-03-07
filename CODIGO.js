@@ -1344,100 +1344,90 @@ function internalUpdateTask(personName, taskData, username) {
 
                  // NEW: Angel Salinas reverse sync for Calculation and Design
                  if (String(personName).toUpperCase() === "ANGEL SALINAS") {
-                     // Check if completed
                      const status = String(taskData['ESTATUS'] || taskData['STATUS'] || '').toUpperCase();
-                     const avance = String(taskData['AVANCE'] || '').replace('%','').trim();
-                     const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || avance === '100' || avance === '1.0';
+                     const rawAvance = String(taskData['AVANCE'] || taskData['AVANCE %'] || taskData['% AVANCE'] || '').replace('%','').replace(',','.').trim();
+                     const numAvance = parseFloat(rawAvance);
+                     const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || numAvance === 100 || numAvance === 1;
 
-                     if (isDone) {
-                         // Fetch from Antonia to check current state
-                         const antSheet = findSheetSmart("ANTONIA_VENTAS");
-                         if (antSheet) {
-                             const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                             if (antData.success && antData.data) {
-                                 const tFolio = String(taskData['FOLIO'] || taskData['ID'] || "").toUpperCase().trim();
-                                 const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                                 if (targetRow) {
-                                     let currentStep = "L";
-                                     try {
-                                         let log = targetRow['PROCESO_LOG'] ? JSON.parse(targetRow['PROCESO_LOG']) : [];
-                                         if (Array.isArray(log) && log.length > 0) {
-                                             currentStep = log[log.length - 1].to;
-                                         } else {
-                                             let mapCot = targetRow["MAP COT"] || targetRow.PROCESO;
-                                             if (mapCot) {
-                                                 if (mapCot.includes('🔴')) {
-                                                    const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                                                    if (match) currentStep = match[1];
-                                                 } else {
-                                                    currentStep = mapCot;
-                                                 }
-                                             }
-                                         }
-                                     } catch(e) {}
+                     if (!isDone) {
+                         return { success: true, data: taskData };
+                     }
 
-                                     if (currentStep === 'CD') {
-                                         // Advance to EP
-                                         let log = [];
-                                         try {
-                                             if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
-                                         } catch(e) {}
-                                         if (!Array.isArray(log)) log = [];
+                     let shouldUpdate = false;
+                     const tFolio = String(taskData['FOLIO'] || taskData['ID'] || "").toUpperCase().trim();
 
-                                         log.push({
-                                             from: 'CD',
-                                             to: 'EP',
-                                             timestamp: new Date().getTime(),
-                                             dateStr: new Date().toLocaleString()
-                                         });
-
-                                         // Construct a minimalistic syncData for Antonia to avoid overwriting her fields
-                                         const cleanSyncData = {
-                                             'FOLIO': tFolio,
-                                             'PROCESO_LOG': JSON.stringify(log)
-                                         };
-
-                                         // Helper for Emoji Map Cot
-                                         const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                         const currentIdx = steps.indexOf('EP');
-                                         let parts = [];
-                                         for (let i = 0; i < steps.length; i++) {
-                                             let step = steps[i];
-                                             if (i < currentIdx) {
-                                                 parts.push('🟢 ' + step);
-                                             } else if (i === currentIdx) {
-                                                 parts.push('🔴 ' + step);
+                     const antSheet = findSheetSmart("ANTONIA_VENTAS");
+                     if (antSheet) {
+                         const antData = internalFetchSheetData("ANTONIA_VENTAS");
+                         if (antData.success && antData.data) {
+                             const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
+                             if (targetRow) {
+                                 let currentStep = "L";
+                                 try {
+                                     let log = targetRow['PROCESO_LOG'] ? JSON.parse(targetRow['PROCESO_LOG']) : [];
+                                     if (Array.isArray(log) && log.length > 0) {
+                                         currentStep = log[log.length - 1].to;
+                                     } else {
+                                         let mapCot = targetRow["MAP COT"] || targetRow.PROCESO;
+                                         if (mapCot) {
+                                             if (mapCot.includes('🔴')) {
+                                                const match = mapCot.match(/🔴\s*([A-Z]+)/);
+                                                if (match) currentStep = match[1];
                                              } else {
-                                                 parts.push('⚪ ' + step);
+                                                currentStep = mapCot;
                                              }
                                          }
-                                         cleanSyncData['MAP COT'] = parts.join(' | ');
-
-                                         // Instead of updating the whole taskData, we only send the minimal fields
-                                         Object.assign(syncData, cleanSyncData);
-
-                                         delete syncData['ESTATUS'];
-                                         delete syncData['STATUS'];
-                                         delete syncData['AVANCE'];
-                                         delete syncData['AVANCE %'];
-
-                                         // We also delete other fields that belong to Angel but shouldn't overwrite Antonia's
-                                         // like COMENTARIOS, FECHA, unless we specifically want to. To be safe, let's just
-                                         // send the cleanSyncData directly to Antonia later. We'll replace syncData entirely.
-                                         // So let's re-assign syncData to cleanSyncData, keeping ID if it exists.
-                                         for (let key in syncData) {
-                                             if (!['FOLIO', 'ID', 'PROCESO_LOG', 'MAP COT'].includes(key)) {
-                                                 delete syncData[key];
-                                             }
-                                         }
-
-                                         registrarLog("SYSTEM", "REVERSE_SYNC", `Angel Salinas completed CD for ${tFolio}. Advancing to EP.`);
                                      }
+                                 } catch(e) {}
+
+                                 if (currentStep === 'CD') {
+                                     let log = [];
+                                     try {
+                                         if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
+                                     } catch(e) {}
+                                     if (!Array.isArray(log)) log = [];
+
+                                     log.push({
+                                         from: 'CD',
+                                         to: 'EP',
+                                         timestamp: new Date().getTime(),
+                                         dateStr: new Date().toLocaleString()
+                                     });
+
+                                     const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
+                                     const currentIdx = steps.indexOf('EP');
+                                     let parts = [];
+                                     for (let i = 0; i < steps.length; i++) {
+                                         let step = steps[i];
+                                         if (i < currentIdx) {
+                                             parts.push('🟢 ' + step);
+                                         } else if (i === currentIdx) {
+                                             parts.push('🔴 ' + step);
+                                         } else {
+                                             parts.push('⚪ ' + step);
+                                         }
+                                     }
+
+                                     // Ensure syncData only contains minimal fields
+                                     for (let key in syncData) {
+                                         delete syncData[key];
+                                     }
+                                     syncData['FOLIO'] = targetRow['FOLIO'] || tFolio;
+                                     syncData['ID'] = targetRow['ID'] || taskData['ID'] || tFolio;
+                                     syncData['PROCESO_LOG'] = JSON.stringify(log);
+                                     syncData['MAP COT'] = parts.join(' | ');
+
+                                     // Prevent creating a new row by ensuring we only match what's in Antonia's sheet
+                                     syncData['_rowIndex'] = targetRow['_rowIndex'];
+
+                                     shouldUpdate = true;
+                                     registrarLog("SYSTEM", "REVERSE_SYNC", `Angel completed CD for ${tFolio}. Payload: ` + JSON.stringify(syncData));
                                  }
                              }
                          }
-                     } else {
-                         // If not done, just sync what's allowed or nothing. For Angel, we only care when he finishes.
+                     }
+
+                     if (!shouldUpdate) {
                          return { success: true, data: taskData };
                      }
                  }
@@ -3532,8 +3522,9 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                        const reverseSyncTasks = [];
                        distributionTasks.forEach(t => {
                            const status = String(t['ESTATUS'] || t['STATUS'] || '').toUpperCase();
-                           const avance = String(t['AVANCE'] || '').replace('%','').trim();
-                           const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || avance === '100' || avance === '1.0';
+                           const rawAvance = String(t['AVANCE'] || t['AVANCE %'] || t['% AVANCE'] || '').replace('%','').replace(',','.').trim();
+                           const numAvance = parseFloat(rawAvance);
+                           const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || numAvance === 100 || numAvance === 1;
 
                            if (isDone) {
                                const tFolio = String(t['FOLIO'] || t['ID'] || "").toUpperCase().trim();
@@ -3559,8 +3550,9 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                                    if (currentStep === 'CD') {
                                        let syncData = {
-                                           'FOLIO': tFolio,
-                                           'ID': t['ID'] || tFolio
+                                           'FOLIO': targetRow['FOLIO'] || tFolio,
+                                           'ID': targetRow['ID'] || t['ID'] || tFolio,
+                                           '_rowIndex': targetRow['_rowIndex']
                                        };
                                        let log = [];
                                        try {
@@ -3592,7 +3584,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        }
                                        syncData['MAP COT'] = parts.join(' | ');
 
-                                       registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `Angel Salinas completed CD for ${tFolio}. Advancing to EP.`);
+                                       registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `Angel Salinas completed CD for ${tFolio}. Payload: ` + JSON.stringify(syncData));
                                        reverseSyncTasks.push(syncData);
                                    }
                                }
