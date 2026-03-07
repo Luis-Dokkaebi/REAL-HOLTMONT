@@ -1911,7 +1911,7 @@
                               <th style="width: 80px;">F. INICIO</th>
                               <th style="width: 80px;">F. VISITA</th>
                               <th style="width: 80px;">F. ENTREGA</th>
-                              <th style="width: auto;">PROCESO</th>
+                              <th style="width: auto;">MAP COT</th>
                           </tr>
                       </thead>
                       <tbody>
@@ -2001,11 +2001,28 @@
                              <span style="position:absolute; right:2px; top:50%; transform:translateY(-50%); color:#217346; font-size:10px; font-weight:bold; pointer-events:none;">%</span>
                          </div>
                          <div v-else-if="isCol(h, ['ESTATUS','STATUS'])" style="width:100%; height:100%;">
-                             <div v-if="currentUsername === 'ANTONIA_VENTAS'"
-                                  style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold; padding:0 4px; text-align:center; white-space:normal; line-height:1.1;"
-                                  :style="getAntoniaStatusStyle(row[h])"
-                                  @click="openStatusSelector(row, h)">
-                                 {{ row[h] }}
+                             <div v-if="currentUsername === 'ANTONIA_VENTAS'" class="d-flex flex-column h-100">
+                                  <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold; padding:4px; text-align:center; white-space:normal; line-height:1.1; min-height: 25px;"
+                                       :style="getAntoniaStatusStyle(row[h])"
+                                       @click="openStatusSelector(row, h)">
+                                      {{ row[h] }}
+                                  </div>
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; background:#f8f9fa; border-top:1px solid #dee2e6;">
+                                      <div class="hp-timeline-container w-100 m-0 py-1" style="min-height:40px;">
+                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null">
+                                              <div class="hp-circle" :class="step.isDone ? 'green' : 'red'" :title="getFullProcessName(step.id)">
+                                                  <i v-if="step.isDone" class="fas fa-check"></i>
+                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
+                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                                  </div>
+                                              </div>
+                                              <div class="hp-text">
+                                                  {{ step.isDone ? 'Hecho' : 'Pendiente' }} {{ step.id }}<br>
+                                                  <span class="hp-time">{{ step.timeLabel }}</span>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
                              </div>
                              <input v-else
                                     v-model="row[h]"
@@ -2061,6 +2078,7 @@
                             <div v-else-if="String(h).toUpperCase().includes('AVANCE')" style="text-align:center; font-weight:bold; color:#217346;">
                                 {{ row[h] }}%
                             </div>
+
                             <div v-else-if="isCol(h, ['ESTATUS','STATUS']) && currentUsername === 'ANTONIA_VENTAS'"
                                  style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; padding:0 4px; text-align:center; white-space:normal; line-height:1.1;"
                                  :style="getAntoniaStatusStyle(row[h])">
@@ -5593,7 +5611,9 @@ async function toggleVoiceRecording(btnElement) {
               }
           }
           else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'F. ENTREGA' || up === 'F. VISITA' || up === 'FECHA VISITA' || up === 'F. INICIO')) { w = '60px'; fs = '10px'; colColor = '#000'; }
-          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'ESTATUS' || up === 'STATUS')) { w = '180px'; }
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'ESTATUS' || up === 'STATUS')) { w = '350px'; }
+
+
           else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
           else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUsername.value === 'ANTONIA_VENTAS') ? '70px' : '40px'; fs = '10px'; align = 'center'; }
@@ -7451,8 +7471,76 @@ async function toggleVoiceRecording(btnElement) {
           return FULL_PROCESS_NAMES[abbr] || abbr;
       };
 
+      const generateEmojiTimeline = (row) => {
+          let log = [];
+          try {
+              log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
+          } catch(e) { log = []; }
+          if (!Array.isArray(log)) log = [];
+
+          let currentStepId = PROCESS_STEPS[0];
+          if (log.length > 0) {
+              const lastLog = log[log.length - 1];
+              if (lastLog.to) {
+                  currentStepId = lastLog.to;
+              }
+          } else {
+              let mapCot = row["MAP COT"] || row.PROCESO;
+              if (mapCot) {
+                  if (mapCot.includes('🔴')) {
+                     const match = mapCot.match(/🔴\s*([A-Z]+)/);
+                     if (match) currentStepId = match[1];
+                  } else {
+                     currentStepId = mapCot;
+                  }
+              }
+          }
+          if (LEGACY_PROCESS_MAP[currentStepId]) {
+              currentStepId = LEGACY_PROCESS_MAP[currentStepId];
+          }
+
+          const currentIdx = PROCESS_STEPS.indexOf(currentStepId);
+          if (currentIdx === -1) currentStepId = PROCESS_STEPS[0];
+
+          let parts = [];
+          for (let i = 0; i < PROCESS_STEPS.length; i++) {
+              let step = PROCESS_STEPS[i];
+              if (i < currentIdx) {
+                  parts.push('🟢 ' + step);
+              } else if (i === currentIdx) {
+                  parts.push('🔴 ' + step);
+              } else {
+                  parts.push('⚪ ' + step);
+              }
+          }
+          return parts.join(' | ');
+      };
+
       const getProcessStatus = (row) => {
-          let val = row.PROCESO;
+          let log = [];
+          try {
+              log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
+          } catch(e) { log = []; }
+          if (!Array.isArray(log)) log = [];
+
+          let val = null;
+          if (log.length > 0) {
+              const lastLog = log[log.length - 1];
+              if (lastLog.to) {
+                  val = lastLog.to;
+              }
+          }
+          if (!val) {
+              let mapCot = row["MAP COT"] || row.PROCESO;
+              if (mapCot) {
+                  if (mapCot.includes('🔴')) {
+                     const match = mapCot.match(/🔴\s*([A-Z]+)/);
+                     if (match) val = match[1];
+                  } else {
+                     val = mapCot;
+                  }
+              }
+          }
           if (!val) return PROCESS_STEPS[0];
           if (LEGACY_PROCESS_MAP[val]) {
               val = LEGACY_PROCESS_MAP[val];
@@ -7565,8 +7653,6 @@ async function toggleVoiceRecording(btnElement) {
                   confirmButtonText: 'Sí, Avanzar'
               }).then((result) => {
                   if (result.isConfirmed) {
-                      row.PROCESO = nextStep;
-
                       let log = [];
                       try {
                           log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
@@ -7582,6 +7668,12 @@ async function toggleVoiceRecording(btnElement) {
                       });
 
                       row.PROCESO_LOG = JSON.stringify(log);
+
+                      if (currentUsername.value === 'ANTONIA_VENTAS') {
+                          row["MAP COT"] = generateEmojiTimeline(row);
+                      } else {
+                          row["MAP COT"] = nextStep;
+                      }
 
                       saveRow(row);
                   }

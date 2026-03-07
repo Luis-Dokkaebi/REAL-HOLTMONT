@@ -767,6 +767,9 @@ function internalFetchSheetData(sheetName) {
       const dB = b['_sortDate'] instanceof Date ? b['_sortDate'].getTime() : 0;
       return dB - dA;
     };
+
+
+
     return { 
       success: true, 
       data: activeTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest), 
@@ -798,7 +801,7 @@ function apiFetchStaffTrackerData(personName) {
                   if (lastCol > 0) {
                       const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).toUpperCase().trim());
                       const missingCols = [];
-                      if (!headers.includes("PROCESO")) missingCols.push("PROCESO");
+                      if (!headers.includes("MAP COT")) missingCols.push("MAP COT");
                       if (!headers.includes("PROCESO_LOG")) missingCols.push("PROCESO_LOG");
 
                       if (missingCols.length > 0) {
@@ -1214,7 +1217,7 @@ function internalUpdateTask(personName, taskData, username) {
                  // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
                  // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
 
-                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
+                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
 
                  Object.keys(taskData).forEach(key => {
                      const kUp = key.toUpperCase();
@@ -2130,7 +2133,26 @@ function apiFetchProjectTasks(projectName) {
             filteredTasks.push(rowObj);
         }
     }
+
+    if (sheetName.includes('ANTONIA_VENTAS')) {
+        const estatusIdx = headers.indexOf('ESTATUS');
+        const avanceIdx = headers.indexOf('AVANCE');
+        const mapCotIdx = headers.indexOf('MAP COT');
+
+        if (mapCotIdx !== -1) {
+            headers.splice(mapCotIdx, 1); // remove
+
+            // Recalculate positions
+            const estIdx2 = headers.indexOf('ESTATUS');
+            if (estIdx2 !== -1) {
+                headers.splice(estIdx2 + 1, 0, 'MAP COT');
+            } else {
+                headers.push('MAP COT');
+            }
+        }
+    }
     return { success: true, data: filteredTasks.reverse(), headers: headers };
+
   } catch (e) {
     console.error(e);
     return { success: false, message: e.toString() };
@@ -3197,7 +3219,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                  taskData['FOLIO'] = String(currentSeq);
              } else {
                  // RESTRICTIONS FOR EXISTING TASKS
-                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
+                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
                  Object.keys(taskData).forEach(key => {
                      const kUp = key.toUpperCase();
                      if (key.startsWith('_')) return;
