@@ -577,6 +577,69 @@
         stroke: #666; stroke-width: 2; fill: none;
         stroke-dasharray: 1000; stroke-dashoffset: 1000;
     }
+
+    /* PAPA CALIENTE TIMELINE STYLES */
+    .hp-timeline-container {
+        display: flex;
+        justify-content: flex-start;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 5px;
+    }
+    .hp-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 65px;
+    }
+    .hp-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        margin-bottom: 5px;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .hp-circle:hover {
+        transform: scale(1.1);
+    }
+    .hp-circle.green { background-color: #28a745; }
+    .hp-circle.red { background-color: #dc3545; }
+
+    .hp-clock-icon {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        background: white;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .hp-clock-icon.green-icon { color: #17a2b8; }
+    .hp-clock-icon.red-icon { color: #dc3545; }
+    .hp-clock-icon.check-icon { color: #28a745; }
+
+    .hp-text {
+        font-size: 10px;
+        text-align: center;
+        line-height: 1.1;
+        color: #333;
+    }
+    .hp-time {
+        font-weight: bold;
+        font-size: 11px;
+    }
   </style>
 </head>
 <body>
@@ -1848,7 +1911,7 @@
                               <th style="width: 80px;">F. INICIO</th>
                               <th style="width: 80px;">F. VISITA</th>
                               <th style="width: 80px;">F. ENTREGA</th>
-                              <th style="width: 150px;">PROCESO</th>
+                              <th style="width: auto;">PROCESO</th>
                           </tr>
                       </thead>
                       <tbody>
@@ -1863,16 +1926,20 @@
                               <td><input :value="row['F. INICIO'] || row['FECHA'] || row['ALTA'] || row['FECHA INICIO'] || row['FECHA_INICIO']" class="excel-input text-center" readonly></td>
                               <td><input :value="row['F. VISITA'] || row['FECHA VISITA']" class="excel-input text-center" readonly></td>
                               <td><input :value="row['F. ENTREGA'] || row['FECHA ENTREGA']" class="excel-input text-center" readonly></td>
-                              <td class="p-1 text-center">
-                                  <div class="d-flex flex-column align-items-center gap-1">
-                                      <button class="btn btn-sm fw-bold border shadow-sm px-3 rounded-pill w-100"
-                                              :class="getProcessBtnClass(row)"
-                                              style="font-size: 11px; white-space: normal;"
-                                              :title="getFullProcessName(getProcessStatus(row))"
-                                              @click="advanceProcess(row)">
-                                          {{ getProcessStatus(row) }}
-                                      </button>
-                                      <small class="text-muted" style="font-size: 10px; font-family: 'Share Tech Mono';">{{ getLastUpdate(row) }}</small>
+                              <td class="p-1">
+                                  <div class="hp-timeline-container">
+                                      <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null">
+                                          <div class="hp-circle" :class="step.isDone ? 'green' : 'red'" :title="getFullProcessName(step.id)">
+                                              <i v-if="step.isDone" class="fas fa-check"></i>
+                                              <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
+                                                  <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                              </div>
+                                          </div>
+                                          <div class="hp-text">
+                                              {{ step.isDone ? 'Hecho' : 'Pendiente' }} {{ step.id }}<br>
+                                              <span class="hp-time">{{ step.timeLabel }}</span>
+                                          </div>
+                                      </div>
                                   </div>
                               </td>
                           </tr>
@@ -7406,6 +7473,83 @@ async function toggleVoiceRecording(btnElement) {
           return colors[idx] || 'btn-outline-primary';
       };
 
+      const getProcessTimeline = (row) => {
+          const currentStatus = getProcessStatus(row);
+          const currentIdx = PROCESS_STEPS.indexOf(currentStatus);
+
+          let log = [];
+          try {
+              if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG);
+          } catch(e) { log = []; }
+          if (!Array.isArray(log)) log = [];
+
+          // Parse start date for first item
+          let startDate = new Date();
+          const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA'];
+          for (const k of dateKeys) {
+              if (row[k]) {
+                  const val = row[k];
+                  if (val instanceof Date) startDate = val;
+                  else if (typeof val === 'string') {
+                      const parts = val.split('/');
+                      if (parts.length === 3) {
+                          let y = parts[2];
+                          if (y.length === 2) y = '20' + y;
+                          startDate = new Date(y, parts[1]-1, parts[0]);
+                      }
+                  }
+                  break;
+              }
+          }
+
+          const formatDiff = (diffMs) => {
+              const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+              const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+              if (days > 0) return `${days}d ${hours}h`;
+              if (hours > 0) return `${hours}h`;
+              return '< 1h';
+          };
+
+          return PROCESS_STEPS.map((stepId, idx) => {
+              const isDone = idx < currentIdx;
+              const isCurrent = idx === currentIdx;
+
+              let timeLabel = '';
+
+              if (isDone) {
+                  // Find when THIS step was completed (when it transitioned to next step)
+                  const transition = log.find(l => l.from === stepId);
+                  if (transition && transition.timestamp) {
+                      const diff = new Date().getTime() - transition.timestamp;
+                      timeLabel = 'hace ' + formatDiff(diff);
+                  } else {
+                      timeLabel = 'hace -';
+                  }
+              } else if (isCurrent) {
+                  // Find when the previous step transitioned to THIS step
+                  let prevTime = startDate.getTime();
+                  if (idx > 0) {
+                      const transitionToHere = log.find(l => l.to === stepId);
+                      if (transitionToHere && transitionToHere.timestamp) {
+                          prevTime = transitionToHere.timestamp;
+                      }
+                  }
+                  const diff = new Date().getTime() - prevTime;
+                  timeLabel = formatDiff(diff);
+              } else {
+                  // Future steps
+                  timeLabel = '24h';
+              }
+
+              return {
+                  id: stepId,
+                  isDone: isDone,
+                  isCurrent: isCurrent,
+                  timeLabel: timeLabel
+              };
+          });
+      };
+
       const advanceProcess = (row) => {
           const current = getProcessStatus(row);
           const idx = PROCESS_STEPS.indexOf(current);
@@ -7488,7 +7632,7 @@ async function toggleVoiceRecording(btnElement) {
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
-      getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName };
+      getProcessTimeline, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
