@@ -1344,8 +1344,13 @@ function internalUpdateTask(personName, taskData, username) {
 
                  // NEW: Angel Salinas reverse sync for Calculation and Design
                  if (String(personName).toUpperCase() === "ANGEL SALINAS") {
-                     const status = String(taskData['ESTATUS'] || taskData['STATUS'] || '').toUpperCase();
-                     const rawAvance = String(taskData['AVANCE'] || taskData['AVANCE %'] || taskData['% AVANCE'] || '').replace('%','').replace(',','.').trim();
+                     const getTVal = (keysArr) => {
+                         const k = Object.keys(taskData).find(key => keysArr.includes(key.toUpperCase().trim()));
+                         return k ? taskData[k] : '';
+                     };
+
+                     const status = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase();
+                     const rawAvance = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE'])).replace('%','').replace(',','.').trim();
                      const numAvance = parseFloat(rawAvance);
                      const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || numAvance === 100 || numAvance === 1;
 
@@ -1354,7 +1359,7 @@ function internalUpdateTask(personName, taskData, username) {
                      }
 
                      let shouldUpdate = false;
-                     const tFolio = String(taskData['FOLIO'] || taskData['ID'] || "").toUpperCase().trim();
+                     const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
 
                      const antSheet = findSheetSmart("ANTONIA_VENTAS");
                      if (antSheet) {
@@ -3521,13 +3526,17 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    if (antData.success && antData.data) {
                        const reverseSyncTasks = [];
                        distributionTasks.forEach(t => {
-                           const status = String(t['ESTATUS'] || t['STATUS'] || '').toUpperCase();
-                           const rawAvance = String(t['AVANCE'] || t['AVANCE %'] || t['% AVANCE'] || '').replace('%','').replace(',','.').trim();
+                           const getTVal = (keysArr) => {
+                               const k = Object.keys(t).find(key => keysArr.includes(key.toUpperCase().trim()));
+                               return k ? t[k] : '';
+                           };
+                           const status = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase();
+                           const rawAvance = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE'])).replace('%','').replace(',','.').trim();
                            const numAvance = parseFloat(rawAvance);
                            const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || numAvance === 100 || numAvance === 1;
 
                            if (isDone) {
-                               const tFolio = String(t['FOLIO'] || t['ID'] || "").toUpperCase().trim();
+                               const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
                                const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
                                if (targetRow) {
                                    let currentStep = "L";
