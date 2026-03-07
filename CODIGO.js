@@ -1391,7 +1391,11 @@ function internalUpdateTask(personName, taskData, username) {
                                              dateStr: new Date().toLocaleString()
                                          });
 
-                                         syncData['PROCESO_LOG'] = JSON.stringify(log);
+                                         // Construct a minimalistic syncData for Antonia to avoid overwriting her fields
+                                         const cleanSyncData = {
+                                             'FOLIO': tFolio,
+                                             'PROCESO_LOG': JSON.stringify(log)
+                                         };
 
                                          // Helper for Emoji Map Cot
                                          const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
@@ -1407,14 +1411,27 @@ function internalUpdateTask(personName, taskData, username) {
                                                  parts.push('⚪ ' + step);
                                              }
                                          }
-                                         syncData['MAP COT'] = parts.join(' | ');
+                                         cleanSyncData['MAP COT'] = parts.join(' | ');
 
-                                         // Don't overwrite the overall status and progress from Angel to Antonia unless we want to,
-                                         // but since it advances, it's fine. We may delete them to not interfere with Antonia's columns
+                                         // Instead of updating the whole taskData, we only send the minimal fields
+                                         Object.assign(syncData, cleanSyncData);
+
                                          delete syncData['ESTATUS'];
                                          delete syncData['STATUS'];
                                          delete syncData['AVANCE'];
                                          delete syncData['AVANCE %'];
+
+                                         // We also delete other fields that belong to Angel but shouldn't overwrite Antonia's
+                                         // like COMENTARIOS, FECHA, unless we specifically want to. To be safe, let's just
+                                         // send the cleanSyncData directly to Antonia later. We'll replace syncData entirely.
+                                         // So let's re-assign syncData to cleanSyncData, keeping ID if it exists.
+                                         for (let key in syncData) {
+                                             if (!['FOLIO', 'ID', 'PROCESO_LOG', 'MAP COT'].includes(key)) {
+                                                 delete syncData[key];
+                                             }
+                                         }
+
+                                         registrarLog("SYSTEM", "REVERSE_SYNC", `Angel Salinas completed CD for ${tFolio}. Advancing to EP.`);
                                      }
                                  }
                              }
@@ -3541,7 +3558,10 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                    } catch(e) {}
 
                                    if (currentStep === 'CD') {
-                                       let syncData = JSON.parse(JSON.stringify(t));
+                                       let syncData = {
+                                           'FOLIO': tFolio,
+                                           'ID': t['ID'] || tFolio
+                                       };
                                        let log = [];
                                        try {
                                            if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
@@ -3572,11 +3592,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        }
                                        syncData['MAP COT'] = parts.join(' | ');
 
-                                       delete syncData['ESTATUS'];
-                                       delete syncData['STATUS'];
-                                       delete syncData['AVANCE'];
-                                       delete syncData['AVANCE %'];
-
+                                       registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `Angel Salinas completed CD for ${tFolio}. Advancing to EP.`);
                                        reverseSyncTasks.push(syncData);
                                    }
                                }
