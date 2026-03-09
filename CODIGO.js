@@ -1294,6 +1294,25 @@ function internalUpdateTask(personName, taskData, username) {
                  }
              }
 
+             if (currentStep === 'EP') {
+                 try {
+                     const teresaData = JSON.parse(JSON.stringify(distData));
+                     if (taskData._justTransitionedToEP) {
+                         teresaData['ESTATUS'] = 'PENDIENTE';
+                         teresaData['AVANCE'] = '0%';
+                     } else {
+                         delete teresaData['ESTATUS'];
+                         delete teresaData['STATUS'];
+                         delete teresaData['AVANCE'];
+                         delete teresaData['AVANCE %'];
+                     }
+                     const aRes = internalBatchUpdateTasks("TERESA GARZA", [teresaData]);
+                     if (!aRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a TERESA GARZA: " + aRes.message);
+                 } catch(e) {
+                     registrarLog("ANTONIA", "DIST_ERROR", "TERESA GARZA: " + e.toString());
+                 }
+             }
+
              // MODIFICADO: Se comenta la distribución a vendedores para evitar duplicidad y tráfico innecesario.
              // "ya no mandará la misma tarea a la hoja de los vendedores"
              // UPDATE: Se reactiva la distribución por reporte de bug (No se reflejaban actividades).
@@ -1333,7 +1352,7 @@ function internalUpdateTask(personName, taskData, username) {
              }
 
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
-        } else if (String(personName).toUpperCase().includes("(VENTAS)") || String(personName).toUpperCase() === "ANGEL SALINAS") {
+        } else if (String(personName).toUpperCase().includes("(VENTAS)") || String(personName).toUpperCase() === "ANGEL SALINAS" || String(personName).toUpperCase() === "TERESA GARZA") {
              // Sincronización Inversa: Vendedor -> ANTONIA_VENTAS
              // Si el vendedor actualiza su tabla, replicamos el cambio a la maestra de ANTONIA
              try {
@@ -1343,7 +1362,8 @@ function internalUpdateTask(personName, taskData, username) {
                                   delete syncData['PROCESO']; // Evitar conflictos de índice de fila
 
                  // NEW: Angel Salinas reverse sync for Calculation and Design
-                 if (String(personName).toUpperCase() === "ANGEL SALINAS") {
+                 if (String(personName).toUpperCase() === "ANGEL SALINAS" || String(personName).toUpperCase() === "TERESA GARZA") {
+                     const isAngel = String(personName).toUpperCase() === "ANGEL SALINAS";
                      const getTVal = (keysArr) => {
                          const k = Object.keys(taskData).find(key => keysArr.includes(key.toUpperCase().trim()));
                          return k ? taskData[k] : '';
@@ -1385,22 +1405,23 @@ function internalUpdateTask(personName, taskData, username) {
                                      }
                                  } catch(e) {}
 
-                                 if (currentStep === 'CD') {
+                                 if ((isAngel && currentStep === 'CD') || (!isAngel && currentStep === 'EP')) {
                                      let log = [];
                                      try {
                                          if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
                                      } catch(e) {}
                                      if (!Array.isArray(log)) log = [];
 
+                                     const nextStep = isAngel ? 'EP' : 'CI';
                                      log.push({
-                                         from: 'CD',
-                                         to: 'EP',
+                                         from: currentStep,
+                                         to: nextStep,
                                          timestamp: new Date().getTime(),
                                          dateStr: new Date().toLocaleString()
                                      });
 
                                      const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                     const currentIdx = steps.indexOf('EP');
+                                     const currentIdx = steps.indexOf(nextStep);
                                      let parts = [];
                                      for (let i = 0; i < steps.length; i++) {
                                          let step = steps[i];
@@ -1426,7 +1447,7 @@ function internalUpdateTask(personName, taskData, username) {
                                      syncData['_rowIndex'] = targetRow['_rowIndex'];
 
                                      shouldUpdate = true;
-                                     registrarLog("SYSTEM", "REVERSE_SYNC", `Angel completed CD for ${tFolio}. Payload: ` + JSON.stringify(syncData));
+                                     registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed ${currentStep} for ${tFolio}. Advancing to ${nextStep}. Payload: ` + JSON.stringify(syncData));
                                  }
                              }
                          }
@@ -3313,6 +3334,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
       const processedTasks = [];
       const distributionTasks = [];
       const angelDistributionTasks = [];
+      const teresaDistributionTasks = [];
       const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
 
       // Sequence Logic for Antonia
@@ -3407,7 +3429,21 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                  }
                  angelDistributionTasks.push(angelData);
              }
-        } else if (String(personName).toUpperCase().includes("(VENTAS)") || String(personName).toUpperCase() === "ANGEL SALINAS") {
+
+             if (currentStep === 'EP') {
+                 const teresaData = JSON.parse(JSON.stringify(distData));
+                 if (taskData._justTransitionedToEP) {
+                     teresaData['ESTATUS'] = 'PENDIENTE';
+                     teresaData['AVANCE'] = '0%';
+                 } else {
+                     delete teresaData['ESTATUS'];
+                     delete teresaData['STATUS'];
+                     delete teresaData['AVANCE'];
+                     delete teresaData['AVANCE %'];
+                 }
+                 teresaDistributionTasks.push(teresaData);
+             }
+        } else if (String(personName).toUpperCase().includes("(VENTAS)") || String(personName).toUpperCase() === "ANGEL SALINAS" || String(personName).toUpperCase() === "TERESA GARZA") {
              // REVERSE SYNC PREPARATION
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex;
@@ -3446,6 +3482,20 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                      delete angelData['AVANCE %'];
                  }
                  angelDistributionTasks.push(angelData);
+             }
+
+             if (currentStep === 'EP') {
+                 const teresaData = JSON.parse(JSON.stringify(distData));
+                 if (taskData._justTransitionedToEP) {
+                     teresaData['ESTATUS'] = 'PENDIENTE';
+                     teresaData['AVANCE'] = '0%';
+                 } else {
+                     delete teresaData['ESTATUS'];
+                     delete teresaData['STATUS'];
+                     delete teresaData['AVANCE'];
+                     delete teresaData['AVANCE %'];
+                 }
+                 teresaDistributionTasks.push(teresaData);
              }
         }
         processedTasks.push(taskData);
@@ -3517,8 +3567,13 @@ function apiSaveTrackerBatch(personName, tasks, username) {
               internalBatchUpdateTasks("ANGEL SALINAS", angelDistributionTasks, false);
           }
 
+          if (isAntonia && teresaDistributionTasks.length > 0) {
+              internalBatchUpdateTasks("TERESA GARZA", teresaDistributionTasks, false);
+          }
+
           // Handle Reverse Sync (Vendor -> Antonia)
-          if (String(personName).toUpperCase() === "ANGEL SALINAS" && distributionTasks.length > 0) {
+          if ((String(personName).toUpperCase() === "ANGEL SALINAS" || String(personName).toUpperCase() === "TERESA GARZA") && distributionTasks.length > 0) {
+               const isAngel = String(personName).toUpperCase() === "ANGEL SALINAS";
                // Angel Salinas reverse sync for Calculation and Design in batch
                const antSheet = findSheetSmart("ANTONIA_VENTAS");
                if (antSheet) {
@@ -3557,7 +3612,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        }
                                    } catch(e) {}
 
-                                   if (currentStep === 'CD') {
+                                   if ((isAngel && currentStep === 'CD') || (!isAngel && currentStep === 'EP')) {
                                        let syncData = {
                                            'FOLIO': targetRow['FOLIO'] || tFolio,
                                            'ID': targetRow['ID'] || t['ID'] || tFolio,
@@ -3569,9 +3624,10 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        } catch(e) {}
                                        if (!Array.isArray(log)) log = [];
 
+                                       const nextStep = isAngel ? 'EP' : 'CI';
                                        log.push({
-                                           from: 'CD',
-                                           to: 'EP',
+                                           from: currentStep,
+                                           to: nextStep,
                                            timestamp: new Date().getTime(),
                                            dateStr: new Date().toLocaleString()
                                        });
@@ -3579,7 +3635,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        syncData['PROCESO_LOG'] = JSON.stringify(log);
 
                                        const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                       const currentIdx = steps.indexOf('EP');
+                                       const currentIdx = steps.indexOf(nextStep);
                                        let parts = [];
                                        for (let i = 0; i < steps.length; i++) {
                                            let step = steps[i];
@@ -3593,7 +3649,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        }
                                        syncData['MAP COT'] = parts.join(' | ');
 
-                                       registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `Angel Salinas completed CD for ${tFolio}. Payload: ` + JSON.stringify(syncData));
+                                       registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `${personName} completed ${currentStep} for ${tFolio}. Advancing to ${nextStep}. Payload: ` + JSON.stringify(syncData));
                                        reverseSyncTasks.push(syncData);
                                    }
                                }

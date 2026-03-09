@@ -7687,6 +7687,9 @@ const filteredStaffTrackerData = computed(() => {
                       if (nextStep === 'CD') {
                           row._justTransitionedToCD = true;
                       }
+                      if (nextStep === 'EP') {
+                          row._justTransitionedToEP = true;
+                      }
 
                       saveRow(row);
                   }
