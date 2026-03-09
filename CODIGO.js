@@ -895,7 +895,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     if (headersChanged) {
         const existingFilter = sheet.getFilter();
         if (existingFilter) {
-            try { existingFilter.remove(); } catch(e) {} 
+            try { existingFilter.remove(); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
         }
         sheet.getRange(headerRowIndex + 1, 1, 1, values[headerRowIndex].length).setValues([values[headerRowIndex]]);
         SpreadsheetApp.flush(); 
@@ -912,7 +912,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       const k = key.toUpperCase().trim();
       if (colMap[k] !== undefined) return colMap[k];
       const aliases = {
-        'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO'],
+        'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO', 'F. INICIO', 'F. VISITA'],
         'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN', 'ACTIVIDAD'],
         'RESPONSABLE': ['RESPONSABLE', 'RESPONSABLES', 'INVOLUCRADOS', 'VENDEDOR', 'ENCARGADO', 'ASIGNADO'],
         'RELOJ': ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'],
@@ -1116,7 +1116,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
           // REMOVE FILTER IF EXISTS TO AVOID "HEADER MUST HAVE VALUE" ERROR
           const existingFilter = sheet.getFilter();
           if (existingFilter) {
-              try { existingFilter.remove(); } catch(e) {}
+              try { existingFilter.remove(); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
           }
 
           if(values.length < dataRange.getNumRows()) sheet.clearContents();
@@ -1130,6 +1130,12 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     }
 
     if (rowsToAppend.length > 0) {
+        // REMOVE FILTER BEFORE INSERT TO PREVENT APPS SCRIPT ERRORS
+        const existingFilter = sheet.getFilter();
+        if (existingFilter) {
+            try { existingFilter.remove(); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+        }
+
         const finalMaxCols = values.length > 0 ? values[0].length : totalColumns;
         const normalizedAppend = rowsToAppend.map(r => {
              if (r.length >= finalMaxCols) return r;
@@ -1217,7 +1223,7 @@ function internalUpdateTask(personName, taskData, username) {
                  // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
                  // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
 
-                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
+                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
 
                  Object.keys(taskData).forEach(key => {
                      const kUp = key.toUpperCase();
@@ -1273,7 +1279,7 @@ function internalUpdateTask(personName, taskData, username) {
                          }
                      }
                  }
-             } catch(e) {}
+             } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
 
              if (currentStep === 'CD') {
                  try {
@@ -1403,13 +1409,13 @@ function internalUpdateTask(personName, taskData, username) {
                                              }
                                          }
                                      }
-                                 } catch(e) {}
+                                 } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
 
                                  if ((isAngel && currentStep === 'CD') || (!isAngel && currentStep === 'EP')) {
                                      let log = [];
                                      try {
                                          if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
-                                     } catch(e) {}
+                                     } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
                                      if (!Array.isArray(log)) log = [];
 
                                      const nextStep = isAngel ? 'EP' : 'CI';
@@ -1461,7 +1467,7 @@ function internalUpdateTask(personName, taskData, username) {
                                          try {
                                              const tRes = internalBatchUpdateTasks("TERESA GARZA", [teresaData]);
                                              if (!tRes.success) registrarLog("SYSTEM", "DIST_FAIL", "Fallo envío a TERESA GARZA: " + tRes.message);
-                                         } catch(e) {}
+                                         } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
                                      } else if (nextStep === 'CI') {
                                          // If Teresa finishes, it advances to CI. Antonia handles CI directly.
                                          // But we should update ADMIN just in case.
@@ -1469,7 +1475,7 @@ function internalUpdateTask(personName, taskData, username) {
                                          adminData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
                                          adminData['MAP COT'] = syncData['MAP COT'];
                                          delete adminData._rowIndex;
-                                         try { internalBatchUpdateTasks("ADMINISTRADOR", [adminData]); } catch(e) {}
+                                         try { internalBatchUpdateTasks("ADMINISTRADOR", [adminData]); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
                                      }
                                  }
                              }
@@ -1537,7 +1543,7 @@ function apiFetchDrafts() {
       let diasObj = {l:false, m:false, x:false, j:false, v:false, s:false, d:false};
       try {
           if (r[19]) diasObj = JSON.parse(r[19]);
-      } catch(e) {}
+      } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
 
       return {
         especialidad: r[0], concepto: r[1], responsable: r[2], horas: r[3], cumplimiento: r[4],
@@ -2216,7 +2222,7 @@ function apiFetchCascadeTree() {
              let dateStr = "";
              if (colMap.date > -1 && row[colMap.date]) {
                  try { dateStr = Utilities.formatDate(new Date(row[colMap.date]), SS.getSpreadsheetTimeZone(), "dd/MM/yy HH:mm");
-                 } catch(e) {}
+                 } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
              }
              sites.push({
                id: String(row[colMap.id]).trim(),
@@ -2693,7 +2699,7 @@ function incrementarContadorDias() {
                             newVal = Math.max(0, diffDays);
                             calculated = true;
                         }
-                    } catch(e) {}
+                    } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
                 }
             }
             
@@ -3402,7 +3408,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                  taskData['FOLIO'] = String(currentSeq);
              } else {
                  // RESTRICTIONS FOR EXISTING TASKS
-                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
+                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
                  Object.keys(taskData).forEach(key => {
                      const kUp = key.toUpperCase();
                      if (key.startsWith('_')) return;
@@ -3437,7 +3443,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                          }
                      }
                  }
-             } catch(e) {}
+             } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
 
              if (currentStep === 'CD') {
                  const angelData = JSON.parse(JSON.stringify(distData));
@@ -3491,7 +3497,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                          }
                      }
                  }
-             } catch(e) {}
+             } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
 
              if (currentStep === 'CD') {
                  const angelData = JSON.parse(JSON.stringify(distData));
@@ -3595,8 +3601,8 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           }
 
           // Handle Reverse Sync (Vendor -> Antonia)
-          if ((String(personName).toUpperCase() === "ANGEL SALINAS" || String(personName).toUpperCase() === "TERESA GARZA") && distributionTasks.length > 0) {
-               const isAngel = String(personName).toUpperCase() === "ANGEL SALINAS";
+          if ((String(personName).toUpperCase().trim() === "ANGEL SALINAS" || String(personName).toUpperCase().trim() === "TERESA GARZA") && distributionTasks.length > 0) {
+               const isAngel = String(personName).toUpperCase().trim() === "ANGEL SALINAS";
                // Angel Salinas reverse sync for Calculation and Design in batch
                const antSheet = findSheetSmart("ANTONIA_VENTAS");
                if (antSheet) {
@@ -3633,7 +3639,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                                }
                                            }
                                        }
-                                   } catch(e) {}
+                                   } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
 
                                    if ((isAngel && currentStep === 'CD') || (!isAngel && currentStep === 'EP')) {
                                        let syncData = {
@@ -3644,7 +3650,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        let log = [];
                                        try {
                                            if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
-                                       } catch(e) {}
+                                       } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
                                        if (!Array.isArray(log)) log = [];
 
                                        const nextStep = isAngel ? 'EP' : 'CI';
@@ -3683,13 +3689,13 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                            teresaData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
                                            teresaData['MAP COT'] = syncData['MAP COT'];
                                            delete teresaData._rowIndex;
-                                           try { internalBatchUpdateTasks("TERESA GARZA", [teresaData], false); } catch(e) {}
+                                           try { internalBatchUpdateTasks("TERESA GARZA", [teresaData], false); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
                                        } else if (nextStep === 'CI') {
                                            const adminData = JSON.parse(JSON.stringify(targetRow));
                                            adminData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
                                            adminData['MAP COT'] = syncData['MAP COT'];
                                            delete adminData._rowIndex;
-                                           try { internalBatchUpdateTasks("ADMINISTRADOR", [adminData], false); } catch(e) {}
+                                           try { internalBatchUpdateTasks("ADMINISTRADOR", [adminData], false); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
                                        }
                                    }
                                }
