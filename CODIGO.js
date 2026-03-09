@@ -1448,6 +1448,29 @@ function internalUpdateTask(personName, taskData, username) {
 
                                      shouldUpdate = true;
                                      registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed ${currentStep} for ${tFolio}. Advancing to ${nextStep}. Payload: ` + JSON.stringify(syncData));
+
+                                     // FORWARD DISTRIBUTE IF IT ADVANCED TO A NEW ASSIGNED STEP
+                                     if (nextStep === 'EP') {
+                                         const teresaData = JSON.parse(JSON.stringify(targetRow));
+                                         teresaData['ESTATUS'] = 'PENDIENTE';
+                                         teresaData['AVANCE'] = '0%';
+                                         teresaData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
+                                         teresaData['MAP COT'] = syncData['MAP COT'];
+                                         delete teresaData._rowIndex;
+
+                                         try {
+                                             const tRes = internalBatchUpdateTasks("TERESA GARZA", [teresaData]);
+                                             if (!tRes.success) registrarLog("SYSTEM", "DIST_FAIL", "Fallo envío a TERESA GARZA: " + tRes.message);
+                                         } catch(e) {}
+                                     } else if (nextStep === 'CI') {
+                                         // If Teresa finishes, it advances to CI. Antonia handles CI directly.
+                                         // But we should update ADMIN just in case.
+                                         const adminData = JSON.parse(JSON.stringify(targetRow));
+                                         adminData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
+                                         adminData['MAP COT'] = syncData['MAP COT'];
+                                         delete adminData._rowIndex;
+                                         try { internalBatchUpdateTasks("ADMINISTRADOR", [adminData]); } catch(e) {}
+                                     }
                                  }
                              }
                          }
@@ -3651,6 +3674,23 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                                        registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `${personName} completed ${currentStep} for ${tFolio}. Advancing to ${nextStep}. Payload: ` + JSON.stringify(syncData));
                                        reverseSyncTasks.push(syncData);
+
+                                       // FORWARD DISTRIBUTE IF IT ADVANCED TO A NEW ASSIGNED STEP
+                                       if (nextStep === 'EP') {
+                                           const teresaData = JSON.parse(JSON.stringify(targetRow));
+                                           teresaData['ESTATUS'] = 'PENDIENTE';
+                                           teresaData['AVANCE'] = '0%';
+                                           teresaData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
+                                           teresaData['MAP COT'] = syncData['MAP COT'];
+                                           delete teresaData._rowIndex;
+                                           try { internalBatchUpdateTasks("TERESA GARZA", [teresaData], false); } catch(e) {}
+                                       } else if (nextStep === 'CI') {
+                                           const adminData = JSON.parse(JSON.stringify(targetRow));
+                                           adminData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
+                                           adminData['MAP COT'] = syncData['MAP COT'];
+                                           delete adminData._rowIndex;
+                                           try { internalBatchUpdateTasks("ADMINISTRADOR", [adminData], false); } catch(e) {}
+                                       }
                                    }
                                }
                            }
