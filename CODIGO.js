@@ -895,7 +895,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     if (headersChanged) {
         const existingFilter = sheet.getFilter();
         if (existingFilter) {
-            try { existingFilter.remove(); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+            try { existingFilter.remove(); } catch(e) {}
         }
         sheet.getRange(headerRowIndex + 1, 1, 1, values[headerRowIndex].length).setValues([values[headerRowIndex]]);
         SpreadsheetApp.flush(); 
@@ -912,7 +912,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       const k = key.toUpperCase().trim();
       if (colMap[k] !== undefined) return colMap[k];
       const aliases = {
-        'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO', 'F. INICIO', 'F. VISITA'],
+        'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO'],
         'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN', 'ACTIVIDAD'],
         'RESPONSABLE': ['RESPONSABLE', 'RESPONSABLES', 'INVOLUCRADOS', 'VENDEDOR', 'ENCARGADO', 'ASIGNADO'],
         'RELOJ': ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'],
@@ -1116,7 +1116,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
           // REMOVE FILTER IF EXISTS TO AVOID "HEADER MUST HAVE VALUE" ERROR
           const existingFilter = sheet.getFilter();
           if (existingFilter) {
-              try { existingFilter.remove(); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+              try { existingFilter.remove(); } catch(e) {}
           }
 
           if(values.length < dataRange.getNumRows()) sheet.clearContents();
@@ -1130,12 +1130,6 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     }
 
     if (rowsToAppend.length > 0) {
-        // REMOVE FILTER BEFORE INSERT TO PREVENT APPS SCRIPT ERRORS
-        const existingFilter = sheet.getFilter();
-        if (existingFilter) {
-            try { existingFilter.remove(); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-        }
-
         const finalMaxCols = values.length > 0 ? values[0].length : totalColumns;
         const normalizedAppend = rowsToAppend.map(r => {
              if (r.length >= finalMaxCols) return r;
@@ -1223,7 +1217,7 @@ function internalUpdateTask(personName, taskData, username) {
                  // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
                  // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
 
-                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
+                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
 
                  Object.keys(taskData).forEach(key => {
                      const kUp = key.toUpperCase();
@@ -1262,60 +1256,16 @@ function internalUpdateTask(personName, taskData, username) {
              delete distData['PROCESO_LOG'];
                           delete distData['PROCESO'];
 
-             // NEW: Check if current step is CD for Angel Salinas distribution
-             let currentStep = "L";
-             try {
-                 let log = taskData['PROCESO_LOG'] ? JSON.parse(taskData['PROCESO_LOG']) : [];
-                 if (Array.isArray(log) && log.length > 0) {
-                     currentStep = log[log.length - 1].to;
-                 } else {
-                     let mapCot = taskData["MAP COT"] || taskData.PROCESO;
-                     if (mapCot) {
-                         if (mapCot.includes('🔴')) {
-                            const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                            if (match) currentStep = match[1];
-                         } else {
-                            currentStep = mapCot;
-                         }
-                     }
-                 }
-             } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-
-             if (currentStep === 'CD') {
+             // MANUAL DELEGATION (Papa Caliente)
+             if (taskData._assignToWorker && taskData._assignStep) {
                  try {
-                     const angelData = JSON.parse(JSON.stringify(distData));
-                     if (taskData._justTransitionedToCD) {
-                         angelData['ESTATUS'] = 'PENDIENTE';
-                         angelData['AVANCE'] = '0%';
-                     } else {
-                         delete angelData['ESTATUS'];
-                         delete angelData['STATUS'];
-                         delete angelData['AVANCE'];
-                         delete angelData['AVANCE %'];
-                     }
-                     const aRes = internalBatchUpdateTasks("ANGEL SALINAS", [angelData]);
-                     if (!aRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a ANGEL SALINAS: " + aRes.message);
+                     const assignData = JSON.parse(JSON.stringify(distData));
+                     assignData['ESTATUS'] = 'PENDIENTE';
+                     assignData['AVANCE'] = '0%';
+                     const tRes = internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
+                     if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${taskData._assignToWorker}: ${tRes.message}`);
                  } catch(e) {
-                     registrarLog("ANTONIA", "DIST_ERROR", "ANGEL SALINAS: " + e.toString());
-                 }
-             }
-
-             if (currentStep === 'EP') {
-                 try {
-                     const teresaData = JSON.parse(JSON.stringify(distData));
-                     if (taskData._justTransitionedToEP) {
-                         teresaData['ESTATUS'] = 'PENDIENTE';
-                         teresaData['AVANCE'] = '0%';
-                     } else {
-                         delete teresaData['ESTATUS'];
-                         delete teresaData['STATUS'];
-                         delete teresaData['AVANCE'];
-                         delete teresaData['AVANCE %'];
-                     }
-                     const aRes = internalBatchUpdateTasks("TERESA GARZA", [teresaData]);
-                     if (!aRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a TERESA GARZA: " + aRes.message);
-                 } catch(e) {
-                     registrarLog("ANTONIA", "DIST_ERROR", "TERESA GARZA: " + e.toString());
+                     registrarLog("ANTONIA", "DIST_ERROR", e.toString());
                  }
              }
 
@@ -1358,139 +1308,86 @@ function internalUpdateTask(personName, taskData, username) {
              }
 
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
-        } else if (String(personName).toUpperCase().includes("(VENTAS)") || String(personName).toUpperCase() === "ANGEL SALINAS" || String(personName).toUpperCase() === "TERESA GARZA") {
-             // Sincronización Inversa: Vendedor -> ANTONIA_VENTAS
-             // Si el vendedor actualiza su tabla, replicamos el cambio a la maestra de ANTONIA
+        } else {
+             // REVERSE SYNC PREPARATION for ANY worker
              try {
                  const syncData = JSON.parse(JSON.stringify(taskData));
                  delete syncData._rowIndex;
                  delete syncData['PROCESO_LOG'];
-                                  delete syncData['PROCESO']; // Evitar conflictos de índice de fila
+                 delete syncData['PROCESO'];
 
-                 // NEW: Angel Salinas reverse sync for Calculation and Design
-                 if (String(personName).toUpperCase() === "ANGEL SALINAS" || String(personName).toUpperCase() === "TERESA GARZA") {
-                     const isAngel = String(personName).toUpperCase() === "ANGEL SALINAS";
-                     const getTVal = (keysArr) => {
-                         const k = Object.keys(taskData).find(key => keysArr.includes(key.toUpperCase().trim()));
-                         return k ? taskData[k] : '';
-                     };
-
-                     const status = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase();
-                     const rawAvance = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE'])).replace('%','').replace(',','.').trim();
-                     const numAvance = parseFloat(rawAvance);
-                     const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || numAvance === 100 || numAvance === 1;
-
-                     if (!isDone) {
-                         return { success: true, data: taskData };
+                 const getTVal = (keys) => {
+                     for (let k of keys) {
+                         let found = Object.keys(syncData).find(key => key.toUpperCase().trim() === k);
+                         if (found && syncData[found]) return syncData[found];
                      }
+                     return "";
+                 };
 
-                     let shouldUpdate = false;
-                     const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
+                 const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
+                 const avance = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
+                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avance === '100' || avance === '100.00';
 
-                     const antSheet = findSheetSmart("ANTONIA_VENTAS");
-                     if (antSheet) {
-                         const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                         if (antData.success && antData.data) {
-                             const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                             if (targetRow) {
-                                 let currentStep = "L";
-                                 try {
-                                     let log = targetRow['PROCESO_LOG'] ? JSON.parse(targetRow['PROCESO_LOG']) : [];
-                                     if (Array.isArray(log) && log.length > 0) {
-                                         currentStep = log[log.length - 1].to;
-                                     } else {
-                                         let mapCot = targetRow["MAP COT"] || targetRow.PROCESO;
-                                         if (mapCot) {
-                                             if (mapCot.includes('🔴')) {
-                                                const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                                                if (match) currentStep = match[1];
-                                             } else {
-                                                currentStep = mapCot;
-                                             }
-                                         }
-                                     }
-                                 } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+                 const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
 
-                                 if ((isAngel && currentStep === 'CD') || (!isAngel && currentStep === 'EP')) {
-                                     let log = [];
-                                     try {
-                                         if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
-                                     } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-                                     if (!Array.isArray(log)) log = [];
+                 if (tFolio) {
+                     const antData = internalFetchSheetData("ANTONIA_VENTAS");
+                     if (antData.success && antData.data) {
+                         const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
 
-                                     const nextStep = isAngel ? 'EP' : 'CI';
-                                     log.push({
-                                         from: currentStep,
-                                         to: nextStep,
-                                         timestamp: new Date().getTime(),
-                                         dateStr: new Date().toLocaleString()
-                                     });
+                         if (targetRow) {
+                             let log = [];
+                             try {
+                                 if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
+                             } catch(e) {}
 
-                                     const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                     const currentIdx = steps.indexOf(nextStep);
-                                     let parts = [];
-                                     for (let i = 0; i < steps.length; i++) {
-                                         let step = steps[i];
-                                         if (i < currentIdx) {
-                                             parts.push('🟢 ' + step);
-                                         } else if (i === currentIdx) {
-                                             parts.push('🔴 ' + step);
-                                         } else {
-                                             parts.push('⚪ ' + step);
-                                         }
-                                     }
+                             let updated = false;
+                             const updatedLog = log.map(entry => {
+                                 // Check using norm
+                                 let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
+                                 let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
 
-                                     // Ensure syncData only contains minimal fields
-                                     for (let key in syncData) {
-                                         delete syncData[key];
-                                     }
-                                     syncData['FOLIO'] = targetRow['FOLIO'] || tFolio;
-                                     syncData['ID'] = targetRow['ID'] || taskData['ID'] || tFolio;
-                                     syncData['PROCESO_LOG'] = JSON.stringify(log);
-                                     syncData['MAP COT'] = parts.join(' | ');
-
-                                     // Prevent creating a new row by ensuring we only match what's in Antonia's sheet
-                                     syncData['_rowIndex'] = targetRow['_rowIndex'];
-
-                                     shouldUpdate = true;
-                                     registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed ${currentStep} for ${tFolio}. Advancing to ${nextStep}. Payload: ` + JSON.stringify(syncData));
-
-                                     // FORWARD DISTRIBUTE IF IT ADVANCED TO A NEW ASSIGNED STEP
-                                     if (nextStep === 'EP') {
-                                         const teresaData = JSON.parse(JSON.stringify(targetRow));
-                                         teresaData['ESTATUS'] = 'PENDIENTE';
-                                         teresaData['AVANCE'] = '0%';
-                                         teresaData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
-                                         teresaData['MAP COT'] = syncData['MAP COT'];
-                                         delete teresaData._rowIndex;
-
-                                         try {
-                                             const tRes = internalBatchUpdateTasks("TERESA GARZA", [teresaData]);
-                                             if (!tRes.success) registrarLog("SYSTEM", "DIST_FAIL", "Fallo envío a TERESA GARZA: " + tRes.message);
-                                         } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-                                     } else if (nextStep === 'CI') {
-                                         // If Teresa finishes, it advances to CI. Antonia handles CI directly.
-                                         // But we should update ADMIN just in case.
-                                         const adminData = JSON.parse(JSON.stringify(targetRow));
-                                         adminData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
-                                         adminData['MAP COT'] = syncData['MAP COT'];
-                                         delete adminData._rowIndex;
-                                         try { internalBatchUpdateTasks("ADMINISTRADOR", [adminData]); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-                                     }
+                                 if (entry.status === 'IN_PROGRESS' && eNorm === wNorm && isDone) {
+                                     entry.status = 'DONE';
+                                     updated = true;
+                                     registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
                                  }
+                                 return entry;
+                             });
+
+                             if (updated) {
+                                 const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
+                                 let mapCotParts = stepsOrder.map(step => {
+                                     const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
+                                     if (stepEntry) {
+                                         if (stepEntry.status === 'DONE') return '🟢 ' + step;
+                                         if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
+                                         if (stepEntry.status === 'PENDING') return '🔴 ' + step;
+                                     }
+                                     return '⚪ ' + step;
+                                 });
+
+                                 let syncToAntonia = {
+                                     'FOLIO': targetRow['FOLIO'] || tFolio,
+                                     'PROCESO_LOG': JSON.stringify(updatedLog),
+                                     'MAP COT': mapCotParts.join(' | ')
+                                 };
+
+                                 const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
+                                 fileCols.forEach(col => {
+                                     let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
+                                     if (wKey && taskData[wKey] && String(taskData[wKey]).trim() !== "") {
+                                         syncToAntonia[wKey] = taskData[wKey];
+                                     }
+                                 });
+
+                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncToAntonia]);
+                             } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
+                                 // Regular reverse sync for Ventas table changes (comments, values, etc.)
+                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
                              }
                          }
                      }
-
-                     if (!shouldUpdate) {
-                         return { success: true, data: taskData };
-                     }
-                 }
-
-                 // Intentamos actualizar en ANTONIA_VENTAS
-                 const syncRes = internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
-                 if (!syncRes.success) {
-                     console.warn("Fallo sincronización inversa a ANTONIA_VENTAS: " + syncRes.message);
                  }
 
                  // Sincronización Lateral (Peer-to-Peer via VENDEDOR field)
@@ -1543,7 +1440,7 @@ function apiFetchDrafts() {
       let diasObj = {l:false, m:false, x:false, j:false, v:false, s:false, d:false};
       try {
           if (r[19]) diasObj = JSON.parse(r[19]);
-      } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+      } catch(e) {}
 
       return {
         especialidad: r[0], concepto: r[1], responsable: r[2], horas: r[3], cumplimiento: r[4],
@@ -2222,7 +2119,7 @@ function apiFetchCascadeTree() {
              let dateStr = "";
              if (colMap.date > -1 && row[colMap.date]) {
                  try { dateStr = Utilities.formatDate(new Date(row[colMap.date]), SS.getSpreadsheetTimeZone(), "dd/MM/yy HH:mm");
-                 } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+                 } catch(e) {}
              }
              sites.push({
                id: String(row[colMap.id]).trim(),
@@ -2699,7 +2596,7 @@ function incrementarContadorDias() {
                             newVal = Math.max(0, diffDays);
                             calculated = true;
                         }
-                    } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+                    } catch(e) {}
                 }
             }
             
@@ -3362,8 +3259,6 @@ function apiSaveTrackerBatch(personName, tasks, username) {
     try {
       const processedTasks = [];
       const distributionTasks = [];
-      const angelDistributionTasks = [];
-      const teresaDistributionTasks = [];
       const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
 
       // Sequence Logic for Antonia
@@ -3408,7 +3303,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                  taskData['FOLIO'] = String(currentSeq);
              } else {
                  // RESTRICTIONS FOR EXISTING TASKS
-                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
+                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
                  Object.keys(taskData).forEach(key => {
                      const kUp = key.toUpperCase();
                      if (key.startsWith('_')) return;
@@ -3424,108 +3319,22 @@ function apiSaveTrackerBatch(personName, tasks, username) {
              delete distData._rowIndex;
              delete distData['PROCESO_LOG'];
                           delete distData['PROCESO'];
+             if (taskData._assignToWorker && taskData._assignStep) {
+                 try {
+                     const assignData = JSON.parse(JSON.stringify(distData));
+                     assignData['ESTATUS'] = 'PENDIENTE';
+                     assignData['AVANCE'] = '0%';
+                     internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
+                 } catch(e) {}
+             }
              distributionTasks.push(distData);
-
-             // NEW: Check if current step is CD for Angel Salinas distribution
-             let currentStep = "L";
-             try {
-                 let log = taskData['PROCESO_LOG'] ? JSON.parse(taskData['PROCESO_LOG']) : [];
-                 if (Array.isArray(log) && log.length > 0) {
-                     currentStep = log[log.length - 1].to;
-                 } else {
-                     let mapCot = taskData["MAP COT"] || taskData.PROCESO;
-                     if (mapCot) {
-                         if (mapCot.includes('🔴')) {
-                            const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                            if (match) currentStep = match[1];
-                         } else {
-                            currentStep = mapCot;
-                         }
-                     }
-                 }
-             } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-
-             if (currentStep === 'CD') {
-                 const angelData = JSON.parse(JSON.stringify(distData));
-                 if (taskData._justTransitionedToCD) {
-                     angelData['ESTATUS'] = 'PENDIENTE';
-                     angelData['AVANCE'] = '0%';
-                 } else {
-                     delete angelData['ESTATUS'];
-                     delete angelData['STATUS'];
-                     delete angelData['AVANCE'];
-                     delete angelData['AVANCE %'];
-                 }
-                 angelDistributionTasks.push(angelData);
-             }
-
-             if (currentStep === 'EP') {
-                 const teresaData = JSON.parse(JSON.stringify(distData));
-                 if (taskData._justTransitionedToEP) {
-                     teresaData['ESTATUS'] = 'PENDIENTE';
-                     teresaData['AVANCE'] = '0%';
-                 } else {
-                     delete teresaData['ESTATUS'];
-                     delete teresaData['STATUS'];
-                     delete teresaData['AVANCE'];
-                     delete teresaData['AVANCE %'];
-                 }
-                 teresaDistributionTasks.push(teresaData);
-             }
-        } else if (String(personName).toUpperCase().includes("(VENTAS)") || String(personName).toUpperCase() === "ANGEL SALINAS" || String(personName).toUpperCase() === "TERESA GARZA") {
+        } else {
              // REVERSE SYNC PREPARATION
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex;
              delete distData['PROCESO_LOG'];
                           delete distData['PROCESO'];
              distributionTasks.push(distData);
-
-             // NEW: Check if current step is CD for Angel Salinas distribution
-             let currentStep = "L";
-             try {
-                 let log = taskData['PROCESO_LOG'] ? JSON.parse(taskData['PROCESO_LOG']) : [];
-                 if (Array.isArray(log) && log.length > 0) {
-                     currentStep = log[log.length - 1].to;
-                 } else {
-                     let mapCot = taskData["MAP COT"] || taskData.PROCESO;
-                     if (mapCot) {
-                         if (mapCot.includes('🔴')) {
-                            const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                            if (match) currentStep = match[1];
-                         } else {
-                            currentStep = mapCot;
-                         }
-                     }
-                 }
-             } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-
-             if (currentStep === 'CD') {
-                 const angelData = JSON.parse(JSON.stringify(distData));
-                 if (taskData._justTransitionedToCD) {
-                     angelData['ESTATUS'] = 'PENDIENTE';
-                     angelData['AVANCE'] = '0%';
-                 } else {
-                     delete angelData['ESTATUS'];
-                     delete angelData['STATUS'];
-                     delete angelData['AVANCE'];
-                     delete angelData['AVANCE %'];
-                 }
-                 angelDistributionTasks.push(angelData);
-             }
-
-             if (currentStep === 'EP') {
-                 const teresaData = JSON.parse(JSON.stringify(distData));
-                 if (taskData._justTransitionedToEP) {
-                     teresaData['ESTATUS'] = 'PENDIENTE';
-                     teresaData['AVANCE'] = '0%';
-                 } else {
-                     delete teresaData['ESTATUS'];
-                     delete teresaData['STATUS'];
-                     delete teresaData['AVANCE'];
-                     delete teresaData['AVANCE %'];
-                 }
-                 teresaDistributionTasks.push(teresaData);
-             }
         }
         processedTasks.push(taskData);
       });
@@ -3592,123 +3401,84 @@ function apiSaveTrackerBatch(personName, tasks, username) {
               internalBatchUpdateTasks("ADMINISTRADOR", distributionTasks, false);
           }
 
-          if (isAntonia && angelDistributionTasks.length > 0) {
-              internalBatchUpdateTasks("ANGEL SALINAS", angelDistributionTasks, false);
-          }
-
-          if (isAntonia && teresaDistributionTasks.length > 0) {
-              internalBatchUpdateTasks("TERESA GARZA", teresaDistributionTasks, false);
-          }
-
           // Handle Reverse Sync (Vendor -> Antonia)
-          if ((String(personName).toUpperCase().trim() === "ANGEL SALINAS" || String(personName).toUpperCase().trim() === "TERESA GARZA") && distributionTasks.length > 0) {
-               const isAngel = String(personName).toUpperCase().trim() === "ANGEL SALINAS";
-               // Angel Salinas reverse sync for Calculation and Design in batch
-               const antSheet = findSheetSmart("ANTONIA_VENTAS");
-               if (antSheet) {
-                   const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                   if (antData.success && antData.data) {
-                       const reverseSyncTasks = [];
-                       distributionTasks.forEach(t => {
-                           const getTVal = (keysArr) => {
-                               const k = Object.keys(t).find(key => keysArr.includes(key.toUpperCase().trim()));
-                               return k ? t[k] : '';
-                           };
-                           const status = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase();
-                           const rawAvance = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE'])).replace('%','').replace(',','.').trim();
-                           const numAvance = parseFloat(rawAvance);
-                           const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || numAvance === 100 || numAvance === 1;
+          if (!isAntonia && distributionTasks.length > 0) {
 
-                           if (isDone) {
-                               const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
-                               const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                               if (targetRow) {
-                                   let currentStep = "L";
-                                   try {
-                                       let log = targetRow['PROCESO_LOG'] ? JSON.parse(targetRow['PROCESO_LOG']) : [];
-                                       if (Array.isArray(log) && log.length > 0) {
-                                           currentStep = log[log.length - 1].to;
-                                       } else {
-                                           let mapCot = targetRow["MAP COT"] || targetRow.PROCESO;
-                                           if (mapCot) {
-                                               if (mapCot.includes('🔴')) {
-                                                  const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                                                  if (match) currentStep = match[1];
-                                               } else {
-                                                  currentStep = mapCot;
-                                               }
-                                           }
+               distributionTasks.forEach(taskData => {
+                   const getTVal = (keys) => {
+                       for (let k of keys) {
+                           let found = Object.keys(taskData).find(key => key.toUpperCase().trim() === k);
+                           if (found && taskData[found]) return taskData[found];
+                       }
+                       return "";
+                   };
+
+                   const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
+                   const avance = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
+                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avance === '100' || avance === '100.00';
+                   const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
+
+                   if (tFolio) {
+                       const antData = internalFetchSheetData("ANTONIA_VENTAS");
+                       if (antData.success && antData.data) {
+                           const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
+                           if (targetRow) {
+                               let log = [];
+                               try {
+                                   if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
+                               } catch(e) {}
+
+                               let updated = false;
+                               let updatedLog = [];
+                               if (Array.isArray(log)) {
+                                   updatedLog = log.map(entry => {
+                                       let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
+                                       let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
+
+                                       if (entry.status === 'IN_PROGRESS' && eNorm === wNorm && isDone) {
+                                           entry.status = 'DONE';
+                                           updated = true;
                                        }
-                                   } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+                                       return entry;
+                                   });
+                               }
 
-                                   if ((isAngel && currentStep === 'CD') || (!isAngel && currentStep === 'EP')) {
-                                       let syncData = {
-                                           'FOLIO': targetRow['FOLIO'] || tFolio,
-                                           'ID': targetRow['ID'] || t['ID'] || tFolio,
-                                           '_rowIndex': targetRow['_rowIndex']
-                                       };
-                                       let log = [];
-                                       try {
-                                           if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
-                                       } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-                                       if (!Array.isArray(log)) log = [];
-
-                                       const nextStep = isAngel ? 'EP' : 'CI';
-                                       log.push({
-                                           from: currentStep,
-                                           to: nextStep,
-                                           timestamp: new Date().getTime(),
-                                           dateStr: new Date().toLocaleString()
-                                       });
-
-                                       syncData['PROCESO_LOG'] = JSON.stringify(log);
-
-                                       const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                       const currentIdx = steps.indexOf(nextStep);
-                                       let parts = [];
-                                       for (let i = 0; i < steps.length; i++) {
-                                           let step = steps[i];
-                                           if (i < currentIdx) {
-                                               parts.push('🟢 ' + step);
-                                           } else if (i === currentIdx) {
-                                               parts.push('🔴 ' + step);
-                                           } else {
-                                               parts.push('⚪ ' + step);
-                                           }
+                               if (updated) {
+                                   const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
+                                   let mapCotParts = stepsOrder.map(step => {
+                                       const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
+                                       if (stepEntry) {
+                                           if (stepEntry.status === 'DONE') return '🟢 ' + step;
+                                           if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
+                                           if (stepEntry.status === 'PENDING') return '🔴 ' + step;
                                        }
-                                       syncData['MAP COT'] = parts.join(' | ');
+                                       return '⚪ ' + step;
+                                   });
 
-                                       registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `${personName} completed ${currentStep} for ${tFolio}. Advancing to ${nextStep}. Payload: ` + JSON.stringify(syncData));
-                                       reverseSyncTasks.push(syncData);
+                                   let syncToAntonia = {
+                                       'FOLIO': targetRow['FOLIO'] || tFolio,
+                                       'PROCESO_LOG': JSON.stringify(updatedLog),
+                                       'MAP COT': mapCotParts.join(' | ')
+                                   };
 
-                                       // FORWARD DISTRIBUTE IF IT ADVANCED TO A NEW ASSIGNED STEP
-                                       if (nextStep === 'EP') {
-                                           const teresaData = JSON.parse(JSON.stringify(targetRow));
-                                           teresaData['ESTATUS'] = 'PENDIENTE';
-                                           teresaData['AVANCE'] = '0%';
-                                           teresaData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
-                                           teresaData['MAP COT'] = syncData['MAP COT'];
-                                           delete teresaData._rowIndex;
-                                           try { internalBatchUpdateTasks("TERESA GARZA", [teresaData], false); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
-                                       } else if (nextStep === 'CI') {
-                                           const adminData = JSON.parse(JSON.stringify(targetRow));
-                                           adminData['PROCESO_LOG'] = syncData['PROCESO_LOG'];
-                                           adminData['MAP COT'] = syncData['MAP COT'];
-                                           delete adminData._rowIndex;
-                                           try { internalBatchUpdateTasks("ADMINISTRADOR", [adminData], false); } catch(e) { registrarLog("SYSTEM", "FATAL_SYNC_ERROR", e.toString()); }
+                                   const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
+                                   fileCols.forEach(col => {
+                                       let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
+                                       if (wKey && taskData[wKey] && String(taskData[wKey]).trim() !== "") {
+                                           syncToAntonia[wKey] = taskData[wKey];
                                        }
-                                   }
+                                   });
+
+                                   internalBatchUpdateTasks("ANTONIA_VENTAS", [syncToAntonia], false);
                                }
                            }
-                       });
-
-                       if (reverseSyncTasks.length > 0) {
-                           internalBatchUpdateTasks("ANTONIA_VENTAS", reverseSyncTasks, false);
                        }
                    }
+               });
+
+               if (String(personName).toUpperCase().includes("(VENTAS)")) {
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
                }
-          } else if (String(personName).toUpperCase().includes("(VENTAS)") && !isAntonia && distributionTasks.length > 0) {
-               internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
 
                // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)
                const peerUpdates = {};

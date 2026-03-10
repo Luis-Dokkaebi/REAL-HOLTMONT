@@ -7647,55 +7647,129 @@ const filteredStaffTrackerData = computed(() => {
           });
       };
 
-      const advanceProcess = (row) => {
-          const current = getProcessStatus(row);
-          const idx = PROCESS_STEPS.indexOf(current);
+      const advanceProcess = async (row) => {
+          if (!row) return;
+          const currentStatus = getProcessStatus(row);
+          if (!currentStatus) return;
 
-          if (idx < PROCESS_STEPS.length - 1) {
-              const nextStep = PROCESS_STEPS[idx + 1];
+          let title = "Avanzar a " + currentStatus + "?";
 
-              Swal.fire({
-                  title: `¿Avanzar a ${getFullProcessName(nextStep)} (${nextStep})?`,
-                  text: `Estado actual: ${getFullProcessName(current)} (${current})`,
+          if (currentStatus === 'Revision de Cotizacion Cliente' || currentStatus === 'RCC') {
+              const termRes = await Swal.fire({
+                  title: 'Finalizar Cotización',
+                  text: 'Selecciona el estatus final de esta cotización',
                   icon: 'question',
+                  showDenyButton: true,
                   showCancelButton: true,
-                  confirmButtonText: 'Sí, Avanzar'
-              }).then((result) => {
-                  if (result.isConfirmed) {
-                      let log = [];
-                      try {
-                          log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
-                      } catch(e) { log = []; }
-
-                      if (!Array.isArray(log)) log = [];
-
-                      log.push({
-                          from: current,
-                          to: nextStep,
-                          timestamp: new Date().getTime(),
-                          dateStr: new Date().toLocaleString()
-                      });
-
-                      row.PROCESO_LOG = JSON.stringify(log);
-
-                      if (currentUsername.value === 'ANTONIA_VENTAS') {
-                          row["MAP COT"] = generateEmojiTimeline(row);
-                      } else {
-                          row["MAP COT"] = nextStep;
-                      }
-
-                      if (nextStep === 'CD') {
-                          row._justTransitionedToCD = true;
-                      }
-                      if (nextStep === 'EP') {
-                          row._justTransitionedToEP = true;
-                      }
-
-                      saveRow(row);
-                  }
+                  confirmButtonText: 'Ganada',
+                  confirmButtonColor: '#28a745',
+                  denyButtonText: 'Perdida x Precio',
+                  denyButtonColor: '#dc3545',
+                  cancelButtonText: 'Descuento',
+                  cancelButtonColor: '#007bff'
               });
+
+              if (termRes.isConfirmed) {
+                  row.ESTATUS = 'GANADA';
+              } else if (termRes.isDenied) {
+                  row.ESTATUS = 'PERDIDA X PRECIO';
+              } else if (termRes.dismiss === Swal.DismissReason.cancel) {
+                  row.ESTATUS = 'DESCUENTO';
+              } else {
+                  return; // Escaped
+              }
+
+              let mapCot = row["MAP COT"] || row.PROCESO || "";
+              if (!mapCot.includes('🟢')) {
+                   const parts = PROCESS_STEPS.map(p => '🟢 ' + p);
+                   row["MAP COT"] = parts.join(' | ');
+              }
+              if (row._assignToWorker) delete row._assignToWorker;
+              if (row._assignStep) delete row._assignStep;
+              return;
+          }
+
+          const staffOptions = {};
+          if (Array.isArray(window.app?.staffData)) {
+              window.app.staffData.forEach(person => {
+                  staffOptions[person.name] = person.name;
+              });
+          }
+
+          const { value: selectedWorker, isDismissed } = await Swal.fire({
+              title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
+              text: `¿A quién se le asignará esta tarea?`,
+              input: 'select',
+              inputOptions: staffOptions,
+              inputPlaceholder: 'Selecciona un responsable...',
+              showCancelButton: true,
+              confirmButtonText: 'Asignar',
+              cancelButtonText: 'Cancelar'
+          });
+
+          if (isDismissed || !selectedWorker) return;
+
+          let log = [];
+          try { if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG); } catch(e){}
+
+          let existing = log.find(e => e.step === currentStatus || e.to === currentStatus);
+          if (existing) {
+               existing.status = 'IN_PROGRESS';
+               existing.assignee = selectedWorker;
+               existing.timestamp = new Date().getTime();
+               existing.dateStr = new Date().toLocaleString();
           } else {
-              Swal.fire('Proceso Completado', 'Este es el último paso.', 'success');
+               log.push({
+                   step: currentStatus,
+                   status: 'IN_PROGRESS',
+                   assignee: selectedWorker,
+                   timestamp: new Date().getTime(),
+                   dateStr: new Date().toLocaleString()
+               });
+          }
+
+          row.PROCESO_LOG = JSON.stringify(log);
+
+          let newParts = PROCESS_STEPS.map(step => {
+              let entry = log.find(l => l.step === step || l.to === step);
+              if (entry) {
+                  if (entry.status === 'DONE') return '🟢 ' + step;
+                  if (entry.status === 'IN_PROGRESS') return '🟡 ' + step;
+              }
+              if (step === currentStatus) return '🔴 ' + step;
+              let idx = PROCESS_STEPS.indexOf(step);
+              let currIdx = PROCESS_STEPS.indexOf(currentStatus);
+              if (idx < currIdx) return '🟢 ' + step;
+              return '⚪ ' + step;
+          });
+          row["MAP COT"] = newParts.join(' | ');
+
+          row._assignToWorker = selectedWorker;
+          row._assignStep = currentStatus;
+
+          Swal.fire({
+              title: 'Procesando...',
+              text: 'Delegando tarea y actualizando estado. Espera un momento...',
+              allowOutsideClick: false,
+              didOpen: () => { Swal.showLoading(); }
+          });
+
+          try {
+              const res = await new Promise((resolve) => {
+                  google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+              });
+
+              delete row._assignToWorker;
+              delete row._assignStep;
+
+              if (res && res.success) {
+                  Swal.fire({ title: 'Éxito', text: 'La tarea se asignó y actualizó correctamente.', icon: 'success', timer: 1500 });
+                  if (res.data) Object.assign(row, res.data);
+              } else {
+                  throw new Error(res?.message || 'Error desconocido');
+              }
+          } catch(err) {
+              Swal.fire('Error', 'No se pudo guardar: ' + err.toString(), 'error');
           }
       };
 
