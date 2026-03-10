@@ -6372,8 +6372,17 @@ const filteredStaffTrackerData = computed(() => {
           loadTrackerData();
       };
 
-      const loadTrackerData = () => {
-          staffTrackerFilters.value = {};
+      const loadTrackerData = (silent = false) => {
+          if (silent) {
+              const activeEl = document.activeElement;
+              const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+              if (isTyping) {
+                  return; // Don't interrupt the user
+              }
+          } else {
+              staffTrackerFilters.value = {};
+          }
+
           let sheetName = currentStaffName.value;
           if (activeTrackerTab.value === 'VENTAS') {
               sheetName = sheetName + " VENTAS";
@@ -6386,10 +6395,10 @@ const filteredStaffTrackerData = computed(() => {
               // sheetName = sheetName + " PAPA CALIENTE DE COTIZACION";
           }
           staffTracker.value.name = sheetName;
-          staffTracker.value.isLoading = true;
+          if (!silent) staffTracker.value.isLoading = true;
 
           google.script.run.withSuccessHandler(res => {
-              staffTracker.value.isLoading = false;
+              if (!silent) staffTracker.value.isLoading = false;
               if (res.success) {
                   staffTracker.value.data = res.data;
                   staffTracker.value.history = res.history;
