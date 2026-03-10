@@ -7686,13 +7686,33 @@ const filteredStaffTrackerData = computed(() => {
               }
               if (row._assignToWorker) delete row._assignToWorker;
               if (row._assignStep) delete row._assignStep;
+
+              Swal.fire({
+                  title: 'Guardando...',
+                  text: 'Finalizando cotización y actualizando estado...',
+                  allowOutsideClick: false,
+                  didOpen: () => { Swal.showLoading(); }
+              });
+              try {
+                  const res = await new Promise((resolve) => {
+                      google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+                  });
+                  if (res && res.success) {
+                      Swal.fire({ title: 'Éxito', text: 'Cotización finalizada correctamente.', icon: 'success', timer: 1500 });
+                      if (res.data) Object.assign(row, res.data);
+                  } else {
+                      throw new Error(res?.message || 'Error desconocido');
+                  }
+              } catch(err) {
+                  Swal.fire('Error', 'No se pudo guardar: ' + err.toString(), 'error');
+              }
               return;
           }
 
           const staffOptions = {};
-          if (Array.isArray(window.app?.staffData)) {
-              window.app.staffData.forEach(person => {
-                  staffOptions[person.name] = person.name;
+          if (Array.isArray(salesStaff.value)) {
+              salesStaff.value.forEach(person => {
+                  staffOptions[person] = person;
               });
           }
 

@@ -1357,6 +1357,7 @@ function internalUpdateTask(personName, taskData, username) {
 
                              if (updated) {
                                  const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
+                                 let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
                                  let mapCotParts = stepsOrder.map(step => {
                                      const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
                                      if (stepEntry) {
@@ -1364,6 +1365,11 @@ function internalUpdateTask(personName, taskData, username) {
                                          if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
                                          if (stepEntry.status === 'PENDING') return '🔴 ' + step;
                                      }
+                                     // Fallback to previous existing status if missing from log
+                                     let oldPart = oldParts.find(p => p.includes(step));
+                                     if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
+                                     if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
+                                     if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
                                      return '⚪ ' + step;
                                  });
 
@@ -3445,6 +3451,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                                if (updated) {
                                    const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
+                                   let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
                                    let mapCotParts = stepsOrder.map(step => {
                                        const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
                                        if (stepEntry) {
@@ -3452,6 +3459,10 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                            if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
                                            if (stepEntry.status === 'PENDING') return '🔴 ' + step;
                                        }
+                                       let oldPart = oldParts.find(p => p.includes(step));
+                                       if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
+                                       if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
+                                       if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
                                        return '⚪ ' + step;
                                    });
 
