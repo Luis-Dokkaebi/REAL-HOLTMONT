@@ -6357,12 +6357,22 @@ const filteredStaffTrackerData = computed(() => {
 
       const closeIframe = () => currentView.value='DASHBOARD';
 
+      let trackerRefreshInterval = null;
       const openStaffTracker = (p) => {
           currentStaffName.value = p.name;
           activeTrackerTab.value = 'OPERATIVO';
           staffTracker.value.previousView = currentView.value;
           currentView.value = 'STAFF_TRACKER';
           loadTrackerData();
+
+          if (trackerRefreshInterval) clearInterval(trackerRefreshInterval);
+          trackerRefreshInterval = setInterval(() => {
+              if (currentView.value === 'STAFF_TRACKER') {
+                  loadTrackerData(true);
+              } else {
+                  clearInterval(trackerRefreshInterval);
+              }
+          }, 15000); // 15s polling to feel "automatic"
       };
 
       const switchTrackerTab = (tab) => {
@@ -7422,6 +7432,17 @@ const filteredStaffTrackerData = computed(() => {
           activeTrackerTab.value = 'PAPA_CALIENTE';
           trackerSubView.value = 'HOT_POTATO';
           loadTrackerData();
+
+          if (!trackerRefreshInterval) {
+              trackerRefreshInterval = setInterval(() => {
+                  if (currentView.value === 'STAFF_TRACKER') {
+                      loadTrackerData(true);
+                  } else {
+                      clearInterval(trackerRefreshInterval);
+                      trackerRefreshInterval = null;
+                  }
+              }, 15000);
+          }
       };
 
       const showProcessFlow = ref(false);
@@ -7710,9 +7731,11 @@ const filteredStaffTrackerData = computed(() => {
           }
 
           const staffOptions = {};
-          if (Array.isArray(salesStaff.value)) {
-              salesStaff.value.forEach(person => {
-                  staffOptions[person] = person;
+          if (config.value && Array.isArray(config.value.directory)) {
+              config.value.directory.forEach(p => {
+                  if (p.name !== 'ANTONIA_VENTAS') {
+                      staffOptions[p.name] = p.name;
+                  }
               });
           }
 

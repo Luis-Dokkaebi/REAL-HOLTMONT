@@ -1326,7 +1326,7 @@ function internalUpdateTask(personName, taskData, username) {
 
                  const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
                  const avance = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
-                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avance === '100' || avance === '100.00';
+                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avance === '100' || avance === '100.00' || avance === '1' || avance === '1.0' || avance === '1.00';
 
                  const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
 
@@ -1347,7 +1347,7 @@ function internalUpdateTask(personName, taskData, username) {
                                  let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
                                  let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
 
-                                 if (entry.status === 'IN_PROGRESS' && eNorm === wNorm && isDone) {
+                                 if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                      entry.status = 'DONE';
                                      updated = true;
                                      registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
@@ -3421,7 +3421,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                    const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
                    const avance = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
-                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avance === '100' || avance === '100.00';
+                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avance === '100' || avance === '100.00' || avance === '1' || avance === '1.0' || avance === '1.00';
                    const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
 
                    if (tFolio) {
@@ -3441,7 +3441,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
                                        let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
 
-                                       if (entry.status === 'IN_PROGRESS' && eNorm === wNorm && isDone) {
+                                       if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                            entry.status = 'DONE';
                                            updated = true;
                                        }
