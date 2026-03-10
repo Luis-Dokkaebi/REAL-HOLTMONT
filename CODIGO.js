@@ -1256,7 +1256,6 @@ function internalUpdateTask(personName, taskData, username) {
              delete distData['PROCESO_LOG'];
                           delete distData['PROCESO'];
 
-             // MANUAL DELEGATION (Papa Caliente)
              if (taskData._assignToWorker && taskData._assignStep) {
                  try {
                      const assignData = JSON.parse(JSON.stringify(distData));
@@ -1309,7 +1308,6 @@ function internalUpdateTask(personName, taskData, username) {
 
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
         } else {
-             // REVERSE SYNC PREPARATION for ANY worker
              try {
                  const syncData = JSON.parse(JSON.stringify(taskData));
                  delete syncData._rowIndex;
@@ -1325,8 +1323,9 @@ function internalUpdateTask(personName, taskData, username) {
                  };
 
                  const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
-                 const avance = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
-                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avance === '100' || avance === '100.00' || avance === '1' || avance === '1.0' || avance === '1.00';
+                 const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
+                 const avanceNum = parseFloat(avanceRaw);
+                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1;
 
                  const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
 
@@ -1343,7 +1342,6 @@ function internalUpdateTask(personName, taskData, username) {
 
                              let updated = false;
                              const updatedLog = log.map(entry => {
-                                 // Check using norm
                                  let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
                                  let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
 
@@ -1357,7 +1355,7 @@ function internalUpdateTask(personName, taskData, username) {
 
                              if (updated) {
                                  const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                 let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
+                                 let oldParts = (targetRow["MAP COT"] || "").split(/\|>|\//).map(p => p.trim());
                                  let mapCotParts = stepsOrder.map(step => {
                                      const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
                                      if (stepEntry) {
@@ -1365,7 +1363,6 @@ function internalUpdateTask(personName, taskData, username) {
                                          if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
                                          if (stepEntry.status === 'PENDING') return '🔴 ' + step;
                                      }
-                                     // Fallback to previous existing status if missing from log
                                      let oldPart = oldParts.find(p => p.includes(step));
                                      if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
                                      if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
@@ -1389,7 +1386,6 @@ function internalUpdateTask(personName, taskData, username) {
 
                                  internalBatchUpdateTasks("ANTONIA_VENTAS", [syncToAntonia]);
                              } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                                 // Regular reverse sync for Ventas table changes (comments, values, etc.)
                                  internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
                              }
                          }
@@ -3409,6 +3405,9 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
           // Handle Reverse Sync (Vendor -> Antonia)
           if (!isAntonia && distributionTasks.length > 0) {
+               const syncPayloads = [];
+               let antDataFetched = false;
+               let antDataRows = [];
 
                distributionTasks.forEach(taskData => {
                    const getTVal = (keys) => {
@@ -3420,72 +3419,80 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    };
 
                    const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
-                   const avance = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
-                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avance === '100' || avance === '100.00' || avance === '1' || avance === '1.0' || avance === '1.00';
+                   const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
+                   const avanceNum = parseFloat(avanceRaw);
+                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1;
                    const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
 
-                   if (tFolio) {
-                       const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                       if (antData.success && antData.data) {
-                           const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                           if (targetRow) {
-                               let log = [];
-                               try {
-                                   if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
-                               } catch(e) {}
+                   if (tFolio && isDone) {
+                       if (!antDataFetched) {
+                           const antData = internalFetchSheetData("ANTONIA_VENTAS");
+                           if (antData.success && antData.data) antDataRows = antData.data;
+                           antDataFetched = true;
+                       }
 
-                               let updated = false;
-                               let updatedLog = [];
-                               if (Array.isArray(log)) {
-                                   updatedLog = log.map(entry => {
-                                       let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
-                                       let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
+                       const targetRow = antDataRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
+                       if (targetRow) {
+                           let log = [];
+                           try {
+                               if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
+                           } catch(e) {}
 
-                                       if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
-                                           entry.status = 'DONE';
-                                           updated = true;
-                                       }
-                                       return entry;
-                                   });
-                               }
+                           let updated = false;
+                           let updatedLog = [];
+                           if (Array.isArray(log)) {
+                               updatedLog = log.map(entry => {
+                                   let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
+                                   let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
 
-                               if (updated) {
-                                   const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                   let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
-                                   let mapCotParts = stepsOrder.map(step => {
-                                       const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
-                                       if (stepEntry) {
-                                           if (stepEntry.status === 'DONE') return '🟢 ' + step;
-                                           if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
-                                           if (stepEntry.status === 'PENDING') return '🔴 ' + step;
-                                       }
-                                       let oldPart = oldParts.find(p => p.includes(step));
-                                       if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
-                                       if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
-                                       if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
-                                       return '⚪ ' + step;
-                                   });
+                                   if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
+                                       entry.status = 'DONE';
+                                       updated = true;
+                                   }
+                                   return entry;
+                               });
+                           }
 
-                                   let syncToAntonia = {
-                                       'FOLIO': targetRow['FOLIO'] || tFolio,
-                                       'PROCESO_LOG': JSON.stringify(updatedLog),
-                                       'MAP COT': mapCotParts.join(' | ')
-                                   };
+                           if (updated) {
+                               const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
+                               let oldParts = (targetRow["MAP COT"] || "").split(/\|>|\//).map(p => p.trim());
+                               let mapCotParts = stepsOrder.map(step => {
+                                   const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
+                                   if (stepEntry) {
+                                       if (stepEntry.status === 'DONE') return '🟢 ' + step;
+                                       if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
+                                       if (stepEntry.status === 'PENDING') return '🔴 ' + step;
+                                   }
+                                   let oldPart = oldParts.find(p => p.includes(step));
+                                   if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
+                                   if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
+                                   if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
+                                   return '⚪ ' + step;
+                               });
 
-                                   const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
-                                   fileCols.forEach(col => {
-                                       let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
-                                       if (wKey && taskData[wKey] && String(taskData[wKey]).trim() !== "") {
-                                           syncToAntonia[wKey] = taskData[wKey];
-                                       }
-                                   });
+                               let syncToAntonia = {
+                                   'FOLIO': targetRow['FOLIO'] || tFolio,
+                                   'PROCESO_LOG': JSON.stringify(updatedLog),
+                                   'MAP COT': mapCotParts.join(' | ')
+                               };
 
-                                   internalBatchUpdateTasks("ANTONIA_VENTAS", [syncToAntonia], false);
-                               }
+                               const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
+                               fileCols.forEach(col => {
+                                   let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
+                                   if (wKey && taskData[wKey] && String(taskData[wKey]).trim() !== "") {
+                                       syncToAntonia[wKey] = taskData[wKey];
+                                   }
+                               });
+
+                               syncPayloads.push(syncToAntonia);
                            }
                        }
                    }
                });
+
+               if (syncPayloads.length > 0) {
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", syncPayloads, false);
+               }
 
                if (String(personName).toUpperCase().includes("(VENTAS)")) {
                    internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
