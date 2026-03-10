@@ -6372,16 +6372,8 @@ const filteredStaffTrackerData = computed(() => {
           loadTrackerData();
       };
 
-      const loadTrackerData = (silent = false) => {
-          if (silent) {
-              const activeEl = document.activeElement;
-              const isTyping = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
-              if (isTyping) {
-                  return; // Don't interrupt the user
-              }
-          } else {
-              staffTrackerFilters.value = {};
-          }
+      const loadTrackerData = () => {
+          staffTrackerFilters.value = {};
 
           let sheetName = currentStaffName.value;
           if (activeTrackerTab.value === 'VENTAS') {
@@ -6395,10 +6387,10 @@ const filteredStaffTrackerData = computed(() => {
               // sheetName = sheetName + " PAPA CALIENTE DE COTIZACION";
           }
           staffTracker.value.name = sheetName;
-          if (!silent) staffTracker.value.isLoading = true;
+          staffTracker.value.isLoading = true;
 
           google.script.run.withSuccessHandler(res => {
-              if (!silent) staffTracker.value.isLoading = false;
+              staffTracker.value.isLoading = false;
               if (res.success) {
                   staffTracker.value.data = res.data;
                   staffTracker.value.history = res.history;
@@ -7432,17 +7424,6 @@ const filteredStaffTrackerData = computed(() => {
           activeTrackerTab.value = 'PAPA_CALIENTE';
           trackerSubView.value = 'HOT_POTATO';
           loadTrackerData();
-
-          if (!trackerRefreshInterval) {
-              trackerRefreshInterval = setInterval(() => {
-                  if (currentView.value === 'STAFF_TRACKER') {
-                      loadTrackerData(true);
-                  } else {
-                      clearInterval(trackerRefreshInterval);
-                      trackerRefreshInterval = null;
-                  }
-              }, 15000);
-          }
       };
 
       const showProcessFlow = ref(false);
