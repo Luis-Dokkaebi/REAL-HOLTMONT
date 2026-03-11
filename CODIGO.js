@@ -1212,7 +1212,8 @@ function internalUpdateTask(personName, taskData, username) {
              // 1. AUTO-INCREMENT FOLIO (Before Saving)
              if (!taskData['FOLIO'] && !taskData['ID']) {
                  // NEW TASK -> GENERATE ID
-                 taskData['FOLIO'] = generateNumericSequence('ANTONIA_SEQ');
+                 const seqNum = generateNumericSequence('ANTONIA_SEQ_V2');
+                 taskData['FOLIO'] = "AV-" + seqNum;
              } else {
                  // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
                  // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
@@ -2413,12 +2414,17 @@ function generateNumericSequence(key) {
     if (lock.tryLock(5000)) {
        const props = PropertiesService.getScriptProperties();
        let val = Number(props.getProperty(key) || 1000);
+       // Check if the value got corrupted (e.g., from a timestamp)
+       if (val > 10000000) {
+           val = 1000;
+       }
        val++;
        props.setProperty(key, String(val));
        return String(val);
     }
   } catch(e) { console.error(e); } finally { lock.releaseLock(); }
-  return String(new Date().getTime());
+  // Fallback to a random 4-digit number to avoid long timestamps
+  return String(Math.floor(1000 + Math.random() * 9000));
 }
 
 /**
@@ -3267,16 +3273,20 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
       // Sequence Logic for Antonia
       let currentSeq = null;
-      let seqKey = 'ANTONIA_SEQ';
+      let seqKey = 'ANTONIA_SEQ_V2';
       if (isAntonia) {
           const props = PropertiesService.getScriptProperties();
           currentSeq = Number(props.getProperty(seqKey) || 1000);
 
           // AUTO-HEALING: Scan batch for higher existing IDs to sync sequence
           tasks.forEach(t => {
-              const fid = parseInt(t['FOLIO'] || t['ID']);
-              if (!isNaN(fid) && fid > currentSeq) {
-                  currentSeq = fid;
+              const folioVal = String(t['FOLIO'] || t['ID'] || "");
+              if (folioVal.startsWith("AV-")) {
+                  const numPart = folioVal.replace("AV-", "");
+                  const fid = parseInt(numPart);
+                  if (!isNaN(fid) && fid > currentSeq) {
+                      currentSeq = fid;
+                  }
               }
           });
       }
@@ -3304,7 +3314,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                  if (!hasContent) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
 
                  currentSeq++;
-                 taskData['FOLIO'] = String(currentSeq);
+                 taskData['FOLIO'] = "AV-" + String(currentSeq);
              } else {
                  // RESTRICTIONS FOR EXISTING TASKS
                  const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'PROCESO', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
