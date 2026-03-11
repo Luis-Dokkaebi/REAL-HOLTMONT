@@ -7637,11 +7637,11 @@ const filteredStaffTrackerData = computed(() => {
 
               if (isDone || isInProgress) {
                   if (stepEntry && stepEntry.timestamp) {
-                      timeLabel = (isDone ? 'Hecho ' : '') + formatShortDate(stepEntry.timestamp);
+                      timeLabel = formatShortDate(stepEntry.timestamp);
                   } else if (stepEntry && stepEntry.dateStr) {
-                      timeLabel = (isDone ? 'Hecho ' : '') + stepEntry.dateStr;
+                      timeLabel = stepEntry.dateStr;
                   } else {
-                      timeLabel = (isDone ? 'Hecho ' : '');
+                      timeLabel = '';
                   }
               } else if (isCurrent) {
                   let prevTime = startDate.getTime();
@@ -7650,9 +7650,9 @@ const filteredStaffTrackerData = computed(() => {
                       if (prevEntry && prevEntry.timestamp) prevTime = prevEntry.timestamp;
                   }
                   const diff = new Date().getTime() - prevTime;
-                  timeLabel = 'Pendiente ' + formatDiff(diff);
+                  timeLabel = formatDiff(diff);
               } else {
-                  timeLabel = 'Pendiente -';
+                  timeLabel = '-';
               }
               
               return {
