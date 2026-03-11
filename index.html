@@ -611,6 +611,7 @@
     }
     .hp-circle.green { background-color: #28a745; }
     .hp-circle.red { background-color: #dc3545; }
+    .hp-circle.yellow { background-color: #ffc107; color: #000; }
 
     .hp-clock-icon {
         position: absolute;
@@ -1929,8 +1930,8 @@
                               <td class="p-1">
                                   <div class="hp-timeline-container">
                                       <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null">
-                                          <div class="hp-circle" :class="step.isDone ? 'green' : 'red'" :title="getFullProcessName(step.id)">
-                                              <i v-if="step.isDone" class="fas fa-check"></i>
+                                          <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
+                                              <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
                                               <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
                                                   <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
                                               </div>
@@ -2010,8 +2011,8 @@
                                   <div style="flex: 1 1 auto; display:flex; align-items:center; background:#f8f9fa; border-top:1px solid #dee2e6;">
                                       <div class="hp-timeline-container w-100 m-0 py-1" style="min-height:40px;">
                                           <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null">
-                                              <div class="hp-circle" :class="step.isDone ? 'green' : 'red'" :title="getFullProcessName(step.id)">
-                                                  <i v-if="step.isDone" class="fas fa-check"></i>
+                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
+                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
                                                   <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
                                                       <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
                                                   </div>
@@ -6373,6 +6374,7 @@ const filteredStaffTrackerData = computed(() => {
 
       const loadTrackerData = () => {
           staffTrackerFilters.value = {};
+          
           let sheetName = currentStaffName.value;
           if (activeTrackerTab.value === 'VENTAS') {
               sheetName = sheetName + " VENTAS";
@@ -7571,16 +7573,14 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const getProcessTimeline = (row) => {
-          const currentStatus = getProcessStatus(row);
-          const currentIdx = PROCESS_STEPS.indexOf(currentStatus);
-
           let log = [];
           try {
               if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG);
-          } catch(e) { log = []; }
-          if (!Array.isArray(log)) log = [];
-
-          // Parse start date for first item
+          } catch(e) {}
+          
+          let mapCot = row["MAP COT"] || row.PROCESO || "";
+          let parsedParts = mapCot.split(/\||>|\//).map(p => p.trim()).filter(p => p);
+          
           let startDate = new Date();
           const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA'];
           for (const k of dateKeys) {
@@ -7606,93 +7606,211 @@ const filteredStaffTrackerData = computed(() => {
               if (hours > 0) return `${hours}h`;
               return '< 1h';
           };
-
+          
           return PROCESS_STEPS.map((stepId, idx) => {
-              const isDone = idx < currentIdx;
-              const isCurrent = idx === currentIdx;
-
+              let statusChar = '⚪';
+              let matchingPart = parsedParts.find(p => p.includes(stepId));
+              if (matchingPart) {
+                  if (matchingPart.includes('🟢')) statusChar = '🟢';
+                  else if (matchingPart.includes('🔴')) statusChar = '🔴';
+                  else if (matchingPart.includes('🟡')) statusChar = '🟡';
+              } else {
+                  const currentStatus = getProcessStatus(row);
+                  const currentIdx = PROCESS_STEPS.indexOf(currentStatus);
+                  if (idx < currentIdx) statusChar = '🟢';
+                  else if (idx === currentIdx) statusChar = '🔴';
+              }
+              
+              let isDone = statusChar === '🟢';
+              let isCurrent = statusChar === '🔴';
+              let isInProgress = statusChar === '🟡';
+              
+              let stepEntry = log.find(l => l.step === stepId || l.to === stepId);
               let timeLabel = '';
+              
+              const formatShortDate = (ts) => {
+                  const d = new Date(ts);
+                  const pad = (n) => n.toString().padStart(2, '0');
+                  const yy = d.getFullYear().toString().slice(2);
+                  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${yy} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              };
 
-              if (isDone) {
-                  // Find when THIS step was completed (when it transitioned to next step)
-                  const transition = log.find(l => l.from === stepId);
-                  if (transition && transition.timestamp) {
-                      const diff = new Date().getTime() - transition.timestamp;
-                      timeLabel = 'hace ' + formatDiff(diff);
+              if (isDone || isInProgress) {
+                  if (stepEntry && stepEntry.timestamp) {
+                      timeLabel = (isDone ? 'Hecho ' : '') + formatShortDate(stepEntry.timestamp);
+                  } else if (stepEntry && stepEntry.dateStr) {
+                      timeLabel = (isDone ? 'Hecho ' : '') + stepEntry.dateStr;
                   } else {
-                      timeLabel = 'hace -';
+                      timeLabel = (isDone ? 'Hecho ' : '');
                   }
               } else if (isCurrent) {
-                  // Find when the previous step transitioned to THIS step
                   let prevTime = startDate.getTime();
                   if (idx > 0) {
-                      const transitionToHere = log.find(l => l.to === stepId);
-                      if (transitionToHere && transitionToHere.timestamp) {
-                          prevTime = transitionToHere.timestamp;
-                      }
+                      let prevEntry = log.find(l => l.step === PROCESS_STEPS[idx-1] || l.to === PROCESS_STEPS[idx-1]);
+                      if (prevEntry && prevEntry.timestamp) prevTime = prevEntry.timestamp;
                   }
                   const diff = new Date().getTime() - prevTime;
-                  timeLabel = formatDiff(diff);
+                  timeLabel = 'Pendiente ' + formatDiff(diff);
               } else {
-                  // Future steps
-                  timeLabel = '24h';
+                  timeLabel = 'Pendiente -';
               }
-
+              
               return {
                   id: stepId,
                   isDone: isDone,
-                  isCurrent: isCurrent,
-                  timeLabel: timeLabel
+                  isCurrent: isCurrent || isInProgress,
+                  isInProgress: isInProgress,
+                  timeLabel: timeLabel,
+                  assignee: stepEntry ? stepEntry.assignee : ""
               };
           });
       };
 
-      const advanceProcess = (row) => {
-          const current = getProcessStatus(row);
-          const idx = PROCESS_STEPS.indexOf(current);
+      const advanceProcess = async (row) => {
+          if (!row) return;
+          const currentStatus = getProcessStatus(row);
+          if (!currentStatus) return;
 
-          if (idx < PROCESS_STEPS.length - 1) {
-              const nextStep = PROCESS_STEPS[idx + 1];
-
-              Swal.fire({
-                  title: `¿Avanzar a ${getFullProcessName(nextStep)} (${nextStep})?`,
-                  text: `Estado actual: ${getFullProcessName(current)} (${current})`,
+          let title = "Avanzar a " + currentStatus + "?";
+          
+          if (currentStatus === 'Revision de Cotizacion Cliente' || currentStatus === 'RCC') {
+              const termRes = await Swal.fire({
+                  title: 'Finalizar Cotización',
+                  text: 'Selecciona el estatus final de esta cotización',
                   icon: 'question',
+                  showDenyButton: true,
                   showCancelButton: true,
-                  confirmButtonText: 'Sí, Avanzar'
-              }).then((result) => {
-                  if (result.isConfirmed) {
-                      let log = [];
-                      try {
-                          log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
-                      } catch(e) { log = []; }
+                  confirmButtonText: 'Ganada',
+                  confirmButtonColor: '#28a745',
+                  denyButtonText: 'Perdida x Precio',
+                  denyButtonColor: '#dc3545',
+                  cancelButtonText: 'Descuento',
+                  cancelButtonColor: '#007bff'
+              });
+              
+              if (termRes.isConfirmed) {
+                  row.ESTATUS = 'GANADA';
+              } else if (termRes.isDenied) {
+                  row.ESTATUS = 'PERDIDA X PRECIO';
+              } else if (termRes.dismiss === Swal.DismissReason.cancel) {
+                  row.ESTATUS = 'DESCUENTO';
+              } else {
+                  return; // Escaped
+              }
+              
+              let mapCot = row["MAP COT"] || row.PROCESO || "";
+              if (!mapCot.includes('🟢')) {
+                   const parts = PROCESS_STEPS.map(p => '🟢 ' + p);
+                   row["MAP COT"] = parts.join(' | ');
+              }
+              if (row._assignToWorker) delete row._assignToWorker;
+              if (row._assignStep) delete row._assignStep;
+              
+              Swal.fire({
+                  title: 'Guardando...',
+                  text: 'Finalizando cotización y actualizando estado...',
+                  allowOutsideClick: false,
+                  didOpen: () => { Swal.showLoading(); }
+              });
+              try {
+                  const res = await new Promise((resolve) => {
+                      google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+                  });
+                  if (res && res.success) {
+                      Swal.fire({ title: 'Éxito', text: 'Cotización finalizada correctamente.', icon: 'success', timer: 1500 });
+                      if (res.data) Object.assign(row, res.data);
+                  } else {
+                      throw new Error(res?.message || 'Error desconocido');
+                  }
+              } catch(err) {
+                  Swal.fire('Error', 'No se pudo guardar: ' + err.toString(), 'error');
+              }
+              return;
+          }
 
-                      if (!Array.isArray(log)) log = [];
-
-                      log.push({
-                          from: current,
-                          to: nextStep,
-                          timestamp: new Date().getTime(),
-                          dateStr: new Date().toLocaleString()
-                      });
-
-                      row.PROCESO_LOG = JSON.stringify(log);
-
-                      if (currentUsername.value === 'ANTONIA_VENTAS') {
-                          row["MAP COT"] = generateEmojiTimeline(row);
-                      } else {
-                          row["MAP COT"] = nextStep;
-                      }
-
-                      if (nextStep === 'CD') {
-                          row._justTransitionedToCD = true;
-                      }
-
-                      saveRow(row);
+          const staffOptions = {};
+          if (config.value && Array.isArray(config.value.directory)) {
+              config.value.directory.forEach(p => {
+                  if (p.name !== 'ANTONIA_VENTAS') {
+                      staffOptions[p.name] = p.name;
                   }
               });
+          }
+          
+          const { value: selectedWorker, isDismissed } = await Swal.fire({
+              title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
+              text: `¿A quién se le asignará esta tarea?`,
+              input: 'select',
+              inputOptions: staffOptions,
+              inputPlaceholder: 'Selecciona un responsable...',
+              showCancelButton: true,
+              confirmButtonText: 'Asignar',
+              cancelButtonText: 'Cancelar'
+          });
+
+          if (isDismissed || !selectedWorker) return;
+
+          let log = [];
+          try { if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG); } catch(e){}
+          
+          let existing = log.find(e => e.step === currentStatus || e.to === currentStatus);
+          if (existing) {
+               existing.status = 'IN_PROGRESS';
+               existing.assignee = selectedWorker;
+               existing.timestamp = new Date().getTime();
+               existing.dateStr = new Date().toLocaleString();
           } else {
-              Swal.fire('Proceso Completado', 'Este es el último paso.', 'success');
+               log.push({
+                   step: currentStatus,
+                   status: 'IN_PROGRESS',
+                   assignee: selectedWorker,
+                   timestamp: new Date().getTime(),
+                   dateStr: new Date().toLocaleString()
+               });
+          }
+          
+          row.PROCESO_LOG = JSON.stringify(log);
+          
+          let newParts = PROCESS_STEPS.map(step => {
+              let entry = log.find(l => l.step === step || l.to === step);
+              if (entry) {
+                  if (entry.status === 'DONE') return '🟢 ' + step;
+                  if (entry.status === 'IN_PROGRESS') return '🟡 ' + step;
+              }
+              if (step === currentStatus) return '🔴 ' + step;
+              let idx = PROCESS_STEPS.indexOf(step);
+              let currIdx = PROCESS_STEPS.indexOf(currentStatus);
+              if (idx < currIdx) return '🟢 ' + step;
+              return '⚪ ' + step;
+          });
+          row["MAP COT"] = newParts.join(' | ');
+
+          row._assignToWorker = selectedWorker;
+          row._assignStep = currentStatus;
+
+          Swal.fire({
+              title: 'Procesando...',
+              text: 'Delegando tarea y actualizando estado. Espera un momento...',
+              allowOutsideClick: false,
+              didOpen: () => { Swal.showLoading(); }
+          });
+          
+          try {
+              const res = await new Promise((resolve) => {
+                  google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+              });
+              
+              delete row._assignToWorker;
+              delete row._assignStep;
+              
+              if (res && res.success) {
+                  Swal.fire({ title: 'Éxito', text: 'La tarea se asignó y actualizó correctamente.', icon: 'success', timer: 1500 });
+                  if (res.data) Object.assign(row, res.data);
+              } else {
+                  throw new Error(res?.message || 'Error desconocido');
+              }
+          } catch(err) {
+              Swal.fire('Error', 'No se pudo guardar: ' + err.toString(), 'error');
           }
       };
 
