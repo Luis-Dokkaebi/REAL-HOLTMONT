@@ -1256,41 +1256,15 @@ function internalUpdateTask(personName, taskData, username) {
              delete distData['PROCESO_LOG'];
                           delete distData['PROCESO'];
 
-             // NEW: Check if current step is CD for Angel Salinas distribution
-             let currentStep = "L";
-             try {
-                 let log = taskData['PROCESO_LOG'] ? JSON.parse(taskData['PROCESO_LOG']) : [];
-                 if (Array.isArray(log) && log.length > 0) {
-                     currentStep = log[log.length - 1].to;
-                 } else {
-                     let mapCot = taskData["MAP COT"] || taskData.PROCESO;
-                     if (mapCot) {
-                         if (mapCot.includes('🔴')) {
-                            const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                            if (match) currentStep = match[1];
-                         } else {
-                            currentStep = mapCot;
-                         }
-                     }
-                 }
-             } catch(e) {}
-
-             if (currentStep === 'CD') {
+             if (taskData._assignToWorker && taskData._assignStep) {
                  try {
-                     const angelData = JSON.parse(JSON.stringify(distData));
-                     if (taskData._justTransitionedToCD) {
-                         angelData['ESTATUS'] = 'ASIGNADO';
-                         angelData['AVANCE'] = '0%';
-                     } else {
-                         delete angelData['ESTATUS'];
-                         delete angelData['STATUS'];
-                         delete angelData['AVANCE'];
-                         delete angelData['AVANCE %'];
-                     }
-                     const aRes = internalBatchUpdateTasks("ANGEL SALINAS", [angelData]);
-                     if (!aRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a ANGEL SALINAS: " + aRes.message);
+                     const assignData = JSON.parse(JSON.stringify(distData));
+                     assignData['ESTATUS'] = 'PENDIENTE';
+                     assignData['AVANCE'] = '0%';
+                     const tRes = internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
+                     if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${taskData._assignToWorker}: ${tRes.message}`);
                  } catch(e) {
-                     registrarLog("ANTONIA", "DIST_ERROR", "ANGEL SALINAS: " + e.toString());
+                     registrarLog("ANTONIA", "DIST_ERROR", e.toString());
                  }
              }
 
@@ -1333,102 +1307,91 @@ function internalUpdateTask(personName, taskData, username) {
              }
 
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
-        } else if (String(personName).toUpperCase().includes("(VENTAS)") || String(personName).toUpperCase() === "ANGEL SALINAS") {
-             // Sincronización Inversa: Vendedor -> ANTONIA_VENTAS
-             // Si el vendedor actualiza su tabla, replicamos el cambio a la maestra de ANTONIA
+        } else {
              try {
                  const syncData = JSON.parse(JSON.stringify(taskData));
                  delete syncData._rowIndex;
                  delete syncData['PROCESO_LOG'];
-                                  delete syncData['PROCESO']; // Evitar conflictos de índice de fila
-
-                 // NEW: Angel Salinas reverse sync for Calculation and Design
-                 if (String(personName).toUpperCase() === "ANGEL SALINAS") {
-                     // Check if completed
-                     const status = String(taskData['ESTATUS'] || taskData['STATUS'] || '').toUpperCase();
-                     const avance = String(taskData['AVANCE'] || '').replace('%','').trim();
-                     const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || avance === '100' || avance === '1.0';
-
-                     if (isDone) {
-                         // Fetch from Antonia to check current state
-                         const antSheet = findSheetSmart("ANTONIA_VENTAS");
-                         if (antSheet) {
-                             const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                             if (antData.success && antData.data) {
-                                 const tFolio = String(taskData['FOLIO'] || taskData['ID'] || "").toUpperCase().trim();
-                                 const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                                 if (targetRow) {
-                                     let currentStep = "L";
-                                     try {
-                                         let log = targetRow['PROCESO_LOG'] ? JSON.parse(targetRow['PROCESO_LOG']) : [];
-                                         if (Array.isArray(log) && log.length > 0) {
-                                             currentStep = log[log.length - 1].to;
-                                         } else {
-                                             let mapCot = targetRow["MAP COT"] || targetRow.PROCESO;
-                                             if (mapCot) {
-                                                 if (mapCot.includes('🔴')) {
-                                                    const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                                                    if (match) currentStep = match[1];
-                                                 } else {
-                                                    currentStep = mapCot;
-                                                 }
-                                             }
-                                         }
-                                     } catch(e) {}
-
-                                     if (currentStep === 'CD') {
-                                         // Advance to EP
-                                         let log = [];
-                                         try {
-                                             if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
-                                         } catch(e) {}
-                                         if (!Array.isArray(log)) log = [];
-
-                                         log.push({
-                                             from: 'CD',
-                                             to: 'EP',
-                                             timestamp: new Date().getTime(),
-                                             dateStr: new Date().toLocaleString()
-                                         });
-
-                                         syncData['PROCESO_LOG'] = JSON.stringify(log);
-
-                                         // Helper for Emoji Map Cot
-                                         const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                         const currentIdx = steps.indexOf('EP');
-                                         let parts = [];
-                                         for (let i = 0; i < steps.length; i++) {
-                                             let step = steps[i];
-                                             if (i < currentIdx) {
-                                                 parts.push('🟢 ' + step);
-                                             } else if (i === currentIdx) {
-                                                 parts.push('🔴 ' + step);
-                                             } else {
-                                                 parts.push('⚪ ' + step);
-                                             }
-                                         }
-                                         syncData['MAP COT'] = parts.join(' | ');
-
-                                         // Don't overwrite the overall status and progress from Angel to Antonia unless we want to,
-                                         // but since it advances, it's fine. We may delete them to not interfere with Antonia's columns
-                                         delete syncData['ESTATUS'];
-                                         delete syncData['STATUS'];
-                                         delete syncData['AVANCE'];
-                                         delete syncData['AVANCE %'];
-                                     }
+                 delete syncData['PROCESO'];
+                 
+                 const getTVal = (keys) => {
+                     for (let k of keys) {
+                         let found = Object.keys(syncData).find(key => key.toUpperCase().trim() === k);
+                         if (found && syncData[found]) return syncData[found];
+                     }
+                     return "";
+                 };
+                 
+                 const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
+                 const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
+                 const avanceNum = parseFloat(avanceRaw);
+                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1;
+                 
+                 const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
+                 
+                 if (tFolio) {
+                     const antData = internalFetchSheetData("ANTONIA_VENTAS");
+                     if (antData.success && antData.data) {
+                         const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
+                         
+                         if (targetRow) {
+                             let log = [];
+                             try {
+                                 if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
+                             } catch(e) {}
+                             
+                             let updated = false;
+                             const updatedLog = log.map(entry => {
+                                 let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
+                                 let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
+                                 
+                                 if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
+                                     entry.status = 'DONE';
+                                     entry.timestamp = new Date().getTime();
+                                     entry.dateStr = new Date().toLocaleString();
+                                     updated = true;
+                                     registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
                                  }
+                                 return entry;
+                             });
+                             
+                             if (updated) {
+                                 const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
+                                 let oldParts = (targetRow["MAP COT"] || "").split(/\|>|\//).map(p => p.trim());
+                                 let mapCotParts = stepsOrder.map(step => {
+                                     const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
+                                     if (stepEntry) {
+                                         if (stepEntry.status === 'DONE') return '🟢 ' + step;
+                                         if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
+                                         if (stepEntry.status === 'PENDING') return '🔴 ' + step;
+                                     }
+                                     let oldPart = oldParts.find(p => p.includes(step));
+                                     if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
+                                     if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
+                                     if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
+                                     return '⚪ ' + step;
+                                 });
+                                 
+                                 let syncToAntonia = {
+                                     'FOLIO': targetRow['FOLIO'] || tFolio,
+                                     'PROCESO_LOG': JSON.stringify(updatedLog),
+                                     'MAP COT': mapCotParts.join(' | ')
+                                 };
+                                 
+                                 const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
+                                 fileCols.forEach(col => {
+                                     let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
+                                     if (wKey && taskData[wKey] && String(taskData[wKey]).trim() !== "") {
+                                         syncToAntonia[wKey] = taskData[wKey];
+                                     }
+                                 });
+                                 
+                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncToAntonia]);
+                             } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
+                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
                              }
                          }
-                     } else {
-                         // If not done, just sync what's allowed or nothing. For Angel, we only care when he finishes.
-                         return { success: true, data: taskData };
                      }
-                 }
-
-                 // Intentamos actualizar en ANTONIA_VENTAS
-                 const syncRes = internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
-                 if (!syncRes.success) {
-                     console.warn("Fallo sincronización inversa a ANTONIA_VENTAS: " + syncRes.message);
                  }
 
                  // Sincronización Lateral (Peer-to-Peer via VENDEDOR field)
@@ -3300,7 +3263,6 @@ function apiSaveTrackerBatch(personName, tasks, username) {
     try {
       const processedTasks = [];
       const distributionTasks = [];
-      const angelDistributionTasks = [];
       const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
 
       // Sequence Logic for Antonia
@@ -3361,80 +3323,22 @@ function apiSaveTrackerBatch(personName, tasks, username) {
              delete distData._rowIndex;
              delete distData['PROCESO_LOG'];
                           delete distData['PROCESO'];
-             distributionTasks.push(distData);
-
-             // NEW: Check if current step is CD for Angel Salinas distribution
-             let currentStep = "L";
-             try {
-                 let log = taskData['PROCESO_LOG'] ? JSON.parse(taskData['PROCESO_LOG']) : [];
-                 if (Array.isArray(log) && log.length > 0) {
-                     currentStep = log[log.length - 1].to;
-                 } else {
-                     let mapCot = taskData["MAP COT"] || taskData.PROCESO;
-                     if (mapCot) {
-                         if (mapCot.includes('🔴')) {
-                            const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                            if (match) currentStep = match[1];
-                         } else {
-                            currentStep = mapCot;
-                         }
-                     }
-                 }
-             } catch(e) {}
-
-             if (currentStep === 'CD') {
-                 const angelData = JSON.parse(JSON.stringify(distData));
-                 if (taskData._justTransitionedToCD) {
-                     angelData['ESTATUS'] = 'ASIGNADO';
-                     angelData['AVANCE'] = '0%';
-                 } else {
-                     delete angelData['ESTATUS'];
-                     delete angelData['STATUS'];
-                     delete angelData['AVANCE'];
-                     delete angelData['AVANCE %'];
-                 }
-                 angelDistributionTasks.push(angelData);
+             if (taskData._assignToWorker && taskData._assignStep) {
+                 try {
+                     const assignData = JSON.parse(JSON.stringify(distData));
+                     assignData['ESTATUS'] = 'PENDIENTE';
+                     assignData['AVANCE'] = '0%';
+                     internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
+                 } catch(e) {}
              }
-        } else if (String(personName).toUpperCase().includes("(VENTAS)") || String(personName).toUpperCase() === "ANGEL SALINAS") {
+             distributionTasks.push(distData);
+        } else {
              // REVERSE SYNC PREPARATION
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex;
              delete distData['PROCESO_LOG'];
                           delete distData['PROCESO'];
              distributionTasks.push(distData);
-
-             // NEW: Check if current step is CD for Angel Salinas distribution
-             let currentStep = "L";
-             try {
-                 let log = taskData['PROCESO_LOG'] ? JSON.parse(taskData['PROCESO_LOG']) : [];
-                 if (Array.isArray(log) && log.length > 0) {
-                     currentStep = log[log.length - 1].to;
-                 } else {
-                     let mapCot = taskData["MAP COT"] || taskData.PROCESO;
-                     if (mapCot) {
-                         if (mapCot.includes('🔴')) {
-                            const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                            if (match) currentStep = match[1];
-                         } else {
-                            currentStep = mapCot;
-                         }
-                     }
-                 }
-             } catch(e) {}
-
-             if (currentStep === 'CD') {
-                 const angelData = JSON.parse(JSON.stringify(distData));
-                 if (taskData._justTransitionedToCD) {
-                     angelData['ESTATUS'] = 'ASIGNADO';
-                     angelData['AVANCE'] = '0%';
-                 } else {
-                     delete angelData['ESTATUS'];
-                     delete angelData['STATUS'];
-                     delete angelData['AVANCE'];
-                     delete angelData['AVANCE %'];
-                 }
-                 angelDistributionTasks.push(angelData);
-             }
         }
         processedTasks.push(taskData);
       });
@@ -3501,95 +3405,102 @@ function apiSaveTrackerBatch(personName, tasks, username) {
               internalBatchUpdateTasks("ADMINISTRADOR", distributionTasks, false);
           }
 
-          if (isAntonia && angelDistributionTasks.length > 0) {
-              internalBatchUpdateTasks("ANGEL SALINAS", angelDistributionTasks, false);
-          }
-
           // Handle Reverse Sync (Vendor -> Antonia)
-          if (String(personName).toUpperCase() === "ANGEL SALINAS" && distributionTasks.length > 0) {
-               // Angel Salinas reverse sync for Calculation and Design in batch
-               const antSheet = findSheetSmart("ANTONIA_VENTAS");
-               if (antSheet) {
-                   const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                   if (antData.success && antData.data) {
-                       const reverseSyncTasks = [];
-                       distributionTasks.forEach(t => {
-                           const status = String(t['ESTATUS'] || t['STATUS'] || '').toUpperCase();
-                           const avance = String(t['AVANCE'] || '').replace('%','').trim();
-                           const isDone = status.includes('DONE') || status.includes('REALIZAD') || status.includes('TERMINADO') || avance === '100' || avance === '1.0';
+          if (!isAntonia && distributionTasks.length > 0) {
+               const syncPayloads = [];
+               let antDataFetched = false;
+               let antDataRows = [];
 
-                           if (isDone) {
-                               const tFolio = String(t['FOLIO'] || t['ID'] || "").toUpperCase().trim();
-                               const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                               if (targetRow) {
-                                   let currentStep = "L";
-                                   try {
-                                       let log = targetRow['PROCESO_LOG'] ? JSON.parse(targetRow['PROCESO_LOG']) : [];
-                                       if (Array.isArray(log) && log.length > 0) {
-                                           currentStep = log[log.length - 1].to;
-                                       } else {
-                                           let mapCot = targetRow["MAP COT"] || targetRow.PROCESO;
-                                           if (mapCot) {
-                                               if (mapCot.includes('🔴')) {
-                                                  const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                                                  if (match) currentStep = match[1];
-                                               } else {
-                                                  currentStep = mapCot;
-                                               }
-                                           }
-                                       }
-                                   } catch(e) {}
-
-                                   if (currentStep === 'CD') {
-                                       let syncData = JSON.parse(JSON.stringify(t));
-                                       let log = [];
-                                       try {
-                                           if (targetRow.PROCESO_LOG) log = JSON.parse(targetRow.PROCESO_LOG);
-                                       } catch(e) {}
-                                       if (!Array.isArray(log)) log = [];
-
-                                       log.push({
-                                           from: 'CD',
-                                           to: 'EP',
-                                           timestamp: new Date().getTime(),
-                                           dateStr: new Date().toLocaleString()
-                                       });
-
-                                       syncData['PROCESO_LOG'] = JSON.stringify(log);
-
-                                       const steps = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                       const currentIdx = steps.indexOf('EP');
-                                       let parts = [];
-                                       for (let i = 0; i < steps.length; i++) {
-                                           let step = steps[i];
-                                           if (i < currentIdx) {
-                                               parts.push('🟢 ' + step);
-                                           } else if (i === currentIdx) {
-                                               parts.push('🔴 ' + step);
-                                           } else {
-                                               parts.push('⚪ ' + step);
-                                           }
-                                       }
-                                       syncData['MAP COT'] = parts.join(' | ');
-
-                                       delete syncData['ESTATUS'];
-                                       delete syncData['STATUS'];
-                                       delete syncData['AVANCE'];
-                                       delete syncData['AVANCE %'];
-
-                                       reverseSyncTasks.push(syncData);
+               distributionTasks.forEach(taskData => {
+                   const getTVal = (keys) => {
+                       for (let k of keys) {
+                           let found = Object.keys(taskData).find(key => key.toUpperCase().trim() === k);
+                           if (found && taskData[found]) return taskData[found];
+                       }
+                       return "";
+                   };
+                   
+                   const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
+                   const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
+                   const avanceNum = parseFloat(avanceRaw);
+                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1;
+                   const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
+                   
+                   if (tFolio && isDone) {
+                       if (!antDataFetched) {
+                           const antData = internalFetchSheetData("ANTONIA_VENTAS");
+                           if (antData.success && antData.data) antDataRows = antData.data;
+                           antDataFetched = true;
+                       }
+                       
+                       const targetRow = antDataRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
+                       if (targetRow) {
+                           let log = [];
+                           try {
+                               if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
+                           } catch(e) {}
+                           
+                           let updated = false;
+                           let updatedLog = [];
+                           if (Array.isArray(log)) {
+                               updatedLog = log.map(entry => {
+                                   let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
+                                   let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
+                                   
+                                   if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
+                                       entry.status = 'DONE';
+                                       entry.timestamp = new Date().getTime();
+                                       entry.dateStr = new Date().toLocaleString();
+                                       updated = true;
                                    }
-                               }
+                                   return entry;
+                               });
                            }
-                       });
-
-                       if (reverseSyncTasks.length > 0) {
-                           internalBatchUpdateTasks("ANTONIA_VENTAS", reverseSyncTasks, false);
+                           
+                           if (updated) {
+                               const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
+                               let oldParts = (targetRow["MAP COT"] || "").split(/\|>|\//).map(p => p.trim());
+                               let mapCotParts = stepsOrder.map(step => {
+                                   const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
+                                   if (stepEntry) {
+                                       if (stepEntry.status === 'DONE') return '🟢 ' + step;
+                                       if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
+                                       if (stepEntry.status === 'PENDING') return '🔴 ' + step;
+                                   }
+                                   let oldPart = oldParts.find(p => p.includes(step));
+                                   if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
+                                   if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
+                                   if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
+                                   return '⚪ ' + step;
+                               });
+                               
+                               let syncToAntonia = {
+                                   'FOLIO': targetRow['FOLIO'] || tFolio,
+                                   'PROCESO_LOG': JSON.stringify(updatedLog),
+                                   'MAP COT': mapCotParts.join(' | ')
+                               };
+                               
+                               const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
+                               fileCols.forEach(col => {
+                                   let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
+                                   if (wKey && taskData[wKey] && String(taskData[wKey]).trim() !== "") {
+                                       syncToAntonia[wKey] = taskData[wKey];
+                                   }
+                               });
+                               
+                               syncPayloads.push(syncToAntonia);
+                           }
                        }
                    }
+               });
+               
+               if (syncPayloads.length > 0) {
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", syncPayloads, false);
                }
-          } else if (String(personName).toUpperCase().includes("(VENTAS)") && !isAntonia && distributionTasks.length > 0) {
-               internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
+               
+               if (String(personName).toUpperCase().includes("(VENTAS)")) {
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
+               }
 
                // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)
                const peerUpdates = {};
