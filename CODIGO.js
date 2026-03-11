@@ -1323,9 +1323,9 @@ function internalUpdateTask(personName, taskData, username) {
                  };
                  
                  const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
-                 const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
+                 const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'])).replace(/%/g, '').trim();
                  const avanceNum = parseFloat(avanceRaw);
-                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1;
+                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1 || avanceRaw.toUpperCase() === 'SI';
                  
                  const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
                  
@@ -1342,8 +1342,8 @@ function internalUpdateTask(personName, taskData, username) {
                              
                              let updated = false;
                              const updatedLog = log.map(entry => {
-                                 let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
-                                 let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
+                                 let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ");
+                                 let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ") : "";
                                  
                                  if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                      entry.status = 'DONE';
@@ -1357,7 +1357,7 @@ function internalUpdateTask(personName, taskData, username) {
                              
                              if (updated) {
                                  const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                 let oldParts = (targetRow["MAP COT"] || "").split(/\|>|\//).map(p => p.trim());
+                                 let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
                                  let mapCotParts = stepsOrder.map(step => {
                                      const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
                                      if (stepEntry) {
@@ -3421,9 +3421,9 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    };
                    
                    const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
-                   const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '%'])).replace(/%/g, '').trim();
+                   const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'])).replace(/%/g, '').trim();
                    const avanceNum = parseFloat(avanceRaw);
-                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1;
+                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1 || avanceRaw.toUpperCase() === 'SI';
                    const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
                    
                    if (tFolio && isDone) {
@@ -3444,14 +3444,15 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                            let updatedLog = [];
                            if (Array.isArray(log)) {
                                updatedLog = log.map(entry => {
-                                   let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "");
-                                   let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "") : "";
+                                   let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ");
+                                   let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ") : "";
                                    
                                    if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                        entry.status = 'DONE';
                                        entry.timestamp = new Date().getTime();
                                        entry.dateStr = new Date().toLocaleString();
                                        updated = true;
+                                       registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
                                    }
                                    return entry;
                                });
@@ -3459,7 +3460,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                            
                            if (updated) {
                                const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                               let oldParts = (targetRow["MAP COT"] || "").split(/\|>|\//).map(p => p.trim());
+                               let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
                                let mapCotParts = stepsOrder.map(step => {
                                    const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
                                    if (stepEntry) {
