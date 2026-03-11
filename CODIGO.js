@@ -1347,6 +1347,8 @@ function internalUpdateTask(personName, taskData, username) {
 
                                  if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                      entry.status = 'DONE';
+                                     entry.timestamp = new Date().getTime();
+                                     entry.dateStr = new Date().toLocaleString();
                                      updated = true;
                                      registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
                                  }
@@ -3447,6 +3449,8 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                                    if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                        entry.status = 'DONE';
+                                       entry.timestamp = new Date().getTime();
+                                       entry.dateStr = new Date().toLocaleString();
                                        updated = true;
                                    }
                                    return entry;

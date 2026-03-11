@@ -7628,12 +7628,20 @@ const filteredStaffTrackerData = computed(() => {
               let stepEntry = log.find(l => l.step === stepId || l.to === stepId);
               let timeLabel = '';
 
+              const formatShortDate = (ts) => {
+                  const d = new Date(ts);
+                  const pad = (n) => n.toString().padStart(2, '0');
+                  const yy = d.getFullYear().toString().slice(2);
+                  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${yy} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              };
+
               if (isDone || isInProgress) {
                   if (stepEntry && stepEntry.timestamp) {
-                      const diff = new Date().getTime() - stepEntry.timestamp;
-                      timeLabel = (isDone ? 'Hecho ' : '') + 'hace ' + formatDiff(diff);
+                      timeLabel = (isDone ? 'Hecho ' : '') + formatShortDate(stepEntry.timestamp);
+                  } else if (stepEntry && stepEntry.dateStr) {
+                      timeLabel = (isDone ? 'Hecho ' : '') + stepEntry.dateStr;
                   } else {
-                      timeLabel = (isDone ? 'Hecho ' : '') + 'hace -';
+                      timeLabel = (isDone ? 'Hecho ' : '');
                   }
               } else if (isCurrent) {
                   let prevTime = startDate.getTime();
@@ -7652,7 +7660,7 @@ const filteredStaffTrackerData = computed(() => {
                   isDone: isDone,
                   isCurrent: isCurrent || isInProgress,
                   isInProgress: isInProgress,
-                  subtitle: timeLabel,
+                  timeLabel: timeLabel,
                   assignee: stepEntry ? stepEntry.assignee : ""
               };
           });
