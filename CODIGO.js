@@ -2717,6 +2717,242 @@ function generarFolioAutomatico(e) {
 // _TEST_SUITE.js
 // ==========================================
 
+function test_Generacion_MAP_COT() {
+  console.log("🛠️ INICIANDO TEST: Generación Correcta de MAP COT");
+
+  const origFetch = internalFetchSheetData;
+  const origBatch = internalBatchUpdateTasks;
+  const origLog = registrarLog;
+
+  let capturedSync = null;
+
+  try {
+      internalFetchSheetData = function(sheetName) {
+          if (sheetName === "ANTONIA_VENTAS") {
+              return {
+                  success: true,
+                  data: [{
+                      'FOLIO': 'AV-TEST-001',
+                      'PROCESO_LOG': JSON.stringify([
+                          {step: "L", status: "DONE", assignee: "USER1"},
+                          {step: "CD", status: "IN_PROGRESS", assignee: "ANGEL SALINAS"}
+                      ]),
+                      'MAP COT': '🟢 L | 🔴 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC'
+                  }]
+              };
+          }
+          return { success: true, data: [] };
+      };
+
+      internalBatchUpdateTasks = function(sheetName, tasksArray) {
+          if (sheetName === "ANTONIA_VENTAS" && tasksArray[0] && tasksArray[0]['PROCESO_LOG']) {
+              capturedSync = tasksArray[0];
+          }
+          return { success: true, moved: false };
+      };
+
+      registrarLog = function() {};
+
+      internalUpdateTask("ANGEL SALINAS (VENTAS)", {
+          'FOLIO': 'AV-TEST-001',
+          'AVANCE': '100%',
+          'ESTATUS': 'DONE'
+      }, "TEST_RUNNER");
+
+      const expected = "🟢 L | 🟢 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC";
+      const result = capturedSync ? capturedSync['MAP COT'] : null;
+
+      if (result === expected) {
+          console.log("✅ test_Generacion_MAP_COT Pasó.");
+      } else {
+          console.error("❌ test_Generacion_MAP_COT Falló.");
+          console.error("Esperado: " + expected);
+          console.error("Recibido: " + result);
+      }
+  } finally {
+      internalFetchSheetData = origFetch;
+      internalBatchUpdateTasks = origBatch;
+      registrarLog = origLog;
+  }
+}
+
+function test_Security_Filter_AllowedBase() {
+  console.log("🛠️ INICIANDO TEST: Filtrado de Seguridad (allowedBase)");
+
+  const origBatch = internalBatchUpdateTasks;
+  const origLog = registrarLog;
+
+  let capturedUpdate = null;
+
+  try {
+      internalBatchUpdateTasks = function(sheetName, tasksArray) {
+          if (sheetName === 'ANTONIA_VENTAS' && tasksArray[0] && tasksArray[0].FOLIO === 'AV-9999') {
+            capturedUpdate = tasksArray[0];
+          }
+          return { success: true };
+      };
+      registrarLog = function() {};
+
+      const payload = {
+          'FOLIO': 'AV-9999',
+          'PROCESO_LOG': '[{"step":"L", "status":"DONE"}]',
+          'FORMULA_SECRETA': 'malicious data',
+          'ESTATUS': 'PENDIENTE'
+      };
+
+      // Call internalUpdateTask as ANTONIA_VENTAS to trigger the filter logic directly
+      internalUpdateTask("ANTONIA_VENTAS", payload, "ANTONIA_VENTAS");
+
+      if (capturedUpdate && capturedUpdate['FORMULA_SECRETA'] === undefined && capturedUpdate['PROCESO_LOG'] !== undefined) {
+          console.log("✅ test_Security_Filter_AllowedBase Pasó.");
+      } else {
+          console.error("❌ test_Security_Filter_AllowedBase Falló.");
+          console.log("Keys persistidas: ", capturedUpdate ? Object.keys(capturedUpdate) : "none");
+      }
+  } finally {
+      internalBatchUpdateTasks = origBatch;
+      registrarLog = origLog;
+  }
+}
+
+function test_Flujo_Completo_Delegacion_y_Sincronizacion() {
+    console.log("🛠️ INICIANDO TEST: Flujo Completo de Delegación y Sincronización (Test Case 3)");
+
+    const origFetch = internalFetchSheetData;
+    const origBatch = internalBatchUpdateTasks;
+    const origLog = registrarLog;
+
+    let dbAntonia = [{
+        'FOLIO': 'AV-E2E-001',
+        'CLIENTE': 'TEST E2E',
+        'ESTATUS': 'PENDIENTE',
+        'MAP COT': '⚪ L | ⚪ CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC'
+    }];
+
+    let dbAngel = [];
+
+    try {
+        internalFetchSheetData = function(sheetName) {
+            if (sheetName === "ANTONIA_VENTAS") return { success: true, data: dbAntonia };
+            return { success: true, data: [] };
+        };
+
+        internalBatchUpdateTasks = function(sheetName, tasksArray) {
+            if (sheetName === "ANTONIA_VENTAS") {
+                const task = tasksArray[0];
+                const row = dbAntonia.find(r => r.FOLIO === task.FOLIO);
+                if (row) Object.assign(row, task);
+                else dbAntonia.push(task);
+            } else if (sheetName === "ANGEL SALINAS" || sheetName === "ANGEL SALINAS (VENTAS)") {
+                 dbAngel.push(tasksArray[0]);
+            }
+            return { success: true, moved: false };
+        };
+        registrarLog = function() {};
+
+        // Paso 1 (Delegar) -> Simulado desde Frontend a internalUpdateTask
+        const taskRow = Object.assign({}, dbAntonia[0]);
+        taskRow._assignToWorker = "ANGEL SALINAS (VENTAS)";
+        taskRow._assignStep = "CD";
+        taskRow.PROCESO_LOG = JSON.stringify([{step: "CD", status: "IN_PROGRESS", assignee: "ANGEL SALINAS", timestamp: new Date().getTime()}]);
+        taskRow["MAP COT"] = '⚪ L | 🔴 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC';
+
+        internalUpdateTask("ANTONIA_VENTAS", taskRow, "ANTONIA_VENTAS");
+
+        // Validación Paso 2 (Backend)
+        const updatedAntoniaRow = dbAntonia.find(r => r.FOLIO === 'AV-E2E-001');
+        const log = JSON.parse(updatedAntoniaRow.PROCESO_LOG);
+        if (log[0].step !== "CD" || log[0].status !== "IN_PROGRESS" || log[0].assignee !== "ANGEL SALINAS") {
+            console.error("❌ Falló Paso 2: El PROCESO_LOG no se actualizó correctamente.");
+            return;
+        }
+
+        if (dbAngel.length === 0 || dbAngel[0].FOLIO !== 'AV-E2E-001') {
+            console.error("❌ Falló Paso 2: La tarea no se distribuyó a la hoja de ANGEL SALINAS.");
+            return;
+        }
+
+        // Paso 3 (Completar Tarea)
+        const angelTask = Object.assign({}, dbAngel[0]);
+        angelTask.AVANCE = "100%";
+        angelTask.ESTATUS = "DONE";
+        angelTask.COTIZACION = "http://test.url";
+
+        internalUpdateTask("ANGEL SALINAS (VENTAS)", angelTask, "ANGEL_USER");
+
+        // Validación Paso 4 (Sincronización Inversa)
+        const finalAntoniaRow = dbAntonia.find(r => r.FOLIO === 'AV-E2E-001');
+        const finalLog = JSON.parse(finalAntoniaRow.PROCESO_LOG);
+
+        if (finalLog[0].status !== "DONE") {
+            console.error("❌ Falló Paso 4: El estado en PROCESO_LOG no es DONE.");
+            return;
+        }
+
+        if (finalAntoniaRow["MAP COT"] !== "⚪ L | 🟢 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC") {
+            console.error("❌ Falló Paso 4: El MAP COT no se regeneró a verde (🟢). Recibido: " + finalAntoniaRow["MAP COT"]);
+            return;
+        }
+
+        if (finalAntoniaRow.COTIZACION !== "http://test.url") {
+             console.error("❌ Falló Paso 4: El archivo no se sincronizó.");
+             return;
+        }
+
+        console.log("✅ test_Flujo_Completo_Delegacion_y_Sincronizacion Pasó.");
+
+    } finally {
+        internalFetchSheetData = origFetch;
+        internalBatchUpdateTasks = origBatch;
+        registrarLog = origLog;
+    }
+}
+
+function test_Cierre_Terminal_RCC() {
+    console.log("🛠️ INICIANDO TEST: Cierre Terminal RCC (Test Case 4)");
+
+    // Este test verifica que cuando la hoja de Antonia actualiza un ESTATUS final (ej. PERDIDA X PRECIO)
+    // El frontend lo maneja (simulado pasando el payload) y que se mantenga el estado.
+    // La mayor parte de la lógica de cierre está en el frontend en 'advanceProcess',
+    // Aquí probamos que internalUpdateTask lo acepte y guarde.
+
+    const origBatch = internalBatchUpdateTasks;
+    const origLog = registrarLog;
+
+    let capturedUpdate = null;
+
+    try {
+        internalBatchUpdateTasks = function(sheetName, tasksArray) {
+            if (sheetName === "ANTONIA_VENTAS") capturedUpdate = tasksArray[0];
+            return { success: true };
+        };
+        registrarLog = function() {};
+
+        const payload = {
+            'FOLIO': 'AV-TERM-001',
+            'ESTATUS': 'PERDIDA X PRECIO',
+            'MAP COT': '🟢 L | 🟢 CD | 🟢 EP | 🟢 CI | 🟢 EV | 🟢 CEC | 🔴 RCC'
+        };
+
+        internalUpdateTask("ANTONIA_VENTAS", payload, "ANTONIA_VENTAS");
+
+        if (capturedUpdate && capturedUpdate.ESTATUS === "PERDIDA X PRECIO") {
+            console.log("✅ test_Cierre_Terminal_RCC Pasó.");
+        } else {
+            console.error("❌ test_Cierre_Terminal_RCC Falló.");
+        }
+
+    } finally {
+        internalBatchUpdateTasks = origBatch;
+        registrarLog = origLog;
+    }
+}
+
+
+
+
+
+
 function test_SavePPCV3_Flow() {
   console.log("🛠️ INICIANDO TEST: Persistencia en PPCV3");
 
