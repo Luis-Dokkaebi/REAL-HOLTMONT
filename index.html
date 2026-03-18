@@ -17,7 +17,21 @@
 
   <style>
     /* VARIABLES Y ESTILOS GLOBALES */
-    :root { --sidebar-w: 260px; --sidebar-mini: 65px; --primary: #1c1c1c; --accent: #3699ff; --bg-body: #f3f6f9; }
+    :root {
+        --sidebar-w: 260px; --sidebar-mini: 65px; --primary: #1c1c1c; --accent: #3699ff; --bg-body: #f3f6f9;
+        /* Tiempos de Transición */
+        --transition-fast: 150ms ease;
+        --transition-accordion: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+
+        /* Colores de Interacción */
+        --cell-hover-bg: #F9FAFB;
+        --cell-focus-ring: #3B82F6;
+
+        /* Stepper */
+        --stepper-line-color: #E5E7EB;
+        --stepper-circle-size: 32px;
+        --badge-bg: #10B981;
+    }
     body { font-family: 'Roboto', sans-serif; background: var(--bg-body); margin: 0; overflow: hidden; font-size: 13px; }
 
     .content-wrapper { flex: 1; display: flex; flex-direction: column; background: var(--bg-body); overflow: hidden; position: relative; transition: margin-left 0.3s; }
@@ -641,7 +655,164 @@
         font-weight: bold;
         font-size: 11px;
     }
-  </style>
+
+    /* HITBOXES Y ACCESIBILIDAD */
+    .editable-cell {
+      position: relative;
+      vertical-align: middle;
+      padding: 0 !important;
+    }
+
+    .editable-hitbox {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      cursor: pointer;
+      transition: background-color var(--transition-fast), filter var(--transition-fast);
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    .editable-hitbox.base-white:hover {
+      background-color: var(--cell-hover-bg);
+    }
+
+    .editable-hitbox.base-green:hover {
+      filter: brightness(1.1);
+    }
+
+    .editable-hitbox:focus-within {
+      outline: 2px solid var(--cell-focus-ring);
+      outline-offset: -2px;
+      z-index: 10;
+    }
+
+    .hitbox-icon {
+        opacity: 0.5;
+        font-size: 12px;
+        pointer-events: none;
+    }
+    .base-green .hitbox-icon {
+        color: white;
+    }
+    .base-white .hitbox-icon {
+        color: #666;
+    }
+
+    .hitbox-input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+      box-sizing: border-box;
+      z-index: 2;
+    }
+
+    .hitbox-text {
+        pointer-events: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        z-index: 1;
+        font-size: 11px;
+        font-weight: bold;
+    }
+
+    /* TOOLTIP */
+    .hp-circle-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .hp-tooltip {
+        visibility: hidden;
+        background-color: #1F2937;
+        color: #fff;
+        text-align: center;
+        border-radius: 4px;
+        padding: 5px 10px;
+        position: absolute;
+        z-index: 100;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.2s;
+        font-size: 11px;
+        white-space: nowrap;
+        line-height: 1.3;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        pointer-events: none;
+    }
+
+    .hp-tooltip::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        margin-left: -5px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #1F2937 transparent transparent transparent;
+    }
+
+    .hp-circle-wrapper:hover .hp-tooltip {
+        visibility: visible;
+        opacity: 1;
+        transition-delay: 200ms;
+    }
+
+    /* BADGE Y ACORDEON */
+    .hp-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 24px;
+        padding: 0 8px;
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 600;
+        border-radius: 12px;
+        color: white;
+        background-color: var(--badge-bg);
+        white-space: nowrap;
+    }
+
+    .hp-badge.red { background-color: #dc3545; }
+    .hp-badge.yellow { background-color: #ffc107; color: #000; }
+    .hp-badge.green { background-color: #10B981; }
+
+    .hp-stepper-line {
+        position: absolute;
+        top: 16px; /* Mitad de 32px */
+        left: 16px;
+        right: 16px;
+        height: 2px;
+        background-color: var(--stepper-line-color);
+        z-index: 0;
+    }
+
+    .hp-step {
+        position: relative;
+        z-index: 1;
+    }
+
+    .hp-circle {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hp-timeline-container {
+        position: relative;
+    }
+
+</style>
 </head>
 <body>
 
@@ -1437,7 +1608,10 @@
                              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-weight:bold; font-size:12px;">{{ row[h] ? String(row[h]).charAt(0).toUpperCase() : '' }}</div>
                              <select v-model="row[h]" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
                          </div>
-                         <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
+                         <div v-else-if="isCol(h, ['ID','FOLIO'])" class="d-flex align-items-center justify-content-center h-100" style="background-color:#f0f0f0; color:#555; gap: 4px;">
+                             <i v-if="currentUsername === 'ANTONIA_VENTAS'" class="fas" :class="row._isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'" style="cursor: pointer; font-size: 10px;" @click="row._isExpanded = !row._isExpanded"></i>
+                             <span>{{ row[h] }}</span>
+                         </div>
                          <input v-else-if="isCol(h, ['ESTATUS','STATUS'])" v-model="row[h]" class="excel-input" style="font-weight:bold">
                          <input v-else v-model="row[h]" class="excel-input">
                       </td>
@@ -1968,20 +2142,33 @@
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
+                   <template v-for="(row, i) in filteredStaffTrackerData" :key="i">
+                   <tr :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in visibleTrackerHeaders" :key="idx">
-                         <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
-                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-weight:bold; font-size:12px;">{{ row[h] ? String(row[h]).charAt(0).toUpperCase() : '' }}</div>
-                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
+                         <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" class="editable-cell">
+                             <div class="editable-hitbox base-white" tabindex="0">
+                                 <div class="hitbox-text" style="width:100%; text-align:center;">{{ row[h] ? String(row[h]).charAt(0).toUpperCase() : '' }}</div>
+                                 <i class="fas fa-chevron-down hitbox-icon" style="position:absolute; right:8px;"></i>
+                                 <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" class="hitbox-input"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
+                             </div>
                          </div>
-                         <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
-                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR') || (currentUsername === 'ANTONIA_VENTAS' && String(h).toUpperCase().includes('RESPONSABLE'))" style="position:relative; width:100%; height:100%; min-height: 30px; background-color:#f0fdf4;" @click="openVendorSelector(row, h)">
-                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000 !important; cursor:pointer;">{{ toInitials(row[h]) }}</div>
+                         <div v-else-if="isCol(h, ['ID','FOLIO'])" class="d-flex align-items-center justify-content-center h-100" style="background-color:#f0f0f0; color:#555; gap: 4px;">
+                             <i v-if="currentUsername === 'ANTONIA_VENTAS'" class="fas" :class="row._isExpanded ? 'fa-chevron-down' : 'fa-chevron-right'" style="cursor: pointer; font-size: 10px;" @click="row._isExpanded = !row._isExpanded"></i>
+                             <span>{{ row[h] }}</span>
                          </div>
-                         <div v-else-if="String(h).toUpperCase().includes('PRIORIDAD') || String(h).toUpperCase().includes('PRIO')" style="position:relative; width:100%; height:100%;">
-                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:10px; font-weight:bold;">{{ row[h] }}</div>
-                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option value="NORMAL">NORMAL</option><option value="MEDIA">MEDIA</option><option value="ALTA">ALTA</option><option value="URGENTE">URGENTE</option><option value="ESTRATEGICA">ESTRATEGICA</option></select>
+                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR') || (currentUsername === 'ANTONIA_VENTAS' && String(h).toUpperCase().includes('RESPONSABLE'))" class="editable-cell" style="min-height: 30px; background-color:#f0fdf4;">
+                             <div class="editable-hitbox base-green" tabindex="0" @click="openVendorSelector(row, h)" @keydown.enter="openVendorSelector(row, h)" @keydown.space.prevent="openVendorSelector(row, h)">
+                                 <div class="hitbox-text" style="width:100%; text-align:center; color:#000 !important;">{{ toInitials(row[h]) }}</div>
+                                 <i class="fas fa-chevron-down hitbox-icon" style="color:#000; position:absolute; right:4px; font-size: 10px;"></i>
+                             </div>
+                         </div>
+                         <div v-else-if="String(h).toUpperCase().includes('PRIORIDAD') || String(h).toUpperCase().includes('PRIO')" class="editable-cell">
+                             <div class="editable-hitbox base-white" tabindex="0">
+                                 <div class="hitbox-text" style="width:100%; text-align:center;">{{ row[h] }}</div>
+                                 <i class="fas fa-chevron-down hitbox-icon" style="position:absolute; right:8px;"></i>
+                                 <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" class="hitbox-input"><option value="">-</option><option value="NORMAL">NORMAL</option><option value="MEDIA">MEDIA</option><option value="ALTA">ALTA</option><option value="URGENTE">URGENTE</option><option value="ESTRATEGICA">ESTRATEGICA</option></select>
+                             </div>
                          </div>
                          <div v-else-if="isMediaColumn(h)" class="text-center" style="padding-top:4px; display:flex; gap:2px; flex-wrap:wrap; justify-content:center; align-items:center; height:100%;">
                              <template v-if="row[h]">
@@ -2008,21 +2195,16 @@
                                        @click="openStatusSelector(row, h)">
                                       {{ row[h] }}
                                   </div>
-                                  <div style="flex: 1 1 auto; display:flex; align-items:center; background:#f8f9fa; border-top:1px solid #dee2e6;">
-                                      <div class="hp-timeline-container w-100 m-0 py-1" style="min-height:40px;">
-                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null">
-                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
-                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
-                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
-                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
-                                                  </div>
-                                              </div>
-                                              <div class="hp-text">
-                                                  {{ step.isDone ? 'Hecho' : 'Pendiente' }} {{ step.id }}<br>
-                                                  <span class="hp-time">{{ step.timeLabel }}</span>
-                                              </div>
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; padding: 4px;">
+                                      <template v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx">
+                                          <div v-if="step.isCurrent || (sIdx === getProcessTimeline(row).length - 1 && step.isDone) || (!step.isDone && getProcessTimeline(row).findIndex(s => !s.isDone) === sIdx)"
+                                               class="hp-badge" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')"
+                                               style="width: 100%; display: flex; justify-content: space-between; padding: 4px 8px; font-size: 9px; cursor: pointer;"
+                                               @click="step.isCurrent ? advanceProcess(row) : null">
+                                               <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ step.isDone ? '✔' : (step.isInProgress ? '⏳' : '🔴') }} {{ getFullProcessName(step.id) }}</span>
+                                               <span style="opacity: 0.8; margin-left: 4px;">{{ step.timeLabel }}</span>
                                           </div>
-                                      </div>
+                                      </template>
                                   </div>
                              </div>
                              <input v-else
@@ -2034,15 +2216,40 @@
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
                          </div>
-                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; width:100%; height:100%; color: #000 !important;" :style="Object.assign({color: '#000'}, isCol(h, ['F. ENTREGA']) ? getTrafficStyle(row) : (isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)))">
-                             <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none; color: #000 !important;">{{ formatDisplayDate(row[h]) }}</div>
-                             <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
+                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" class="editable-cell" :style="Object.assign({color: '#000', backgroundColor: 'transparent'}, isCol(h, ['F. ENTREGA']) ? getTrafficStyle(row) : (isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)))">
+                             <div class="editable-hitbox base-green" tabindex="0">
+                                 <div class="hitbox-text" style="color: #000 !important;">{{ formatDisplayDate(row[h]) }}</div>
+                                 <i class="fas fa-calendar-alt hitbox-icon" style="position:absolute; right:8px; color:rgba(255,255,255,0.7) !important;"></i>
+                                 <input type="date" class="hitbox-input" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
+                             </div>
                          </div>
                          <textarea v-else-if="currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP') || String(h).toUpperCase().includes('COMENTARIO'))" v-model="row[h]" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
                          <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                    </tr>
+                   <tr v-if="row._isExpanded">
+                       <td :colspan="visibleTrackerHeaders.length + 2" class="p-3 bg-light border-bottom">
+                           <div class="d-flex justify-content-center">
+                               <div class="hp-timeline-container w-100" style="max-width: 800px; padding: 20px 0;">
+                                   <div class="hp-stepper-line"></div>
+                                   <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null" style="flex: 1; display: flex; justify-content: center; position: relative;">
+                                       <div class="hp-circle-wrapper">
+                                           <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :style="{'box-shadow': '0 0 0 4px #f8f9fa'}">
+                                               <span style="font-size: 12px; font-weight: bold; color: inherit;" :style="{color: step.isInProgress ? '#000' : '#fff'}">{{ step.id }}</span>
+                                           </div>
+                                           <div class="hp-tooltip">
+                                               <div class="fw-bold mb-1">{{ getFullProcessName(step.id) }}</div>
+                                               <div>{{ step.isDone ? 'Completado' : (step.isInProgress ? 'En Proceso' : 'Pendiente') }}</div>
+                                               <div class="text-white-50 mt-1" style="font-size: 9px;">{{ step.timeLabel }}</div>
+                                           </div>
+                                       </div>
+                                   </div>
+                               </div>
+                           </div>
+                       </td>
+                   </tr>
+                   </template>
                 </tbody>
              </table>
           </div>
