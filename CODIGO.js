@@ -1,2467 +1,5227 @@
-/**
- * ======================================================================
- * HOLTMONT WORKSPACE V158 - SCRIPTMASTER EDITION
- * Backend: Lógica optimizada con detección de Especialidad para Filtros
- * Actualización: Soporte para Múltiples PPC (Interno, Preoperativo, Cliente)
- * ======================================================================
- */
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Holtmont V158 - ScriptMaster Edition</title>
 
-var DEMO_MODE = false; // HOTFIX: MODO DEMO
-const SS = SpreadsheetApp.getActiveSpreadsheet();
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 
-// --- CONFIGURACIÓN ---
-const APP_CONFIG = {
-  folderIdUploads: "", 
-  ppcSheetName: "PPCV3",          
-  draftSheetName: "PPC_BORRADOR", 
-  salesSheetName: "Datos",        
-  logSheetName: "LOG_SISTEMA",
-  directorySheetName: "DB_DIRECTORY", // NUEVO: Hoja de Directorio
-  // NUEVAS HOJAS PARA DETALLES DE WORK ORDER
-  woMaterialsSheet: "DB_WO_MATERIALES",
-  woLaborSheet: "DB_WO_MANO_OBRA",
-  woToolsSheet: "DB_WO_HERRAMIENTAS",
-  woEquipSheet: "DB_WO_EQUIPOS",
-  woProgramSheet: "DB_WO_PROGRAMA"
-};
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-const FOLIO_CONFIG = {
-  SHEET_NAME: 'ANTONIA_VENTAS',
-  COLUMN_NAME: 'Folio'
-};
+  <style>
+    /* VARIABLES Y ESTILOS GLOBALES */
+    :root { --sidebar-w: 260px; --sidebar-mini: 65px; --primary: #1c1c1c; --accent: #3699ff; --bg-body: #f3f6f9; }
+    body { font-family: 'Roboto', sans-serif; background: var(--bg-body); margin: 0; overflow: hidden; font-size: 13px; }
 
-const INITIAL_DIRECTORY = [
-    { name: "ANTONIA_VENTAS", dept: "VENTAS", type: "VENTAS" },
-    { name: "JUDITH ECHAVARRIA", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "RAMIRO RODRIGUEZ", dept: "VENTAS", type: "HIBRIDO" },
-    { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "CESAR GOMEZ", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "ALFONSO CORREA", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "TERESA GARZA", dept: "VENTAS", type: "HIBRIDO" },
-    { name: "GUILLERMO DAMICO", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "ANGEL SALINAS", dept: "VENTAS", type: "HIBRIDO" },
-    { name: "JUAN JOSE SANCHEZ", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "LUIS CARLOS", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "ANTONIO SALAZAR", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "ROCIO CASTRO", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "DANIA GONZALEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "JUANY RODRIGUEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "LAURA HUERTA", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "LILIANA MARTINEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "DANIELA CASTRO", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "EDUARDO BENITEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "ANTONIO CABRERA", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "ADMINISTRADOR", dept: "ADMINISTRACION", type: "HIBRIDO" },
-    { name: "EDUARDO MANZANARES", dept: "HVAC", type: "ESTANDAR" },
-    { name: "JUAN JOSE SANCHEZ", dept: "HVAC", type: "ESTANDAR" },
-    { name: "SELENE BALDONADO", dept: "HVAC", type: "ESTANDAR" },
-    { name: "ROLANDO MORENO", dept: "HVAC", type: "ESTANDAR" },
-    { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "SEBASTIAN PADILLA", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "MIGUEL GONZALEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "ALICIA RIVERA", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "RICARDO MENDO", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "CARLOS MENDEZ", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "REYNALDO GARCIA", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "INGE OLIVO", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "EDUARDO TERAN", dept: "CONSTRUCCION", type: "HIBRIDO" },
-    { name: "EDGAR HOLT", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "ALEXIS TORRES", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "TERESA GARZA", dept: "CONSTRUCCION", type: "HIBRIDO" },
-    { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION", type: "HIBRIDO" },
-    { name: "GUILLERMO DAMICO", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "RUBEN PESQUEDA", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "JUDITH ECHAVARRIA", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "GISELA DOMINGUEZ", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "VANESSA DE LARA", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "NELSON MALDONADO", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "VICTOR ALMACEN", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "DIMAS RAMOS", dept: "EHS", type: "ESTANDAR" },
-    { name: "CITLALI GOMEZ", dept: "EHS", type: "ESTANDAR" },
-    { name: "AIMEE RAMIREZ", dept: "EHS", type: "ESTANDAR" },
-    { name: "EDGAR HOLT", dept: "MAQUINARIA", type: "ESTANDAR" },
-    { name: "ALEXIS TORRES", dept: "MAQUINARIA", type: "ESTANDAR" },
-    { name: "ANGEL SALINAS", dept: "DISEÑO", type: "HIBRIDO" },
-    { name: "EDGAR HOLT", dept: "DISEÑO", type: "ESTANDAR" },
-    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "HIBRIDO" }
-];
+    .content-wrapper { flex: 1; display: flex; flex-direction: column; background: var(--bg-body); overflow: hidden; position: relative; transition: margin-left 0.3s; }
+    .content-wrapper.dark-mode { background: #111 !important; }
+    .view-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 20px; width: 100%; box-sizing: border-box; }
+    .view-area.no-padding { padding: 0 !important; }
 
-const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
-const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'F. ENTREGA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT', 'AVANCE'];
-
-// --- ESTRUCTURA ESTÁNDAR DE PROYECTOS (MODIFICADO) ---
-// Aquí definimos los sub-proyectos automáticos.
-// Se eliminó "PPC PROYECTO" y se agregaron los 3 específicos.
-// Se conservan DOCUMENTOS, PLANOS, FOTOGRAFIAS, etc.
-const STANDARD_PROJECT_STRUCTURE = [
-  "NAVE",
-  "AMPLIACION",
-  "PPC INTERNO",      // NUEVO
-  "PPC PREOPERATIVO", // NUEVO
-  "PPC CLIENTE",      // NUEVO
-  "DOCUMENTOS",       // PRESERVADO
-  "PLANOS Y DISEÑOS", // PRESERVADO
-  "FOTOGRAFIAS",      // PRESERVADO
-  "CORRESPONDENCIA",  // PRESERVADO
-  "REPORTES"          // PRESERVADO
-];
-
-// USUARIOS
-const USER_DB = {
-  "LUIS_CARLOS":      { pass: "admin2025", role: "ADMIN", label: "Administrador" },
-  "JESUS_CANTU":      { pass: "ppc2025",   role: "PPC_ADMIN", label: "PPC Manager" },
-  "ANTONIA_VENTAS":   { pass: "tonita2025", role: "TONITA", label: "Ventas" },
-  "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo" },
-  "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas" },
-  "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza" },
-  "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran" },
-  "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares" },
-  "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" },
-  "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla" },
-  "EDGAR_LOPEZ":      { pass: "edgar2025", role: "EDGAR_USER", label: "Edgar Lopez" },
-  "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder" }
-};
-
-/* SERVICIO HTML */
-function doGet(e) {
-  return HtmlService.createTemplateFromFile('Index')
-    .evaluate()
-    .setTitle('Holtmont Workspace')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
-}
-
-/* HELPERS */
-function findSheetSmart(name) {
-  if (!name) return null;
-  let sheet = SS.getSheetByName(name);
-  if (sheet) return sheet;
-  const clean = String(name).trim().toUpperCase();
-  const all = SS.getSheets();
-  for (let s of all) { if (s.getName().trim().toUpperCase() === clean) return s; }
-  return null;
-}
-
-// DETECTOR DE CABECERAS INTELIGENTE
-function findHeaderRow(values) {
-  for (let i = 0; i < Math.min(100, values.length); i++) {
-    const rowStr = values[i].map(c => String(c).toUpperCase().replace(/\n/g, " ").replace(/\s+/g, " ").trim()).join("|");
-    if (rowStr.includes("ID_SITIO") || rowStr.includes("ID_PROYECTO")) return i;
-    if (rowStr.includes("FOLIO") && rowStr.includes("CONCEPTO") && 
-       (rowStr.includes("ALTA") || rowStr.includes("AVANCE") || rowStr.includes("STATUS") || rowStr.includes("FECHA"))) {
-      return i;
+    /* TABLA EXCEL AVANZADA */
+    .excel-container {
+        flex: 1; overflow: auto; background: white; border: 1px solid #999;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 100%;
+        scrollbar-width: thin; scrollbar-color: #a0a0a0 #f1f1f1;
     }
-    if (rowStr.includes("ID") && rowStr.includes("RESPONSABLE")) return i;
-    if ((rowStr.includes("FOLIO") || rowStr.includes("ID")) && 
-        (rowStr.includes("DESCRIPCI") || rowStr.includes("RESPONSABLE") || rowStr.includes("CONCEPTO"))) {
-      return i;
+    .excel-container::-webkit-scrollbar { height: 14px; width: 14px; }
+    .excel-container::-webkit-scrollbar-track { background: #f1f1f1; }
+    .excel-container::-webkit-scrollbar-thumb { background: #888; border-radius: 7px; border: 3px solid #f1f1f1; }
+    .excel-container::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    .table-excel { width: max-content; min-width: 100%; border-collapse: collapse; background-color: #fff; table-layout: fixed; }
+    .table-excel th {
+        background-color: #e6e6e6; color: #000; font-weight: 700; text-align: center;
+        border: 1px solid #999; padding: 8px 4px; font-size: 12px;
+        position: sticky; top: 0; z-index: 20; white-space: nowrap; box-shadow: 0 1px 0 #999;
     }
-    if (rowStr.includes("CLIENTE") && (rowStr.includes("VENDEDOR") || rowStr.includes("AREA") || rowStr.includes("CLASIFICACION"))) return i;
-    // SOPORTE PARA AGENDA PERSONAL Y HABITOS
-    if (rowStr.includes("ID") && rowStr.includes("TITULO") && rowStr.includes("USUARIO")) return i;
-    if (rowStr.includes("ID") && rowStr.includes("HABITO") && rowStr.includes("USUARIO")) return i;
-  }
-  return -1;
-}
+    .table-excel td { border: 1px solid #b2b2b2 !important; padding: 0; margin: 0; height: 30px; vertical-align: middle; position: relative; }
 
-function registrarLog(user, action, details) {
-  try {
-    let sheet = SS.getSheetByName(APP_CONFIG.logSheetName);
-    if (!sheet) {
-      sheet = SS.insertSheet(APP_CONFIG.logSheetName);
-      sheet.appendRow(["FECHA", "USUARIO", "ACCION", "DETALLES"]);
+    .excel-input {
+        width: 100%; min-height: 28px; height: 100%; border: none; padding: 4px 6px; outline: none;
+        font-size: 12px; background: transparent; display: block; font-family: inherit;
+        line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: clip;
     }
-    sheet.appendRow([new Date(), user, action, details]);
-  } catch (e) { console.error(e); }
-}
+    .excel-input:focus { outline: 2px solid #107c41; outline-offset: -2px; z-index: 2; position: relative; background: white; }
+    .input-row { background-color: #f8f9fa; border-bottom: 2px solid #107c41; }
+    .row-num { background-color: #e6e6e6; text-align: center; color: #333; font-weight: bold; width: 40px; border-right: 3px solid #ccc !important; }
 
-/* LOGIN */
-function apiLogin(username, password) {
-  const userKey = String(username).trim().toUpperCase();
-  const user = USER_DB[userKey];
-  if (user && user.pass === password) {
-    registrarLog(userKey, "LOGIN", `Acceso exitoso (${user.role})`);
-    return { success: true, role: user.role, name: user.label, username: userKey };
-  }
-  registrarLog(userKey || "ANONIMO", "LOGIN_FAIL", "Credenciales incorrectas");
-  return { success: false, message: 'Usuario o contraseña incorrectos.' };
-}
+    /* MINI DASHBOARD & KPI */
+    .mini-table { width: auto !important; min-width: 0 !important; border: none; }
+    .mini-table th { padding: 5px 6px; font-size: 11px; height: auto; line-height: 1.2; border: 1px solid #999; text-align: center; white-space: nowrap; background-color: #e6e6e6; }
+    .mini-table td { height: auto; font-size: 11px; padding: 4px 6px; line-height: 1.2; border: 1px solid #ccc; }
+    .mini-table .total-row td { background-color: #333; color: white; font-weight: bold; border-top: 2px solid #555 !important; }
 
-function apiLogout(username) {
-  registrarLog(username || "DESCONOCIDO", "LOGOUT", "Sesión cerrada");
-  return { success: true };
-}
+    /* DYNAMIC TRACKER FORM */
+    .dynamic-tracker { background-color: #f4f6f8 !important; color: #333; flex:1; display:flex; flex-direction:column; padding:0 !important; overflow-y:auto; }
+    .dynamic-form-card { background: #ffffff; border: 1px solid #dfe3e8; border-radius: 8px; padding: 25px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); max-width: 960px; width: 100%; margin: 0 auto; }
+    .dynamic-input { background: #ffffff; border: 1px solid #ced4da; color: #333; padding: 8px 12px; border-radius: 4px; width: 100%; font-size: 13px; transition: border-color 0.2s; }
+    .dynamic-input:focus { outline: none; border-color: #e83e8c; box-shadow: 0 0 0 2px rgba(232, 62, 140, 0.1); }
+    .dynamic-label { font-size: 11px; font-weight: 700; color: #637381; margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+    .chip-option { cursor: pointer; padding: 6px 14px; border-radius: 15px; background: #f1f3f5; border: 1px solid #dee2e6; color: #495057; font-size: 11px; margin-right: 6px; display: inline-block; transition: all 0.2s; font-weight: 500; }
+    .chip-option:hover { background: #e9ecef; border-color: #ced4da; }
+    .chip-option.selected { background: #e83e8c; color: white; border-color: #e83e8c; box-shadow: 0 2px 5px rgba(232, 62, 140, 0.3); }
 
-function getDirectoryFromDB() {
-  const lock = LockService.getScriptLock();
-  try {
-      if (lock.tryLock(5000)) {
-          let sheet = findSheetSmart(APP_CONFIG.directorySheetName);
-          
-          // CREAR SI NO EXISTE
-          if (!sheet) {
-              sheet = SS.insertSheet(APP_CONFIG.directorySheetName);
-          }
-
-          // MIGRACIÓN/POBLADO AUTOMÁTICO (Si está vacía o solo tiene encabezados)
-          if (sheet.getLastRow() < 2) {
-              sheet.clear(); // Limpiar por si acaso el usuario puso encabezados manuales incorrectos
-              const headers = ["NOMBRE", "DEPARTAMENTO", "TIPO_HOJA"];
-              sheet.appendRow(headers);
-              
-              // Populate from INITIAL_DIRECTORY
-              const rows = INITIAL_DIRECTORY.map(u => [u.name, u.dept, u.type]);
-              if (rows.length > 0) {
-                  sheet.getRange(2, 1, rows.length, 3).setValues(rows);
-              }
-              SpreadsheetApp.flush();
-              registrarLog("SISTEMA", "MIGRACION_DB", "Se pobló DB_DIRECTORY (estaba vacía).");
-          }
-
-          const data = sheet.getDataRange().getValues();
-          if (data.length < 2) return [];
-
-          // Parse Data
-          const headers = data[0].map(h => String(h).toUpperCase().trim());
-          const nameIdx = headers.indexOf("NOMBRE");
-          const deptIdx = headers.indexOf("DEPARTAMENTO");
-          const typeIdx = headers.indexOf("TIPO_HOJA");
-
-          if (nameIdx === -1) return [];
-
-          const directory = [];
-          for (let i = 1; i < data.length; i++) {
-              const row = data[i];
-              if (row[nameIdx]) {
-                  directory.push({
-                      name: String(row[nameIdx]).trim(),
-                      dept: (deptIdx > -1) ? String(row[deptIdx]).trim() : "GENERAL",
-                      type: (typeIdx > -1) ? String(row[typeIdx]).trim() : "ESTANDAR"
-                  });
-              }
-          }
-          return directory;
-      }
-  } catch (e) {
-      console.error(e);
-      // Fallback in case of error
-      return INITIAL_DIRECTORY;
-  } finally {
-      lock.releaseLock();
-  }
-  return INITIAL_DIRECTORY;
-}
-
-function apiAddEmployee(payload) {
-    const lock = LockService.getScriptLock();
-    try {
-        if (lock.tryLock(10000)) {
-            const { name, dept, type } = payload;
-            const cleanName = String(name).toUpperCase().trim();
-            if (!cleanName) return { success: false, message: "Nombre inválido" };
-
-            let sheet = findSheetSmart(APP_CONFIG.directorySheetName);
-            if (!sheet) {
-                // Should have been created by getDirectoryFromDB, but ensure it exists
-                getDirectoryFromDB();
-                sheet = findSheetSmart(APP_CONFIG.directorySheetName);
-            }
-
-            // Check duplicate
-            const data = sheet.getDataRange().getValues();
-            for(let i=1; i<data.length; i++) {
-                if (String(data[i][0]).toUpperCase().trim() === cleanName) {
-                    return { success: false, message: "El usuario ya existe." };
-                }
-            }
-
-            // Add to DB
-            sheet.appendRow([cleanName, dept, type]);
-
-            // Create Sheets based on Type
-            const createSheetIfMissing = (sName, headers) => {
-                let s = findSheetSmart(sName);
-                if (!s) {
-                    s = SS.insertSheet(sName);
-                    s.appendRow(headers);
-                    s.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e6e6e6");
-                    // Conditional Formatting (Basic)
-                    try {
-                        const rule = SpreadsheetApp.newConditionalFormatRule()
-                            .whenTextEqualTo("100")
-                            .setBackground("#d4edda")
-                            .setRanges([s.getRange("F:F")]) // Assuming Avance is commonly around F
-                            .build();
-                        s.setConditionalFormatRules([rule]);
-                    } catch(e){}
-                }
-            };
-
-            if (type === 'ESTANDAR' || type === 'HIBRIDO') {
-                createSheetIfMissing(cleanName, DEFAULT_TRACKER_HEADERS);
-            }
-            if (type === 'VENTAS' || type === 'HIBRIDO') {
-                createSheetIfMissing(cleanName + " (VENTAS)", DEFAULT_SALES_HEADERS);
-            }
-
-            registrarLog("ADMIN", "ADD_EMPLOYEE", `Usuario: ${cleanName}, Tipo: ${type}`);
-            return { success: true };
-        }
-    } catch(e) {
-        return { success: false, message: e.toString() };
-    } finally {
-        lock.releaseLock();
+    /* LAYOUT & SIDEBAR */
+    .app-wrapper { display: flex; height: 100vh; width: 100vw; }
+    .sidebar {
+        width: var(--sidebar-w);
+        background: var(--primary); /* Fallback */
+        background: color-mix(in srgb, var(--primary), transparent 15%);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 5px 0 20px rgba(0,0,0,0.2);
+        color: #a2a3b7;
+        display: flex;
+        flex-direction: column;
+        transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        position: relative;
+        z-index: 1050;
+        white-space: nowrap;
+        overflow: hidden;
+        flex-shrink: 0;
     }
-}
+    .sidebar.compact { width: var(--sidebar-mini); }
+    .sidebar.compact:hover { width: var(--sidebar-w); box-shadow: 5px 0 15px rgba(0,0,0,0.3); }
 
-function apiDeleteEmployee(name) {
-    const lock = LockService.getScriptLock();
-    try {
-        if (lock.tryLock(10000)) {
-            const cleanName = String(name).toUpperCase().trim();
-            const sheet = findSheetSmart(APP_CONFIG.directorySheetName);
-            if (!sheet) return { success: false, message: "No existe DB_DIRECTORY" };
+    .brand { height: 70px; display: flex; align-items: center; padding: 0 20px; font-weight: bold; color: white; justify-content: space-between; }
+    .menu { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 0; }
+    .nav-item { padding: 12px 20px; cursor: pointer; display: flex; align-items: center; color: #a2a3b7; transition: 0.2s; height: 45px; }
+    .nav-item:hover { color: white; background: rgba(255,255,255,0.03); }
+    .nav-item.active { background: #1b1b29; color: var(--accent); }
+    .nav-icon-col { width: 25px; text-align: center; margin-right: 15px; display: flex; justify-content: center; }
+    .nav-text { transition: opacity 0.2s; opacity: 1; }
+    .sidebar.compact:not(:hover) .nav-text, .sidebar.compact:not(:hover) .brand-text, .sidebar.compact:not(:hover) .section-title { opacity: 0; pointer-events: none; display: none; }
+    .sidebar.compact:not(:hover) .nav-item { padding: 12px 0; justify-content: center; }
+    .sidebar.compact:not(:hover) .nav-icon-col { margin-right: 0; }
+    .sidebar.compact:not(:hover) .brand { justify-content: center; padding: 0; }
+    .sidebar.compact:not(:hover) .btn-toggle-sidebar { margin: 0; }
+    .section-title { padding: 15px 20px 5px; font-size: 0.7rem; color: #555; font-weight: bold; white-space: nowrap; }
+    .top-bar { height: 70px; background: white; border-bottom: 1px solid #eff2f5; display: flex; align-items: center; justify-content: space-between; padding: 0 30px; }
 
-            const data = sheet.getDataRange().getValues();
-            let rowIndex = -1;
-            for(let i=1; i<data.length; i++) {
-                if (String(data[i][0]).toUpperCase().trim() === cleanName) {
-                    rowIndex = i + 1; // 1-based
-                    break;
-                }
-            }
-
-            if (rowIndex > -1) {
-                sheet.deleteRow(rowIndex);
-                registrarLog("ADMIN", "DELETE_EMPLOYEE", `Usuario eliminado: ${cleanName}`);
-                return { success: true };
-            }
-            return { success: false, message: "Usuario no encontrado." };
-        }
-    } catch(e) {
-        return { success: false, message: e.toString() };
-    } finally {
-        lock.releaseLock();
+    /* COMPONENTES */
+    .login-overlay {
+        position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center;
+        background: radial-gradient(circle at center, #252525 0%, #000000 100%);
     }
-}
+    .login-card {
+        background-color: #1c1c1c;
+        padding: 40px;
+        border-radius: 8px;
+        width: 100%; max-width: 400px; text-align: center;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        color: #eee; position: relative; overflow: hidden;
+    }
+    .login-card .form-control {
+        background-color: #141414;
+        border: 1px solid #333;
+        color: #bbb;
+    }
+    .login-card .form-control:focus {
+        background-color: #141414;
+        border-color: #555;
+        color: #fff;
+        box-shadow: none;
+    }
+    .login-card h3 {
+        color: #ffffff;
+        font-weight: 300 !important;
+        letter-spacing: 3px;
+    }
+    .login-card p {
+        color: #666 !important;
+    }
+    .login-card .btn-outline-light {
+        background: transparent;
+        border: 1px solid #fff;
+        color: #fff;
+        transition: all 0.3s;
+    }
+    .login-card .btn-outline-light:hover {
+        background: #fff;
+        color: #000;
+    }
+    .login-card .input-group .btn {
+        background-color: #141414;
+        border: 1px solid #333;
+        color: #666;
+        border-left: none;
+    }
+    .login-card .input-group .btn:hover {
+        background-color: #222;
+        color: #fff;
+    }
+    .login-logo { max-width: 85%; height: auto; margin-bottom: 25px; mask-image: radial-gradient(ellipse at center, black 40%, transparent 100%); }
+    .dept-card, .staff-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .dept-card:hover, .staff-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        border-color: var(--accent);
+        border-top-width: 8px !important;
+        filter: brightness(1.02);
+    }
+    .chip-container { border: 1px solid #ccc; background: white; padding: 2px; display: flex; flex-wrap: wrap; gap: 2px; min-height: 100%; align-items: center; }
+    .user-chip { background: #e8f0fe; border: 1px solid #d2e3fc; border-radius: 4px; padding: 0 4px; font-size: 11px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+    .file-input-hidden { display: none; }
+    .btn-attach { border: 1px solid #ccc; background: #f8f9fa; color: #666; padding: 4px 10px; font-size: 12px; border-radius: 4px; cursor: pointer; }
+    .btn-attach.has-file { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+    .iframe-container { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; display: flex; flex-direction: column; }
+    .iframe-toolbar { height: 45px; background: #333; color: white; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
+    iframe { flex: 1; width: 100%; border: none; }
 
-function getSystemConfig(role, username) {
-  const fullDirectory = getDirectoryFromDB();
+    /* MODAL */
+    .custom-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1050; display: flex; align-items: center; justify-content: center; }
+    .custom-modal { background: white; width: 400px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); overflow: hidden; }
+    .custom-modal-header { background: #f8f9fa; padding: 15px; border-bottom: 1px solid #dee2e6; font-weight: bold; display: flex; justify-content: space-between; }
+    .custom-modal-body { padding: 20px; }
+    .custom-modal-footer { padding: 15px; background: #f8f9fa; border-top: 1px solid #dee2e6; text-align: right; }
+    .chip-select { cursor: pointer; padding: 6px 12px; border-radius: 20px; background: #f1f3f5; color: #495057; font-size: 11px; margin-right: 5px; margin-bottom: 5px; display: inline-block; border: 1px solid #dee2e6; transition: 0.2s; font-weight: 500; }
+    .chip-select.active { background: #3699ff; color: white; border-color: #3699ff; box-shadow: 0 2px 5px rgba(54, 153, 255, 0.3); }
 
-  const allDepts = {
-      "CONSTRUCCION": { label: "Construcción", icon: "fa-hard-hat", color: "#e83e8c" },
-      "COMPRAS": { label: "Compras/Almacén", icon: "fa-shopping-cart", color: "#198754" },
-      "EHS": { label: "Seguridad (EHS)", icon: "fa-shield-alt", color: "#dc3545" },
-      "DISEÑO": { label: "Diseño & Ing.", icon: "fa-drafting-compass", color: "#0d6efd" },
-      "ELECTROMECANICA": { label: "Electromecánica", icon: "fa-bolt", color: "#ffc107" },
-      "HVAC": { label: "HVAC", icon: "fa-fan", color: "#fd7e14" },
-      "ADMINISTRACION": { label: "Administración", icon: "fa-briefcase", color: "#6f42c1" },
-      "VENTAS": { label: "Ventas", icon: "fa-handshake", color: "#0dcaf0" },
-      "MAQUINARIA": { label: "Maquinaria", icon: "fa-truck", color: "#20c997" }
-  };
+    /* ESTILOS CASCADA PROYECTOS */
+    .cascade-container { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; }
+    .cascade-item { cursor: pointer; transition: all 0.2s; border-bottom: 1px solid #f0f2f5; position: relative; }
+    .cascade-item:hover { background-color: #f8faff; }
+    .cascade-header { padding: 15px 20px; background: #fff; font-weight: 600; color: #343a40; display: flex; align-items: center; border-left: 4px solid transparent; }
+    .cascade-header:hover { border-left-color: var(--accent); }
+    .cascade-header.expanded .expand-icon { transform: rotate(90deg); color: var(--accent); }
+    .cascade-children { display: none; background-color: #fcfdfe; position: relative; }
+    .cascade-children.show { display: block; animation: fadeIn 0.3s ease; }
+    .cascade-children::before { content: ''; position: absolute; top: 0; bottom: 15px; left: 28px; width: 2px; background-color: #e9ecef; z-index: 1; }
+    .cascade-subitem { padding: 12px 20px 12px 50px; display: flex; align-items: center; font-weight: 500; color: #495057; position: relative; z-index: 2; }
+    .cascade-folder { padding: 10px 20px 10px 85px; display: flex; align-items: center; color: #6c757d; font-size: 12px; position: relative; z-index: 2; transition: 0.2s; }
+    .project-type-option { padding: 10px; border: 1px solid #dee2e6; border-radius: 8px; text-align: center; cursor: pointer; transition: 0.2s; flex: 1; }
+    .project-type-option.selected { background: #e7f1ff; border-color: #0d6efd; color: #0d6efd; font-weight: bold; }
 
-  const ppcModuleMaster = { id: "PPC_MASTER", label: "PPC Maestro", icon: "fa-tasks", color: "#fd7e14", type: "ppc_native" };
+    /* --- ESTILOS ECG MONITOR --- */
+    .ecg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; height: 100%; overflow-y: auto; padding-right: 5px; }
+    .ecg-card { background-color: #000; border: 1px solid #333; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 0 15px rgba(0, 255, 0, 0.1); }
+    .ecg-card::before { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.1) 50%, transparent); pointer-events: none; z-index: 1; animation: scan 4s linear infinite; }
+    .ecg-header { background: #111; padding: 10px 15px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }
+    .ecg-title { color: #0f0; font-family: 'Share Tech Mono', monospace; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 5px #0f0; }
+    .ecg-stats { font-family: 'Share Tech Mono', monospace; color: #aaa; font-size: 11px; }
+    .ecg-canvas-container { flex: 1; position: relative; min-height: 200px; background: #050505; }
+    .ecg-canvas-container::after { content: ""; position: absolute; top:0; left:0; right:0; bottom:0; background-image: linear-gradient(rgba(0, 50, 0, 0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 50, 0, 0.3) 1px, transparent 1px); background-size: 20px 20px; pointer-events: none; }
+    @keyframes scan { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
-  if (String(username).toUpperCase().trim() === 'JESUS_CANTU') {
-      ppcModuleMaster.label = "INTERDICIPLINARIA";
-  }
+    /* THEMES CONFIGURATION */
+    body.theme-light { --bg-body: #f3f6f9; --text-main: #333; --card-bg: #fff; --border-color: #dee2e6; }
+    body.theme-dark { --bg-body: #121212; --text-main: #e0e0e0; --card-bg: #1e1e1e; --primary: #000; --border-color: #333; }
+    body.theme-cyberpunk {
+        --bg-body: #050505;
+        --text-main: #00ff9d;
+        --card-bg: #0a0a0a;
+        --primary: #000;
+        --accent: #ff0099;
+        --border-color: #00ff9d;
+        font-family: 'Share Tech Mono', monospace;
+    }
+    /* THEME APPLICATORS */
+    body.theme-dark .content-wrapper { background: var(--bg-body) !important; }
+    body.theme-dark .sidebar { background: #000; border-right: 1px solid #333; }
+    body.theme-dark .card, body.theme-dark .dept-card, body.theme-dark .staff-card, body.theme-dark .dynamic-form-card {
+        background-color: var(--card-bg) !important;
+        border-color: var(--border-color) !important;
+        color: var(--text-main) !important;
+    }
+    body.theme-dark .text-muted { color: #aaa !important; }
+    body.theme-dark .table-excel th { background-color: #333 !important; color: #fff; border-color: #555; }
+    body.theme-dark .table-excel td { border-color: #555 !important; color: #fff; }
+    body.theme-dark .form-control, body.theme-dark .form-select { background-color: #2c2c2c; border-color: #444; color: #fff; }
 
-  const ppcModuleWeekly = { id: "WEEKLY_PLAN", label: "Planeación Semanal", icon: "fa-calendar-alt", color: "#6f42c1", type: "weekly_plan_view" };
-  // const ecgModule = { id: "ECG_SALES", label: "Monitor Vivos", icon: "fa-heartbeat", color: "#d63384", type: "ecg_dashboard" };
-  const kpiModule = { id: "KPI_DASHBOARD", label: "KPI Performance", icon: "fa-chart-line", color: "#d63384", type: "kpi_dashboard_view" };
+    body.theme-cyberpunk .content-wrapper { background: var(--bg-body) !important; }
+    body.theme-cyberpunk .sidebar { background: rgba(0,0,0,0.9); border-right: 1px solid var(--border-color); box-shadow: 0 0 15px rgba(0, 255, 157, 0.2); }
+    body.theme-cyberpunk .nav-item.active { color: var(--text-main); text-shadow: 0 0 5px var(--text-main); background: rgba(0, 255, 157, 0.1); }
+    body.theme-cyberpunk .card, body.theme-cyberpunk .dept-card, body.theme-cyberpunk .staff-card, body.theme-cyberpunk .dynamic-form-card {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-main) !important;
+        box-shadow: 0 0 10px rgba(0, 255, 157, 0.1);
+    }
+    body.theme-cyberpunk .card-header { background-color: #001a10 !important; border-bottom: 1px solid var(--border-color) !important; color: var(--text-main) !important; }
+    body.theme-cyberpunk .form-control, body.theme-cyberpunk .form-select, body.theme-cyberpunk .excel-input {
+        background-color: #000 !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-main) !important;
+        font-family: 'Share Tech Mono', monospace;
+    }
+    body.theme-cyberpunk .btn-primary {
+        background-color: #000; border: 1px solid var(--border-color); color: var(--text-main);
+        box-shadow: 0 0 5px var(--text-main);
+    }
+    body.theme-cyberpunk .btn-primary:hover {
+        background-color: var(--text-main); color: #000;
+    }
+    body.theme-cyberpunk .text-muted { color: #008f00 !important; }
+    body.theme-cyberpunk .fw-bold { text-shadow: 0 0 2px currentColor; }
+    body.theme-cyberpunk .table-excel th { background-color: #000; color: #0f0; border-color: #0f0; }
+    body.theme-cyberpunk .table-excel td { background-color: #000; color: #0f0; border-color: #0f0; }
 
-  if (role === 'TONITA') return { 
-      departments: { "VENTAS": allDepts["VENTAS"] }, 
-      allDepartments: allDepts, 
-      staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ], 
-      directory: fullDirectory, 
-      specialModules: [ ppcModuleMaster, ppcModuleWeekly ],
-      accessProjects: false 
-  };
-  
-  if (role === 'ANGEL_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts, 
-      staff: [ { name: "ANGEL SALINAS", dept: "DISEÑO" } ], 
-      directory: fullDirectory, 
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "ANGEL SALINAS" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "ANGEL SALINAS (VENTAS)" }
-      ],
-      accessProjects: false 
-    };
-  }
+    /* CYBERPUNK ANIMATION */
+    .cyberpunk-svg {
+        display: none;
+        position: absolute;
+        bottom: 20px;
+        right: -20px;
+        width: 180px;
+        height: 180px;
+        z-index: 0;
+        opacity: 0.3;
+        pointer-events: none;
+        fill: none;
+        stroke-width: 1.5;
+    }
+    body.theme-cyberpunk .cyberpunk-svg {
+        display: block;
+        stroke: #00ff9d;
+    }
 
-  if (role === 'TERESA_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts, 
-      staff: [ { name: "TERESA GARZA", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#e83e8c", type: "mirror_staff", target: "TERESA GARZA" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "TERESA GARZA (VENTAS)" }
-      ],
-      accessProjects: false 
-    };
-  }
+    /* ESTILOS NUEVOS PARA LOGICA / INSTRUCCIONES WORKORDER (User Request) */
+    .logic-card {
+        background-color: #151515;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        font-family: 'Roboto', sans-serif;
+        color: #ccc;
+        position: relative;
+    }
+    .logic-header {
+        color: #e0aa3e; /* Gold/Orange hue */
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        margin-bottom: 12px;
+        letter-spacing: 1px;
+        font-family: 'Share Tech Mono', monospace; /* Tech look */
+    }
+    .logic-icon {
+        margin-right: 12px;
+        font-size: 14px;
+        color: #e0aa3e;
+        border: 1px solid #e0aa3e;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .logic-content {
+        font-size: 13px;
+        line-height: 1.6;
+        color: #9e9e9e;
+        text-align: justify;
+    }
+    .logic-inline {
+        display: block;
+        background: #1e1e1e;
+        color: #aaa;
+        border: 1px solid #333;
+        border-left: 3px solid #e0aa3e;
+        padding: 8px 12px;
+        font-family: 'Roboto', sans-serif;
+        font-size: 0.75rem;
+        border-radius: 4px;
+        margin-top: 6px;
+    }
 
-  if (role === 'EDUARDO_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts, 
-      staff: [ { name: "EDUARDO TERAN", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO TERAN" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO TERAN (VENTAS)" }
-      ],
-      accessProjects: false 
-    };
-  }
+    /* ESTILOS COSTOS WORKORDER (USER REQUEST) */
+    .cost-card {
+        padding: 15px;
+        border-radius: 12px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transition: all 0.2s;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .cost-card.blue { background-color: #e3f2fd; color: #0d47a1; }
+    .cost-card.green { background-color: #e8f5e9; color: #1b5e20; }
+    .cost-card.orange { background-color: #fff3e0; color: #e65100; }
+    .cost-card.purple { background-color: #f3e5f5; color: #4a148c; }
+    .cost-card-title { font-size: 0.75rem; font-weight: 400; display: flex; align-items: center; gap: 5px; opacity: 0.8; margin-bottom: 5px; }
+    .cost-card-value { font-size: 1.5rem; font-weight: 800; }
 
-  if (role === 'MANZANARES_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts,
-      staff: [ { name: "EDUARDO MANZANARES", dept: "HVAC" } ],
-      directory: fullDirectory,
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO MANZANARES" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO MANZANARES (VENTAS)" }
-      ],
-      accessProjects: false
-    };
-  }
+    .calc-input-group { background-color: #f8f9fa; border-radius: 8px; padding: 10px; }
+    .calc-label { font-size: 0.75rem; color: #6c757d; margin-bottom: 4px; display: block; }
+    .calc-input { background: #e9ecef; border: 1px solid transparent; border-radius: 6px; padding: 8px 12px; width: 100%; font-weight: bold; color: #333; }
+    .calc-input:focus { background: white; border-color: #b0b8c4; outline: none; }
 
-  if (role === 'RAMIRO_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts, 
-      staff: [ { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#20c997", type: "mirror_staff", target: "RAMIRO RODRIGUEZ" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "RAMIRO RODRIGUEZ (VENTAS)" }
-      ],
-      accessProjects: false 
-    };
-  }
+    .total-mo-card {
+        background-color: #0d6efd; color: white; border-radius: 8px; padding: 10px 15px;
+        display: flex; align-items: center; height: 100%;
+    }
 
-  if (role === 'SEBASTIAN_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts,
-      staff: [ { name: "SEBASTIAN PADILLA", dept: "ELECTROMECANICA" } ],
-      directory: fullDirectory,
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#ffc107", type: "mirror_staff", target: "SEBASTIAN PADILLA" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "SEBASTIAN PADILLA (VENTAS)" }
-      ],
-      accessProjects: false
-    };
-  }
+    .extra-factor-card {
+        background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px;
+    }
+    .extra-factor-header { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #333; margin-bottom: 10px; font-size: 0.9rem; }
+    .extra-factor-input { border: 1px solid #dee2e6; border-radius: 6px; padding: 8px; width: 100%; text-align: center; color: #555; }
+    .extra-factor-footer { font-size: 0.75rem; color: #888; margin-top: 5px; }
 
-  if (role === 'EDGAR_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts,
-      staff: [ { name: "EDGAR LOPEZ", dept: "DISEÑO" } ],
-      directory: fullDirectory,
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "EDGAR LOPEZ" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDGAR LOPEZ (VENTAS)" }
-      ],
-      accessProjects: false
-    };
-  }
+    .footer-summary-container {
+        background-color: #f0f4f8; border-radius: 12px; padding: 20px;
+        display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px;
+    }
+    .footer-item { display: flex; flex-direction: column; }
+    .footer-label { font-size: 0.8rem; color: #6c757d; display: flex; align-items: center; gap: 5px; margin-bottom: 2px; }
+    .footer-value { font-size: 1.6rem; font-weight: 800; color: #212529; }
+    .footer-value.green { color: #10b981; }
+    .footer-value.blue { color: #0d6efd; }
 
-  if (role === 'WORKORDER_USER') {
-    const woModule = { ...ppcModuleMaster, label: "Pre Work Order" };
-    return {
-      departments: {},
-      allDepartments: allDepts,
-      staff: [],
-      directory: fullDirectory,
-      specialModules: [ woModule ],
-      accessProjects: false
-    };
-  }
+    .btn-quote-save { background-color: white; border: 1px solid #dee2e6; color: #333; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
+    .btn-quote-gen { background-color: #0d6efd; border: 1px solid #0d6efd; color: white; font-weight: 600; padding: 8px 16px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
 
-  const ppcModules = [ ppcModuleMaster, ppcModuleWeekly ];
-  
-  if (role === 'PPC_ADMIN') return { 
-      departments: {}, 
-      allDepartments: allDepts, 
-      staff: [], 
-      directory: fullDirectory, 
-      specialModules: ppcModules,
-      accessProjects: true 
-  };
-  
-  if (role === 'ADMIN_CONTROL') {
-    return {
-      departments: allDepts, allDepartments: allDepts, staff: fullDirectory, directory: fullDirectory,
-      specialModules: [
-        { id: "PPC_DINAMICO", label: "Tracker", icon: "fa-layer-group", color: "#e83e8c", type: "ppc_dynamic_view" },
-        ...ppcModules,
-        { id: "MIRROR_TONITA", label: "Monitor Toñita", icon: "fa-eye", color: "#0dcaf0", type: "mirror_staff", target: "ANTONIA_VENTAS" },
-        { id: "ADMIN_TRACKER", label: "Control", icon: "fa-clipboard-list", color: "#6f42c1", type: "mirror_staff", target: "ADMINISTRADOR" }
-      ],
-      accessProjects: true 
-    };
-  }
+    /* CALENDAR STYLES */
+    .calendar-grid { overflow-x: auto; background-color: #ffffff; }
+    .calendar-day-col { min-width: 140px; background-color: #fff; border-right: 1px dashed #eff2f5; transition: background-color 0.3s; }
+    .calendar-day-col:last-child { border-right: none; }
 
-  // Default ADMIN (LUIS_CARLOS falls here with role 'ADMIN')
-  const defaultModules = [ ...ppcModules, { id: "MIRROR_TONITA", label: "Monitor Toñita", icon: "fa-eye", color: "#0dcaf0", type: "mirror_staff", target: "ANTONIA_VENTAS" } ];
-  if (role === 'ADMIN') {
-      defaultModules.push(kpiModule);
-  }
+    .day-header { padding: 10px 0; text-align: center; border-bottom: 1px solid #f4f6f8; background: #fff; }
+    .day-header .day-name { font-size: 10px; font-weight: 700; color: #b5b5c3; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 1px; }
+    .day-header .day-num {
+        font-size: 18px; font-weight: 800; color: #3f4254;
+        width: 32px; height: 32px; line-height: 32px; border-radius: 50%; margin: 0 auto;
+        transition: all 0.3s; display: flex; align-items: center; justify-content: center;
+    }
 
-  return {
-    departments: allDepts, allDepartments: allDepts, staff: fullDirectory, directory: fullDirectory,
-    specialModules: defaultModules,
-    accessProjects: true 
-  };
-}
+    .today-col .day-header .day-num { background-color: #3699ff; color: #fff; box-shadow: 0 4px 10px rgba(54, 153, 255, 0.4); }
+    .today-col .day-body { background-color: #f9f9f9 !important; }
 
-/* FUNCIÓN PRINCIPAL DE DASHBOARD (RE-INGENIERÍA NATIVA) */
-function generarDashboard() {
-  // 4. Control de Acceso (RBAC - Session)
-  const currentUserEmail = Session.getActiveUser().getEmail();
-  const authorizedUser = "LUIS_CARLOS"; // En un entorno real, mapear email a usuario
-  // Nota: Session.getActiveUser() puede estar vacío en cuentas personales o dependiendo de permisos.
-  // Mantenemos la lógica de API token existente para la WebApp, pero añadimos check de sesión si se ejecuta manualmente.
+    .calendar-task-card {
+        border-radius: 12px !important;
+        border: none !important; /* Managed by inline style */
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02) !important;
+        margin-bottom: 10px;
+        padding: 10px 12px !important;
+        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        cursor: pointer;
+        background: #fff;
+        position: relative;
+        overflow: hidden;
+    }
+    .calendar-task-card:hover {
+        z-index: 10;
+    }
 
-  return apiFetchTeamKPIData("LUIS_CARLOS"); // Delegamos a la lógica interna
-}
+    .task-anim-enter { opacity: 0; }
 
-/* KPI ANALYSIS ENGINE - NATIVE JS IMPLEMENTATION */
-function apiFetchTeamKPIData(username) {
-  // MOCK DATA INJECTION
-  if (DEMO_MODE) {
-      // Simulación para VENTAS
-      var dataVentasMock = [
-        ["Eduardo Manzanares", 25, 3.5],
-        ["Sebastian Padilla", 25, 2.8],
-        ["Ramiro Rodriguez", 28, 4.1]
-      ];
-      // Simulación para TRACKER
-      var dataTrackerMock = [
-        ["Judith Echavarria", 23, 1.5],
-        ["Eduardo Teran", 32, 2.0],
-        ["Angel Salinas", 26, 1.8]
-      ];
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #e4e6ef; border-radius: 3px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background-color: transparent; }
 
-      return {
-          success: true,
-          ventas: dataVentasMock.map(function(r) { return {name: r[0], volume: r[1], efficiency: r[2]}; }),
-          tracker: dataTrackerMock.map(function(r) { return {name: r[0], volume: r[1], efficiency: r[2]}; }),
-          productivity: {
-             labels: ["16-Dic", "17-Dic", "18-Dic", "19-Dic"],
-             values: [2, 3, 3, 4]
-          }
-      };
-  }
+    /* AGENDA IMPROVEMENTS */
+    .day-selector { display: flex; overflow-x: auto; gap: 10px; padding: 10px 0; scrollbar-width: none; margin-bottom: 15px; }
+    .day-selector::-webkit-scrollbar { display: none; }
+    .day-tab {
+        background: #fff; border: 1px solid #eee; border-radius: 20px; padding: 8px 16px;
+        min-width: 60px; text-align: center; cursor: pointer; transition: all 0.2s;
+        display: flex; flex-direction: column; justify-content: center; align-items: center;
+    }
+    .day-tab:hover { background: #f8f9fa; }
+    .day-tab.active { background: #3699ff; color: white; box-shadow: 0 4px 10px rgba(54, 153, 255, 0.3); border-color: #3699ff; }
+    .day-tab-name { font-size: 10px; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+    .day-tab-num { font-size: 16px; font-weight: 800; line-height: 1; }
 
-  // 4. Control de Acceso (Validación de Identidad)
-  const user = USER_DB[String(username).toUpperCase().trim()];
-  if (!user || user.role !== 'ADMIN') {
-      return { success: false, message: 'Acceso Denegado. Privilegios insuficientes.' };
-  }
+    .agenda-task-item {
+        background: white; border-radius: 12px; padding: 12px; margin-bottom: 10px;
+        display: flex; align-items: center; justify-content: space-between;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02); border: 1px solid #f0f0f0; transition: all 0.2s;
+    }
+    .agenda-task-item:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+    .task-checkbox {
+        width: 24px; height: 24px; border: 2px solid #ddd; border-radius: 50%; flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; margin-right: 15px;
+    }
+    .task-checkbox:hover { border-color: #3699ff; }
+    .task-checkbox.checked { background: #28a745; border-color: #28a745; color: white; }
+    .task-time-col { min-width: 50px; text-align: right; margin-right: 15px; flex-shrink: 0; }
+    .task-time-start { font-weight: bold; font-size: 13px; color: #333; font-family: 'Share Tech Mono', monospace; }
+    .task-time-end { font-size: 10px; color: #999; display: block; }
+    .task-info-col { flex-grow: 1; min-width: 0; }
+    .task-title { font-weight: bold; font-size: 13px; color: #333; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .task-meta { font-size: 11px; color: #888; display: flex; gap: 8px; align-items: center; }
 
-  // Helper para procesar cada grupo (Map/Reduce Manual)
-  const processGroup = (members) => {
-    return members.map(name => {
-       // 1. Acceso a Datos (SpreadsheetApp)
-       // internalFetchSheetData usa SpreadsheetApp.getSheetByName() internamente
-       const res = internalFetchSheetData(name);
+    /* ANTONIA CUSTOM STYLES */
+    .antonia-font td {
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
+        height: auto !important;
+        min-height: 30px;
+    }
+    .antonia-font .excel-input, .antonia-font select {
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
+    }
+    .antonia-font textarea {
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
+        width: 100%;
+        height: 100%;
+        border: none;
+        outline: none;
+        resize: none;
+        padding: 4px 6px;
+        background: transparent;
+        line-height: 1.2;
+        overflow: hidden;
+        display: block;
+        color: #000 !important;
+    }
+    .antonia-font .excel-input, .antonia-font input {
+        color: #000 !important;
+    }
 
-       if (!res.success) {
-           return { name: name, volume: 0, efficiency: 0, error: "Hoja no encontrada" };
-       }
+    /* EXECUTIVE SUMMARY STYLES */
+    .exec-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Arial', sans-serif;
+        font-size: 11px;
+        background: white;
+    }
+    .exec-table th {
+        background-color: #B4C6E7; /* Excel Light Blue */
+        border: 1px solid #000;
+        padding: 4px;
+        text-align: center;
+        font-weight: bold;
+        color: #000;
+    }
+    .exec-table td {
+        border: 1px solid #000;
+        padding: 4px;
+        color: #000;
+    }
+    .exec-table .total-row td {
+        background-color: #333;
+        color: white;
+        font-weight: bold;
+        border-top: 2px solid #000;
+    }
+    .exec-header-blue {
+        background-color: #8EA9DB !important; /* Darker Blue */
+    }
+    .exec-anim-enter {
+        opacity: 0;
+    }
 
-       const rows = res.data || [];
+    /* FLOW PROCESS DIAGRAM STYLES */
+    .flow-modal { width: 95vw !important; max-width: 1400px !important; height: 90vh !important; display: flex; flex-direction: column; }
+    .swimlane-grid {
+        display: grid;
+        grid-template-rows: 40px repeat(5, 1fr); /* Header + 5 Lanes */
+        grid-template-columns: 80px repeat(8, 1fr); /* 1 Header Col + 8 Data Cols */
+        gap: 10px;
+        width: 100%;
+        height: 100%;
+        min-width: 1000px;
+        position: relative;
+        padding: 20px;
+        background: white;
+    }
+    .lane-header {
+        font-weight: bold; text-align: center; display: flex; align-items: center; justify-content: center;
+        font-size: 11px; border: 1px solid #999; text-transform: uppercase; padding: 5px;
+    }
+    .flow-node {
+        display: flex; align-items: center; justify-content: center; text-align: center;
+        font-size: 10px; font-weight: bold; padding: 5px;
+        border: 1px solid #333; box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
+        z-index: 2; position: relative;
+        opacity: 0; /* For animation */
+        line-height: 1.2;
+    }
+    .node-oval { border-radius: 50%; }
+    .node-rect { border-radius: 4px; }
+    .node-cyl { border-radius: 10px / 20px; }
+    .node-para { transform: skew(-20deg); }
+    .node-para span { transform: skew(20deg); display: block; }
+    .node-diamond { transform: rotate(45deg); width: 80px; height: 80px; justify-self: center; align-self: center; }
+    .node-diamond span { transform: rotate(-45deg); display: block; }
 
-       // 2. Procesamiento de Arrays (Filter)
-       const completed = rows.filter(row => {
-           const st = String(row['ESTATUS'] || row['STATUS'] || '').toUpperCase();
-           return st.includes('DONE') || st.includes('COMPLETED') || st.includes('FINALIZADO') || st.includes('TERMINADO');
-       });
+    .bg-blue { background: #4472C4; color: white; }
+    .bg-yellow { background: #FFC000; color: black; }
 
-       // 2. Procesamiento de Arrays (Reduce/Calc Manual)
-       let totalDays = 0;
-       let count = 0;
+    .flow-connections {
+        position: absolute; inset: 0; pointer-events: none; z-index: 1;
+        width: 100%; height: 100%;
+    }
+    .connection-line {
+        stroke: #666; stroke-width: 2; fill: none;
+        stroke-dasharray: 1000; stroke-dashoffset: 1000;
+    }
 
-       completed.forEach(t => {
-           let start = t['FECHA'] || t['ALTA'] || t['FECHA INICIO'];
-           // PRIORIDAD: FECHA TERMINO (REAL) > FECHA FIN > FECHA RESPUESTA (ESTIMADA)
-           let end = t['FECHA TERMINO'] || t['FECHA FIN'] || t['FECHA_FIN'] || t['FECHA ENTREGA'] || t['FECHA RESPUESTA'];
+    /* PAPA CALIENTE TIMELINE STYLES */
+    .hp-timeline-container {
+        display: flex;
+        justify-content: flex-start;
+        gap: 8px;
+        align-items: flex-start;
+        padding: 5px;
+    }
+    .hp-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 65px;
+    }
+    .hp-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        margin-bottom: 5px;
+        color: white;
+        font-size: 14px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+    .hp-circle:hover {
+        transform: scale(1.1);
+    }
+    .hp-circle.green { background-color: #28a745; }
+    .hp-circle.red { background-color: #dc3545; }
+    .hp-circle.yellow { background-color: #ffc107; color: #000; }
 
-           if (start && end) {
-               const pDate = (d) => {
-                   if (d instanceof Date) return d;
-                   if (String(d).includes('/')) {
-                       const pts = String(d).split('/');
-                       if(pts.length===3) return new Date(pts[2].length===2 ? '20'+pts[2] : pts[2], pts[1]-1, pts[0]);
-                   }
-                   return new Date(d);
-               };
+    .hp-clock-icon {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        background: white;
+        border-radius: 50%;
+        width: 14px;
+        height: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .hp-clock-icon.green-icon { color: #17a2b8; }
+    .hp-clock-icon.red-icon { color: #dc3545; }
+    .hp-clock-icon.check-icon { color: #28a745; }
 
-               const d1 = pDate(start);
-               const d2 = pDate(end);
+    .hp-text {
+        font-size: 10px;
+        text-align: center;
+        line-height: 1.1;
+        color: #333;
+    }
+    .hp-time {
+        font-weight: bold;
+        font-size: 11px;
+    }
+  </style>
+</head>
+<body>
 
-               if (!isNaN(d1) && !isNaN(d2)) {
-                   // Cálculo manual de diferencia en días
-                   const diffTime = Math.abs(d2 - d1);
-                   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                   totalDays += diffDays;
-                   count++;
-               }
-           }
-       });
+<div id="app">
+  <div v-if="!isLoggedIn" class="login-overlay">
+    <div class="login-card">
+      <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" class="login-logo" alt="Logo">
+      <h3 class="fw-bold mb-4">BIENVENIDO</h3>
+      <p class="text-muted mb-4">Acceso Seguro</p>
+      <div class="mb-3">
+          <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario">
+          <div class="input-group">
+              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin">
+              <button class="btn btn-outline-secondary" type="button" @click="showPassword = !showPassword" title="Mostrar/Ocultar">
+                  <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+              </button>
+          </div>
+      </div>
+      <button class="btn btn-outline-light w-100 fw-bold" @click="doLogin" :disabled="loggingIn">
+        <span v-if="loggingIn">Conectando...</span><span v-else>INICIAR SESIÓN</span>
+      </button>
+    </div>
+  </div>
 
-       const avg = count > 0 ? (totalDays / count).toFixed(1) : 0;
+  <div v-if="isLoggedIn" class="app-wrapper">
+    <aside class="sidebar" :class="{ compact: isCompact }">
+      <!-- SVG ANIMATION CONTAINER -->
+      <svg id="cyberpunk-logo-svg" class="cyberpunk-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
+          <path class="cp-path" d="M50 5 L95 27.5 L95 72.5 L50 95 L5 72.5 L5 27.5 Z" />
+          <path class="cp-path" d="M50 20 L80 35 L80 65 L50 80 L20 65 L20 35 Z" />
+          <path class="cp-path" d="M50 35 L65 42.5 L65 57.5 L50 65 L35 57.5 L35 42.5 Z" />
+      </svg>
+      <div class="brand">
+          <span class="brand-text"><i class="fas fa-table me-2 text-primary"></i> HOLTMONT</span>
+          <button class="btn btn-sm btn-link text-secondary btn-toggle-sidebar" @click="toggleSidebar" title="Contraer/Expandir Menú">
+              <i class="fas fa-bars"></i>
+          </button>
+      </div>
+      <div class="menu">
+        <div class="nav-item" :class="{ active: currentView === 'DASHBOARD' }" @click="goHome">
+            <div class="nav-icon-col"><i class="fas fa-th"></i></div>
+            <span class="nav-text">Dashboard</span>
+        </div>
 
-       return {
-           name: name,
-           volume: completed.length,
-           efficiency: avg
-       };
+        <!-- NEW PERSONAL AGENDA BUTTON -->
+        <div class="nav-item" :class="{ active: currentView === 'PERSONAL_AGENDA' }" @click="currentView = 'PERSONAL_AGENDA'; currentDept = ''; currentModuleId = ''; loadPersonalAgenda()">
+            <div class="nav-icon-col"><i class="fas fa-calendar-check" style="color: #00d2ff;"></i></div>
+            <span class="nav-text" style="color: #00d2ff; font-weight: 600;">Mi Agenda</span>
+        </div>
+
+        <div class="nav-item" v-if="config.accessProjects" :class="{ active: currentView === 'PROJECTS' }" @click="currentView = 'PROJECTS'; currentDept = ''; currentModuleId = '';">
+            <div class="nav-icon-col"><i class="fas fa-project-diagram"></i></div>
+            <span class="nav-text">Proyectos</span>
+        </div>
+
+        <div v-if="config.specialModules.length">
+            <div class="section-title">ACCIONES</div>
+            <div class="nav-item" v-for="m in config.specialModules" @click="openModule(m)" :class="{ active: currentModuleId === m.id }" :style="{ borderRight: currentModuleId === m.id ? '3px solid ' + m.color : '3px solid transparent' }">
+                <div class="nav-icon-col"><i class="fas" :class="m.icon" :style="{color: m.color}"></i></div>
+                <span class="nav-text" :style="{ color: currentModuleId === m.id ? 'white' : '#a2a3b7' }">{{m.label}}</span>
+            </div>
+        </div>
+
+        <div v-if="Object.keys(config.departments).length">
+            <div class="section-title">ÁREAS</div>
+            <div class="nav-item" v-for="(d,k) in config.departments" @click="selectDept(k)" :class="{ active: currentDept === k }" :style="{ borderRight: currentDept === k ? '3px solid ' + d.color : '3px solid transparent' }">
+                <div class="nav-icon-col"><i class="fas" :class="d.icon" :style="{ color: d.color }"></i></div>
+                <span class="nav-text" :style="{ color: currentDept === k ? 'white' : '#a2a3b7' }">{{d.label}}</span>
+            </div>
+        </div>
+
+        <!-- BOTÓN INSTRUCCIONES (Solo Rol TONITA) -->
+        <div class="nav-item" v-if="currentRole === 'TONITA'" :class="{ active: currentView === 'INSTRUCCIONES' }" @click="currentView = 'INSTRUCCIONES'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffc107; background: rgba(255, 193, 7, 0.1);">
+            <div class="nav-icon-col"><i class="fas fa-question-circle text-warning"></i></div>
+            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+        </div>
+
+        <!-- BOTÓN INSTRUCCIONES (Solo Admin LUIS_CARLOS) -->
+        <div class="nav-item" v-if="currentRole === 'ADMIN'" :class="{ active: currentView === 'INSTRUCCIONES_ADMIN' }" @click="currentView = 'INSTRUCCIONES_ADMIN'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffd700; background: rgba(255, 215, 0, 0.05);">
+            <div class="nav-icon-col"><i class="fas fa-map text-warning"></i></div>
+            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+        </div>
+
+        <!-- BOTÓN INSTRUCCIONES (Solo PPC_ADMIN JESUS_CANTU) -->
+        <div class="nav-item" v-if="currentRole === 'PPC_ADMIN'" :class="{ active: currentView === 'INSTRUCCIONES_PPC' }" @click="currentView = 'INSTRUCCIONES_PPC'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffc107; background: rgba(255, 193, 7, 0.1);">
+            <div class="nav-icon-col"><i class="fas fa-map text-warning"></i></div>
+            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+        </div>
+
+        <!-- BOTÓN INSTRUCCIONES (Solo JAIME_OLIVO / ADMIN_CONTROL) -->
+        <div class="nav-item" v-if="currentRole === 'ADMIN_CONTROL'" :class="{ active: currentView === 'INSTRUCCIONES_ADMIN_CONTROL' }" @click="currentView = 'INSTRUCCIONES_ADMIN_CONTROL'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #ffd700; background: rgba(255, 215, 0, 0.05);">
+            <div class="nav-icon-col"><i class="fas fa-map text-warning"></i></div>
+            <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
+        </div>
+
+        <!-- BOTÓN BANCO DE INFORMACION (Solo ADMIN - LUIS_CARLOS) -->
+        <div class="nav-item" v-if="currentRole === 'ADMIN'" :class="{ active: currentView === 'INFO_BANK' }" @click="currentView = 'INFO_BANK'; currentDept = ''; currentModuleId = ''; resetInfoBank();">
+            <div class="nav-icon-col"><i class="fas fa-database text-info"></i></div>
+            <span class="nav-text text-info fw-bold">BANCO DE INFORMACION</span>
+        </div>
+
+        <!-- BOTÓN DIRECTORIO (Solo ADMIN y ADMIN_CONTROL) -->
+        <div class="nav-item" v-if="['ADMIN', 'ADMIN_CONTROL'].includes(currentRole)" :class="{ active: currentView === 'DIRECTORY_VIEW' }" @click="currentView = 'DIRECTORY_VIEW'; currentDept = ''; currentModuleId = '';">
+            <div class="nav-icon-col"><i class="fas fa-address-book text-success"></i></div>
+            <span class="nav-text text-success fw-bold">DIRECTORIO</span>
+        </div>
+
+        <div class="mt-auto">
+            <div class="p-3">
+                <button class="btn btn-outline-secondary w-100 btn-sm mb-2" @click="toggleTheme" :title="isCompact ? currentTheme : 'Cambiar Tema'">
+                    <i class="fas" :class="{'fa-sun': currentTheme==='light', 'fa-moon': currentTheme==='dark', 'fa-robot': currentTheme==='cyberpunk'}"></i>
+                    <span v-if="!isCompact" class="ms-2">TEMA: {{ currentTheme.toUpperCase() }}</span>
+                </button>
+                <button class="btn btn-outline-secondary w-100 btn-sm" @click="logout" :title="isCompact ? 'Salir' : ''">
+                    <i class="fas fa-sign-out-alt" v-if="isCompact"></i>
+                    <span v-else>Salir</span>
+                </button>
+            </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content-wrapper">
+      <div class="top-bar" v-if="currentView !== 'WORKORDER_FORM'">
+        <div v-if="currentView === 'STAFF_TRACKER' && currentUsername === 'ANTONIA_VENTAS'" class="d-flex align-items-center">
+             <img src="https://lh3.googleusercontent.com/d/1n6idfK8Sjy8lUvDIy0XxzEzG7GwJ21d1" class="rounded-circle me-2" style="width: 60px; height: 60px; object-fit: cover; border: 1px solid #ccc;">
+             <h6 class="m-0 fw-bold text-secondary">Cotizaciones Antonia</h6>
+        </div>
+        <h6 v-else class="m-0 fw-bold text-secondary">{{ pageTitle }}</h6>
+        <span class="badge bg-light text-dark border">{{ currentUser }}</span>
+      </div>
+
+      <div class="view-area" :class="{'no-padding': currentView === 'WORKORDER_FORM'}" v-if="!['IFRAME', 'MODULE_TABS'].includes(currentView)">
+
+        <div v-if="currentView === 'DASHBOARD'" class="row g-3">
+          <div class="col-md-4 col-lg-3" v-for="mod in config.specialModules" :key="mod.id">
+            <div class="dept-card" @click="openModule(mod)" :style="{borderTop: '4px solid '+mod.color}">
+                <i class="fas fa-2x mb-3" :class="mod.icon" :style="{color: mod.color}"></i>
+                <h6 class="fw-bold" :style="{color: mod.color}">{{mod.label}}</h6>
+            </div>
+          </div>
+          <div class="col-md-4 col-lg-3" v-for="(dept, key) in config.departments" :key="key">
+            <div class="dept-card" @click="selectDept(key)" :style="{borderTop: '4px solid '+dept.color}">
+                <i class="fas fa-2x mb-3" :class="dept.icon" :style="{color: dept.color}"></i>
+                <h6 class="fw-bold" :style="{color: dept.color}">{{dept.label}}</h6>
+            </div>
+          </div>
+
+          <!-- CALENDARIO SEMANAL -->
+          <div class="col-12">
+            <div class="card border-0 shadow-sm" style="height: 500px; overflow: hidden;">
+                <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center pt-3 px-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <h5 class="fw-bold m-0 text-primary"><i class="fas fa-calendar-alt me-2"></i>Tareas Semanales</h5>
+                        <button class="btn btn-light text-primary btn-sm fw-bold border" @click="loadDashboardCalendar" title="Actualizar"><i class="fas fa-sync-alt"></i></button>
+                        <select v-if="currentRole === 'ADMIN'" v-model="calendarUserFilter" @change="loadDashboardCalendar" class="form-select form-select-sm border-secondary fw-bold" style="width: auto;">
+                            <option value="">-- MI CALENDARIO --</option>
+                            <option v-for="u in config.directory" :key="u.name" :value="u.name">{{ u.name }}</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <button class="btn btn-light border btn-sm" @click="navigateCalendar(-1)"><i class="fas fa-chevron-left"></i></button>
+                        <button class="btn btn-light border btn-sm fw-bold px-3" @click="dashboardCalendar.currentDate = new Date()">Hoy</button>
+                        <button class="btn btn-light border btn-sm" @click="navigateCalendar(1)"><i class="fas fa-chevron-right"></i></button>
+                        <span class="ms-3 fw-bold text-secondary text-uppercase" style="min-width: 120px; text-align: right;">{{ currentMonthYearLabel }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-0 d-flex flex-column h-100 border-top">
+                     <div v-if="calendarLoading" class="d-flex justify-content-center align-items-center flex-fill">
+                         <div class="spinner-border text-primary" role="status"></div>
+                     </div>
+                     <div v-else class="calendar-grid flex-fill d-flex">
+                         <div v-for="day in weekDays" :key="day.dateStr" class="calendar-day-col flex-fill" :class="{ 'today-col': day.isToday }" style="min-width: 0;">
+                             <div class="day-header">
+                                 <div class="day-name">{{ day.name }}</div>
+                                 <div class="day-num">{{ day.number }}</div>
+                             </div>
+                             <div class="day-body p-2 h-100 overflow-auto custom-scrollbar">
+                                 <div v-for="task in getTasksForDay(day.dateStr)" :key="task.FOLIO" class="calendar-task-card task-anim-enter position-relative" :style="{ borderLeft: '4px solid ' + getTaskColor(task), backgroundColor: getTaskColor(task) + '15' }" @mouseenter="animTaskHover($event.currentTarget)" @mouseleave="animTaskLeave($event.currentTarget)">
+                                     <div class="d-flex justify-content-between align-items-start mb-1">
+                                         <span class="badge bg-white text-secondary border fw-normal" style="font-size:8px; opacity:0.8;">{{ task.FOLIO }}</span>
+                                         <i v-if="isTaskDone(task)" class="fas fa-check-circle" :style="{color: getTaskColor(task)}"></i>
+                                     </div>
+                                     <div class="fw-bold text-dark mb-1" style="font-size:11px; line-height:1.2; overflow-wrap: break-word;">{{ task.CLIENTE || 'Sin Cliente' }}</div>
+                                     <div class="text-muted small text-truncate" style="font-size:10px;" :title="task.CONCEPTO">{{ task.CONCEPTO || 'Sin Descripción' }}</div>
+                                     <div class="mt-2 d-flex justify-content-between align-items-center">
+                                         <span class="badge text-white" :style="{backgroundColor: getTaskColor(task), fontSize: '8px', transform: 'scale(0.9)', transformOrigin: 'left'}">{{ task.ESTATUS }}</span>
+                                         <span class="text-secondary text-truncate ms-2" style="font-size:9px; font-weight:bold; max-width: 80px;" :title="getResponsible(task)">{{ getResponsible(task) }}</span>
+                                     </div>
+                                 </div>
+                                 <div v-if="getTasksForDay(day.dateStr).length === 0" class="text-center mt-5 text-muted small opacity-25">
+                                     <i class="fas fa-calendar-minus fa-2x mb-2"></i><br>Libre
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PERSONAL AGENDA VIEW (HOLTZAR STYLE) -->
+        <div v-if="currentView === 'PERSONAL_AGENDA'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="fw-bold m-0 text-dark"><i class="fas fa-calendar-check me-2 text-primary"></i>MI AGENDA PERSONAL</h4>
+                    <span class="text-muted small">Organización Inteligente | {{ currentUser }}</span>
+                </div>
+                <div>
+                    <button class="btn btn-outline-primary btn-sm me-2" @click="loadPersonalAgenda"><i class="fas fa-sync-alt"></i> Actualizar</button>
+                    <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-muted small fw-bold text-uppercase">Actividades</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ personalAgenda.metrics.totalEvents }}</h2>
+                                <small class="text-muted" style="font-size:10px;">Esta semana</small>
+                            </div>
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                <i class="fas fa-calendar text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-muted small fw-bold text-uppercase">Pendientes</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ personalAgenda.metrics.pendingTasks }}</h2>
+                                <small class="text-danger fw-bold" style="font-size:10px;">{{ personalAgenda.metrics.urgentTasks }} urgentes</small>
+                            </div>
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                <i class="fas fa-list-ul text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-muted small fw-bold text-uppercase">Hábitos</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ personalAgenda.metrics.completedHabits }}</h2>
+                                <small class="text-success fw-bold" style="font-size:10px;">Registrados hoy</small>
+                            </div>
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                <i class="fas fa-bullseye text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm h-100 p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="text-muted small fw-bold text-uppercase">Progreso</h6>
+                                <h2 class="fw-bold mb-0 text-dark">{{ personalAgenda.metrics.progress }}%</h2>
+                                <small class="text-info fw-bold" style="font-size:10px;">General semanal</small>
+                            </div>
+                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                <i class="fas fa-chart-line text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <ul class="nav nav-pills mb-4 bg-white p-2 rounded shadow-sm" style="width: fit-content;">
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'TIMELINE'}" @click="personalAgenda.activeTab = 'TIMELINE'">
+                        <i class="fas fa-stream me-2"></i>Cronograma
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'TASKS'}" @click="personalAgenda.activeTab = 'TASKS'">
+                        <i class="fas fa-check-square me-2"></i>Tareas
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'HABITS'}" @click="personalAgenda.activeTab = 'HABITS'">
+                        <i class="fas fa-running me-2"></i>Hábitos
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'MEALS'}" @click="personalAgenda.activeTab = 'MEALS'">
+                        <i class="fas fa-utensils me-2"></i>Comidas
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link fw-bold btn-sm" :class="{active: personalAgenda.activeTab === 'ANALYSIS'}" @click="personalAgenda.activeTab = 'ANALYSIS'; renderPersonalCharts()">
+                        <i class="fas fa-chart-bar me-2"></i>Análisis
+                    </button>
+                </li>
+            </ul>
+
+            <!-- DYNAMIC CONTENT CONTAINER (Placeholder for next steps) -->
+            <div class="flex-fill bg-white rounded shadow-sm p-4 position-relative" style="min-height: 400px;">
+                <div v-if="personalAgenda.isLoading" class="d-flex justify-content-center align-items-center h-100">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+
+                <!-- CONTENT WILL BE INJECTED HERE IN SUBSEQUENT STEPS -->
+                <div v-else>
+                    <div v-if="personalAgenda.activeTab === 'TIMELINE'" id="pa-timeline-view">
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold text-dark m-0"><i class="fas fa-stream me-2 text-primary"></i>Cronograma de Actividades</h5>
+                                <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm fw-bold" @click="showNewActivityModal = true">
+                                    <i class="fas fa-plus me-1"></i> Nueva Actividad
+                                </button>
+                            </div>
+
+                            <div class="timeline-container p-2">
+                                <div v-if="personalAgenda.timeline.length === 0" class="text-center text-muted py-5">
+                                    <i class="fas fa-calendar-times fa-3x mb-3 opacity-25"></i>
+                                    <h5 class="fw-bold text-secondary">Sin actividades programadas</h5>
+                                    <p class="small">Tu agenda está libre para hoy.</p>
+                                </div>
+
+                                <div v-else class="timeline-list">
+                                    <div v-for="(item, i) in personalAgenda.timeline" :key="item.id" class="d-flex mb-3 align-items-center animate__animated animate__fadeInUp" :style="{animationDelay: (i * 50) + 'ms'}">
+                                        <div class="me-3 text-end" style="min-width: 60px;">
+                                            <h6 class="fw-bold m-0 text-dark" style="font-family: 'Share Tech Mono', monospace;">{{ item.time }}</h6>
+                                            <small class="text-muted" style="font-size: 10px;">{{ item.date }}</small>
+                                        </div>
+                                        <div class="agenda-task-item flex-fill mb-0" :style="{borderLeft: '4px solid ' + item.color}">
+                                            <div class="d-flex align-items-center flex-grow-1">
+                                                <div class="me-3">
+                                                    <span class="badge" :style="{backgroundColor: item.color, fontSize:'9px'}">{{ item.original.CLASIFICACION || item.type }}</span>
+                                                </div>
+                                                <div>
+                                                    <h6 class="fw-bold mb-0 text-dark" style="font-size:13px">{{ item.title }}</h6>
+                                                    <small class="text-muted" style="font-size:11px" v-if="item.client">{{ item.client }}</small>
+                                                </div>
+                                            </div>
+                                            <div class="ms-3">
+                                                <i class="fas fa-chevron-right text-muted small"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="personalAgenda.activeTab === 'TASKS'" id="pa-tasks-view">
+                        <div class="p-3">
+                            <h5 class="fw-bold mb-3"><i class="fas fa-tasks me-2 text-primary"></i>Tareas Diarias</h5>
+
+                            <!-- DAY SELECTOR -->
+                            <div class="day-selector">
+                                <div v-for="day in weekDays" :key="day.dateStr" class="day-tab" :class="{active: selectedDailyDay === day.dateStr}" @click="selectedDailyDay = day.dateStr">
+                                    <div class="day-tab-name">{{ day.name }}</div>
+                                    <div class="day-tab-num">{{ day.number }}</div>
+                                </div>
+                            </div>
+
+                            <!-- TASK LIST -->
+                            <div v-if="filteredDailyTasks.length === 0" class="text-center py-5 text-muted">
+                                <i class="fas fa-check-circle fa-3x mb-3 opacity-25"></i>
+                                <p>No hay tareas para este día.</p>
+                            </div>
+                            <div v-else>
+                                <div v-for="task in filteredDailyTasks" :key="task.id" class="agenda-task-item">
+                                    <div class="d-flex align-items-center flex-grow-1">
+                                        <div class="task-checkbox" :class="{checked: task.isDone}" @click="toggleActivityStatus(task)">
+                                            <i class="fas fa-check text-white" style="font-size:12px" v-if="task.isDone"></i>
+                                        </div>
+                                        <div class="task-time-col">
+                                            <div class="task-time-start">{{ task.time }}</div>
+                                        </div>
+                                        <div class="task-info-col">
+                                            <div class="task-title" :class="{'text-decoration-line-through text-muted': task.isDone}">{{ task.title }}</div>
+                                            <div class="task-meta">
+                                                <span class="badge rounded-pill bg-light text-dark border" style="font-size:9px">{{ task.original.CLASIFICACION || task.type }}</span>
+                                                <span v-if="task.client" class="text-truncate"><i class="fas fa-building me-1"></i> {{ task.client }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-link text-muted p-0" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <li><a class="dropdown-item small text-danger" href="#"><i class="fas fa-trash me-2"></i>Eliminar</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="personalAgenda.activeTab === 'HABITS'" id="pa-habits-view">
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="fw-bold text-dark m-0">Mis Hábitos</h5>
+                                <button class="btn btn-primary btn-sm rounded-pill px-3" @click="promptAddHabit">
+                                    <i class="fas fa-plus me-1"></i> Nuevo Hábito
+                                </button>
+                            </div>
+
+                            <div class="row g-3">
+                                <div v-if="personalAgenda.habits.length === 0" class="col-12 text-center py-5 text-muted">
+                                    <i class="fas fa-leaf fa-3x mb-3 opacity-25"></i>
+                                    <p>No tienes hábitos registrados aún.</p>
+                                </div>
+
+                                <div v-for="habit in personalAgenda.habits" :key="habit.ID" class="col-md-4 col-lg-3">
+                                    <div class="card h-100 border-0 shadow-sm" :class="{'bg-light': isHabitDone(habit), 'border-success': isHabitDone(habit)}" style="transition: all 0.2s;">
+                                        <div class="card-body text-center d-flex flex-column align-items-center justify-content-center p-4">
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center mb-3"
+                                                 :style="{width:'60px', height:'60px', backgroundColor: isHabitDone(habit) ? '#d4edda' : '#f8f9fa', color: isHabitDone(habit) ? '#155724' : '#6c757d', fontSize:'24px', transition: 'all 0.3s'}">
+                                                <i class="fas" :class="habit.icon || 'fa-star'"></i>
+                                            </div>
+                                            <h6 class="fw-bold mb-1">{{ habit.HABITO }}</h6>
+                                            <small class="text-muted mb-3">{{ habit.category || 'General' }}</small>
+
+                                            <button class="btn btn-sm w-100 rounded-pill fw-bold"
+                                                    :class="isHabitDone(habit) ? 'btn-success' : 'btn-outline-primary'"
+                                                    @click="toggleHabit(habit)">
+                                                <i class="fas" :class="isHabitDone(habit) ? 'fa-check' : 'fa-circle'"></i>
+                                                {{ isHabitDone(habit) ? 'Completado' : 'Marcar' }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="personalAgenda.activeTab === 'MEALS'" id="pa-meals-view">
+                        <div class="p-3">
+                            <h5 class="fw-bold mb-4">Registro de Alimentación</h5>
+                            <div class="row g-4">
+                                <div class="col-md-6 col-lg-3" v-for="cat in ['Desayuno', 'Comida', 'Cena', 'Snack']" :key="cat">
+                                    <div class="card h-100 border-0 shadow-sm" style="background: #fff;">
+                                        <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+                                            <h6 class="fw-bold m-0" :class="{'text-warning': cat==='Desayuno', 'text-danger': cat==='Comida', 'text-primary': cat==='Cena', 'text-success': cat==='Snack'}">{{ cat }}</h6>
+                                            <button class="btn btn-sm btn-light rounded-circle" @click="addMeal(cat)"><i class="fas fa-plus"></i></button>
+                                        </div>
+                                        <div class="card-body">
+                                            <div v-if="getMeals(cat).length === 0" class="text-muted small fst-italic text-center py-3">
+                                                Nada registrado
+                                            </div>
+                                            <ul class="list-group list-group-flush" v-else>
+                                                <li v-for="m in getMeals(cat)" :key="m.id" class="list-group-item px-0 border-0 d-flex justify-content-between align-items-start">
+                                                    <div>
+                                                        <div class="small fw-bold">{{ m.desc }}</div>
+                                                        <div class="text-muted" style="font-size:10px">{{ m.time }}</div>
+                                                    </div>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="personalAgenda.activeTab === 'ANALYSIS'" id="pa-analysis-view">
+                        <div class="p-3">
+                            <h5 class="fw-bold mb-4">Análisis de Rendimiento Personal</h5>
+                            <div class="row g-4">
+                                <div class="col-md-8">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-white border-0 pt-3">
+                                            <h6 class="fw-bold m-0 text-primary">Actividad Semanal</h6>
+                                        </div>
+                                        <div class="card-body" style="height: 300px;">
+                                            <canvas id="paChartActivity"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-header bg-white border-0 pt-3">
+                                            <h6 class="fw-bold m-0 text-success">Balance de Vida</h6>
+                                        </div>
+                                        <div class="card-body" style="height: 300px;">
+                                            <canvas id="paChartBalance"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="currentView === 'KPI_DASHBOARD'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                 <h4 class="fw-bold m-0 text-dark"><i class="fas fa-chart-pie me-2 text-danger"></i>KPI RENDIMIENTO - VISTA EXCLUSIVA</h4>
+                 <div>
+                    <button class="btn btn-outline-primary btn-sm me-2" @click="loadKPIData"><i class="fas fa-sync-alt"></i> ACTUALIZAR</button>
+                    <button class="btn btn-secondary btn-sm" @click="goHome">CERRAR</button>
+                 </div>
+            </div>
+
+            <div v-if="kpiData.isLoading" class="d-flex justify-content-center align-items-center h-100">
+                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+            </div>
+
+            <div v-else class="row g-4 h-100 overflow-auto p-2">
+
+                <!-- KPI LUIS_CARLOS -->
+                <div class="col-12 mb-2">
+                   <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-user-tie me-2"></i>DASHBOARD LUIS CARLOS</h5>
+                </div>
+
+                <!-- DASHBOARD VENTAS -->
+                <div class="col-12 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #FF5722;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase d-flex justify-content-between align-items-center" style="color: #FF5722;">
+                            <span><i class="fas fa-briefcase me-2"></i>DASHBOARD VENTAS</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row h-100 align-items-center">
+                                <div class="col-md-5 overflow-auto" style="max-height: 300px;">
+                                    <table class="table table-sm table-hover small align-middle">
+                                        <thead class="table-light text-secondary"><tr><th>Colaborador</th><th class="text-center">Volumen</th><th class="text-center">Eficiencia (Días)</th></tr></thead>
+                                        <tbody>
+                                            <tr v-for="(item, index) in kpiData.dashboardVentas" :key="index">
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <img :src="getAvatarUrl(item.name)" class="rounded-circle me-2 shadow-sm" style="width: 30px; height: 30px; object-fit: cover;">
+                                                        <div class="text-truncate fw-bold text-dark" style="max-width: 150px; font-size: 0.9em;" :title="item.name">{{ item.name }}</div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center fw-bold">{{ item.volumen }}</td>
+                                                <td class="text-center text-primary fw-bold">{{ item.eficiencia }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-7">
+                                    <div style="height: 300px; width: 100%;"><canvas id="chartDashboardVentas"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PRODUCTIVIDAD DIARIA (ANTONIA) -->
+                <div class="col-12 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #009688;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #009688;">
+                            <i class="fas fa-calendar-day me-2"></i>PRODUCTIVIDAD DIARIA (ANTONIA)
+                        </div>
+                        <div class="card-body" style="height: 300px;"><canvas id="chartProductividadDiaria"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- DASHBOARD TRACKER -->
+                <div class="col-12 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #673AB7;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase d-flex justify-content-between align-items-center" style="color: #673AB7;">
+                            <span><i class="fas fa-tasks me-2"></i>DASHBOARD TRACKER</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row h-100 align-items-center">
+                                <div class="col-md-5 overflow-auto" style="max-height: 300px;">
+                                    <table class="table table-sm table-hover small align-middle">
+                                        <thead class="table-light text-secondary"><tr><th>Colaborador</th><th class="text-center">Volumen</th><th class="text-center">Eficiencia (Días)</th></tr></thead>
+                                        <tbody>
+                                            <tr v-for="(item, index) in kpiData.dashboardTracker" :key="index">
+                                                <td>
+                                                    <div class="d-flex align-items-center">
+                                                        <img :src="getAvatarUrl(item.name)" class="rounded-circle me-2 shadow-sm" style="width: 30px; height: 30px; object-fit: cover;">
+                                                        <div class="text-truncate fw-bold text-dark" style="max-width: 150px; font-size: 0.9em;" :title="item.name">{{ item.name }}</div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center fw-bold">{{ item.volumen }}</td>
+                                                <td class="text-center text-primary fw-bold">{{ item.eficiencia }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="col-md-7">
+                                    <div style="height: 300px; width: 100%;"><canvas id="chartDashboardTracker"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- FIN KPI LUIS_CARLOS -->
+
+                <!-- 1. PUNTUALIDAD -->
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #4472C4;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #4472C4;">1. % PUNTUALIDAD (TODO EL PERSONAL)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartPuntualidad"></canvas></div>
+                    </div>
+                </div>
+                <!-- 2. TIEMPO VISITAS -->
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #ED7D31;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #ED7D31;">2. % TIEMPO VISITAS (COTIZADORES)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartVisitas"></canvas></div>
+                    </div>
+                </div>
+                <!-- 3. INTEGRACION PRE WO -->
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #A5A5A5;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #A5A5A5;">3. % INTEGRACIÓN PRE WO (COTIZADORES)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartPreWO"></canvas></div>
+                    </div>
+                </div>
+                <!-- 4. ENTREGA A TIEMPO -->
+                <div class="col-md-6 col-lg-6 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #FFC000;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #FFC000;">4. % ENTREGA A TIEMPO COTIZACIONES</div>
+                        <div class="card-body" style="height: 300px;"><canvas id="chartEntregaCotiz"></canvas></div>
+                    </div>
+                </div>
+                <!-- 5. INTEGRACION ARCHIVOS -->
+                <div class="col-md-6 col-lg-6 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #5B9BD5;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #5B9BD5;">5. % ARCHIVOS AL 100% (COTIZADORES)</div>
+                        <div class="card-body" style="height: 300px;"><canvas id="chartArchivos100"></canvas></div>
+                    </div>
+                </div>
+                <!-- 6. ENTREGA DISEÑOS -->
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #70AD47;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #70AD47;">6. % ENTREGA DISEÑOS (DISEÑADORES)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartDisenos"></canvas></div>
+                    </div>
+                </div>
+                <!-- 7. PLANEACION -->
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #264478;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #264478;">7. % PLANEACIÓN (WO)</div>
+                        <div class="card-body" style="height: 250px;"><canvas id="chartPlaneacion"></canvas></div>
+                    </div>
+                </div>
+                <!-- 8. VENTAS DEPTO -->
+                <div class="col-md-6 col-lg-4 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #9E480E;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #9E480E;">8. VENTAS POR DEPARTAMENTO</div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs nav-justified mb-2" id="ventasTab" role="tablist">
+                                <li class="nav-item"><button class="nav-link active py-1 small" data-bs-toggle="tab" data-bs-target="#tabSemanal" type="button" style="color: #9E480E; font-weight:bold;">Sem</button></li>
+                                <li class="nav-item"><button class="nav-link py-1 small" data-bs-toggle="tab" data-bs-target="#tabMensual" type="button" style="color: #9E480E;">Mes</button></li>
+                                <li class="nav-item"><button class="nav-link py-1 small" data-bs-toggle="tab" data-bs-target="#tabAnual" type="button" style="color: #9E480E;">Anual</button></li>
+                            </ul>
+                            <div class="tab-content h-100" id="ventasTabContent">
+                                <div class="tab-pane fade show active h-100" id="tabSemanal"><div style="height: 200px;"><canvas id="chartVentasSem"></canvas></div></div>
+                                <div class="tab-pane fade h-100" id="tabMensual"><div style="height: 200px;"><canvas id="chartVentasMes"></canvas></div></div>
+                                <div class="tab-pane fade h-100" id="tabAnual"><div style="height: 200px;"><canvas id="chartVentasAnual"></canvas></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- 9. CONTROL PROYECTO -->
+                <div class="col-md-6 col-lg-6 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #997300;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #997300;">9. CONTROL DE PROYECTO</div>
+                        <div class="card-body" style="height: 300px;"><canvas id="chartControlProy"></canvas></div>
+                    </div>
+                </div>
+                <!-- 10. LECCIONES -->
+                <div class="col-md-6 col-lg-6 kpi-card-anim" style="opacity:0">
+                    <div class="card shadow-sm h-100" style="border-top: 4px solid #C00000;">
+                        <div class="card-header bg-white border-bottom fw-bold small text-uppercase" style="color: #C00000;">10. LECCIONES APRENDIDAS / TARJETA ROJA</div>
+                        <div class="card-body p-0 overflow-auto" style="max-height: 300px;">
+                            <table class="table table-striped table-sm m-0 small align-middle">
+                                <thead class="text-white" style="background-color: #C00000; position: sticky; top: 0;"><tr><th>Tipo</th><th>Tema</th><th>Fecha</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="(l, i) in kpiData.lecciones" :key="i">
+                                        <td><span class="badge" :style="{backgroundColor: l.tipo==='Tarjeta Roja'?'#C00000':'#70AD47'}">{{l.tipo}}</span></td>
+                                        <td>{{l.tema}}</td>
+                                        <td>{{l.fecha}}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="currentView === 'ECG_VIEW'" class="h-100 d-flex flex-column" style="background-color:#000; margin:-20px; padding:20px;">
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-heartbeat fa-2x me-3" style="color:#d63384"></i>
+                    <h4 class="text-white m-0" style="font-family:'Share Tech Mono'">MONITOR VIVOS: SEÑAL DE VENTAS</h4>
+                </div>
+                <div>
+                    <button class="btn btn-outline-success btn-sm me-2" @click="loadEcgData"><i class="fas fa-sync-alt"></i> REFRESCAR</button>
+                    <button class="btn btn-outline-secondary btn-sm" @click="goHome">CERRAR</button>
+                </div>
+            </div>
+
+            <div class="ecg-grid">
+                <div v-for="(data, personName) in ecgData" :key="personName" class="ecg-card">
+                    <div class="ecg-header">
+                        <div class="ecg-title">{{ personName }}</div>
+                        <div class="ecg-stats">
+                            <span class="me-2 text-white">TOTAL: {{ data.length }}</span>
+                            <span class="text-success">VIVO</span>
+                        </div>
+                    </div>
+                    <div class="ecg-canvas-container">
+                        <canvas :id="'chart-'+personName.replace(/\s+/g,'')"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="currentView === 'PROJECTS'" class="animate__animated animate__fadeIn h-100 d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <div class="d-flex align-items-center">
+                  <h4 class="fw-bold text-secondary m-0"><i class="fas fa-briefcase me-2"></i>EXPLORADOR DE PROYECTOS</h4>
+                  <button class="btn btn-outline-secondary btn-sm ms-3" @click="loadCascadeTree" title="Recargar Lista"><i class="fas fa-sync-alt"></i></button>
+              </div>
+              <div>
+                   <button class="btn btn-success btn-sm fw-bold shadow-sm me-2" @click="openPpcProjectSelector">
+                      <i class="fas fa-plus me-1"></i> NUEVO SITIO
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+              </div>
+          </div>
+          <div class="cascade-container flex-fill overflow-auto">
+              <div v-for="site in activeProjectsList" :key="site.id" class="cascade-item-wrapper">
+                  <div class="cascade-item cascade-header" :class="{expanded: site.expanded}" @click="toggleExpand(site)">
+                      <i class="expand-icon fas fa-chevron-right"></i>
+                      <i class="fas fa-building text-primary me-2 opacity-75"></i>
+                      <div class="d-flex flex-column flex-grow-1">
+                          <span class="fw-bold">{{ site.name }}</span>
+                          <span class="small text-muted" style="font-size:0.75rem">{{ site.createdAt }}</span>
+                      </div>
+                      <span class="ms-2 badge bg-light text-muted border">{{ site.client }}</span>
+                      <button class="btn btn-sm btn-link text-success ms-auto p-0" @click.stop="openAddSubProject(site)" title="Crear Subcarpeta"><i class="fas fa-plus-circle fa-lg"></i></button>
+                  </div>
+                  <div class="cascade-children" :class="{show: site.expanded}">
+                      <div v-for="(sub, sIdx) in site.subProjects" :key="sIdx" class="cascade-item-wrapper">
+                          <div class="cascade-item cascade-subitem" :class="{expanded: sub.expanded}" @click="toggleExpand(sub)">
+                              <i class="expand-icon fas fa-chevron-right"></i>
+                              <i class="project-icon fas" :class="sub.icon || 'fa-clipboard-list'"></i>
+                              <span class="flex-grow-1">{{ sub.name }}</span>
+                              <small class="ms-2 text-muted me-2">({{ sub.type }})</small>
+                              <button class="btn btn-sm btn-outline-primary py-0 px-2 border-0" @click.stop="openProjectTask(sub)" title="Asignar Tarea a este Proyecto"><i class="fas fa-clipboard-check"></i></button>
+                          </div>
+                          <div class="cascade-children" :class="{show: sub.expanded}">
+                               <div v-for="(folder, fIdx) in projectSubFolders" :key="fIdx"
+                                    class="cascade-item cascade-folder"
+                                    @click.stop="openFolderContent(folder, sub.name)">
+                                   <i class="fas" :class="folder.icon" :style="{color: folder.color}"></i>
+                                   <span>{{ folder.name }}</span>
+                               </div>
+                          </div>
+                      </div>
+                      <div v-if="!site.subProjects || site.subProjects.length === 0" class="text-muted small p-3 ps-5 ms-4 fst-italic">No hay proyectos.</div>
+                  </div>
+              </div>
+          </div>
+        </div>
+
+        <div v-if="currentView === 'PROJECT_TASKS_VIEW'" class="h-100 d-flex flex-column">
+          <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white border rounded">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-light btn-sm border me-2" @click="currentView = 'PROJECTS'"><i class="fas fa-arrow-left"></i></button>
+                <div class="d-flex flex-column">
+                    <span class="small fw-bold text-muted">ACTIVIDADES DEL PROYECTO:</span>
+                    <span class="fw-bold text-primary">{{ currentPpcProject ? currentPpcProject.name : '' }}</span>
+                </div>
+            </div>
+            <div>
+                 <button class="btn btn-primary btn-sm me-2" @click="refreshProjectTasks"><i class="fas fa-sync-alt"></i></button>
+                 <button class="btn btn-success btn-sm fw-bold" @click="addNewProjectTask"><i class="fas fa-plus"></i> NUEVA ACTIVIDAD</button>
+            </div>
+          </div>
+          <div class="excel-container flex-fill" ref="projectTable">
+             <div v-if="projectTasks.isLoading" class="text-center p-5 text-muted">Cargando actividades...</div>
+             <div v-else-if="projectTasks.data.length === 0" class="text-center p-5 text-muted fst-italic">No hay actividades registradas para este proyecto.</div>
+             <table v-else class="table-excel">
+                <thead>
+                  <tr>
+                    <th class="row-num">#</th>
+                    <th v-for="(h, idx) in projectTasks.headers" :key="idx" :style="getColumnStyle(h)">{{ getHeaderLabel(h) }}</th>
+                    <th style="width:40px"><i class="fas fa-save"></i></th>
+                  </tr>
+                </thead>
+                <tbody>
+                   <tr v-for="(row, i) in projectTasks.data" :key="i" :class="{'new-row-highlight': row._isNew}">
+                      <td class="row-num">{{i+1}}</td>
+                      <td v-for="(h, idx) in projectTasks.headers" :key="idx">
+                         <div v-if="isCol(h, ['AREA','ALTA'])" style="position:relative; width:100%; height:100%;">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-weight:bold; font-size:12px;">{{ row[h] ? String(row[h]).charAt(0).toUpperCase() : '' }}</div>
+                             <select v-model="row[h]" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
+                         </div>
+                         <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
+                         <input v-else-if="isCol(h, ['ESTATUS','STATUS'])" v-model="row[h]" class="excel-input" style="font-weight:bold">
+                         <input v-else v-model="row[h]" class="excel-input">
+                      </td>
+                      <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveProjectRow(row)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
+                   </tr>
+                </tbody>
+             </table>
+          </div>
+        </div>
+
+        <div v-if="currentView === 'DEPT'">
+          <div class="d-flex justify-content-between mb-3"><button class="btn btn-light btn-sm border" @click="goHome">Atrás</button><input v-model="searchQuery" class="form-control form-control-sm w-auto" placeholder="Filtrar..."></div>
+          <div class="row g-2">
+            <div class="col-md-3" v-for="p in filteredStaff" :key="p.name">
+              <div class="staff-card h-100" @click="openStaffTracker(p)" :style="{borderTop: '4px solid ' + (currentDeptData.color || '#3699ff')}">
+                <div class="mb-2 fw-bold" :style="{color: currentDeptData.color || '#555'}" style="font-size:1.2rem">{{p.name.charAt(0)}}</div>
+                <div class="small fw-bold">{{p.name}}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentView === 'STAFF_TRACKER'" class="h-100 d-flex flex-column">
+          <div class="d-flex bg-white px-3 pt-3 gap-2 align-items-end border-bottom">
+             <!-- VISTA PERSONALIZADA ANTONIA_VENTAS -->
+             <template v-if="currentUsername === 'ANTONIA_VENTAS'">
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'OPERATIVO' && trackerSubView === 'TASKS' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('OPERATIVO'); trackerSubView = 'TASKS'">
+                      <i class="fas fa-tasks me-2"></i>COTIZACIONES EN PROCESO
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="trackerSubView = 'HISTORY'">
+                      <i class="fas fa-history me-2"></i>COTIZACIONES ENVIADAS PERDIDAS
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'RESUMEN_EJECUTIVO' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('RESUMEN_EJECUTIVO'); trackerSubView = 'EXECUTIVE_SUMMARY'; loadExecutiveSummary()">
+                      <i class="fas fa-file-alt me-2"></i>RESUMEN EJECUTIVO
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'BANCO_COTIZACIONES' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('BANCO_COTIZACIONES'); trackerSubView = 'INFO_BANK'; resetInfoBank()">
+                      <i class="fas fa-database me-2"></i>BANCO DE COTIZACIONES
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'PAPA_CALIENTE' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="openHotPotatoView()">
+                      <i class="fas fa-fire me-2"></i>PAPA CALIENTE DE COTIZACION
+                 </div>
+             </template>
+             <!-- VISTA ESTANDAR -->
+             <template v-else>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="activeTrackerTab === 'OPERATIVO' && trackerSubView === 'TASKS' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('OPERATIVO'); trackerSubView = 'TASKS'">
+                      <i class="fas fa-tasks me-2"></i>OPERATIVO
+                 </div>
+                 <div class="cursor-pointer px-4 py-2 fw-bold"
+                      :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="trackerSubView = 'HISTORY'">
+                      <i class="fas fa-history me-2"></i>HISTORIAL
+                 </div>
+             </template>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-white border rounded mt-2">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-light btn-sm border me-2" @click="goBackToDept"><i class="fas fa-arrow-left"></i></button>
+
+                <template v-if="currentUsername === 'ANTONIA_VENTAS'">
+                     <span class="small fw-bold me-2" style="color: var(--primary)"><i class="fas fa-file-excel me-1"></i> ANTONIA_VENTAS</span>
+                </template>
+                <template v-else>
+                    <span class="small fw-bold me-2" :style="{color: currentDeptData.color || 'var(--primary)'}"><i class="fas fa-file-excel me-1"></i> {{ staffTracker.name }}</span>
+                </template>
+
+                <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
+                <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
+                <button v-if="['TONITA'].includes(currentRole) || currentUsername === 'ANTONIA_VENTAS' || salesStaff.includes(currentUser)" class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
+                <button v-if="trackerSubView === 'HISTORY'" class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="openProcessFlow" title="Ver Flujo"><i class="fas fa-project-diagram me-1"></i> FLUJO PROCESO COTIZACION</button>
+            </div>
+            <div></div>
+          </div>
+          <div class="flex-fill d-flex flex-column" v-if="trackerSubView === 'EXECUTIVE_SUMMARY'" style="background-color:#fff; padding:20px; overflow-y:auto;">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                  <h4 class="fw-bold m-0 text-dark"><i class="fas fa-chart-line me-2 text-primary"></i>RESUMEN EJECUTIVO</h4>
+                  <button class="btn btn-outline-primary btn-sm" @click="loadExecutiveSummary"><i class="fas fa-sync-alt"></i> Actualizar</button>
+              </div>
+
+              <div class="row g-4">
+                  <!-- ROW 1 -->
+                  <div class="col-md-4 exec-anim-enter">
+                      <table class="exec-table">
+                          <thead>
+                              <tr><th class="exec-header-blue text-start">Cotizado X CLIENTE</th><th>$</th></tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="c in executiveSummaryData.clients" :key="c.name">
+                                  <td class="fw-bold">{{ c.name }}</td>
+                                  <td class="text-end">{{ formatCurrency(c.amount) }}</td>
+                              </tr>
+                              <tr class="total-row">
+                                  <td class="text-end">TOTAL</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.clientsTotal) }}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  <div class="col-md-8 exec-anim-enter">
+                      <table class="exec-table">
+                          <thead>
+                              <tr>
+                                  <th class="exec-header-blue">Vendedor</th>
+                                  <th>N° de cotizaciones realizadas</th>
+                                  <th>Acumulado cotizado Enero</th>
+                                  <th>% Acumulado presente</th>
+                                  <th>Restante</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="v in executiveSummaryData.vendors" :key="v.name">
+                                  <td>{{ v.name }}</td>
+                                  <td class="text-center">{{ v.count }}</td>
+                                  <td class="text-end">{{ formatCurrency(v.amount) }}</td>
+                                  <td class="text-center">{{ v.percent }}%</td>
+                                  <td class="text-end text-danger">{{ formatCurrency(v.remaining) }}</td>
+                              </tr>
+                              <tr class="total-row">
+                                  <td>TOTAL</td>
+                                  <td class="text-center">{{ executiveSummaryData.vendorsTotalCount }}</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.vendorsTotalAmount) }}</td>
+                                  <td class="text-center">100.00%</td>
+                                  <td></td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+
+                  <!-- ROW 2 -->
+                  <div class="col-12 exec-anim-enter">
+                      <div class="card border-0 shadow-sm">
+                          <div class="card-body">
+                              <h6 class="text-center fw-bold text-secondary mb-3">PRONOSTICO VENTA 24 DICI A 07 ENE 2025</h6>
+                              <div style="height: 300px;"><canvas id="chartExecVenta"></canvas></div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- ROW 3 -->
+                  <div class="col-md-6 exec-anim-enter">
+                      <table class="exec-table">
+                          <thead>
+                              <tr>
+                                  <th class="exec-header-blue">Cotizado del mes</th>
+                                  <th>2025</th>
+                                  <th>2026</th>
+                                  <th>Pronostico con metodo de suavizacion</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="m in executiveSummaryData.monthly" :key="m.month">
+                                  <td>{{ m.month }}</td>
+                                  <td class="text-end">{{ formatCurrency(m.v2025) }}</td>
+                                  <td class="text-end">{{ formatCurrency(m.v2026) }}</td>
+                                  <td class="text-end">{{ formatCurrency(m.forecast) }}</td>
+                              </tr>
+                              <tr class="total-row">
+                                  <td>TOTAL</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotal2025) }}</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotal2026) }}</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.monthlyTotalForecast) }}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  <div class="col-md-6 exec-anim-enter">
+                      <div class="card border-0 shadow-sm h-100">
+                          <div class="card-body">
+                              <h6 class="text-center fw-bold text-secondary mb-3">Pronostico anual con metodo de suavizacion exponencial</h6>
+                              <div style="height: 300px;"><canvas id="chartExecAnual"></canvas></div>
+                          </div>
+                      </div>
+                  </div>
+
+                  <!-- ROW 4 -->
+                  <div class="col-md-4 exec-anim-enter">
+                      <table class="exec-table mb-3">
+                          <thead>
+                              <tr><th class="exec-header-blue text-start">COTIZADO POR ÁREA</th><th>$</th></tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="a in executiveSummaryData.areas" :key="a.name">
+                                  <td>{{ a.name }}</td>
+                                  <td class="text-end">{{ formatCurrency(a.amount) }}</td>
+                              </tr>
+                              <tr class="total-row">
+                                  <td>TOTAL</td>
+                                  <td class="text-end">{{ formatCurrency(executiveSummaryData.areasTotal) }}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+
+                      <table class="exec-table">
+                          <thead>
+                              <tr><th class="exec-header-blue text-start">PRONOSTICO X ÁREA</th><th>COTIZADO</th><th>VENTA</th></tr>
+                          </thead>
+                          <tbody>
+                              <tr v-for="a in executiveSummaryData.areaForecast" :key="a.name">
+                                  <td>{{ a.name }}</td>
+                                  <td class="text-end">{{ formatCurrency(a.quoted) }}</td>
+                                  <td class="text-end">{{ formatCurrency(a.sold) }}</td>
+                              </tr>
+                          </tbody>
+                      </table>
+                  </div>
+                  <div class="col-md-8 exec-anim-enter">
+                      <div class="card border-0 shadow-sm h-100">
+                          <div class="card-body">
+                              <h6 class="text-center fw-bold text-secondary mb-3">COTIZADO MENSUAL</h6>
+                              <div style="height: 300px;"><canvas id="chartExecMensual"></canvas></div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <div class="flex-fill d-flex flex-column" v-if="activeTrackerTab === 'BANCO_COTIZACIONES'" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center">
+                    <h4 class="fw-bold m-0 text-info"><i class="fas fa-database me-2"></i>BANCO DE INFORMACION {{ infoBankState.selectedYear || '' }}</h4>
+                    <nav aria-label="breadcrumb" class="ms-4" v-if="infoBankState.view !== 'YEARS'">
+                        <ol class="breadcrumb m-0">
+                             <li class="breadcrumb-item" v-if="infoBankState.view !== 'YEARS'"><a href="#" @click.prevent="resetInfoBank">Año {{ infoBankState.selectedYear }}</a></li>
+                             <li class="breadcrumb-item" v-if="infoBankState.selectedMonth && infoBankState.view !== 'MONTHS'"><a href="#" @click.prevent="infoBankState.view = 'COMPANIES'">{{infoBankState.selectedMonth}}</a></li>
+                             <li class="breadcrumb-item active" v-if="infoBankState.selectedCompany">{{infoBankState.selectedCompany}}</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+
+            <!-- VIEW: YEARS -->
+            <div v-if="infoBankState.view === 'YEARS'" class="animate__animated animate__fadeIn">
+                 <h5 class="fw-bold text-secondary mb-3">Selecciona el Año</h5>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="y in ibYears" :key="y">
+                         <div class="card shadow-sm border-0 h-100 btn-month" style="cursor:pointer; transition:all 0.2s;" @click="selectIbYear(y)" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                             <div class="card-body text-center py-4 bg-white rounded">
+                                 <h5 class="fw-bold m-0 text-primary">{{y}}</h5>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: MONTHS -->
+            <div v-if="infoBankState.view === 'MONTHS'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">Selecciona el Mes - {{ infoBankState.selectedYear }}</h5>
+                 </div>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="m in ibMonths" :key="m">
+                         <div class="card shadow-sm border-0 h-100 btn-month" style="cursor:pointer; transition:all 0.2s;" @click="selectIbMonth(m)" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                             <div class="card-body text-center py-4 bg-white rounded">
+                                 <h5 class="fw-bold m-0 text-primary">{{m}}</h5>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: COMPANIES -->
+            <div v-if="infoBankState.view === 'COMPANIES'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">Empresas - {{infoBankState.selectedMonth}} {{ infoBankState.selectedYear }}</h5>
+                 </div>
+
+                 <div v-if="infoBankState.isLoading" class="text-center p-5">
+                      <div class="spinner-border text-primary mb-2" role="status"></div>
+                      <div class="text-muted small">Buscando clientes...</div>
+                 </div>
+                 <div v-else-if="filteredIbCompanies.length === 0" class="text-center p-5 bg-white border rounded shadow-sm">
+                      <i class="fas fa-search-minus fa-3x text-muted mb-3"></i>
+                      <p class="text-muted fw-bold">No se encontraron clientes con cotizaciones en este mes.</p>
+                 </div>
+                 <div v-else class="row g-2">
+                     <div class="col-12 col-md-6 col-lg-4" v-for="c in filteredIbCompanies" :key="c">
+                         <div class="list-group-item list-group-item-action border rounded shadow-sm p-3 d-flex align-items-center justify-content-between" style="cursor:pointer; background:white;" @click="selectIbCompany(c)">
+                             <span class="fw-bold text-dark">{{c}}</span>
+                             <i class="fas fa-chevron-right text-muted"></i>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: FOLDERS -->
+            <div v-if="infoBankState.view === 'FOLDERS'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">{{infoBankState.selectedCompany}} - Carpetas</h5>
+                 </div>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="f in ibFolders" :key="f.name">
+                         <div class="card shadow-sm border-0 h-100 text-center" style="cursor:pointer; transition:all 0.2s;" @click="openIbFolder(f)" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                             <div class="card-body d-flex flex-column align-items-center justify-content-center py-4 bg-white rounded">
+                                 <i class="fas fa-3x mb-3" :class="f.icon" :style="{color: f.color}"></i>
+                                 <h6 class="fw-bold text-dark m-0">{{f.name}}</h6>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: FILES -->
+            <div v-if="infoBankState.view === 'FILES'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">{{infoBankState.selectedCompany}} / {{infoBankState.selectedFolder}}</h5>
+                 </div>
+
+                 <div v-if="infoBankState.isLoading" class="text-center p-5">
+                      <div class="spinner-border text-primary mb-2" role="status"></div>
+                      <div class="text-muted small">Buscando archivos en Base de Datos...</div>
+                 </div>
+                 <div v-else-if="infoBankState.files.length === 0" class="text-center p-5 bg-white border rounded shadow-sm">
+                      <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                      <p class="text-muted fw-bold">No se encontraron registros para este mes y cliente.</p>
+                 </div>
+                 <div v-else class="card border-0 shadow-sm">
+                     <div class="card-body p-0">
+                         <div class="table-responsive">
+                             <table class="table table-hover mb-0 align-middle">
+                                 <thead class="table-light small text-uppercase">
+                                     <tr>
+                                         <th style="min-width:90px">FECHA INICIO</th>
+                                         <th style="min-width:100px">AREA</th>
+                                         <th>CONCEPTO</th>
+                                         <th style="min-width:120px">VENDEDOR</th>
+                                         <th class="text-center" style="min-width:100px">ESTATUS</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody class="info-bank-list">
+                                     <tr v-for="(file, idx) in infoBankState.files" :key="idx" class="info-bank-row" style="opacity:0">
+                                         <td style="font-size:12px; font-weight:bold;">{{ formatDisplayDate(file.FECHA_INICIO) }}</td>
+                                         <td style="font-size:11px;"><span class="badge bg-light text-secondary border">{{ file.AREA || 'N/A' }}</span></td>
+                                         <td style="font-size:12px;">
+                                             <div class="fw-bold text-dark">{{ file.CONCEPTO || 'Sin Descripción' }}</div>
+                                             <div class="small text-muted d-flex align-items-center gap-2">
+                                                 <span>{{ file.FOLIO }}</span>
+                                                 <a v-if="file.COTIZACION" :href="file.COTIZACION" target="_blank" class="text-primary text-decoration-none fw-bold" style="font-size:10px;">
+                                                     <i class="fas fa-paperclip me-1"></i>VER ARCHIVO
+                                                 </a>
+                                             </div>
+                                         </td>
+                                         <td style="font-size:11px;">
+                                             <div class="d-flex align-items-center">
+                                                 <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width:20px; height:20px; font-size:9px;">
+                                                     {{ toInitials(file.VENDEDOR) }}
+                                                 </div>
+                                                 <span class="text-truncate" style="max-width:120px;">{{ file.VENDEDOR }}</span>
+                                             </div>
+                                         </td>
+                                         <td class="text-center">
+                                             <span class="badge" :class="getBadgeClass(file.ESTATUS)">{{ file.ESTATUS || 'N/A' }}</span>
+                                         </td>
+                                     </tr>
+                                 </tbody>
+                             </table>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+          </div>
+
+          <!-- PROCESS FLOW MODAL -->
+          <div v-if="showProcessFlow" class="custom-modal-overlay" @click.self="showProcessFlow = false">
+              <div class="custom-modal flow-modal animate__animated animate__zoomIn">
+                  <div class="custom-modal-header bg-primary text-white">
+                      <span><i class="fas fa-project-diagram me-2"></i>FLUJO DE PROCESO DE COTIZACIÓN</span>
+                      <button class="btn btn-sm btn-link text-white" @click="showProcessFlow = false"><i class="fas fa-times"></i></button>
+                  </div>
+                  <div class="custom-modal-body p-0 overflow-auto bg-light position-relative">
+                      <div class="swimlane-grid">
+                          <!-- Lane Headers -->
+                          <div class="lane-header bg-primary text-white" style="grid-row: 2; grid-column: 1;">CLIENTE</div>
+                          <div class="lane-header bg-warning text-dark" style="grid-row: 3; grid-column: 1;">PRESUPUESTOS</div>
+                          <div class="lane-header bg-primary text-white" style="grid-row: 4; grid-column: 1;">VENDEDOR</div>
+                          <div class="lane-header bg-warning text-dark" style="grid-row: 5; grid-column: 1;">COORDINADOR</div>
+                          <div class="lane-header bg-primary text-white" style="grid-row: 6; grid-column: 1;">PRECIOS UNIT.</div>
+
+                          <!-- Lane Backgrounds -->
+                          <div style="grid-row: 2; grid-column: 1/-1; border-bottom:1px solid #ccc; background:#f0f8ff;"></div>
+                          <div style="grid-row: 3; grid-column: 1/-1; border-bottom:1px solid #ccc; background:#fffbf0;"></div>
+                          <div style="grid-row: 4; grid-column: 1/-1; border-bottom:1px solid #ccc; background:#f0f8ff;"></div>
+                          <div style="grid-row: 5; grid-column: 1/-1; border-bottom:1px solid #ccc; background:#fffbf0;"></div>
+                          <div style="grid-row: 6; grid-column: 1/-1; background:#f0f8ff;"></div>
+
+                          <!-- Nodes -->
+                          <!-- R1: CLIENTE -->
+                          <div class="flow-node node-oval bg-blue" style="grid-row: 2; grid-column: 2;">CONTINUACION<br>PROCESO 2 Y 2.1</div>
+                          <div class="flow-node node-diamond bg-blue" style="grid-row: 2; grid-column: 5;"><span>Requisitor<br>o Compras</span></div>
+                          <div class="flow-node node-para bg-yellow" style="grid-row: 2; grid-column: 6;"><span>Perdida<br>Cotización</span></div>
+                          <div class="flow-node node-para bg-yellow" style="grid-row: 2; grid-column: 7;"><span>Solicitud<br>Descuento</span></div>
+                          <div class="flow-node node-para bg-yellow" style="grid-row: 2; grid-column: 8;"><span>Anuncio de<br>Ganadores</span></div>
+
+                          <!-- R2: PRESUPUESTOS -->
+                          <div class="flow-node node-cyl bg-yellow" style="grid-row: 3; grid-column: 2;">Consulta Carpetas<br>Red Unidad</div>
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 3; grid-column: 4;">REVISION DE<br>PROPUESTA</div>
+                          <div class="flow-node node-cyl bg-yellow" style="grid-row: 3; grid-column: 6;">Retroalimentacion<br>Presupuesto</div>
+                          <div class="flow-node node-cyl bg-yellow" style="grid-row: 3; grid-column: 8;">Retroalimentacion<br>Presupuesto</div>
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 3; grid-column: 9;">Enviar Correo<br>a Coordinador <i class="fas fa-envelope"></i></div>
+
+                          <!-- R3: VENDEDOR -->
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 4; grid-column: 4;">REVISION DE<br>PROPUESTA</div>
+
+                          <!-- R4: COORDINADOR -->
+                          <div class="flow-node node-rect bg-yellow" style="grid-row: 5; grid-column: 4;">REVISION DE<br>PROPUESTA</div>
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 5; grid-column: 7;">OTORGAR<br>DESCUENTO</div>
+                          <div class="flow-node node-cyl bg-yellow" style="grid-row: 5; grid-column: 8;">Llenado de<br>Carpetas</div>
+                          <div class="flow-node node-rect bg-blue" style="grid-row: 5; grid-column: 9;">Incluir Informe<br>Reunión</div>
+
+                          <!-- R5: PRECIOS -->
+                          <div class="flow-node node-rect bg-yellow" style="grid-row: 6; grid-column: 6;">Encontrar<br>Oportunidades <i class="fas fa-file-excel"></i></div>
+                          <div class="flow-node node-oval bg-blue" style="grid-row: 6; grid-column: 9;">CIERRE DE<br>PROCESO 3</div>
+
+                          <!-- SVG Connections -->
+                          <svg class="flow-connections">
+                              <defs>
+                                  <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+                                  </marker>
+                              </defs>
+                              <path class="connection-line" d="M 15% 18% L 15% 30%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 15% 34% L 25% 34% L 25% 32% L 32% 32%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 25% 34% L 25% 49% L 32% 49%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 25% 34% L 25% 66% L 32% 66%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 38% 32% L 42% 32% L 42% 18% L 44% 18%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 38% 49% L 42% 49% L 42% 18%" />
+                              <path class="connection-line" d="M 38% 66% L 42% 66% L 42% 18%" />
+                              <path class="connection-line" d="M 48% 18% L 54% 18%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 48% 18% L 64% 18%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 48% 18% L 74% 18%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 55% 20% L 55% 30%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 55% 35% L 55% 80%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 65% 20% L 65% 64%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 68% 66% L 74% 66%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 75% 20% L 75% 30%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 78% 32% L 84% 32%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 87% 35% L 87% 64%" marker-end="url(#arrowhead)" />
+                              <path class="connection-line" d="M 87% 68% L 87% 80%" marker-end="url(#arrowhead)" />
+                          </svg>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <!-- VISTA PAPA CALIENTE DE COTIZACION (REFACTORED) -->
+          <div v-if="trackerSubView === 'HOT_POTATO'" class="flex-fill d-flex flex-column overflow-auto p-4 bg-white" style="font-family: 'Arial', sans-serif;">
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="fw-bold m-0"><i class="fas fa-fire text-danger me-2"></i>Monitor de Papa Caliente</h5>
+                  <button class="btn btn-primary btn-sm" @click="loadTrackerData"><i class="fas fa-sync-alt me-1"></i>Actualizar</button>
+              </div>
+              <div class="excel-container flex-fill">
+                  <table class="table-excel">
+                      <thead>
+                          <tr>
+                              <th class="row-num">#</th>
+                              <th style="width: 200px;">CLIENTE</th>
+                              <th style="width: 100px;">VENDEDOR</th>
+                              <th style="width: 80px;">F. INICIO</th>
+                              <th style="width: 80px;">F. VISITA</th>
+                              <th style="width: 80px;">F. ENTREGA</th>
+                              <th style="width: auto;">MAP COT</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                          <tr v-for="(row, i) in staffTracker.data" :key="i">
+                              <td class="row-num">{{ i + 1 }}</td>
+                              <td><input v-model="row.CLIENTE" class="excel-input" readonly></td>
+                              <td class="text-center">
+                                  <div class="d-flex align-items-center justify-content-center h-100">
+                                      <span class="badge bg-light text-dark border" style="font-size: 10px;">{{ toInitials(row.VENDEDOR) }}</span>
+                                  </div>
+                              </td>
+                              <td><input :value="row['F. INICIO'] || row['FECHA'] || row['ALTA'] || row['FECHA INICIO'] || row['FECHA_INICIO']" class="excel-input text-center" readonly></td>
+                              <td><input :value="row['F. VISITA'] || row['FECHA VISITA']" class="excel-input text-center" readonly></td>
+                              <td><input :value="row['F. ENTREGA'] || row['FECHA ENTREGA']" class="excel-input text-center" readonly></td>
+                              <td class="p-1">
+                                  <div class="hp-timeline-container">
+                                      <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null">
+                                          <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
+                                              <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
+                                              <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
+                                                  <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                              </div>
+                                          </div>
+                                          <div class="hp-text">
+                                              {{ step.isDone ? 'Hecho' : 'Pendiente' }} {{ step.id }}<br>
+                                              <span class="hp-time">{{ step.timeLabel }}</span>
+                                          </div>
+                                      </div>
+                                  </div>
+                              </td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+
+          <div class="excel-container flex-fill mb-2" ref="trackerTable" v-if="trackerSubView === 'TASKS'">
+             <div v-if="staffTracker.isLoading" class="text-center p-5 text-muted">Cargando datos...</div>
+             <table v-else class="table-excel">
+                <thead>
+                  <tr>
+                    <th class="row-num">#</th>
+                    <th v-for="(h, idx) in visibleTrackerHeaders" :key="idx" :style="getColumnStyle(h)">
+                        <div>{{ getHeaderLabel(h) }}</div>
+                        <div v-if="isCol(h, ['AREA', 'ESPECIALIDAD', 'CLIENTE', 'VENDEDOR'])">
+                             <select v-model="staffTrackerFilters[h]" @click.stop class="form-select form-select-sm p-0 border-0 bg-transparent text-primary fw-bold" style="font-size:10px; height:auto; cursor:pointer; min-width: 60px;">
+                                 <option value="">TODOS</option>
+                                 <option v-for="val in getUniqueValues(h)" :key="val" :value="val">{{val}}</option>
+                             </select>
+                        </div>
+                    </th>
+                    <th style="width:40px"><i class="fas fa-save"></i></th>
+                  </tr>
+                </thead>
+                <tbody>
+                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
+                      <td class="row-num">{{i+1}}</td>
+                      <td v-for="(h, idx) in visibleTrackerHeaders" :key="idx">
+                         <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-weight:bold; font-size:12px;">{{ row[h] ? String(row[h]).charAt(0).toUpperCase() : '' }}</div>
+                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option v-for="(dept, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{dept.label}}</option></select>
+                         </div>
+                         <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
+                         <div v-else-if="String(h).toUpperCase().includes('VENDEDOR') || (currentUsername === 'ANTONIA_VENTAS' && String(h).toUpperCase().includes('RESPONSABLE'))" style="position:relative; width:100%; height:100%; min-height: 30px; background-color:#f0fdf4;" @click="openVendorSelector(row, h)">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000 !important; cursor:pointer;">{{ toInitials(row[h]) }}</div>
+                         </div>
+                         <div v-else-if="String(h).toUpperCase().includes('PRIORIDAD') || String(h).toUpperCase().includes('PRIO')" style="position:relative; width:100%; height:100%;">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:10px; font-weight:bold;">{{ row[h] }}</div>
+                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option value="NORMAL">NORMAL</option><option value="MEDIA">MEDIA</option><option value="ALTA">ALTA</option><option value="URGENTE">URGENTE</option><option value="ESTRATEGICA">ESTRATEGICA</option></select>
+                         </div>
+                         <div v-else-if="isMediaColumn(h)" class="text-center" style="padding-top:4px; display:flex; gap:2px; flex-wrap:wrap; justify-content:center; align-items:center; height:100%;">
+                             <template v-if="row[h]">
+                                 <div v-for="(url, uIdx) in String(row[h]).split(/[\n\s]+/).filter(u => u.startsWith('http'))" :key="uIdx" class="btn-group" style="margin-right:2px; margin-bottom:2px;">
+                                     <a :href="url" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-1" style="font-size:9px;" title="Ver archivo"><i class="fas fa-paperclip"></i></a>
+                                     <button v-if="isFieldEditable(h, row)" class="btn btn-sm btn-outline-danger py-0 px-1" style="font-size:9px;" @click.stop="deleteFile(row, h, url)" title="Eliminar"><i class="fas fa-times"></i></button>
+                                 </div>
+                             </template>
+                             <button class="btn btn-sm btn-light border py-0 px-1 text-secondary" :disabled="!isFieldEditable(h, row)" @click="openCellUpload(row, h)" title="Subir / Reemplazar"><i class="fas fa-cloud-upload-alt" style="font-size:10px"></i></button>
+                         </div>
+                         <div v-else-if="isCol(h, ['CLASIFICACION'])" style="position:relative; width:100%; height:100%;">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:10px; font-weight:bold;">{{ row[h] }}</div>
+                             <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option value="A">A</option><option value="AA">AA</option><option value="AAA">AAA</option></select>
+                         </div>
+                         <input v-else-if="isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])" type="number" v-model="row[h]" :readonly="!isFieldEditable(h, row)" style="text-align:center; font-weight:bold; width:100%; height:100%; border:none; outline:none; padding:6px 0px; background:transparent;" :style="getTrafficStyle(row)">
+                         <div v-else-if="String(h).toUpperCase().includes('AVANCE')" style="position:relative; width:100%; height:100%;">
+                             <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" style="text-align:center; font-weight:bold; color:#217346; width:100%; height:100%; border:none; outline:none; padding:6px 10px 6px 0px; background:transparent;" spellcheck="false">
+                             <span style="position:absolute; right:2px; top:50%; transform:translateY(-50%); color:#217346; font-size:10px; font-weight:bold; pointer-events:none;">%</span>
+                         </div>
+                         <div v-else-if="isCol(h, ['ESTATUS','STATUS'])" style="width:100%; height:100%;">
+                             <div v-if="currentUsername === 'ANTONIA_VENTAS'" class="d-flex flex-column h-100">
+                                  <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold; padding:4px; text-align:center; white-space:normal; line-height:1.1; min-height: 25px;"
+                                       :style="getAntoniaStatusStyle(row[h])"
+                                       @click="openStatusSelector(row, h)">
+                                      {{ row[h] }}
+                                  </div>
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; background:#f8f9fa; border-top:1px solid #dee2e6;">
+                                      <div class="hp-timeline-container w-100 m-0 py-1" style="min-height:40px;">
+                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null">
+                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
+                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
+                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
+                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                                  </div>
+                                              </div>
+                                              <div class="hp-text">
+                                                  {{ step.isDone ? 'Hecho' : 'Pendiente' }} {{ step.id }}<br>
+                                                  <span class="hp-time">{{ step.timeLabel }}</span>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                             </div>
+                             <input v-else
+                                    v-model="row[h]"
+                                    :readonly="!isFieldEditable(h, row)"
+                                    style="text-align:center; font-weight:bold; font-size:10px; width:100%; height:100%; border:none; outline:none; padding:6px 1px; background:transparent;"
+                                    class="excel-input">
+                         </div>
+                         <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
+                             <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
+                         </div>
+                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; width:100%; height:100%; color: #000 !important;" :style="Object.assign({color: '#000'}, isCol(h, ['F. ENTREGA']) ? getTrafficStyle(row) : (isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)))">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none; color: #000 !important;">{{ formatDisplayDate(row[h]) }}</div>
+                             <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
+                         </div>
+                         <textarea v-else-if="currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP') || String(h).toUpperCase().includes('COMENTARIO'))" v-model="row[h]" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
+                         <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
+                      </td>
+                      <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
+                   </tr>
+                </tbody>
+             </table>
+          </div>
+          <div class="excel-container flex-fill" v-if="trackerSubView === 'HISTORY'">
+             <div v-if="staffTracker.isLoading" class="text-center p-5 text-muted">Cargando datos...</div>
+             <div v-else-if="staffTracker.history.length === 0" class="text-center p-5 text-muted fst-italic">No hay historial disponible.</div>
+             <table v-else class="table-excel">
+                <thead>
+                  <tr>
+                    <th class="row-num">#</th>
+                    <th v-for="(h, idx) in visibleTrackerHeaders" :key="idx" :style="getColumnStyle(h)">{{ getHeaderLabel(h) }}</th>
+                    <th style="width:40px"><i class="fas fa-history"></i></th>
+                  </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(row, i) in staffTracker.history" :key="i" :class="{'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
+                        <td class="row-num">H{{i+1}}</td>
+                        <td v-for="(h, idx) in visibleTrackerHeaders" :key="idx" :style="getColumnStyle(h)">
+                            <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px;">
+                                {{ row[h] ? String(row[h]).charAt(0).toUpperCase() : '' }}
+                            </div>
+                            <div v-else-if="String(h).toUpperCase().includes('VENDEDOR') || (currentUsername === 'ANTONIA_VENTAS' && String(h).toUpperCase().includes('RESPONSABLE'))" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:11px; white-space:nowrap; overflow:hidden; font-weight:bold; color:#000 !important;">
+                                {{ toInitials(row[h]) }}
+                            </div>
+                            <div v-else-if="isMediaColumn(h)" class="d-flex flex-wrap justify-content-center gap-1">
+                                <template v-if="row[h]">
+                                     <a v-for="(url, uIdx) in String(row[h]).split(/[\n\s]+/).filter(u => u.startsWith('http'))"
+                                        :key="uIdx" :href="url" target="_blank"
+                                        class="btn btn-sm btn-outline-primary py-0 px-1" style="font-size:9px;" title="Ver archivo">
+                                        <i class="fas fa-paperclip"></i>
+                                     </a>
+                                </template>
+                            </div>
+                            <div v-else-if="String(h).toUpperCase().includes('AVANCE')" style="text-align:center; font-weight:bold; color:#217346;">
+                                {{ row[h] }}%
+                            </div>
+
+                            <div v-else-if="isCol(h, ['ESTATUS','STATUS']) && currentUsername === 'ANTONIA_VENTAS'"
+                                 style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; padding:0 4px; text-align:center; white-space:normal; line-height:1.1;"
+                                 :style="getAntoniaStatusStyle(row[h])">
+                                 {{ row[h] }}
+                            </div>
+                            <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; padding-left:4px; display:flex; align-items:center; color: #000 !important;" :style="Object.assign({color: '#000'}, isCol(h, ['F. ENTREGA']) ? getTrafficStyle(row) : (isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)))">
+                                 {{ formatDisplayDate(row[h]) }}
+                            </div>
+                            <div v-else-if="isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])" style="text-align:center; font-weight:bold; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" :style="getTrafficStyle(row)">
+                                {{ row[h] }}
+                            </div>
+                            <div v-else>{{row[h]}}</div>
+                        </td>
+                        <td style="width:40px;text-align:center"><i class="fas fa-check text-muted small"></i></td>
+                    </tr>
+                </tbody>
+             </table>
+          </div>
+        </div>
+
+        <div v-if="currentView === 'WEEKLY_PLAN'" class="h-100 d-flex flex-column" style="background:white; padding:20px;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <h5 class="m-0 text-primary fw-bold me-2"><i class="fas fa-calendar-week me-2"></i>PPCV3</h5>
+                    <select v-model="selectedWeek" class="form-select form-select-sm border-primary" style="width: auto; font-weight: bold;">
+                        <option value="">VER TODAS LAS SEMANAS</option>
+                        <option v-for="w in availableWeeks" :key="w" :value="w">Semana {{ w }}</option>
+                    </select>
+                    <select v-model="filterSpecialty" class="form-select form-select-sm border-secondary" style="width: auto;">
+                        <option value="">TODAS LAS ÁREAS</option>
+                        <option v-for="sp in availableSpecialties" :key="sp" :value="sp">{{ sp }}</option>
+                    </select>
+                    <select v-model="filterCompliance" class="form-select form-select-sm border-secondary" style="width: auto;">
+                        <option value="">CUMPLIMIENTO (TODOS)</option>
+                        <option value="SI">CUMPLIDO (SI)</option>
+                        <option value="NO">NO CUMPLIDO (NO)</option>
+                    </select>
+                </div>
+                <div>
+                    <button class="btn btn-outline-secondary btn-sm me-2" @click="loadWeeklyPlan" title="Recargar"><i class="fas fa-sync-alt"></i></button>
+                    <button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button>
+                </div>
+            </div>
+            <div class="d-flex mb-3 align-items-end justify-content-start">
+            <div class="excel-container" style="height: auto; max-height: 250px; overflow: auto; flex:none; width: fit-content; border:none; box-shadow:none;">
+                <table class="table-excel mini-table" style="background: white; border: 1px solid #999;">
+                    <thead><tr><th style="min-width:140px">ESPECIALIDAD</th><th style="width:50px">TOTAL</th><th style="width:50px" class="bg-success text-white">SI</th><th style="width:50px" class="bg-danger text-white">NO</th><th style="width:70px">PROMEDIO</th></tr></thead>
+                    <tbody><tr v-for="(s, i) in weeklyStats" :key="i" :class="{'total-row': s.isTotal}"><td class="text-start ps-2 fw-bold" style="font-size:11px">{{ s.label }}</td><td class="text-center">{{ s.total }}</td><td class="text-center text-success fw-bold">{{ s.si }}</td><td class="text-center text-danger">{{ s.no }}</td><td class="text-center fw-bold text-primary">{{ s.avg }}</td></tr></tbody>
+                </table>
+            </div>
+            </div>
+            <div class="excel-container flex-fill">
+                <div v-if="weeklyPlanData.isLoading" class="text-center p-5 text-muted"><div class="spinner-border text-primary mb-2" role="status"></div><div>Cargando datos...</div></div>
+                <table v-else class="table-excel" style="table-layout: auto; width: auto; min-width: 0;">
+                    <!-- CUSTOM HEADER FOR JESUS_CANTU -->
+                    <thead v-if="currentUsername === 'JESUS_CANTU'">
+                        <tr>
+                            <th class="row-num" rowspan="2">#</th>
+                            <th style="width:60px" rowspan="2">Ruta critica</th>
+                            <th style="width:80px" rowspan="2">Zona</th>
+                            <th style="width:100px" rowspan="2">Especialidad</th>
+                            <th style="min-width:300px" rowspan="2">DESCRIPCIÓN DE ACTIVIDAD</th>
+                            <th colspan="2" class="text-center">CUANTIFICACIÓN</th>
+                            <th style="width:150px" rowspan="2">PERSONA RESPONSABLE</th>
+                            <th style="width:150px" rowspan="2">CONTRATISTA</th>
+                            <th colspan="5" class="text-center">DÍAS DE LA SEMANA</th>
+                            <th style="width:80px" rowspan="2">Cumplimiento</th>
+                            <th style="width:40px" rowspan="2"><i class="fas fa-save"></i></th>
+                        </tr>
+                        <tr>
+                            <th style="width:70px">Requerido</th>
+                            <th style="width:70px">Real</th>
+                            <th style="width:25px">L</th>
+                            <th style="width:25px">M</th>
+                            <th style="width:25px">X</th>
+                            <th style="width:25px">J</th>
+                            <th style="width:25px">V</th>
+                        </tr>
+                    </thead>
+                    <!-- DEFAULT HEADER -->
+                    <thead v-else>
+                      <tr>
+                        <th class="row-num">#</th>
+                        <th v-for="(h, idx) in weeklyPlanData.headers" :key="idx" :style="getColumnStyle(h)">{{ getHeaderLabel(h) }}</th>
+                        <th style="width:40px"><i class="fas fa-save"></i></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(row, i) in filteredWeeklyData" :key="i">
+                            <td class="row-num">{{ i + 1 }}</td>
+                            <!-- JESUS CANTU CELLS -->
+                            <template v-if="currentUsername === 'JESUS_CANTU'">
+                                <td class="text-center" :style="{backgroundColor: String(row['RUTA_CRITICA']).toUpperCase() === 'SI' ? '#ffcccc' : ''}">{{ row['RUTA_CRITICA'] }}</td>
+                                <td>{{ row['ZONA'] }}</td>
+                                <td>{{ row['ESPECIALIDAD'] }}</td>
+                                <td>{{ row['CONCEPTO'] }}</td>
+                                <td class="text-center">{{ row['CUANT_REQUERIDO'] }}</td>
+                                <td class="text-center">{{ row['CUANT_REAL'] }}</td>
+                                <td>{{ row['RESPONSABLE'] }}</td>
+                                <td>{{ row['CONTRATISTA'] }}</td>
+                                <td class="text-center">{{ row['DIAS_L'] }}</td>
+                                <td class="text-center">{{ row['DIAS_M'] }}</td>
+                                <td class="text-center">{{ row['DIAS_X'] }}</td>
+                                <td class="text-center">{{ row['DIAS_J'] }}</td>
+                                <td class="text-center">{{ row['DIAS_V'] }}</td>
+                                <td class="text-center">
+                                    <div style="position:relative; width:100%; height:100%;">
+                                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:1;">
+                                            <span class="badge rounded-pill" :class="String(row['CUMPLIMIENTO']).toUpperCase() === 'SI' ? 'bg-success' : 'bg-danger'">{{ row['CUMPLIMIENTO'] || 'NO' }}</span>
+                                        </div>
+                                        <select v-model="row['CUMPLIMIENTO']" @change="savePPCV3Row(row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:10;"><option value="SI">SI</option><option value="NO">NO</option></select>
+                                    </div>
+                                </td>
+                            </template>
+                            <!-- DEFAULT CELLS -->
+                            <template v-else>
+                                <td v-for="(h, idx) in weeklyPlanData.headers" :key="idx" class="text-center">
+                                    <div v-if="h === 'SEMANA'" style="font-weight:bold; color:#0d6efd; background-color:#f8f9fa; font-size:10px;">S{{ row[h] }}</div>
+                                    <div v-else-if="h.includes('CUMPLIMIENTO')" style="position:relative; width:100%; height:100%;">
+                                        <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:1;"><span class="badge rounded-pill" :class="String(row[h]).toUpperCase() === 'SI' ? 'bg-success' : 'bg-danger'" style="font-size:10px; width:40px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">{{ row[h] || 'NO' }}</span></div>
+                                        <select v-model="row[h]" @change="savePPCV3Row(row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:10;"><option value="SI">SI</option><option value="NO">NO</option></select>
+                                    </div>
+                                    <div v-else-if="h.includes('ARCHIVO') || h.includes('CLIP')"><a v-if="row[h]" :href="row[h]" target="_blank" class="btn btn-sm text-primary"><i class="fas fa-paperclip"></i></a></div>
+                                    <div v-else-if="String(h).toUpperCase().includes('COMENTARIOS') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES')" class="text-start">
+                                        <input v-model="row[h]" class="excel-input" spellcheck="false" style="text-align:left;">
+                                    </div>
+                                    <div v-else-if="String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')" class="px-1" style="white-space:normal; overflow:hidden; text-align:left; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;" :title="row[h]">{{ row[h] }}</div>
+                                    <div v-else class="px-1" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;" :title="row[h]">{{ row[h] }}</div>
+                                </td>
+                            </template>
+                             <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-primary" @click="savePPCV3Row(row)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div v-if="currentView === 'PPC_DINAMICO'" class="h-100 dynamic-tracker" style="padding:20px !important;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center"><h4 class="fw-bold m-0 me-3" style="color:#2c3e50"><i class="fas fa-layer-group me-2" style="color:#e83e8c"></i>Tracker</h4><div v-if="currentPpcProject" class="badge bg-white text-dark border p-2 d-flex align-items-center shadow-sm"><i class="fas fa-folder-open text-primary me-2"></i><span>{{ currentPpcProject.name }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div><button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+          </div>
+          <div class="dynamic-form-card">
+             <div class="row g-3">
+                 <div class="col-md-6"><label class="dynamic-label">Especialidad (Departamento)</label><select v-model="dynamicPpc.especialidad" class="dynamic-input"><option value="" disabled>Seleccionar...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></div>
+                 <div class="col-md-6"><label class="dynamic-label">Clasificación</label><select v-model="dynamicPpc.clasificacion" class="dynamic-input"><option value="A">A</option><option value="AA">AA</option><option value="AAA">AAA</option></select></div>
+                 <div class="col-12"><label class="dynamic-label">Responsable</label><div class="dynamic-input" style="min-height:38px; display:flex; flex-wrap:wrap; gap:5px; align-items:center;" @click="$refs.chipDyn.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}} <i class="fas fa-times ms-2 text-secondary" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipDyn" v-model="staffSearch" style="background:transparent; border:none; color:#333; outline:none; min-width:60px;" placeholder="+"></div><ul class="list-group position-absolute shadow" style="z-index:100; max-height:150px; overflow:auto; width:300px; margin-top:5px;" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" style="cursor:pointer;" @click="addResponsable(p.name)">{{p.name}}</li></ul></div>
+                 <div class="col-12"><label class="dynamic-label">Descripción</label><textarea v-model="dynamicPpc.concepto" class="dynamic-input" rows="3"></textarea></div>
+                 <div class="col-md-6"><label class="dynamic-label">Riesgos</label><div><span v-for="r in ['BAJO','MEDIO','ALTO','CATASTROFICO']" :key="r" class="chip-option" :class="{selected: dynamicPpc.riesgos === r}" @click="dynamicPpc.riesgos = r">{{r}}</span></div></div>
+                 <div class="col-md-6"><label class="dynamic-label">Prioridad</label><div><span v-for="p in ['BAJA','MEDIA','URGENTE']" :key="p" class="chip-option" :class="{selected: dynamicPpc.prioridad === p}" @click="dynamicPpc.prioridad = p">{{p}}</span></div></div>
+                 <div class="col-md-3"><label class="dynamic-label">Fecha Fin</label><input type="date" v-model="dynamicPpc.fechaFin" class="dynamic-input"></div>
+                 <div class="col-md-3"><label class="dynamic-label">Archivos</label><button class="btn btn-outline-primary w-100 btn-sm" @click="openFileDialog" style="border-style:dashed; height:36px;"><i class="fas" :class="uploadSuccess ? 'fa-check text-success' : 'fa-cloud-upload-alt'"></i> {{ uploadSuccess ? 'Listo' : 'SUBIR' }}</button><input type="file" ref="fileInput" class="file-input-hidden" accept="*" @change="handleFileSelect"></div>
+                 <div class="col-md-6"><label class="dynamic-label">Comentarios</label><input v-model="dynamicPpc.comentarios" class="dynamic-input"></div>
+             </div>
+             <div class="mt-4 text-end"><button class="btn btn-lg fw-bold px-5 text-white" style="background:#e83e8c; border:none;" @click="saveDynamicPPC" :disabled="isSubmitting"><i class="fas fa-save me-2"></i> GUARDAR</button></div>
+          </div>
+        </div>
+
+        <div v-if="currentView === 'INFO_BANK'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex align-items-center">
+                    <h4 class="fw-bold m-0 text-info"><i class="fas fa-database me-2"></i>BANCO DE INFORMACION {{ infoBankState.selectedYear || '' }}</h4>
+                    <nav aria-label="breadcrumb" class="ms-4" v-if="infoBankState.view !== 'YEARS'">
+                        <ol class="breadcrumb m-0">
+                             <li class="breadcrumb-item" v-if="infoBankState.view !== 'YEARS'"><a href="#" @click.prevent="resetInfoBank">Año {{ infoBankState.selectedYear }}</a></li>
+                             <li class="breadcrumb-item" v-if="infoBankState.selectedMonth && infoBankState.view !== 'MONTHS'"><a href="#" @click.prevent="infoBankState.view = 'COMPANIES'">{{infoBankState.selectedMonth}}</a></li>
+                             <li class="breadcrumb-item active" v-if="infoBankState.selectedCompany">{{infoBankState.selectedCompany}}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+            </div>
+
+            <!-- VIEW: YEARS -->
+            <div v-if="infoBankState.view === 'YEARS'" class="animate__animated animate__fadeIn">
+                 <h5 class="fw-bold text-secondary mb-3">Selecciona el Año</h5>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="y in ibYears" :key="y">
+                         <div class="card shadow-sm border-0 h-100 btn-month" style="cursor:pointer; transition:all 0.2s;" @click="selectIbYear(y)" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                             <div class="card-body text-center py-4 bg-white rounded">
+                                 <h5 class="fw-bold m-0 text-primary">{{y}}</h5>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: MONTHS -->
+            <div v-if="infoBankState.view === 'MONTHS'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">Selecciona el Mes - {{ infoBankState.selectedYear }}</h5>
+                 </div>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="m in ibMonths" :key="m">
+                         <div class="card shadow-sm border-0 h-100 btn-month" style="cursor:pointer; transition:all 0.2s;" @click="selectIbMonth(m)" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                             <div class="card-body text-center py-4 bg-white rounded">
+                                 <h5 class="fw-bold m-0 text-primary">{{m}}</h5>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: COMPANIES -->
+            <div v-if="infoBankState.view === 'COMPANIES'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">Empresas - {{infoBankState.selectedMonth}} {{ infoBankState.selectedYear }}</h5>
+                 </div>
+                 <div class="row g-2">
+                     <div class="col-12 col-md-6 col-lg-4" v-for="c in filteredIbCompanies" :key="c">
+                         <div class="list-group-item list-group-item-action border rounded shadow-sm p-3 d-flex align-items-center justify-content-between" style="cursor:pointer; background:white;" @click="selectIbCompany(c)">
+                             <span class="fw-bold text-dark">{{c}}</span>
+                             <i class="fas fa-chevron-right text-muted"></i>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: FOLDERS -->
+            <div v-if="infoBankState.view === 'FOLDERS'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">{{infoBankState.selectedCompany}} - Carpetas</h5>
+                 </div>
+                 <div class="row g-3">
+                     <div class="col-6 col-md-4 col-lg-3" v-for="f in ibFolders" :key="f.name">
+                         <div class="card shadow-sm border-0 h-100 text-center" style="cursor:pointer; transition:all 0.2s;" @click="openIbFolder(f)" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                             <div class="card-body d-flex flex-column align-items-center justify-content-center py-4 bg-white rounded">
+                                 <i class="fas fa-3x mb-3" :class="f.icon" :style="{color: f.color}"></i>
+                                 <h6 class="fw-bold text-dark m-0">{{f.name}}</h6>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+
+            <!-- VIEW: FILES -->
+            <div v-if="infoBankState.view === 'FILES'" class="animate__animated animate__fadeIn">
+                 <div class="d-flex align-items-center mb-3">
+                     <button class="btn btn-light btn-sm border me-3" @click="goBackInfoBank"><i class="fas fa-arrow-left"></i> Volver</button>
+                     <h5 class="fw-bold text-secondary m-0">{{infoBankState.selectedCompany}} / {{infoBankState.selectedFolder}}</h5>
+                 </div>
+
+                 <div v-if="infoBankState.isLoading" class="text-center p-5">
+                      <div class="spinner-border text-primary mb-2" role="status"></div>
+                      <div class="text-muted small">Buscando archivos en Base de Datos...</div>
+                 </div>
+                 <div v-else-if="infoBankState.files.length === 0" class="text-center p-5 bg-white border rounded shadow-sm">
+                      <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                      <p class="text-muted fw-bold">No se encontraron registros para este mes y cliente.</p>
+                 </div>
+                 <div v-else class="card border-0 shadow-sm">
+                     <div class="card-body p-0">
+                         <div class="table-responsive">
+                             <table class="table table-hover mb-0 align-middle">
+                                 <thead class="table-light small text-uppercase">
+                                     <tr>
+                                         <th style="min-width:90px">FECHA INICIO</th>
+                                         <th style="min-width:100px">AREA</th>
+                                         <th>CONCEPTO</th>
+                                         <th style="min-width:120px">VENDEDOR</th>
+                                         <th class="text-center" style="min-width:100px">ESTATUS</th>
+                                     </tr>
+                                 </thead>
+                                 <tbody class="info-bank-list">
+                                     <tr v-for="(file, idx) in infoBankState.files" :key="idx" class="info-bank-row" style="opacity:0">
+                                         <td style="font-size:12px; font-weight:bold;">{{ formatDisplayDate(file.FECHA_INICIO) }}</td>
+                                         <td style="font-size:11px;"><span class="badge bg-light text-secondary border">{{ file.AREA || 'N/A' }}</span></td>
+                                         <td style="font-size:12px;">
+                                             <div class="fw-bold text-dark">{{ file.CONCEPTO || 'Sin Descripción' }}</div>
+                                             <div class="small text-muted d-flex align-items-center gap-2">
+                                                 <span>{{ file.FOLIO }}</span>
+                                                 <a v-if="file.COTIZACION" :href="file.COTIZACION" target="_blank" class="text-primary text-decoration-none fw-bold" style="font-size:10px;">
+                                                     <i class="fas fa-paperclip me-1"></i>VER ARCHIVO
+                                                 </a>
+                                             </div>
+                                         </td>
+                                         <td style="font-size:11px;">
+                                             <div class="d-flex align-items-center">
+                                                 <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-2" style="width:20px; height:20px; font-size:9px;">
+                                                     {{ toInitials(file.VENDEDOR) }}
+                                                 </div>
+                                                 <span class="text-truncate" style="max-width:120px;">{{ file.VENDEDOR }}</span>
+                                             </div>
+                                         </td>
+                                         <td class="text-center">
+                                             <span class="badge" :class="getBadgeClass(file.ESTATUS)">{{ file.ESTATUS || 'N/A' }}</span>
+                                         </td>
+                                     </tr>
+                                 </tbody>
+                             </table>
+                         </div>
+                     </div>
+                 </div>
+            </div>
+        </div>
+
+        <div v-if="currentView === 'DIRECTORY_VIEW'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px; overflow-y:auto;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="fw-bold m-0 text-dark"><i class="fas fa-address-book me-2 text-success"></i>DIRECTORIO DE EMPLEADOS</h4>
+                <div>
+                    <button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openNewEmployeeModal"><i class="fas fa-user-plus me-1"></i> NUEVO EMPLEADO</button>
+                    <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Departamento</th>
+                                    <th>Perfil de Hoja</th>
+                                    <th class="text-end">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="emp in (config.directory || [])" :key="emp.name">
+                                    <td class="fw-bold">{{ emp.name }}</td>
+                                    <td><span class="badge bg-light text-dark border">{{ emp.dept }}</span></td>
+                                    <td>
+                                        <span v-if="emp.type === 'HIBRIDO'" class="badge bg-primary">Híbrido (2 Hojas)</span>
+                                        <span v-else-if="emp.type === 'VENTAS'" class="badge bg-info text-dark">Ventas</span>
+                                        <span v-else class="badge bg-secondary">Estándar (Operativo)</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-outline-danger border-0" @click="deleteEmployee(emp.name)" title="Eliminar del Directorio">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+                <div v-if="currentView === 'WORKORDER_FORM'" class="h-100 d-flex flex-column" style="overflow-y:auto;">
+            <div class="p-4" style="max-width: 1400px; margin: 0 auto; width: 100%;">
+                <!-- NOMBRE DE COTIZADOR TOP -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-3">
+                         <label class="small text-muted fw-bold mb-1">Nombre de cotizador</label>
+                         <div class="position-relative">
+                             <div class="input-group input-group-sm" @click="cotizadorSearchTop = ''">
+                                 <span class="input-group-text bg-light"><i class="fas fa-user-tie text-muted"></i></span>
+                                 <input v-model="cotizadorSearchTop" class="form-control" placeholder="Buscar..." @focus="cotizadorSearchTop = ''">
+                             </div>
+                             <ul class="list-group position-absolute w-100 shadow-sm" style="z-index: 1000; max-height: 200px; overflow-y: auto;" v-if="cotizadorSearchTop">
+                                 <li v-for="p in filteredCotizadoresTop" :key="p.name" class="list-group-item list-group-item-action small py-1" style="cursor: pointer;" @click="addCotizadorTop(p.name)">
+                                     {{ p.name }}
+                                 </li>
+                             </ul>
+                             <div class="d-flex flex-wrap gap-1 mt-2">
+                                 <span v-for="(c, i) in workorderData.cotizador" :key="i" class="badge bg-light text-dark border d-flex align-items-center">
+                                     {{ c }} <i class="fas fa-times ms-2 text-danger" style="cursor: pointer;" @click="removeCotizador(i)"></i>
+                                 </span>
+                             </div>
+                         </div>
+
+                         <div class="mt-3">
+                             <label class="small text-muted fw-bold mb-1">COTIZACION PRELIMINAR:</label>
+                             <input v-model="vehicleControlData.cotizacion" class="form-control text-danger fw-bold" placeholder="Ej: Cuarto de Metrología...">
+                         </div>
+                    </div>
+                </div>
+
+                <!-- CHECKLIST VISITA -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #dc3545 !important; cursor: pointer;" @click="sectionVisibility.checklist = !sectionVisibility.checklist">
+                         <h6 class="fw-bold mb-0 text-danger"><i class="fas fa-clipboard-check me-2"></i>Check list</h6>
+                         <button class="btn btn-sm btn-link text-danger"><i class="fas" :class="sectionVisibility.checklist ? 'fa-chevron-up' : 'fa-chevron-down'"></i></button>
+                    </div>
+                    <div class="card-body" v-show="sectionVisibility.checklist">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.libreta"><label class="form-check-label">Libreta</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.cinta"><label class="form-check-label">Cinta de Medir</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.bernier"><label class="form-check-label">Bernier</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.chaleco"><label class="form-check-label">Chaleco Color x cliente</label></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.laser"><label class="form-check-label">Laser de Medición</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.epp"><label class="form-check-label">EPP</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.casco"><label class="form-check-label">Casco</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.credencial"><label class="form-check-label">Credencial</label></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.zapato"><label class="form-check-label">Zapato</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.sua"><label class="form-check-label">SUA</label></div>
+                                <div class="form-check"><input class="form-check-input" type="checkbox" v-model="workorderData.checkList.lentes"><label class="form-check-label">Lentes</label></div>
+                                <div class="mt-2 text-primary small fst-italic">
+                                    realizar recordatorios al whatapp 1 hr antes o 2 hr antes al cotizador
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROTOTYPE SECTION (MOVED UP) -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center" style="cursor: pointer;" @click="sectionVisibility.vehiclePrototype = !sectionVisibility.vehiclePrototype">
+                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>PROTOTIPO: Control de Vehículo y Cotización <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click.stop="showLogic.vehicle = !showLogic.vehicle" title="Ver Lógica"></i></h6>
+                         <button class="btn btn-sm btn-link text-white"><i class="fas" :class="sectionVisibility.vehiclePrototype ? 'fa-chevron-up' : 'fa-chevron-down'"></i></button>
+                    </div>
+                    <div class="card-body" v-show="sectionVisibility.vehiclePrototype">
+                         <!-- Control Vehiculo Header -->
+                         <div class="bg-dark text-white p-2 fw-bold mb-3 small">
+                             Control de Vehículo, Tiempo de Cotización, Horarios, Gasolina, Cuidado de Vehículo, Evaluación Conducción
+                         </div>
+
+                         <div class="logic-card mb-3 position-relative" v-if="showLogic.vehicle">
+                             <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.vehicle = false"></button>
+                             <div class="logic-header"><span class="logic-icon"><i class="fas fa-rocket"></i></span> NUEVO A DESARROLLAR</div>
+                             <div class="logic-content">Lógica el control de los vehículo. Esto va generar un costo que se va ir a la integracion del costo de ir dando a un levantamiento, se requiere controlar los robos de partes, gasolina , tiempo perdidos y rendimientos , se generarian bonos por buen manejos ( Teoria de la Economia Conductual )</div>
+                         </div>
+
+                         <div class="row g-2">
+                             <div class="col-12 col-md-6">
+                                 <label class="small fw-bold text-muted">Chofer Holtmont</label>
+                                 <input v-model="vehicleControlData.chofer" class="form-control form-control-sm text-danger bg-light border-0" placeholder="HM 003 March 2023">
+                             </div>
+                             <div class="col-12 col-md-6">
+                                 <label class="small fw-bold text-muted">Vehículo Holtmont</label>
+                                 <input v-model="vehicleControlData.vehiculo" class="form-control form-control-sm text-danger bg-light border-0" placeholder="HM 003 March 2023">
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <label class="small fw-bold text-muted">Gasolina</label>
+                                 <input v-model="vehicleControlData.gasolina" class="form-control form-control-sm text-danger bg-light border-0" placeholder="20 lts">
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <label class="small fw-bold text-muted">Hora Salida (GPS)</label>
+                                 <input v-model="vehicleControlData.horaSalida" class="form-control form-control-sm text-danger bg-light border-0" placeholder="8:30am">
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <label class="small fw-bold text-muted">Hora Llegada (GPS)</label>
+                                 <input v-model="vehicleControlData.horaLlegada" class="form-control form-control-sm text-danger bg-light border-0" placeholder="9:20am">
+                             </div>
+
+                             <div class="col-12 col-md-6">
+                                 <label class="small fw-bold text-muted">Evaluación de Manejo</label>
+                                 <input v-model="vehicleControlData.evaluacion" class="form-control form-control-sm text-danger bg-light border-0" placeholder="Alertas por alta velocidad">
+                             </div>
+                             <div class="col-12 col-md-6">
+                                 <label class="small fw-bold text-muted">Multas</label>
+                                 <input v-model="vehicleControlData.multas" class="form-control form-control-sm text-danger bg-light border-0" placeholder="Asignación de Multa">
+                             </div>
+
+                             <div class="col-12 col-md-4">
+                                 <button class="btn btn-sm btn-outline-secondary w-100 h-100 py-2" @click="triggerUpload('VEHICULO_ODOMETRO')"><i class="fas fa-camera me-1"></i> FOTO ODOMETRO</button>
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <button class="btn btn-sm btn-outline-secondary w-100 h-100 py-2" @click="triggerUpload('VEHICULO_ANTES_GASOLINA')"><i class="fas fa-camera me-1"></i> ANTES GASOLINA</button>
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <button class="btn btn-sm btn-outline-secondary w-100 h-100 py-2" @click="triggerUpload('VEHICULO_DESPUES_GASOLINA')"><i class="fas fa-camera me-1"></i> DESPUES GASOLINA</button>
+                             </div>
+
+                             <div class="col-12">
+                                 <label class="small fw-bold text-muted">Verificación de Ruta</label>
+                                 <input v-model="vehicleControlData.ruta" class="form-control form-control-sm bg-light border-0" placeholder="de Oficina a Planta">
+                             </div>
+                             <div class="col-12">
+                                 <label class="small fw-bold text-muted">Verificación Vehículo</label>
+                                 <input v-model="vehicleControlData.verifVehiculo" class="form-control form-control-sm bg-light border-0" placeholder="con Video">
+                             </div>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- HEADER (MOVED DOWN) -->
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center px-4 py-3 mb-4 rounded gap-3" style="background: #1c1c1c; color: white;">
+                    <div class="d-flex align-items-center mb-2 mb-md-0">
+                        <img src="https://drive.google.com/thumbnail?id=1tmNuwauWNjOhv0JwX6ug9pzvsrBCNX7z&sz=w1000" style="height:40px; margin-right:15px; filter: brightness(0) invert(1);">
+                        <div>
+                            <h4 class="fw-bold m-0" style="font-family: 'Roboto', sans-serif;">Holtmont Services</h4>
+                            <small style="letter-spacing: 2px; opacity: 0.7;">PRE WORK ORDER</small>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-center justify-content-md-end gap-3 align-items-center">
+                        <!-- Folio Widget -->
+                        <div class="bg-dark rounded px-3 py-2 border border-secondary position-relative">
+                            <small class="d-block text-white" style="font-size: 10px;">FOLIO <i class="fas fa-info-circle text-info ms-1" title="Instr. El folio debe ayudar a identificar el trabajo, un número, el nombre del cliente, departamento días, mes y año"></i></small>
+                            <span class="fw-bold text-white">{{ currentWorkorderId || generatedFolio }}</span>
+                        </div>
+                        <!-- Date Widget -->
+                        <div class="bg-dark rounded px-3 py-2 border border-secondary">
+                            <small class="d-block text-white" style="font-size: 10px;">FECHA <i class="fas fa-info-circle text-info ms-1" title="En automático se pasa al folio"></i></small>
+                            <span class="fw-bold text-white">{{ new Date().toLocaleDateString() }}</span>
+                        </div>
+                        <!-- Delivery Date Widget -->
+                        <div class="bg-dark rounded px-3 py-2 border border-secondary">
+                            <small class="d-block text-white" style="font-size: 10px;">FECHA DE ENTREGA</small>
+                            <input type="date" v-model="workorderData.fechaEntrega" class="bg-transparent border-0 text-white p-0 fw-bold" style="font-size: 13px; width: 110px;">
+                        </div>
+                        <!-- Priority -->
+                        <select v-model="workorderData.prioridad" class="btn btn-success fw-bold border-0" :class="{'bg-danger': workorderData.prioridad.includes('Alta'), 'bg-warning text-dark': workorderData.prioridad.includes('Media')}">
+                            <option value="AAA - Alta Prioridad">AAA - Alta Prioridad</option>
+                            <option value="AA - Media Prioridad">AA - Media Prioridad</option>
+                            <option value="A - Baja Prioridad">A - Baja Prioridad</option>
+                        </select>
+                        <button class="btn btn-outline-secondary btn-sm ms-2" @click="goHome">Cerrar</button>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <!-- LEFT COL: CLIENT INFO -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-building me-2"></i>Información del Cliente</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Nombre de Cliente</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-industry text-muted"></i></span>
+                                            <input v-model="workorderData.cliente" class="form-control" placeholder="Ej: Corning Optical...">
+                                        </div>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.client = !showInstr.client" :class="{'text-info': showInstr.client}" title="Ver Instrucción"></i>
+                                            <small v-if="showInstr.client" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: en automatico se va al folio</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Número de Proyecto Cliente o RFQ</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-hashtag text-muted"></i></span>
+                                            <input v-model="workorderData.proyecto" class="form-control" placeholder="RFQ-XXXXX">
+                                        </div>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.rfq = !showInstr.rfq" :class="{'text-info': showInstr.rfq}" title="Ver Instrucción"></i>
+                                            <small v-if="showInstr.rfq" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: sirve para la comunicación con el cliente con su RFQ para que lo identifique el cliente</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Fecha de Entrega de Cotización</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-calendar-alt text-muted"></i></span>
+                                            <input type="date" v-model="workorderData.fechaCotizacion" class="form-control">
+                                        </div>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.date = !showInstr.date" :class="{'text-info': showInstr.date}" title="Ver Instrucción"></i>
+                                            <small v-if="showInstr.date" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: se iria a sistema de Cotizaciones en automático</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Requisitor</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-user-tie text-muted"></i></span>
+                                            <input v-model="workorderData.newRequisitor" class="form-control" placeholder="Nombre requisitor">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Contacto</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-user text-muted"></i></span>
+                                            <input v-model="workorderData.contactName" class="form-control" placeholder="Nombre contacto">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-muted fw-bold mb-1">Correo Electrónico</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-envelope text-muted"></i></span>
+                                            <input v-model="workorderData.contacto" class="form-control" placeholder="email@empresa.com">
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="small text-muted fw-bold mb-1">Teléfono</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-phone text-muted"></i></span>
+                                            <input v-model="workorderData.celular" class="form-control" placeholder="+52 ...">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COL: WORK TYPE -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-tools me-2"></i>Tipo de Trabajo <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.workType = !showLogic.workType" title="Ver Lógica"></i></h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="logic-card mb-3 position-relative" v-if="showLogic.workType">
+                                    <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.workType = false"></button>
+                                    <div class="logic-header"><span class="logic-icon"><i class="fas fa-lightbulb"></i></span> LÓGICA</div>
+                                    <div class="logic-content">Tener una clasificación con un poco de mayor variedad para que se pueda clasificar el tipo de trabajo, se requiere de una reunión con las áreas convocada por el ing Olivo para que se defina.</div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <button v-for="type in workorderTypes" :key="type"
+                                        class="btn btn-sm fw-bold px-3"
+                                        :class="workorderData.tipoTrabajo === type ? 'btn-primary' : 'btn-light text-muted border'"
+                                        @click="workorderData.tipoTrabajo = type">
+                                        <i class="fas fa-check me-1" v-if="workorderData.tipoTrabajo === type"></i> {{ type }}
+                                    </button>
+                                </div>
+
+                                <h6 class="fw-bold text-primary mb-2 small"><i class="fas fa-building me-2"></i>Departamento / Área (Folio)</h6>
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.dept = !showInstr.dept" :class="{'text-info': showInstr.dept}" title="Ver Instrucción"></i>
+                                    <small v-if="showInstr.dept" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr 1: se agregaria al folio automático / Instr 2: se requiere en base datos dar alta los departamento de holtmont para ayudar en la captura</small>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <button v-for="(dept, key) in (config.allDepartments || config.departments)" :key="key"
+                                        class="btn btn-sm fw-bold px-3"
+                                        :class="workorderData.departamento === key ? 'btn-success' : 'btn-light text-muted border'"
+                                        @click="workorderData.departamento = key">
+                                        <i class="fas fa-check me-1" v-if="workorderData.departamento === key"></i> {{ dept.label }}
+                                    </button>
+                                </div>
+
+                                <hr class="border-light my-3">
+
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="small text-muted fw-bold mb-1">Elaboró (Responsable Interno)</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light"><i class="fas fa-user-tag text-muted"></i></span>
+                                            <div class="form-control p-1 d-flex align-items-center flex-wrap gap-1" style="min-height: 31px; height: auto;" @click="$refs.cotizadorInput.focus()">
+                                                <span v-for="(name, idx) in workorderData.cotizador" :key="idx" class="user-chip">
+                                                    {{ name }} <i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="removeCotizador(idx)"></i>
+                                                </span>
+                                                <input ref="cotizadorInput" v-model="cotizadorSearch" placeholder="Buscar..." style="border:none; outline:none; background:transparent; font-size: 0.8rem; flex: 1; min-width: 60px;">
+                                            </div>
+                                        </div>
+                                        <ul class="list-group position-absolute shadow" style="z-index:100; max-height:200px; overflow:auto; width: 90%; margin-top: 2px;" v-if="cotizadorSearch && filteredCotizadores.length">
+                                            <li v-for="p in filteredCotizadores" :key="p.name" class="list-group-item list-group-item-action small py-1" style="cursor:pointer;" @click="addCotizador(p.name)">
+                                                {{p.name}}
+                                            </li>
+                                        </ul>
+                                        <div class="d-flex align-items-center mt-1">
+                                            <i class="fas fa-info-circle text-muted" style="cursor:pointer" @click="showInstr.resp = !showInstr.resp" :class="{'text-info': showInstr.resp}" title="Ver Instrucción"></i>
+                                            <small v-if="showInstr.resp" class="logic-inline ms-2 my-0 animate__animated animate__fadeIn">Instr: se iria al traker automático / Instr 2: se requiere en base datos dar alta las personas que van a cotizar de holtmont para ayudar en la captura</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="small text-muted fw-bold mb-1">Tiempo Estimado</label>
+                                        <input v-model="workorderData.tiempoEstimado" class="form-control form-control-sm" placeholder="Ej: 2 semanas">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOTTOM: DESCRIPTION & MEDIA -->
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                                <h6 class="fw-bold text-primary mb-0"><i class="fas fa-align-left me-2"></i>Descripción del Trabajo a Realizar</h6>
+                                <button v-if="!showWorkOrderLogic" @click="showWorkOrderLogic = true" class="btn btn-sm btn-outline-info" title="Mostrar Ayuda"><i class="fas fa-info-circle"></i></button>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-4">
+                                    <div :class="showWorkOrderLogic ? 'col-md-8' : 'col-12'">
+                                         <div class="position-relative h-100">
+                                            <textarea id="campoConcepto" v-model="workorderData.conceptoDesc" class="form-control border-0 bg-light p-3 h-100" rows="8" placeholder="Describe el trabajo a realizar..." style="resize: none;"></textarea>
+
+                                            <!-- INPUT OCULTO PARA GEMINI -->
+                                            <input type="file" id="audioInputGemini" accept="audio/*" capture class="d-none" onchange="enviarAudioAGemini(this)">
+
+                                            <button
+                                                class="btn btn-primary position-absolute bottom-0 end-0 m-4 rounded-circle shadow d-flex align-items-center justify-content-center"
+                                                style="width: 50px; height: 50px; transition: all 0.3s ease;"
+                                                onclick="document.getElementById('campoConcepto').focus()"
+                                                title="Dictar voz a texto">
+
+                                                <i class="fas fa-microphone" style="font-size: 1.2rem;"></i>
+                                            </button>
+                                         </div>
+                                    </div>
+                                    <div class="col-md-4" v-if="showWorkOrderLogic">
+                                        <div class="logic-card h-100 position-relative fade show">
+                                            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showWorkOrderLogic = false"></button>
+                                    <div class="logic-header"><span class="logic-icon"><i class="fas fa-info"></i></span> LÓGICA: CAPTURA DE DESCRIPCIÓN</div>
+                                            <div class="logic-content text-justify">
+                                                Este punto es el más crítico al momento de realizar una cotización, ya que en los recorridos con el cliente son muy cortos, y uno no alcanza a escribir porque va caminando para proyectos A y AA, por lo que se requiere el poder capturar el mayor número de detalles que el cliente menciona así como la confidencialidad de observaciones que el cotizador de Holtmont alcanza a ver y se requiere que la competencia no se entere. Por ello el requerimiento de la diadema y de poder cuestionar puntos.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Multimedia Section (Merged) -->
+                                <div class="mb-4">
+                                    <h6 class="small fw-bold text-muted mb-2">Archivos Multimedia</h6>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-outline-secondary btn-sm border-dashed" @click="openFileDialog">
+                                            <i class="fas" :class="uploadSuccess ? 'fa-check text-success' : 'fa-cloud-upload-alt'"></i> {{ uploadSuccess ? 'Archivo Cargado' : 'Subir Archivos' }}
+                                        </button>
+                                        <input type="file" ref="fileInput" class="file-input-hidden" accept="*" @change="handleFileSelect">
+                                    </div>
+                                </div>
+
+                                <hr class="border-light my-4">
+
+                                <!-- RESTRICCIONES Section (Merged) -->
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="fw-bold mb-0 text-danger text-uppercase">RESTRICCIONES <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.restrictions = !showLogic.restrictions" title="Ver Lógica"></i></h6>
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-12" v-if="showLogic.restrictions">
+                                            <div class="logic-card mt-2 position-relative">
+                                                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.restrictions = false"></button>
+                                                <div class="logic-header"><span class="logic-icon"><i class="fas fa-exclamation-triangle"></i></span> LÓGICA DE RESTRICCIONES</div>
+                                                <div class="logic-content">Se requiere que el cotizador pueda tener una guía rápida que le permita preguntar al cliente puntos clave que afectan el costo de la cotización.</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="small fw-bold text-muted">Producción</label>
+                                            <input v-model="workorderData.restricciones.produccion" class="form-control" placeholder="Restricciones de producción...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-muted">Seguridad</label>
+                                            <input v-model="workorderData.restricciones.seguridad" class="form-control" placeholder="Ej: permiso de chispa, trabajo en altura, espacios confinados...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-muted">Dificultad</label>
+                                            <input v-model="workorderData.restricciones.dificultad" class="form-control" placeholder="Ej: espacios reducidos, maquinaria, químicos...">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-muted">Horarios</label>
+                                            <input v-model="workorderData.restricciones.horarios" class="form-control" placeholder="Ej: nocturnos o fines de semana">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="small fw-bold text-muted">Especificidad Trabajo</label>
+                                            <input v-model="workorderData.restricciones.especificidad" class="form-control" placeholder="Detalles específicos...">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. DIBUJOS PLANOS Y DIAGRAMAS (DOCUMENTACION BUTTONS - REORDERED #7) -->
+                <div class="col-12 mt-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0"><i class="fas fa-camera me-2"></i>DIBUJOS PLANOS Y DIAGRAMAS (DOCUMENTACIÓN) <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.docs = !showLogic.docs" title="Ver Lógica"></i></h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="logic-card mb-3 position-relative" v-if="showLogic.docs">
+                                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.docs = false"></button>
+                                <div class="logic-header"><span class="logic-icon"><i class="fas fa-mouse-pointer"></i></span> LÓGICA DE BOTONES</div>
+                                <div class="logic-content">Se requiere que los cotizadores puedan de forma ordenada capturar foto ordenadas con una Tablet, videos, también que puedan rallar la fotos para tomar notas muy visuales así como también puedan hacer layout dibujado digital, así como también archivar planos y los alcances del proyecto.</div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-3">
+                                <button class="btn btn-outline-dark" @click="triggerUpload('FOTOS')"><i class="fas fa-camera me-2"></i>FOTOS</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('VIDEOS')"><i class="fas fa-video me-2"></i>VIDEOS</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('LAYOUT')"><i class="fas fa-pencil-ruler me-2"></i>LAYOUT / DIBUJO</button>
+                                <button class="btn btn-outline-dark" @click="triggerUpload('PLANOS')"><i class="fas fa-map me-2"></i>PLANOS</button>
+
+                                <div class="vr mx-2"></div>
+
+                                <div class="d-flex flex-column align-items-center">
+                                    <a href="https://chat.openai.com" target="_blank" class="btn btn-success text-white"><i class="fas fa-robot me-2"></i>CHAT GPT</a>
+                                    <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.chatgpt = !showInstr.chatgpt" title="Ver Lógica"></i>
+                                    <small v-if="showInstr.chatgpt" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: que nos ayude a realizar una minuta del levantamiento y que nos de un orden en lo que capturamos. Que ayude al texto y que ayude a poner cosas que no alcanzamos a ver.</small>
+                                </div>
+                                <div class="d-flex flex-column align-items-center">
+                                    <button class="btn btn-secondary" disabled title="Próximamente"><i class="fas fa-brain me-2"></i>RED NEURONAL HOLTMONT</button>
+                                    <i class="fas fa-lightbulb text-warning mt-2" style="cursor:pointer" @click="showInstr.neural = !showInstr.neural" title="Ver Lógica"></i>
+                                    <small v-if="showInstr.neural" class="logic-inline mt-1 animate__animated animate__fadeIn" style="max-width: 200px;"><i class="fas fa-lightbulb me-1"></i> Lógica: utilizar nuestro historial de prework order para facilitar preguntas para el levantamiento así como el desarrollo de conceptos.</small>
+                                </div>
+                            </div>
+                            <div v-if="workorderData.files && workorderData.files.length" class="mt-3">
+                                <h6 class="small fw-bold text-muted">Archivos Adjuntos:</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div v-for="(f, i) in workorderData.files" :key="i" class="badge bg-light text-dark border p-2">
+                                        <i class="fas fa-paperclip me-1"></i> {{ f }}
+                                        <i class="fas fa-times text-danger ms-2" style="cursor:pointer" @click="workorderData.files.splice(i,1)"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROGRAMA DEL PROYECTO (PROGRAMACION) - Order #5 -->
+                <div class="card border-0 shadow-sm mt-5">
+                    <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
+                        <h6 class="fw-bold mb-0" style="color: #4a148c;">PROGRAMA DEL PROYECTO</h6>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="small fw-bold text-muted">Tiempo Estimado:</span>
+                            <input type="number" v-model="projectProgram.timeEstimated" class="form-control form-control-sm text-center" style="width: 60px;">
+                            <select v-model="projectProgram.timeUnit" class="form-select form-select-sm" style="width: 90px;">
+                                <option value="dias">días</option>
+                                <option value="horas">horas</option>
+                                <option value="semanas">sem</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body bg-light p-3">
+                        <!-- 1. VISITA -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-primary pb-1">
+                                <span class="fw-bold text-primary small text-uppercase">1. VISITA</span>
+                                <button class="btn btn-primary btn-sm py-0 px-2 fw-bold" style="font-size: 10px;" @click="addProjectItem('visita')"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div v-for="(item, idx) in projectProgram.visita" :key="idx" class="card mb-2 border-0 shadow-sm bg-white">
+                                <div class="card-body p-2">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-12 col-md-5 d-flex align-items-center gap-2">
+                                            <span class="fw-bold text-muted small" style="width: 15px;">{{ idx + 1 }}.</span>
+                                            <input v-model="item.description" class="form-control form-control-sm" placeholder="Descripción de Visita">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <input type="date" v-model="item.date" class="form-control form-control-sm w-100">
+                                        </div>
+                                        <div class="col-6 col-md-3">
+                                            <div style="position:relative; width: 100%;">
+                                                <div class="form-control form-control-sm text-truncate" style="cursor:pointer;" @click="openRespDropdown('visita'+idx, item)">{{ Array.isArray(item.responsable) ? (item.responsable.length ? item.responsable.join(', ') : 'Resp...') : (item.responsable || 'Resp...') }}</div>
+                                                <div v-if="projectRespDropdownOpen === ('visita'+idx)" class="position-absolute bg-white border shadow rounded p-2" style="z-index: 1000; width: 100%; min-width: 200px; max-height: 200px; overflow-y: auto;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1"><small class="fw-bold">Seleccionar:</small><button class="btn btn-sm btn-link p-0 text-secondary" @click.stop="projectRespDropdownOpen = null"><i class="fas fa-times"></i></button></div>
+                                                    <div v-for="p in (config.directory || config.staff)" :key="p.name" class="d-flex align-items-center p-1 rounded hover-bg-light" style="cursor:pointer;" @click.stop="toggleProjectResponsable(item, p.name)">
+                                                        <div class="form-check m-0"><input class="form-check-input" type="checkbox" :checked="item.responsable.includes(p.name)" style="pointer-events: none;"><label class="form-check-label small ms-2" style="cursor:pointer;">{{ p.name }}</label></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 col-md-1 text-end text-md-center">
+                                            <button class="btn btn-outline-danger btn-sm border-0" @click="removeProjectItem('visita', idx)"><i class="fas fa-trash-alt"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. REQUERIMIENTO PARA COTIZACION -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-dark pb-1" style="background: #ffffcc;">
+                                <span class="fw-bold text-dark small text-uppercase ps-2">2. Requerimiento para Cotización</span>
+                                <span class="fw-bold text-dark pe-2 small">Total: {{ formatCurrency(reqCotizacionTotal) }}</span>
+                            </div>
+                            <div v-for="(item, idx) in projectProgram.reqCotizacion" :key="idx" class="card mb-1 border-0 border-bottom bg-white" :style="{opacity: item.isActive ? 1 : 0.6}">
+                                <div class="card-body p-1">
+                                    <div class="row g-1 align-items-center">
+                                        <div class="col-12 col-lg-5 d-flex align-items-center gap-2">
+                                             <div class="d-flex gap-1" style="min-width: 60px;">
+                                                 <i class="fas fa-check-square fa-lg cursor-pointer" :class="item.checkStatus === 'APPLY' ? 'text-success' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'APPLY')"></i>
+                                                 <i class="fas fa-window-close fa-lg cursor-pointer" :class="item.checkStatus === 'NO_APPLY' ? 'text-danger' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'NO_APPLY')"></i>
+                                                 <i class="fas fa-microphone fa-lg cursor-pointer text-primary opacity-75 ms-1" @click="focusReqInput('req-desc-' + idx)" title="Dictar"></i>
+                                             </div>
+                                             <input :id="'req-desc-' + idx" v-model="item.description" @input="syncReqToMat(idx, item.description)" class="form-control form-control-sm border-0 bg-transparent fw-bold" style="font-size: 12px;">
+                                        </div>
+
+                                        <template v-if="item.isActive">
+                                            <div class="col-4 col-md-2 col-lg-2">
+                                                 <div class="input-group input-group-sm">
+                                                     <input type="number" v-model="item.duration" class="form-control px-1 text-center" placeholder="T" style="font-size: 11px;">
+                                                     <select v-model="item.durationUnit" class="form-select px-0 text-center" style="font-size: 10px;">
+                                                         <option value="dias">Días</option>
+                                                         <option value="horas">Hrs</option>
+                                                         <option value="semanas">Sem</option>
+                                                     </select>
+                                                 </div>
+                                            </div>
+                                            <div class="col-2 col-md-1 col-lg-1">
+                                                <input v-model="item.unit" class="form-control form-control-sm px-0 text-center" placeholder="Und" style="font-size: 11px;">
+                                            </div>
+                                            <div class="col-2 col-md-1 col-lg-1">
+                                                <input type="number" v-model="item.quantity" @input="updateProjectRowTotal(item)" class="form-control form-control-sm px-0 text-center" placeholder="Cant" style="font-size: 11px;">
+                                            </div>
+                                            <div class="col-2 col-md-1 col-lg-1">
+                                                <input type="number" v-model="item.price" @input="updateProjectRowTotal(item)" class="form-control form-control-sm px-0 text-center" placeholder="P.U." style="font-size: 11px;">
+                                            </div>
+                                            <div class="col-2 col-md-1 col-lg-1">
+                                                <input v-model="item.total" class="form-control form-control-sm px-0 text-end fw-bold text-success bg-light" placeholder="Total" style="font-size: 11px;" readonly>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. COTIZACION PRECONSTRUCCION -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-dark pb-1" style="background: #ffffcc;">
+                                <span class="fw-bold text-dark small text-uppercase ps-2">3. Cotización Preconstrucción</span>
+                                <span class="fw-bold text-dark pe-2 small">Total: {{ formatCurrency(cotPreconstruccionTotal) }}</span>
+                            </div>
+                            <div v-for="(item, idx) in projectProgram.cotPreconstruccion" :key="idx" class="card mb-1 border-0 border-bottom bg-white" :style="{opacity: item.isActive ? 1 : 0.6}">
+                                <div class="card-body p-1">
+                                    <div class="row g-2 align-items-center">
+                                        <div class="col-12 col-md-6 d-flex align-items-center gap-2">
+                                             <div class="d-flex gap-2" style="min-width: 50px;">
+                                                 <i class="fas fa-check-square fa-lg cursor-pointer" :class="item.checkStatus === 'APPLY' ? 'text-success' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'APPLY')"></i>
+                                                 <i class="fas fa-window-close fa-lg cursor-pointer" :class="item.checkStatus === 'NO_APPLY' ? 'text-danger' : 'text-muted opacity-50'" @click="setCheckStatus(item, 'NO_APPLY')"></i>
+                                             </div>
+                                             <input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent fw-bold" style="font-size: 12px;">
+                                        </div>
+                                        <div class="col-8 col-md-4">
+                                            <div style="position:relative; width: 100%;">
+                                                <div class="form-control form-control-sm p-1 text-center text-truncate" style="font-size: 10px; cursor:pointer; height: 28px;" @click="openRespDropdown('pre'+idx, item)">{{ Array.isArray(item.responsable) ? (item.responsable.length ? item.responsable[0].substring(0,8)+'...' : '-') : (item.responsable || '-') }}</div>
+                                                <div v-if="projectRespDropdownOpen === ('pre'+idx)" class="position-absolute bg-white border shadow rounded p-2" style="z-index: 1000; width: 250px; max-height: 200px; overflow-y: auto; right: 0;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1"><small class="fw-bold">Resp:</small><button class="btn btn-sm btn-link p-0 text-secondary" @click.stop="projectRespDropdownOpen = null"><i class="fas fa-times"></i></button></div>
+                                                    <div v-for="p in (config.directory || config.staff)" :key="p.name" class="d-flex align-items-center p-1 rounded hover-bg-light" style="cursor:pointer;" @click.stop="toggleProjectResponsable(item, p.name)">
+                                                        <div class="form-check m-0"><input class="form-check-input" type="checkbox" :checked="item.responsable.includes(p.name)" style="pointer-events: none;"><label class="form-check-label small ms-2" style="cursor:pointer;">{{ p.name }}</label></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4 col-md-2">
+                                            <input type="number" v-model="item.price" @input="updateProjectRowTotal(item)" class="form-control form-control-sm text-end" placeholder="$ Cost" style="font-size: 11px;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. COTIZACION TRABAJO (CON BUBBLES) -->
+                        <div class="mb-4">
+                            <!-- RESUMEN DE COTIZACIÓN (TIEMPO REAL) -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-dark text-white border-0 py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="fw-bold m-0 text-warning"><i class="fas fa-calculator me-2"></i>RESUMEN DE COTIZACIÓN (TIEMPO REAL)</h6>
+                                    <span class="badge bg-warning text-dark fs-6">{{ formatCurrency(dashboardSubtotal) }}</span>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-striped table-hover mb-0 small">
+                                        <tbody>
+                                            <tr><td class="fw-bold">MATERIALES REQUERIDOS</td><td class="text-end fw-bold">{{ formatCurrency(materialsTotal) }}</td></tr>
+                                            <tr><td class="fw-bold">HERRAMIENTAS REQUERIDAS</td><td class="text-end fw-bold">{{ formatCurrency(toolsTotal) }}</td></tr>
+                                            <tr><td class="fw-bold">MANO DE OBRA</td><td class="text-end fw-bold">{{ formatCurrency(laborTableTotal) }}</td></tr>
+                                            <tr><td class="fw-bold">EQUIPOS ESPECIALES Y ACCESORIOS</td><td class="text-end fw-bold">{{ formatCurrency(specialEquipTotal) }}</td></tr>
+                                            <tr><td class="fw-bold">INSUMOS</td><td class="text-end fw-bold">{{ formatCurrency(additionalCosts.insumos) }}</td></tr>
+                                            <tr><td class="fw-bold">VIÁTICOS</td><td class="text-end fw-bold">{{ formatCurrency(additionalCosts.viaticos) }}</td></tr>
+                                            <tr><td class="fw-bold">TRANSPORTE DE EQUIPO Y PERSONAL</td><td class="text-end fw-bold">{{ formatCurrency(additionalCosts.transporte) }}</td></tr>
+                                            <tr><td class="fw-bold">PRECIO Y DESCRIPCION (Conceptos Previos)</td><td class="text-end fw-bold">{{ formatCurrency(reqCotizacionTotal + cotPreconstruccionTotal) }}</td></tr>
+                                            <tr class="table-dark"><td class="fw-bold text-uppercase text-end">GRAN TOTAL</td><td class="text-end fw-bold text-warning fs-6">{{ formatCurrency(dashboardSubtotal) }}</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-2 border-bottom border-danger pb-1">
+                                <span class="fw-bold text-danger small text-uppercase">Detalle de Actividades (Recursos)</span>
+                                <button class="btn btn-danger btn-sm py-0 px-2 fw-bold" style="font-size: 10px;" @click="addProjectItem('cotTrabajo')"><i class="fas fa-plus"></i></button>
+                            </div>
+                            <div v-for="(item, idx) in projectProgram.cotTrabajo" :key="item.id || idx" class="card mb-2 border shadow-sm" style="border-left: 3px solid #dc3545 !important;">
+                                <div class="card-body p-2">
+                                    <div class="row g-2 align-items-center">
+                                        <!-- Buttons (Resources) -->
+                                        <div class="col-12 col-lg-2 d-flex flex-wrap gap-1">
+                                            <button class="btn btn-sm btn-primary rounded-pill py-0 px-2 flex-fill" style="font-size: 10px;" @click="openResourcePopup(item); currentResourceTab='MANO_OBRA'">MO</button>
+                                            <button class="btn btn-sm btn-info text-white rounded-pill py-0 px-2 flex-fill" style="font-size: 10px;" @click="openResourcePopup(item); currentResourceTab='HERRAMIENTAS'">Her</button>
+                                            <button class="btn btn-sm btn-success rounded-pill py-0 px-2 flex-fill" style="font-size: 10px;" @click="openResourcePopup(item); currentResourceTab='MATERIALES'">Mat</button>
+                                            <button class="btn btn-sm btn-warning text-dark rounded-pill py-0 px-2 flex-fill" style="font-size: 10px;" @click="openResourcePopup(item); currentResourceTab='EQUIPOS'">Equ</button>
+                                        </div>
+
+                                        <!-- Description -->
+                                        <div class="col-12 col-md-5 col-lg-4">
+                                            <input v-model="item.description" class="form-control form-control-sm fw-bold" placeholder="Descripción de Actividad">
+                                        </div>
+
+                                        <!-- Time -->
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <div class="input-group input-group-sm w-100">
+                                                <input type="number" v-model="item.duration" class="form-control" placeholder="T">
+                                                <select v-model="item.durationUnit" class="form-select px-0 text-center" style="max-width: 50px;">
+                                                    <option value="min">min</option>
+                                                    <option value="horas">hr</option>
+                                                    <option value="dias">d</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Resp -->
+                                        <div class="col-6 col-md-4 col-lg-2">
+                                            <div style="position:relative; width: 100%;">
+                                                <div class="form-control form-control-sm bg-light text-truncate" style="font-size: 0.75rem; cursor:pointer;" @click="openRespDropdown('work'+idx, item)">{{ Array.isArray(item.responsable) ? (item.responsable.length ? item.responsable.join(', ') : 'Resp...') : (item.responsable || 'Resp...') }}</div>
+                                                <div v-if="projectRespDropdownOpen === ('work'+idx)" class="position-absolute bg-white border shadow rounded p-2" style="z-index: 1000; width: 100%; min-width: 200px; max-height: 200px; overflow-y: auto;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2 border-bottom pb-1"><small class="fw-bold">Seleccionar:</small><button class="btn btn-sm btn-link p-0 text-secondary" @click.stop="projectRespDropdownOpen = null"><i class="fas fa-times"></i></button></div>
+                                                    <div v-for="p in (config.directory || config.staff)" :key="p.name" class="d-flex align-items-center p-1 rounded hover-bg-light" style="cursor:pointer;" @click.stop="toggleProjectResponsable(item, p.name)">
+                                                        <div class="form-check m-0"><input class="form-check-input" type="checkbox" :checked="item.responsable.includes(p.name)" style="pointer-events: none;"><label class="form-check-label small ms-2" style="cursor:pointer;">{{ p.name }}</label></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Cost & Delete -->
+                                        <div class="col-12 col-lg-2 d-flex justify-content-between align-items-center">
+                                            <div class="text-end me-2">
+                                                <small class="d-block text-muted" style="font-size: 9px;">Recursos</small>
+                                                <span class="fw-bold fs-6 text-primary">{{ formatCurrency(getActivityTotal(item.id)) }}</span>
+                                            </div>
+                                            <button class="btn btn-outline-danger btn-sm border-0" @click="removeProjectItem('cotTrabajo', idx)"><i class="fas fa-trash-alt"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. MATERIALES REQUERIDOS (Tabla de Otros) (MOVED UP) -->
+                <div class="row g-4 mt-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #107c41 !important;">
+                                <h6 class="fw-bold mb-0" style="color: #0b5d2f;">MATERIALES REQUERIDOS</h6>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fw-bold text-dark">Total: {{ formatCurrency(materialsTotal) }}</span>
+                                    <button class="btn btn-primary btn-sm fw-bold" @click="addMaterialItem"><i class="fas fa-plus"></i> Agregar</button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered mb-0 small align-middle bg-white">
+                                        <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                            <tr>
+                                                <th style="width: 70px;" class="text-center">Cant</th>
+                                                <th style="width: 70px;" class="text-center">Unidad</th>
+                                                <th style="width: 100px;">Tipo</th>
+                                                <th>Descripción</th>
+                                                <th style="width: 90px;" class="text-end">Costo</th>
+                                                <th style="width: 120px;">Espec.</th>
+                                                <th style="width: 90px;" class="text-end">Total</th>
+                                                <th style="width: 40px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, idx) in requiredMaterials.items" :key="idx">
+                                                <td><input type="number" v-model="item.quantity" @input="updateMaterialRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center px-1" placeholder="0" style="min-width: 60px;"></td>
+                                                <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center px-1" placeholder="-" style="min-width: 60px;"></td>
+                                                <td><input v-model="item.type" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-" style="min-width: 80px;"></td>
+                                                <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-" style="min-width: 150px;"></td>
+                                                <td><input type="number" v-model="item.cost" @input="updateMaterialRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end px-1" placeholder="0.00" style="min-width: 80px;"></td>
+                                                <td><input v-model="item.spec" class="form-control form-control-sm border-0 bg-transparent px-1" placeholder="-" style="min-width: 100px;"></td>
+                                                <td class="fw-bold text-end px-1" style="min-width: 80px;">{{ formatCurrency(item.total) }}</td>
+                                                <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeMaterialItem(idx)"></i></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1. HERRAMIENTAS REQUERIDAS (REORDERED #1) -->
+                <div class="row g-4 mt-4">
+                    <div class="col-12">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-light border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #fd7e14 !important;">
+                                <h6 class="fw-bold mb-0" style="color: #e67e22;">HERRAMIENTAS REQUERIDAS</h6>
+                                <div class="d-flex align-items-center gap-3">
+                                    <span class="fw-bold text-dark">Total: {{ formatCurrency(toolsTotal) }}</span>
+                                    <button class="btn btn-primary btn-sm fw-bold" @click="addToolItem"><i class="fas fa-plus"></i> Agregar</button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered mb-0 small align-middle bg-white">
+                                        <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                            <tr>
+                                                <th style="width: 80px;" class="text-center">Cantidad</th>
+                                                <th style="width: 80px;" class="text-center">Unidad</th>
+                                                <th>Descripción</th>
+                                                <th style="width: 120px;" class="text-end">Costo Unitario</th>
+                                                <th style="width: 120px;" class="text-end">Total</th>
+                                                <th style="width: 40px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(item, idx) in toolsRequired.items" :key="idx">
+                                                <td><input type="number" v-model="item.quantity" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 60px;"></td>
+                                                <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="-" style="min-width: 60px;"></td>
+                                                <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent" placeholder="-" style="min-width: 150px;"></td>
+                                                <td><input type="number" v-model="item.cost" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-end" placeholder="0.00" style="min-width: 80px;"></td>
+                                                <td class="fw-bold text-end" style="min-width: 80px;">{{ formatCurrency(item.total) }}</td>
+                                                <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeToolItem(idx)"></i></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. MANO DE OBRA (REORDERED #2) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #107c41 !important;">
+                         <h6 class="fw-bold mb-0 text-primary text-uppercase">MANO DE OBRA <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.labor = !showLogic.labor" title="Ver Lógica"></i></h6>
+                         <div class="d-flex align-items-center gap-3">
+                            <span class="fw-bold text-dark">Total: {{ formatCurrency(laborTotal) }}</span>
+                            <button class="btn btn-primary btn-sm fw-bold" @click="addLaborItem"><i class="fas fa-plus"></i> Agregar</button>
+                         </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="logic-card m-2 position-relative" v-if="showLogic.labor">
+                            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.labor = false"></button>
+                            <div class="logic-header"><span class="logic-icon"><i class="fas fa-clock"></i></span> LÓGICA DE LAS HORAS Y SUELDOS</div>
+                            <div class="logic-content">Es muy importante ya que hay muchos trabajos de fin de semana o turno de noche los cuales se deben agregar costos u horas extra.</div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0 small align-middle bg-white">
+                                <thead class="table-light text-muted text-uppercase" style="font-size: 10px;">
+                                    <tr>
+                                        <th style="width:40px" class="text-center">No.</th>
+                                        <th>CATEGORÍA</th>
+                                        <th class="text-center">SALARIO SEMANAL</th>
+                                        <th class="text-center">PERSONAL</th>
+                                        <th class="text-center">SEMANAS</th>
+                                        <th class="text-center">HORAS EXTRA</th>
+                                        <th class="text-center">HORARIO NOCTURNO</th>
+                                        <th class="text-center">TRABAJO FIN DE SEMANA</th>
+                                        <th class="text-center">OTROS</th>
+                                        <th class="text-end">TOTAL</th>
+                                        <th style="width:40px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in laborTable.items" :key="idx">
+                                        <td class="text-center fw-bold">{{ idx + 1 }}</td>
+                                        <td><input v-model="item.category" class="form-control form-control-sm border-0 bg-transparent" placeholder="Puesto" style="min-width: 120px;"></td>
+                                        <td><input type="number" v-model="item.salary" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 80px;"></td>
+                                        <td><input type="number" v-model="item.personnel" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 60px;"></td>
+                                        <td><input type="number" v-model="item.weeks" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 60px;"></td>
+                                        <td><input type="number" v-model="item.overtime" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 60px;"></td>
+                                        <td><input type="number" v-model="item.night" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 60px;"></td>
+                                        <td><input type="number" v-model="item.weekend" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 60px;"></td>
+                                        <td><input type="number" v-model="item.others" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 80px;"></td>
+                                        <td class="fw-bold text-end" style="min-width: 80px;">{{ formatCurrency(item.total) }}</td>
+                                        <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeLaborItem(idx)"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="p-4 bg-white">
+                            <!-- SUMMARY CARDS ROW -->
+                            <div class="row g-4 mb-4">
+                                <div class="col-md-3">
+                                    <div class="cost-card blue">
+                                        <div class="cost-card-title"><i class="fas fa-user-friends"></i> Total Personal</div>
+                                        <div class="cost-card-value">{{ totalPersonnel }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="cost-card green">
+                                        <div class="cost-card-title"><i class="fas fa-dollar-sign"></i> Costo Semanal Cuadrilla</div>
+                                        <div class="cost-card-value">{{ formatCurrency(costPerWeekCrew) }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="cost-card orange">
+                                        <div class="cost-card-title"><i class="fas fa-hard-hat"></i> 6% Herr. y EPP</div>
+                                        <div class="cost-card-value">{{ formatCurrency(eppCost) }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="cost-card purple">
+                                        <div class="cost-card-title"><i class="fas fa-wallet"></i> Costo Neto x Semana</div>
+                                        <div class="cost-card-value">{{ formatCurrency(netCostPerWeek) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CALCULATION ROW -->
+                            <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+                                <div class="flex-grow-1">
+                                    <label class="calc-label">Semanas Requeridas</label>
+                                    <div class="calc-input-group">
+                                        <input type="number" class="calc-input text-center" style="background: white;" :value="weeksRequired" readonly>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label class="calc-label">Horas Requeridas</label>
+                                    <div class="calc-input-group">
+                                        <div class="calc-input text-center">{{ hoursRequired }}</div>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label class="calc-label">Costo por Hora</label>
+                                    <div class="calc-input-group">
+                                        <div class="calc-input text-center">{{ formatCurrency(costPerHour) }}</div>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label class="calc-label fw-bold text-primary">Total M.O.</label>
+                                    <div class="total-mo-card">
+                                        <span class="fs-4 fw-bold">{{ formatCurrency(laborTotal) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- EXTRA FACTORS ROW -->
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="extra-factor-card">
+                                        <div class="extra-factor-header"><i class="far fa-clock text-warning"></i> Horas Extras</div>
+                                        <input type="number" class="extra-factor-input" :value="totalOvertime" readonly>
+                                        <div class="extra-factor-footer">Factor: 2x</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="extra-factor-card">
+                                        <div class="extra-factor-header"><i class="fas fa-moon text-primary"></i> Nocturno</div>
+                                        <input type="number" class="extra-factor-input" :value="totalNight" readonly>
+                                        <div class="extra-factor-footer">Factor: 1.35x</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="extra-factor-card">
+                                        <div class="extra-factor-header"><i class="far fa-calendar-alt text-danger"></i> Fin de Semana</div>
+                                        <input type="number" class="extra-factor-input" :value="totalWeekend" readonly>
+                                        <div class="extra-factor-footer">Factor: 2x</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- 4. DISEÑO / MAQUINADOS / DIBUJOS (REORDERED #4) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #6f42c1 !important;">
+                         <h6 class="fw-bold mb-0 text-dark text-uppercase">DISEÑO / MAQUINADOS / DIBUJOS <i class="fas fa-lightbulb text-warning ms-2" style="cursor:pointer" @click="showLogic.design = !showLogic.design" title="Ver Lógica"></i></h6>
+                         <div class="d-flex align-items-center gap-3">
+                            <button class="btn btn-primary btn-sm fw-bold" @click="addDesignRow"><i class="fas fa-plus"></i> Agregar</button>
+                         </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="logic-card m-2 position-relative" v-if="showLogic.design">
+                            <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-2" aria-label="Close" @click="showLogic.design = false"></button>
+                            <div class="logic-header"><span class="logic-icon"><i class="fas fa-clipboard-list"></i></span> INSTRUCCIÓN</div>
+                            <div class="logic-content">En la work order se requiere cargar archivos de planos para que el residente siempre tenga los correctos.</div>
+                        </div>
+                        <div v-for="(item, idx) in workorderData.designValidation.items" :key="idx" class="card mb-3 border-0 shadow-sm bg-light">
+                            <div class="card-body p-2 position-relative">
+                                <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 z-3" @click="removeDesignRow(idx)" title="Eliminar Fila"><i class="fas fa-trash-alt"></i></button>
+                                <div class="row g-3">
+                                    <!-- DISEÑO -->
+                                    <div class="col-12 col-md-4">
+                                        <h6 class="fw-bold text-center text-muted small border-bottom pb-1 mb-2">DISEÑO</h6>
+                                        <div class="d-flex gap-1 mb-2 justify-content-center flex-wrap">
+                                            <button class="btn btn-sm btn-outline-danger py-1 px-2 d-flex align-items-center gap-1" title="Subir Video" @click="triggerDesignUpload(idx, 'diseno', 'VIDEO')"><i class="fas fa-video"></i> Videos</button>
+                                            <button class="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1" title="Subir Foto" @click="triggerDesignUpload(idx, 'diseno', 'FOTO')"><i class="fas fa-image"></i> Fotos</button>
+                                            <button class="btn btn-sm btn-outline-primary py-1 px-2 d-flex align-items-center gap-1" title="Subir Plano" @click="triggerDesignUpload(idx, 'diseno', 'PLANO')"><i class="fas fa-file-alt"></i> Planos</button>
+                                        </div>
+                                        <div class="d-flex flex-column gap-1">
+                                            <div v-for="(f, fIdx) in item.diseno" :key="fIdx" class="d-flex align-items-center justify-content-between bg-white border rounded px-2 py-1 shadow-sm">
+                                                <a :href="f.url" target="_blank" class="text-decoration-none text-truncate small" :title="f.name" style="max-width: 85%;">
+                                                    <i class="fas" :class="{'fa-video text-danger': f.type==='VIDEO', 'fa-image text-success': f.type==='FOTO', 'fa-file-alt text-primary': f.type==='PLANO'}"></i> {{ f.name }}
+                                                </a>
+                                                <i class="fas fa-times text-danger small" style="cursor:pointer" @click="item.diseno.splice(fIdx, 1)"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- MAQUINADOS -->
+                                    <div class="col-12 col-md-4 border-start-md">
+                                        <h6 class="fw-bold text-center text-muted small border-bottom pb-1 mb-2">MAQUINADOS</h6>
+                                        <div class="d-flex gap-1 mb-2 justify-content-center flex-wrap">
+                                            <button class="btn btn-sm btn-outline-danger py-1 px-2 d-flex align-items-center gap-1" title="Subir Video" @click="triggerDesignUpload(idx, 'maquinados', 'VIDEO')"><i class="fas fa-video"></i> Videos</button>
+                                            <button class="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1" title="Subir Foto" @click="triggerDesignUpload(idx, 'maquinados', 'FOTO')"><i class="fas fa-image"></i> Fotos</button>
+                                            <button class="btn btn-sm btn-outline-primary py-1 px-2 d-flex align-items-center gap-1" title="Subir Plano" @click="triggerDesignUpload(idx, 'maquinados', 'PLANO')"><i class="fas fa-file-alt"></i> Planos</button>
+                                        </div>
+                                         <div class="d-flex flex-column gap-1">
+                                            <div v-for="(f, fIdx) in item.maquinados" :key="fIdx" class="d-flex align-items-center justify-content-between bg-white border rounded px-2 py-1 shadow-sm">
+                                                <a :href="f.url" target="_blank" class="text-decoration-none text-truncate small" :title="f.name" style="max-width: 85%;">
+                                                    <i class="fas" :class="{'fa-video text-danger': f.type==='VIDEO', 'fa-image text-success': f.type==='FOTO', 'fa-file-alt text-primary': f.type==='PLANO'}"></i> {{ f.name }}
+                                                </a>
+                                                <i class="fas fa-times text-danger small" style="cursor:pointer" @click="item.maquinados.splice(fIdx, 1)"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- DIBUJOS -->
+                                    <div class="col-12 col-md-4 border-start-md">
+                                        <h6 class="fw-bold text-center text-muted small border-bottom pb-1 mb-2">DIBUJOS</h6>
+                                        <div class="d-flex gap-1 mb-2 justify-content-center flex-wrap">
+                                            <button class="btn btn-sm btn-outline-danger py-1 px-2 d-flex align-items-center gap-1" title="Subir Video" @click="triggerDesignUpload(idx, 'dibujos', 'VIDEO')"><i class="fas fa-video"></i> Videos</button>
+                                            <button class="btn btn-sm btn-outline-success py-1 px-2 d-flex align-items-center gap-1" title="Subir Foto" @click="triggerDesignUpload(idx, 'dibujos', 'FOTO')"><i class="fas fa-image"></i> Fotos</button>
+                                            <button class="btn btn-sm btn-outline-primary py-1 px-2 d-flex align-items-center gap-1" title="Subir Plano" @click="triggerDesignUpload(idx, 'dibujos', 'PLANO')"><i class="fas fa-file-alt"></i> Planos</button>
+                                        </div>
+                                         <div class="d-flex flex-column gap-1">
+                                            <div v-for="(f, fIdx) in item.dibujos" :key="fIdx" class="d-flex align-items-center justify-content-between bg-white border rounded px-2 py-1 shadow-sm">
+                                                <a :href="f.url" target="_blank" class="text-decoration-none text-truncate small" :title="f.name" style="max-width: 85%;">
+                                                    <i class="fas" :class="{'fa-video text-danger': f.type==='VIDEO', 'fa-image text-success': f.type==='FOTO', 'fa-file-alt text-primary': f.type==='PLANO'}"></i> {{ f.name }}
+                                                </a>
+                                                <i class="fas fa-times text-danger small" style="cursor:pointer" @click="item.dibujos.splice(fIdx, 1)"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. EQUIPOS ESPECIALES (REORDERED #5) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white border-0 pt-3 ps-3 pe-3 d-flex justify-content-between align-items-center" style="border-top: 4px solid #dc3545 !important;">
+                        <h6 class="fw-bold mb-0 text-danger text-uppercase">EQUIPOS ESPECIALES Y ACCESORIOS</h6>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="fw-bold text-dark">Total: {{ formatCurrency(specialEquipTotal) }}</span>
+                            <button class="btn btn-primary btn-sm fw-bold" @click="addSpecialEquipItem"><i class="fas fa-plus"></i> Agregar</button>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered mb-0 small align-middle bg-white">
+                                <thead class="table-light text-muted text-uppercase" style="font-size: 11px;">
+                                    <tr>
+                                        <th style="width: 80px;" class="text-center">CANTIDAD</th>
+                                        <th style="width: 80px;" class="text-center">UNIDAD</th>
+                                        <th style="width: 120px;">TIPO</th>
+                                        <th>DESCRIPCIÓN</th>
+                                        <th style="width: 150px;">ESPECIFICACIONES</th>
+                                        <th style="width: 60px;" class="text-center">DÍAS</th>
+                                        <th style="width: 60px;" class="text-center">HORAS</th>
+                                        <th style="width: 100px;" class="text-end">COSTO UNITARIO</th>
+                                        <th style="width: 100px;" class="text-end">TOTAL</th>
+                                        <th style="width: 40px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, idx) in specialEquipment.items" :key="idx">
+                                        <td><input type="number" v-model="item.quantity" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="1" style="min-width: 60px;"></td>
+                                        <td><input v-model="item.unit" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="unidad" style="min-width: 60px;"></td>
+                                        <td><input v-model="item.type" class="form-control form-control-sm border-0 bg-transparent" placeholder="-" style="min-width: 80px;"></td>
+                                        <td><input v-model="item.description" class="form-control form-control-sm border-0 bg-transparent" placeholder="-" style="min-width: 150px;"></td>
+                                        <td><input v-model="item.spec" class="form-control form-control-sm border-0 bg-transparent" placeholder="-" style="min-width: 100px;"></td>
+                                        <td><input type="number" v-model="item.days" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 60px;"></td>
+                                        <td><input type="number" v-model="item.hours" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 60px;"></td>
+                                        <td><input type="number" v-model="item.cost" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 bg-transparent text-center" placeholder="0" style="min-width: 80px;"></td>
+                                        <td class="fw-bold text-end" style="min-width: 80px;">{{ formatCurrency(item.total) }}</td>
+                                        <td class="text-center"><i class="fas fa-trash-alt text-danger" style="cursor: pointer;" @click="removeSpecialEquipItem(idx)"></i></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. COSTOS ADICIONALES (INSUMOS, VIATICOS, TRANSPORTE) (REORDERED #6) -->
+                <div class="row g-3 mt-4">
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-primary mb-3 text-uppercase small" style="color: #009688 !important;">INSUMOS</h6>
+                                <input type="number" v-model="additionalCosts.insumos" class="form-control fw-bold" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-primary mb-3 text-uppercase small" style="color: #009688 !important;">VIÁTICOS</h6>
+                                <input type="number" v-model="additionalCosts.viaticos" class="form-control fw-bold" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold text-primary mb-3 text-uppercase small" style="color: #0d6efd !important;">TRANSPORTE DE EQUIPO Y PERSONAL</h6>
+                                <input type="number" v-model="additionalCosts.transporte" class="form-control fw-bold" placeholder="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. CONTROL DE VEHÍCULO (NUEVA TABLA INDEPENDIENTE #8) -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-dark text-white border-0 pt-3 ps-3 d-flex justify-content-between align-items-center">
+                         <h6 class="fw-bold mb-0"><i class="fas fa-car me-2"></i>CONTROL DE VEHÍCULO (FINAL)</h6>
+                    </div>
+                    <div class="card-body">
+                         <div class="bg-dark text-white p-2 fw-bold mb-3 small">
+                             Seguimiento de Vehículo y Tiempos de Regreso
+                         </div>
+                         <div class="row g-2">
+                             <div class="col-12 col-md-6">
+                                 <label class="small fw-bold text-muted">Chofer Holtmont</label>
+                                 <input v-model="vehicleControlData2.chofer" class="form-control form-control-sm text-danger bg-light border-0" placeholder="HM 003 March 2023">
+                             </div>
+                             <div class="col-12 col-md-6">
+                                 <label class="small fw-bold text-muted">Vehículo Holtmont</label>
+                                 <input v-model="vehicleControlData2.vehiculo" class="form-control form-control-sm text-danger bg-light border-0" placeholder="HM 003 March 2023">
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <label class="small fw-bold text-muted">Gasolina</label>
+                                 <input v-model="vehicleControlData2.gasolina" class="form-control form-control-sm text-danger bg-light border-0" placeholder="20 lts">
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <label class="small fw-bold text-muted">Hora Salida (GPS)</label>
+                                 <input v-model="vehicleControlData2.horaSalida" class="form-control form-control-sm text-danger bg-light border-0" placeholder="8:30am">
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <label class="small fw-bold text-muted">Hora Llegada (GPS)</label>
+                                 <input v-model="vehicleControlData2.horaLlegada" class="form-control form-control-sm text-danger bg-light border-0" placeholder="9:20am">
+                             </div>
+
+                             <div class="col-12 col-md-6">
+                                 <label class="small fw-bold text-muted">Evaluación de Manejo</label>
+                                 <input v-model="vehicleControlData2.evaluacion" class="form-control form-control-sm text-danger bg-light border-0" placeholder="Alertas por alta velocidad">
+                             </div>
+                             <div class="col-12 col-md-6">
+                                 <label class="small fw-bold text-muted">Multas</label>
+                                 <input v-model="vehicleControlData2.multas" class="form-control form-control-sm text-danger bg-light border-0" placeholder="Asignación de Multa">
+                             </div>
+
+                             <div class="col-12 col-md-4">
+                                 <button class="btn btn-sm btn-outline-secondary w-100 h-100 py-2" @click="triggerUpload('VEHICULO_2_ODOMETRO')"><i class="fas fa-camera me-1"></i> FOTO ODOMETRO</button>
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <button class="btn btn-sm btn-outline-secondary w-100 h-100 py-2" @click="triggerUpload('VEHICULO_2_ANTES_GASOLINA')"><i class="fas fa-camera me-1"></i> ANTES GASOLINA</button>
+                             </div>
+                             <div class="col-6 col-md-4">
+                                 <button class="btn btn-sm btn-outline-secondary w-100 h-100 py-2" @click="triggerUpload('VEHICULO_2_DESPUES_GASOLINA')"><i class="fas fa-camera me-1"></i> DESPUES GASOLINA</button>
+                             </div>
+
+                             <div class="col-12">
+                                 <label class="small fw-bold text-muted">Verificación de Ruta</label>
+                                 <input v-model="vehicleControlData2.ruta" class="form-control form-control-sm bg-light border-0" placeholder="de Oficina a Planta">
+                             </div>
+                             <div class="col-12">
+                                 <label class="small fw-bold text-muted">Verificación Vehículo</label>
+                                 <input v-model="vehicleControlData2.verifVehiculo" class="form-control form-control-sm bg-light border-0" placeholder="con Video">
+                             </div>
+                         </div>
+                    </div>
+                </div>
+
+                <!-- NEW FOOTER LAYOUT (USER REQUEST) -->
+                <div class="card border-0 shadow-sm mt-4" style="background: #f0f4f8;">
+                    <div class="card-body">
+                        <div class="footer-summary-container">
+                             <div class="footer-item">
+                                 <span class="footer-label"><i class="fas fa-list-alt"></i> Subtotal</span>
+                                 <span class="footer-value">{{ formatCurrency(animatedTotals.subtotal) }} MXN</span>
+                             </div>
+
+                             <div class="vr d-none d-md-block" style="opacity: 0.1;"></div>
+
+                             <div class="footer-item">
+                                 <span class="footer-label"><i class="fas fa-chart-line"></i> Utilidad (P1) 15%</span>
+                                 <span class="footer-value green">+{{ formatCurrency(animatedTotals.utility) }} MXN</span>
+                             </div>
+
+                             <div class="vr d-none d-md-block" style="opacity: 0.1;"></div>
+
+                             <div class="footer-item">
+                                 <span class="footer-label text-primary"><i class="fas fa-dollar-sign"></i> TOTAL COTIZACIÓN</span>
+                                 <span class="footer-value blue">{{ formatCurrency(animatedTotals.total) }} MXN</span>
+                             </div>
+
+                             <div class="d-flex gap-3 ms-auto align-items-center">
+                                 <button class="btn-quote-save" @click="saveWorkOrder" :disabled="isSubmitting">
+                                     <i class="far fa-save"></i> Guardar Borrador
+                                 </button>
+                                 <button class="btn-quote-gen" @click="saveWorkOrder" :disabled="isSubmitting">
+                                     <i class="fas fa-file-invoice-dollar"></i> Generar Cotización
+                                 </button>
+                             </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center flex-wrap gap-3">
+                             <span class="small text-muted fw-bold">Financiamiento disponible con:</span>
+                             <div class="d-flex gap-2">
+                                 <div class="d-flex flex-column align-items-center gap-1">
+                                     <button class="btn btn-sm btn-light border fw-bold text-dark d-flex align-items-center px-3" @click="selectedFinancing = selectedFinancing === 'SEPSA' ? null : 'SEPSA'">
+                                         <i class="fas fa-building me-2 text-secondary"></i> SEPSA
+                                     </button>
+                                     <span v-if="selectedFinancing === 'SEPSA'" class="small fw-bold text-dark animate__animated animate__fadeIn">{{ formatCurrency(animatedTotals.total * 2) }}</span>
+                                 </div>
+                                 <div class="d-flex flex-column align-items-center gap-1">
+                                     <button class="btn btn-sm btn-light border fw-bold text-danger d-flex align-items-center px-3" style="background:#fff0f0; border-color:#ffcccc !important;" @click="selectedFinancing = selectedFinancing === 'SANTANDER' ? null : 'SANTANDER'">
+                                         SANTANDER
+                                     </button>
+                                     <span v-if="selectedFinancing === 'SANTANDER'" class="small fw-bold text-danger animate__animated animate__fadeIn">{{ formatCurrency(animatedTotals.total * 2.5) }}</span>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+<div v-if="currentView === 'PPC_FORM'" class="h-100 d-flex flex-column" style="background:white; padding:20px;">
+           <div class="d-flex justify-content-between align-items-center mb-3">
+               <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'INTERDICIPLINARIA' : 'PPC Maestro') }}</h5><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
+               <div><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
+           </div>
+           <div class="d-flex mb-3 align-items-end justify-content-center position-relative" style="min-height: 90px;">
+               <div class="excel-container" style="height: auto; max-height: none; overflow: visible; flex:none; width: fit-content; z-index: 1; border:none; box-shadow:none; background: transparent;">
+                   <table class="table-excel mini-table" style="background: white; border: 1px solid #999;"><thead><tr><th style="width:100px">ESPECIALIDAD</th><th style="width:40px">ACT</th><th style="width:40px">CUMP</th><th style="width:45px">PROM</th><th style="width:40px">ANT</th></tr></thead><tbody><tr v-for="stat in deptStats" :key="stat.key" :class="{'total-row': stat.key === 'TOTAL'}"><td style="font-weight:bold; text-align: left;">{{ stat.label }}</td><td class="text-center">{{ stat.actual }}</td><td class="text-center text-success fw-bold">{{ stat.cumplidas }}</td><td class="text-center">{{ stat.promedio }}</td><td class="text-center text-muted">{{ stat.anterior }}</td></tr></tbody></table>
+               </div>
+           </div>
+           <div class="excel-container flex-fill mb-3" ref="ppcDraftTable">
+               <!-- TABLA PERSONALIZADA PARA JESUS_CANTU -->
+               <table v-if="currentUsername === 'JESUS_CANTU'" class="table-excel">
+                   <thead>
+                       <tr>
+                           <th class="row-num" rowspan="2">#</th>
+                           <th style="width:60px" rowspan="2">Ruta critica</th>
+                           <th style="width:80px" rowspan="2">Zona</th>
+                           <th style="width:100px" rowspan="2">Especialidad</th>
+                           <th style="min-width:300px" rowspan="2">Descripción Actividad</th>
+                           <th style="width:150px" colspan="2">CUANTIFICACIÓN</th>
+                           <th style="width:120px" rowspan="2">PERSONA RESPONSABLE</th>
+                           <th style="width:120px" rowspan="2">CONTRATISTA</th>
+                           <th colspan="5">DÍAS DE LA SEMANA</th>
+                           <th style="width:60px" rowspan="2">Cumpl.</th>
+                           <th style="width:50px" rowspan="2"></th>
+                       </tr>
+                       <tr>
+                           <th style="width:75px">REQUERIDO</th>
+                           <th style="width:75px">REAL</th>
+                           <th style="width:20px">L</th><th style="width:20px">M</th><th style="width:20px">M</th><th style="width:20px">J</th><th style="width:20px">V</th>
+                       </tr>
+                   </thead>
+                   <tbody>
+                       <tr class="input-row">
+                           <td class="row-num">></td>
+                           <td><select v-model="ppcData.rutaCritica" class="excel-input" :style="{backgroundColor: ppcData.rutaCritica === 'SI' ? '#ffcccc' : ''}"><option value="NO">NO</option><option value="SI">SI</option></select></td>
+                           <td><input v-model="ppcData.zona" class="excel-input" placeholder="Zona..."></td>
+                           <td><select v-model="ppcData.especialidad" class="excel-input"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td>
+                           <td><input v-model="ppcData.concepto" class="excel-input" placeholder="Descripción..."></td>
+                           <td><input v-model="ppcData.cuantReq" class="excel-input" placeholder="Req"></td>
+                           <td><input v-model="ppcData.cuantReal" class="excel-input" placeholder="Real"></td>
+                           <td style="position:relative;"><div class="chip-container" @click="$refs.chipInJ.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}}<i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipInJ" v-model="staffSearch" style="border:none;outline:none;min-width:40px;font-size:12px;background:transparent;" placeholder="+"></div><ul class="list-group position-absolute w-100 shadow" style="z-index:100;max-height:150px;overflow:auto;top:100%;left:0" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" @click="addResponsable(p.name)">{{p.name}}</li></ul></td>
+                           <td><input v-model="ppcData.contratista" class="excel-input" placeholder="Contratista"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.l"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.m"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.x"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.j"></td>
+                           <td class="text-center p-0"><input type="checkbox" v-model="ppcData.dias.v"></td>
+                           <td><select v-model="ppcData.cumplimiento" class="excel-input"><option value="NO">NO</option><option value="SI">SI</option></select></td>
+                           <td class="text-center"><button class="btn btn-primary btn-sm py-0" @click="confirmAddToQueue" title="Agregar">+</button></td>
+                       </tr>
+                       <tr v-for="(item, idx) in activityQueue" :key="idx">
+                           <td class="row-num">{{ idx + 1 }}</td>
+                           <td class="text-center" :style="{backgroundColor: item.rutaCritica === 'SI' ? '#ffcccc' : ''}">{{ item.rutaCritica }}</td>
+                           <td>{{ item.zona }}</td>
+                           <td>{{ item.especialidad }}</td>
+                           <td>{{ item.concepto }}</td>
+                           <td>{{ item.cuantReq }}</td>
+                           <td>{{ item.cuantReal }}</td>
+                           <td>{{ item.responsable }}</td>
+                           <td>{{ item.contratista }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.l ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.m ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.x ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.j ? 'X' : '' }}</td>
+                           <td class="text-center">{{ item.dias && item.dias.v ? 'X' : '' }}</td>
+                           <td>{{ item.cumplimiento }}</td>
+                           <td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer" @click="activityQueue.splice(idx,1); syncQueueToBackend();"></i></td>
+                       </tr>
+                   </tbody>
+               </table>
+
+               <!-- TABLA STANDAR PARA LOS DEMAS -->
+               <table v-else class="table-excel">
+                   <thead><tr><th class="row-num">#</th><th v-if="currentUsername === 'PREWORK_ORDER'" style="width:60px">Cliente</th><th style="width:100px">Depto</th><th style="min-width:400px">Descripción Actividad</th><th style="width:150px">Responsable</th><th style="width:80px">Fecha</th><th style="width:40px">Reloj</th><th style="width:50px">Cumpl.</th><th style="width:40px">Clip</th><th style="min-width:150px">Comentarios</th><th style="min-width:150px">Previos</th><th style="width:50px"></th></tr></thead>
+                   <tbody>
+                       <tr class="input-row"><td class="row-num">></td><td v-if="currentUsername === 'PREWORK_ORDER'"><input v-model="ppcData.cliente" class="excel-input" placeholder="MB" style="background:#f0fdf4; text-align:center;"></td><td><select v-model="ppcData.especialidad" class="excel-input" style="background:#f0fdf4"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td><td><input v-model="ppcData.concepto" class="excel-input" placeholder="Descripción..." style="background:#f0fdf4"></td><td style="background:#f0fdf4; position:relative;"><div class="chip-container" @click="$refs.chipIn.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}}<i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipIn" v-model="staffSearch" style="border:none;outline:none;min-width:40px;font-size:12px;background:transparent;" placeholder="+"></div><ul class="list-group position-absolute w-100 shadow" style="z-index:100;max-height:150px;overflow:auto;top:100%;left:0" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" @click="addResponsable(p.name)">{{p.name}}</li></ul></td><td class="text-center small text-muted">HOY</td><td><input v-model="ppcData.horas" class="excel-input" style="background:#f0fdf4; text-align:center;"></td><td><select v-model="ppcData.cumplimiento" class="excel-input" style="background:#f0fdf4"><option value="NO">NO</option><option value="SI">SI</option></select></td><td class="text-center" style="background:#f0fdf4"><button class="btn-attach" :class="{'has-file': uploadSuccess}" @click="openFileDialog"><i class="fas" :class="uploadSuccess ? 'fa-check' : 'fa-paperclip'"></i></button><input type="file" ref="fileInput" class="file-input-hidden" accept="*" @change="handleFileSelect"></td><td><input v-model="ppcData.comentarios" class="excel-input" placeholder="..." style="background:#f0fdf4"></td><td><input v-model="ppcData.comentariosPrevios" class="excel-input" placeholder="..." style="background:#f0fdf4"></td><td class="text-center"><button class="btn btn-primary btn-sm py-0" @click="promptExtraData" title="Más Detalles">+</button></td></tr>
+                       <tr v-for="(item, idx) in activityQueue" :key="idx"><td class="row-num">{{ idx + 1 }}</td><td v-if="currentUsername === 'PREWORK_ORDER'"><input :value="item.cliente" readonly class="excel-input"></td><td><input :value="item.especialidad" readonly class="excel-input"></td><td><input :value="item.concepto" readonly class="excel-input"></td><td><div style="padding:0 8px; overflow:hidden; white-space:nowrap; font-size:12px">{{ item.responsable }}</div></td><td class="text-center small">{{ item.fechaAlta ? formatDisplayDate(item.fechaAlta) : new Date().toLocaleDateString() }}</td><td><input :value="item.horas" readonly class="excel-input" style="text-align:center;"></td><td><input :value="item.cumplimiento" readonly class="excel-input"></td><td class="text-center"><i class="fas fa-file-pdf text-danger" v-if="item.archivoUrl"></i></td><td><input :value="item.comentarios" readonly class="excel-input"></td><td><input :value="item.comentariosPrevios" readonly class="excel-input"></td><td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer" @click="activityQueue.splice(idx,1); syncQueueToBackend();"></i></td></tr>
+                   </tbody>
+               </table>
+           </div>
+           <div class="d-flex justify-content-end mb-4 gap-2"><button class="btn btn-danger fw-bold" @click="clearQueue" :disabled="isSubmitting || !activityQueue.length">DEPURAR</button><button class="btn btn-success fw-bold" @click="submitBatch" :disabled="isSubmitting || !activityQueue.length">{{ isSubmitting ? 'Procesando...' : 'GUARDAR TODO' }}</button></div>
+        </div>
+      </div>
+      <div v-if="['IFRAME', 'MODULE_TABS'].includes(currentView)" class="iframe-container"><div class="iframe-toolbar"><span class="fw-bold">{{ iframeTitle }}</span><button class="btn btn-sm btn-danger" @click="closeIframe">Cerrar</button></div><iframe :src="currentIframeUrl"></iframe></div>
+
+      <!-- VISTA INSTRUCCIONES (ANTONIA / TONITA) -->
+      <div v-if="currentView === 'INSTRUCCIONES'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:white; padding:20px; overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold m-0 text-primary"><i class="fas fa-question-circle me-2"></i>TUTORIAL</h4>
+              <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+          </div>
+
+          <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
+              <div class="card-body">
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 1: AÑADIR FILA</h5>
+                  <p><i class="fas fa-plus-circle text-success me-2"></i><strong>Acción:</strong> Para crear una nueva fila en la tabla.</p>
+                  <div class="alert alert-danger py-2 small fw-bold">
+                      <i class="fas fa-exclamation-triangle me-2"></i>NOTA IMPORTANTE: EL FOLIO SE CREA DE MANERA AUTOMÁTICA EN LA TABLA DEL VENDEDOR AL SER ENVIADO. <strong>NO</strong> escribirlo manualmente.
+                  </div>
+              </div>
+          </div>
+
+          <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
+              <div class="card-body">
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 2: RELLENAR CAMPOS</h5>
+                  <p class="mb-2"><strong>Instrucción:</strong> Rellenar los campos correspondientes obligatorios:</p>
+                  <ul class="list-group list-group-flush small mb-3">
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>AREA</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>CLIENTE</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>CONCEPTO</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>CLASIFICACION</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>VENDEDOR</li>
+                      <li class="list-group-item"><i class="fas fa-check text-primary me-2"></i>FECHA INICIO</li>
+                  </ul>
+                  <div class="alert alert-info py-2 small">
+                      <i class="fas fa-info-circle me-2"></i>NOTA: Se pueden adjuntar archivos para el vendedor en los apartados: INFO CLIENTE, F2, COTIZACION, TIME OUT, LAYOUT.
+                  </div>
+              </div>
+          </div>
+
+          <div class="card shadow-sm border-0 mb-4" style="max-width: 800px; margin: 0 auto;">
+              <div class="card-body">
+                  <h5 class="fw-bold mb-3 border-bottom pb-2">PASO 3: GUARDAR Y ENVIAR</h5>
+                  <p><i class="fas fa-save text-primary me-2"></i><strong>Acción:</strong> Proceder a GUARDAR la fila nueva que se acaba de crear para ser enviada al vendedor correspondiente.</p>
+              </div>
+          </div>
+      </div>
+
+      <!-- VISTA INSTRUCCIONES PPC_ADMIN (JESUS_CANTU) -->
+      <div v-if="currentView === 'INSTRUCCIONES_PPC'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:#f8f9fa; padding:20px; overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold m-0" style="color:#bfa15f;"><i class="fas fa-map me-2"></i>MAPA DE NAVEGACIÓN DEL ADMINISTRADOR</h4>
+              <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+          </div>
+
+          <div class="alert alert-secondary border-0 mb-4 shadow-sm">
+             <strong>INTRODUCCIÓN:</strong> Navegue entre las diferentes pestañas de su Dashboard para gestionar las siguientes áreas estratégicas:
+          </div>
+
+          <div class="row g-4 mb-5">
+              <!-- 1. PPC MAESTRO -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #fd7e14 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#fd7e14"><i class="fas fa-tasks me-2"></i>1. PPC MAESTRO</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Asignación de tareas de manera DIARIA/SEMANAL.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 2. PLANEACIÓN SEMANAL -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #6f42c1 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#6f42c1"><i class="fas fa-calendar-alt me-2"></i>2. PLANEACIÓN SEMANAL</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización de la planeación interna.</li>
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-star text-warning me-2"></i><strong>Destacado:</strong> Incluye filtros por Semana, Departamentos y visualización de estatus de cumplimiento (Sí/No).</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 3. MONITOR TOÑITA -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #0dcaf0 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#0dcaf0"><i class="fas fa-eye me-2"></i>3. MONITOR TOÑITA</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Supervisión de actividades diarias realizadas por el perfil operativo (Toñita) y revisión de asignaciones a terceros.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 4. KPI -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #d63384 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#d63384"><i class="fas fa-chart-line me-2"></i>4. KPI</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización constante del rendimiento y métricas de los trabajadores.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 5. ÁREAS -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #20c997 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#20c997"><i class="fas fa-building me-2"></i>5. ÁREAS</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Monitorización de actividades desglosada específicamente por Usuario y Departamentos.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <hr class="mb-5" style="border-top: 2px dashed #ccc;">
+
+          <h4 class="fw-bold mb-4 text-primary"><i class="fas fa-map-marked-alt me-2"></i>TUTORIAL: CREAR Y EMITIR ACTIVIDAD</h4>
+
+          <div class="card shadow-sm border-0 mb-4" style="max-width: 900px; margin: 0 auto;">
+              <div class="card-body">
+                  <h5 class="fw-bold mb-4 border-bottom pb-2">GUÍA PASO A PASO</h5>
+
+                  <div class="row g-4">
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 1: ELEGIR DEPARTAMENTO</h6>
+                          <p class="small text-muted mb-0">Seleccione el departamento correspondiente para el envío de actividades.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 2: DESCRIPCIÓN</h6>
+                          <p class="small text-muted mb-0">Rellenar el campo de descripción de la actividad de forma clara.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 3: RESPONSABLE(S)</h6>
+                          <p class="small text-muted mb-0">Elegir responsable(s) a quien se asignará la actividad.</p>
+                          <div class="alert alert-warning py-1 px-2 mt-2 small d-inline-block mb-0">
+                              <i class="fas fa-exclamation-circle me-1"></i>NOTA: La fecha siempre será la fecha en la cual se está asignando la actividad en el calendario natural.
+                          </div>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 4: RELOJ</h6>
+                          <p class="small text-muted mb-0">Anotar el reloj (horas estimadas/días).</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 5: ARCHIVOS</h6>
+                          <p class="small text-muted mb-0">Agregar archivos adjuntos si es necesario para la actividad.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 6: COMENTARIOS</h6>
+                          <p class="small text-muted mb-0">Agregar comentarios adicionales de manera opcional.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 7: ICONO DE MÁS (+)</h6>
+                          <p class="small text-muted mb-0">Dar click al icono del mouse (botón +) para desplegar opciones.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 8: CLASIFICACIÓN</h6>
+                          <p class="small text-muted mb-0">Agregar la clasificación de la tarea (A, AA, AAA).</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 9: PRIORIDAD</h6>
+                          <p class="small text-muted mb-0">Establecer la prioridad de la actividad.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 10: RESTRICCIÓN</h6>
+                          <p class="small text-muted mb-0">Agregar restricción si es necesaria.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 11: FECHA RESPUESTA</h6>
+                          <p class="small text-muted mb-0">Detallar la fecha de respuesta esperada.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 12: AGREGAR A COLA</h6>
+                          <p class="small text-muted mb-0">Confirmar para agregar la actividad a la lista de envío.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 13: REPETIR</h6>
+                          <p class="small text-muted mb-0">Repetir el proceso cuantas veces sea necesario para todas las actividades.</p>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-success">PASO 14: GUARDAR Y ENVIAR</h6>
+                          <p class="small text-muted mb-0">Guardar todo para ser enviado a los responsables, a sus tablas y al PPC Semanal.</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      <!-- VISTA INSTRUCCIONES ADMIN (LUIS_CARLOS) -->
+      <div v-if="currentView === 'INSTRUCCIONES_ADMIN'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:#f8f9fa; padding:20px; overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold m-0" style="color:#bfa15f;"><i class="fas fa-map me-2"></i>MAPA DE NAVEGACIÓN DEL ADMINISTRADOR</h4>
+              <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+          </div>
+
+          <div class="alert alert-secondary border-0 mb-4 shadow-sm">
+             <strong>INTRODUCCIÓN:</strong> Navegue entre las diferentes pestañas de su Dashboard para gestionar las siguientes áreas estratégicas:
+          </div>
+
+          <div class="row g-4">
+              <!-- 1. PPC MAESTRO -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #fd7e14 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#fd7e14"><i class="fas fa-tasks me-2"></i>1. PPC MAESTRO</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Asignación de tareas de manera DIARIA/SEMANAL.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 2. PLANEACIÓN SEMANAL -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #6f42c1 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#6f42c1"><i class="fas fa-calendar-alt me-2"></i>2. PLANEACIÓN SEMANAL</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización de la planeación interna.</li>
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-star text-warning me-2"></i><strong>Destacado:</strong> Incluye filtros por Semana, Departamentos y visualización de estatus de cumplimiento (Sí/No).</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 3. MONITOR TOÑITA -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #0dcaf0 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#0dcaf0"><i class="fas fa-eye me-2"></i>3. MONITOR TOÑITA</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Supervisión de actividades diarias realizadas por el perfil operativo (Toñita) y revisión de asignaciones a terceros.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 4. KPI -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #d63384 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#d63384"><i class="fas fa-chart-line me-2"></i>4. KPI</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización constante del rendimiento y métricas de los trabajadores.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 5. ÁREAS -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #20c997 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#20c997"><i class="fas fa-building me-2"></i>5. ÁREAS</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Monitorización de actividades desglosada específicamente por Usuario y Departamentos.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+      <!-- VISTA INSTRUCCIONES JAIME_OLIVO (ADMIN_CONTROL) -->
+      <div v-if="currentView === 'INSTRUCCIONES_ADMIN_CONTROL'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:#f8f9fa; padding:20px; overflow-y:auto;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold m-0" style="color:#b38f00;"><i class="fas fa-map me-2" style="color:#ffd700;"></i>MAPA DE NAVEGACIÓN DEL ADMINISTRADOR</h4>
+              <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+          </div>
+
+          <div class="alert alert-secondary border-0 mb-4 shadow-sm" style="color:#333;">
+             <strong style="color:#b38f00;">INTRODUCCIÓN:</strong> Navegue entre las diferentes pestañas de su Dashboard para gestionar las siguientes áreas estratégicas:
+          </div>
+
+          <div class="row g-4 mb-5">
+              <!-- 1. PPC MAESTRO -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #fd7e14 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#fd7e14"><i class="fas fa-tasks me-2"></i>1. PPC MAESTRO</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Asignación de tareas de manera SEMANAL.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 2. PLANEACIÓN SEMANAL -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #6f42c1 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#6f42c1"><i class="fas fa-calendar-alt me-2"></i>2. PLANEACIÓN SEMANAL</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización de la planeación interna.</li>
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-star text-warning me-2"></i><strong>Destacado:</strong> Incluye filtros por Semana, Departamentos y visualización de estatus de cumplimiento (Sí/No).</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 3. MONITOR TOÑITA -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #0dcaf0 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#0dcaf0"><i class="fas fa-eye me-2"></i>3. MONITOR TOÑITA</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Supervisión de actividades diarias realizadas por el perfil operativo (Toñita) y revisión de asignaciones a terceros.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 4. KPI -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #d63384 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#d63384"><i class="fas fa-chart-line me-2"></i>4. KPI</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Visualización constante del rendimiento y métricas de los trabajadores.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 5. ÁREAS -->
+              <div class="col-md-6 col-lg-4">
+                  <div class="card h-100 shadow-sm border-0" style="border-top: 4px solid #20c997 !important;">
+                      <div class="card-body">
+                          <h6 class="fw-bold text-uppercase mb-3" style="color:#20c997"><i class="fas fa-building me-2"></i>5. ÁREAS</h6>
+                          <ul class="list-group list-group-flush small">
+                              <li class="list-group-item border-0 px-0"><i class="fas fa-check-circle text-success me-2"></i><strong>Función:</strong> Monitorización de actividades desglosada específicamente por Usuario y Departamentos.</li>
+                          </ul>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <hr class="mb-5" style="border-top: 2px dashed #ccc;">
+
+          <h4 class="fw-bold mb-4 text-primary"><i class="fas fa-map-marked-alt me-2"></i>TUTORIAL: CREAR Y EMITIR ACTIVIDAD</h4>
+          <h5 class="text-secondary mb-4">--- APARTADO PPC ---</h5>
+
+          <div class="card shadow-sm border-0 mb-4" style="max-width: 900px; margin: 0 auto;">
+              <div class="card-body">
+                  <div class="row g-4">
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 1: ELEGIR DEPARTAMENTO PARA ENVIO DE ACTIVIDADES</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 2: RELLENAR EL CAMPO DE DESCRIPCION DE ACTIVIDAD</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 3: ELEGIR RESPONSABLE(S) DE LA ACTIVIDAD LA CUAL SERÁ ASIGNADA.</h6>
+                          <div class="alert alert-warning py-1 px-2 mt-2 small d-inline-block mb-0">
+                              NOTA(LA FECHA SIEMPRE SERÁ LA FECHA DE LA CUAL SE ESTÁ ASIGNANDO LA ACTIVIDAD EN EL CALENDARIO NATURAL)
+                          </div>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 4: ANOTAR EL RELOJ</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 5: AGREGAR ARCHIVOS (SI ES NECESARIO)</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 6: AGREGAR COMENTARIOS (DE MANERA OPCIONAL)</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 7: DAR CLICK AL ICONO DEL MOUSE</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 8: AGREGAR LA CLASIFICACION (A,AA,AAA)</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 9: AGREGAR LA PRIORIDAD</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 10: AGREGAR RESTRICCION (SI ES NECESARIA)</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 11: DETALLAR FECHA RESPUESTA</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PAS0 12: AGREGAR</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-primary">PASO 13 REPETIR CUANTAS VECES SEA NECESARIO</h6>
+                      </div>
+
+                      <div class="col-12">
+                          <h6 class="fw-bold text-success">PASO 14: GUARDAR TODO PARA SER ENVIADO A LOS RESPONSABLES A SUS TABLAS Y AL PPC SEMANAL.</h6>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+    </main>
+  </div>
+
+  <input type="file" ref="cellFileInput" class="file-input-hidden" accept="*" @change="handleCellFile">
+  <input type="file" ref="designFileInput" class="file-input-hidden" accept="*" @change="handleDesignFileSelect">
+
+  <div v-if="showExtraModal" class="custom-modal-overlay">
+      <div class="custom-modal">
+          <div class="custom-modal-header"><span>Detalles</span><button type="button" class="btn-close" @click="showExtraModal = false"></button></div>
+          <div class="custom-modal-body">
+              <div class="mb-2"><label class="small fw-bold mb-1">Clasificación:</label><div><span v-for="opt in ['A','AA','AAA']" :key="opt" class="chip-select" :class="{active: extraData.clasificacion === opt}" @click="extraData.clasificacion = opt">{{ opt }}</span></div></div>
+              <div class="mb-2"><label class="small fw-bold mb-1">Prioridades:</label><div><span v-for="opt in priorityOpts" :key="opt" class="chip-select" :class="{active: extraData.prioridades === opt}" @click="extraData.prioridades = opt">{{ opt }}</span></div></div>
+              <div class="mb-2"><label class="small fw-bold mb-1">Riesgos:</label><div><span v-for="opt in riskOpts" :key="opt" class="chip-select" :class="{active: extraData.riesgos === opt}" @click="extraData.riesgos = opt">{{ opt }}</span></div></div>
+              <div class="mb-2"><label class="small fw-bold">Restricciones:</label><input v-model="extraData.restricciones" class="form-control form-control-sm"></div>
+              <div class="mb-2"><label class="small fw-bold">Fecha Respuesta:</label><input type="date" v-model="extraData.fechaRespuesta" class="form-control form-control-sm"></div>
+          </div>
+          <div class="custom-modal-footer"><button class="btn btn-primary btn-sm w-100" @click="confirmAddToQueue">Agregar</button></div>
+      </div>
+  </div>
+
+  <div v-if="showTimePopup" class="custom-modal-overlay">
+      <div class="custom-modal" style="width: 300px;">
+          <div class="custom-modal-header"><span>Agregar Horario</span><button type="button" class="btn-close" @click="showTimePopup = false"></button></div>
+          <div class="custom-modal-body text-center">
+              <div class="mb-3">
+                  <label class="small fw-bold mb-2 d-block">Seleccionar Hora:</label>
+                  <input type="time" v-model="timePopupValue" class="form-control text-center fs-4">
+              </div>
+              <button class="btn btn-primary w-100 fw-bold" @click="saveTimePopup"><i class="fas fa-check me-2"></i> ESTABLECER</button>
+          </div>
+      </div>
+  </div>
+
+  <div v-if="showPpcSelectorModal" class="custom-modal-overlay">
+      <div class="custom-modal" style="width: 500px;">
+          <div class="custom-modal-header">
+              <span>Gestión de PPC</span>
+              <button type="button" class="btn-close" @click="showPpcSelectorModal = false"></button>
+          </div>
+          <div class="custom-modal-body">
+              <ul class="nav nav-tabs mb-3">
+                  <li class="nav-item"><a class="nav-link" :class="{active: ppcMode === 'SELECT'}" href="#" @click.prevent="ppcMode = 'SELECT'">Seleccionar Existente</a></li>
+                  <li class="nav-item"><a class="nav-link" :class="{active: ppcMode === 'CREATE'}" href="#" @click.prevent="ppcMode = 'CREATE'">Crear Nuevo</a></li>
+              </ul>
+              <div v-if="ppcMode === 'SELECT'">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                      <p class="small text-muted m-0">Selecciona un proyecto para cargar tareas:</p>
+                      <button class="btn btn-outline-primary btn-sm py-0" style="font-size: 0.7rem;" @click="loadCascadeTree" title="Actualizar Lista"><i class="fas fa-sync-alt"></i></button>
+                  </div>
+                  <div class="list-group" style="max-height: 250px; overflow-y: auto;">
+                      <template v-for="site in activeProjectsList" :key="site.id">
+                          <div class="list-group-item list-group-item-light fw-bold small text-uppercase bg-light text-muted"><i class="fas fa-building me-1"></i> {{ site.name }}</div>
+                          <a href="#" v-for="sub in (site.subProjects || [])" :key="sub.name" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ps-4" @click.prevent="selectPpcProject(sub)"><div><i class="fas fa-angle-right me-2 text-primary"></i><strong>{{ sub.name }}</strong></div><span class="badge bg-secondary" style="font-size: 0.65rem">{{ sub.type }}</span></a>
+                          <div v-if="!site.subProjects || site.subProjects.length === 0" class="ps-4 py-2 small text-muted fst-italic">Sin subproyectos.</div>
+                      </template>
+                  </div>
+              </div>
+              <div v-if="ppcMode === 'CREATE'">
+                  <div class="d-flex justify-content-center mb-3 bg-light p-2 rounded">
+                      <div class="form-check form-check-inline m-0 me-3"><input class="form-check-input" type="radio" id="radioSite" value="SITE" v-model="newProject.creationMode"><label class="form-check-label small fw-bold" for="radioSite">Nuevo Sitio (Padre)</label></div>
+                      <div class="form-check form-check-inline m-0"><input class="form-check-input" type="radio" id="radioSub" value="SUB" v-model="newProject.creationMode"><label class="form-check-label small fw-bold" for="radioSub">Nuevo Subproyecto</label></div>
+                  </div>
+                  <div class="mb-3"><label class="form-label small fw-bold text-danger">Creado por (Obligatorio)</label><input v-model="newProject.createdBy" class="form-control" placeholder="Tu nombre..."></div>
+                  <div v-if="newProject.creationMode === 'SITE'" class="animate__animated animate__fadeIn">
+                      <div class="mb-3"><label class="form-label small fw-bold">Nombre del Sitio</label><input v-model="newProject.name" class="form-control" placeholder="Ej: NAVE INDUSTRIAL 4"></div>
+                      <div class="mb-3"><label class="form-label small fw-bold">Cliente</label><input v-model="newProject.client" class="form-control" placeholder="Ej: NIDEC"></div>
+                      <div class="mb-3"><label class="form-label small fw-bold text-danger">Tipo de PPC *</label><div class="d-flex gap-2"><div class="project-type-option" :class="{selected: newProject.type === 'INTERNO'}" @click="newProject.type = 'INTERNO'">INTERNO</div><div class="project-type-option" :class="{selected: newProject.type === 'CLIENTE'}" @click="newProject.type = 'CLIENTE'">CLIENTE</div><div class="project-type-option" :class="{selected: newProject.type === 'PREOPERATIVO'}" @click="newProject.type = 'PREOPERATIVO'">PREOPERATIVO</div></div></div>
+                  </div>
+                  <div v-else class="animate__animated animate__fadeIn">
+                      <div class="mb-3"><label class="form-label small fw-bold text-primary">Selecciona el Sitio Padre:</label><select v-model="newProject.parentId" class="form-select border-primary"><option value="" disabled>-- Elige un Sitio --</option><option v-for="site in activeProjectsList" :key="site.id" :value="site.id">{{ site.name }} ({{site.client}})</option></select></div>
+                      <div class="mb-3"><label class="form-label small fw-bold">Nombre del Subproyecto</label><input v-model="newProject.name" class="form-control" placeholder="Ej: TERRACERIAS FASE 1"></div>
+                      <div class="mb-3"><label class="form-label small fw-bold">Especialidad</label><div class="d-flex gap-1 overflow-auto pb-1"><span v-for="t in ['OBRA CIVIL','HVAC','ELECTRICO','ESTRUCTURA','ACABADOS']" :key="t" class="badge border text-dark p-2" :class="newProject.type === t ? 'bg-primary text-white' : 'bg-light'" style="cursor:pointer" @click="newProject.type = t">{{t}}</span></div></div>
+                  </div>
+                  <button class="btn btn-success w-100 fw-bold" @click="createNewProject" :disabled="isSubmitting || !newProject.name || !newProject.createdBy || (newProject.creationMode === 'SUB' && !newProject.parentId)"><span v-if="isSubmitting"><i class="fas fa-spinner fa-spin"></i> Procesando...</span><span v-else>CREAR Y SELECCIONAR</span></button>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <div v-if="showSubProjectModal" class="custom-modal-overlay">
+    <div class="custom-modal" style="width: 400px;">
+        <div class="custom-modal-header"><span>Nuevo Subproyecto</span><button type="button" class="btn-close" @click="showSubProjectModal = false"></button></div>
+        <div class="custom-modal-body">
+            <p class="small text-muted mb-3">Agregando a: <strong>{{ currentTargetSite.name }}</strong></p>
+            <div class="mb-3"><label class="form-label small fw-bold text-danger">Creado por (Obligatorio)</label><input v-model="newSubProject.createdBy" class="form-control" placeholder="Tu nombre..."></div>
+            <div class="mb-3"><label class="form-label small fw-bold">Nombre Subproyecto</label><input v-model="newSubProject.name" class="form-control" placeholder="Ej: TERRACERIAS FASE 1"></div>
+            <div class="mb-3"><label class="form-label small fw-bold">Especialidad / Tipo</label><select v-model="newSubProject.type" class="form-select"><option value="OBRA CIVIL">OBRA CIVIL</option><option value="ESTRUCTURA">ESTRUCTURA</option><option value="INSTALACIONES">INSTALACIONES</option><option value="ACABADOS">ACABADOS</option><option value="HVAC">HVAC</option></select></div>
+            <button class="btn btn-success w-100 fw-bold" @click="createSubProject" :disabled="isSubmitting || !newSubProject.name || !newSubProject.createdBy"><span v-if="isSubmitting"><i class="fas fa-spinner fa-spin"></i> Guardando...</span><span v-else>CREAR SUBPROYECTO</span></button>
+        </div>
+    </div>
+  </div>
+
+  <!-- RESOURCE MANAGEMENT MODAL -->
+  <div v-if="showResourceModal && currentActivityContext" class="custom-modal-overlay" style="z-index: 2000;">
+      <div class="custom-modal" style="width: 800px; max-width: 95vw; height: 80vh; display: flex; flex-direction: column;">
+          <div class="custom-modal-header bg-dark text-white">
+              <div>
+                  <span class="fw-bold"><i class="fas fa-cubes me-2"></i>Recursos para: {{ currentActivityContext.description || 'Actividad Sin Nombre' }}</span>
+              </div>
+              <button type="button" class="btn-close btn-close-white" @click="showResourceModal = false"></button>
+          </div>
+          <div class="p-2 bg-light border-bottom d-flex gap-2 overflow-auto">
+              <button class="btn btn-sm fw-bold" :class="currentResourceTab === 'MANO_OBRA' ? 'btn-primary' : 'btn-outline-secondary'" @click="currentResourceTab = 'MANO_OBRA'">Mano de Obra</button>
+              <button class="btn btn-sm fw-bold" :class="currentResourceTab === 'MATERIALES' ? 'btn-success' : 'btn-outline-secondary'" @click="currentResourceTab = 'MATERIALES'">Materiales</button>
+              <button class="btn btn-sm fw-bold" :class="currentResourceTab === 'HERRAMIENTAS' ? 'btn-info text-white' : 'btn-outline-secondary'" @click="currentResourceTab = 'HERRAMIENTAS'">Herramientas</button>
+              <button class="btn btn-sm fw-bold" :class="currentResourceTab === 'EQUIPOS' ? 'btn-warning text-dark' : 'btn-outline-secondary'" @click="currentResourceTab = 'EQUIPOS'">Equipos</button>
+          </div>
+          <div class="custom-modal-body bg-white flex-fill overflow-auto p-3">
+              <!-- MANO DE OBRA -->
+              <div v-if="currentResourceTab === 'MANO_OBRA'">
+                  <div class="d-flex justify-content-end mb-2"><button class="btn btn-sm btn-primary" @click="addResourceToActivity('MANO_OBRA')"><i class="fas fa-plus"></i> Agregar Personal</button></div>
+                  <table class="table table-bordered table-sm small">
+                      <thead class="table-light"><tr><th>Categoría</th><th>Salario</th><th>Pers</th><th>Sem</th><th>Total</th><th></th></tr></thead>
+                      <tbody>
+                          <tr v-for="(item, i) in laborTable.items.filter(x => x.activityId === currentActivityContext.id)" :key="i">
+                              <td><input v-model="item.category" class="form-control form-control-sm border-0"></td>
+                              <td><input type="number" v-model="item.salary" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input type="number" v-model="item.personnel" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input type="number" v-model="item.weeks" @input="updateLaborRowTotal(item)" class="form-control form-control-sm border-0 text-center"></td>
+                              <td class="text-end fw-bold">{{ formatCurrency(item.total) }}</td>
+                              <td class="text-center"><i class="fas fa-trash text-danger cursor-pointer" @click="laborTable.items.splice(laborTable.items.indexOf(item), 1)"></i></td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+              <!-- MATERIALES -->
+              <div v-if="currentResourceTab === 'MATERIALES'">
+                  <div class="d-flex justify-content-end mb-2"><button class="btn btn-sm btn-success" @click="addResourceToActivity('MATERIALES')"><i class="fas fa-plus"></i> Agregar Material</button></div>
+                  <table class="table table-bordered table-sm small">
+                      <thead class="table-light"><tr><th>Cant</th><th>Uni</th><th>Desc</th><th>Costo</th><th>Total</th><th></th></tr></thead>
+                      <tbody>
+                          <tr v-for="(item, i) in requiredMaterials.items.filter(x => x.activityId === currentActivityContext.id)" :key="i">
+                              <td><input type="number" v-model="item.quantity" @input="updateMaterialRowTotal(item)" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input v-model="item.unit" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input v-model="item.description" class="form-control form-control-sm border-0"></td>
+                              <td><input type="number" v-model="item.cost" @input="updateMaterialRowTotal(item)" class="form-control form-control-sm border-0 text-end"></td>
+                              <td class="text-end fw-bold">{{ formatCurrency(item.total) }}</td>
+                              <td class="text-center"><i class="fas fa-trash text-danger cursor-pointer" @click="requiredMaterials.items.splice(requiredMaterials.items.indexOf(item), 1)"></i></td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+              <!-- HERRAMIENTAS -->
+              <div v-if="currentResourceTab === 'HERRAMIENTAS'">
+                  <div class="d-flex justify-content-end mb-2"><button class="btn btn-sm btn-info text-white" @click="addResourceToActivity('HERRAMIENTAS')"><i class="fas fa-plus"></i> Agregar Herramienta</button></div>
+                  <table class="table table-bordered table-sm small">
+                      <thead class="table-light"><tr><th>Cant</th><th>Uni</th><th>Desc</th><th>Costo</th><th>Total</th><th></th></tr></thead>
+                      <tbody>
+                          <tr v-for="(item, i) in toolsRequired.items.filter(x => x.activityId === currentActivityContext.id)" :key="i">
+                              <td><input type="number" v-model="item.quantity" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input v-model="item.unit" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input v-model="item.description" class="form-control form-control-sm border-0"></td>
+                              <td><input type="number" v-model="item.cost" @input="updateToolRowTotal(item)" class="form-control form-control-sm border-0 text-end"></td>
+                              <td class="text-end fw-bold">{{ formatCurrency(item.total) }}</td>
+                              <td class="text-center"><i class="fas fa-trash text-danger cursor-pointer" @click="toolsRequired.items.splice(toolsRequired.items.indexOf(item), 1)"></i></td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+              <!-- EQUIPOS -->
+              <div v-if="currentResourceTab === 'EQUIPOS'">
+                  <div class="d-flex justify-content-end mb-2"><button class="btn btn-sm btn-warning" @click="addResourceToActivity('EQUIPOS')"><i class="fas fa-plus"></i> Agregar Equipo</button></div>
+                  <table class="table table-bordered table-sm small">
+                      <thead class="table-light"><tr><th>Cant</th><th>Uni</th><th>Desc</th><th>Días</th><th>Costo</th><th>Total</th><th></th></tr></thead>
+                      <tbody>
+                          <tr v-for="(item, i) in specialEquipment.items.filter(x => x.activityId === currentActivityContext.id)" :key="i">
+                              <td><input type="number" v-model="item.quantity" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input v-model="item.unit" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input v-model="item.description" class="form-control form-control-sm border-0"></td>
+                              <td><input type="number" v-model="item.days" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 text-center"></td>
+                              <td><input type="number" v-model="item.cost" @input="updateSpecialEquipRowTotal(item)" class="form-control form-control-sm border-0 text-end"></td>
+                              <td class="text-end fw-bold">{{ formatCurrency(item.total) }}</td>
+                              <td class="text-center"><i class="fas fa-trash text-danger cursor-pointer" @click="specialEquipment.items.splice(specialEquipment.items.indexOf(item), 1)"></i></td>
+                          </tr>
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+          <div class="custom-modal-footer">
+              <span class="me-3 fw-bold">Total Actividad: {{ formatCurrency(getActivityTotal(currentActivityContext.id)) }}</span>
+              <button class="btn btn-secondary" @click="showResourceModal = false">Cerrar</button>
+          </div>
+      </div>
+  </div>
+
+  <div v-if="showEmployeeModal" class="custom-modal-overlay">
+      <div class="custom-modal" style="width: 450px;">
+          <div class="custom-modal-header"><span>Nuevo Empleado</span><button type="button" class="btn-close" @click="showEmployeeModal = false"></button></div>
+          <div class="custom-modal-body">
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Nombre Completo</label>
+                  <input v-model="newEmployee.name" class="form-control" placeholder="Nombre Apellido" style="text-transform: uppercase;">
+              </div>
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Departamento</label>
+                  <select v-model="newEmployee.dept" class="form-select">
+                      <option value="" disabled>Seleccionar...</option>
+                      <option v-for="(d, k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{ d.label }}</option>
+                  </select>
+              </div>
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Perfil de Hoja (Hojas a crear)</label>
+                  <select v-model="newEmployee.type" class="form-select">
+                      <option value="ESTANDAR">🔵 Estándar (Operativo - 1 Hoja)</option>
+                      <option value="VENTAS">🟢 Ventas (Comercial - 1 Hoja)</option>
+                      <option value="HIBRIDO">🟣 Híbrido (Ambas - 2 Hojas)</option>
+                  </select>
+                  <div class="form-text mt-2 small text-muted" v-if="newEmployee.type === 'ESTANDAR'">
+                      Creará hoja: <strong>{{ (newEmployee.name || '[NOMBRE]').toUpperCase() }}</strong>
+                  </div>
+                  <div class="form-text mt-2 small text-muted" v-if="newEmployee.type === 'VENTAS'">
+                      Creará hoja: <strong>{{ (newEmployee.name || '[NOMBRE]').toUpperCase() }} (VENTAS)</strong>
+                  </div>
+                  <div class="form-text mt-2 small text-muted" v-if="newEmployee.type === 'HIBRIDO'">
+                      Creará AMBAS hojas.
+                  </div>
+              </div>
+              <button class="btn btn-success w-100 fw-bold" @click="saveNewEmployee" :disabled="isSubmitting || !newEmployee.name || !newEmployee.dept"><span v-if="isSubmitting"><i class="fas fa-spinner fa-spin"></i> Creando...</span><span v-else>CREAR EMPLEADO</span></button>
+          </div>
+      </div>
+  </div>
+
+  <!-- NUEVA ACTIVIDAD MODAL -->
+  <div v-if="showNewActivityModal" class="custom-modal-overlay">
+      <div class="custom-modal" style="width: 400px;">
+          <div class="custom-modal-header">
+              <span>Nueva Actividad</span>
+              <button type="button" class="btn-close" @click="showNewActivityModal = false"></button>
+          </div>
+          <div class="custom-modal-body">
+              <div class="mb-3">
+                  <label class="form-label small fw-bold">Título</label>
+                  <input v-model="newActivity.title" class="form-control" placeholder="Ej: Reunión de obra...">
+              </div>
+              <div class="row g-2 mb-3">
+                  <div class="col-6">
+                      <label class="form-label small fw-bold">Fecha</label>
+                      <input type="date" v-model="newActivity.date" class="form-control">
+                  </div>
+                  <div class="col-6">
+                      <label class="form-label small fw-bold">Categoría</label>
+                      <select v-model="newActivity.category" class="form-select">
+                          <option value="Trabajo">Trabajo</option>
+                          <option value="Personal">Personal</option>
+                          <option value="Estudio">Estudio</option>
+                          <option value="Ejercicio">Ejercicio</option>
+                          <option value="Descanso">Descanso</option>
+                      </select>
+                  </div>
+              </div>
+              <div class="row g-2 mb-4">
+                  <div class="col-6">
+                      <label class="form-label small fw-bold">Hora Inicio</label>
+                      <input type="time" v-model="newActivity.startTime" class="form-control">
+                  </div>
+                  <div class="col-6">
+                      <label class="form-label small fw-bold">Hora Fin</label>
+                      <input type="time" v-model="newActivity.endTime" class="form-control">
+                  </div>
+              </div>
+              <button class="btn btn-primary w-100 fw-bold" @click="saveActivity" :disabled="isSubmitting || !newActivity.title">
+                  <span v-if="isSubmitting"><i class="fas fa-spinner fa-spin"></i> Guardando...</span>
+                  <span v-else>CREAR ACTIVIDAD</span>
+              </button>
+          </div>
+      </div>
+  </div>
+
+</div>
+
+<script>
+  window.onerror = function(msg, url, line, col, error) { if(String(msg).toLowerCase().includes("script error")) return; Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + (error ? error.message : msg) }); };
+
+function enviarAudioAGemini(inputElement) {
+    const file = inputElement.files[0];
+    if (!file) return;
+
+    // Alerta de carga
+    Swal.fire({
+        title: 'Procesando Voz...',
+        text: 'La IA está transcribiendo tu audio.',
+        didOpen: () => Swal.showLoading(),
+        allowOutsideClick: false,
+        background: '#1a1a1a',
+        color: '#ffffff'
     });
-  };
 
-  // DYNAMIC FETCHING
-  const fullDirectory = getDirectoryFromDB();
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = function() {
+        // Limpiamos el prefijo data:audio...;base64,
+        const base64Data = reader.result.split(',')[1];
+        const mimeType = file.type;
 
-  // Filter for VENTAS
-  const groupVentas = fullDirectory
-      .filter(u => u.dept === 'VENTAS' && u.name !== 'ANTONIA_VENTAS')
-      .map(u => u.name);
-
-  // Filter for TRACKER (Non-Ventas, Non-Admin/System)
-  const groupTracker = fullDirectory
-      .filter(u => u.dept !== 'VENTAS' &&
-                   u.dept !== 'ADMINISTRACION' &&
-                   u.name !== 'ADMINISTRADOR' &&
-                   u.name !== 'PREWORK_ORDER')
-      .map(u => u.name);
-
-  return {
-      success: true,
-      ventas: processGroup(groupVentas),
-      tracker: processGroup(groupTracker)
-  };
-}
-
-/* 5. TEST DE VALIDACIÓN (LOGGER) */
-function test_DataIntegrity() {
-  Logger.log("=== INICIO TEST DE INTEGRIDAD ===");
-
-  const testUser = "Eduardo Manzanares";
-  Logger.log("Verificando hoja para: " + testUser);
-
-  const sheet = findSheetSmart(testUser);
-  if (!sheet) {
-      Logger.log("❌ FAIL: Hoja no encontrada.");
-      return;
-  }
-  Logger.log("✅ OK: Hoja encontrada.");
-
-  const res = internalFetchSheetData(testUser);
-  if (!res.success) {
-      Logger.log("❌ FAIL: Error leyendo datos: " + res.message);
-      return;
-  }
-
-  const totalTareas = res.data.length;
-  Logger.log("Volumen de datos encontrados: " + totalTareas);
-
-  if (totalTareas === 0) {
-      Logger.log("⚠️ WARNING: La hoja está vacía o no tiene tareas activas.");
-  } else {
-      const sample = res.data[0];
-      const start = sample['FECHA'] || sample['ALTA'];
-      Logger.log("Muestra de Fecha Inicio: " + start);
-      if (start) {
-          Logger.log("✅ OK: Formato de fecha detectado.");
-      } else {
-          Logger.log("⚠️ WARNING: Posible falta de columna FECHA.");
-      }
-  }
-
-  Logger.log("=== FIN TEST ===");
-}
-
-/* 5. MOTOR DE LECTURA OPTIMIZADO */
-function internalFetchSheetData(sheetName) {
-  try {
-    const sheet = findSheetSmart(sheetName);
-    if (!sheet) return { success: true, data: [], history: [], headers: [], message: `Falta hoja: ${sheetName}` };
-    const values = sheet.getDataRange().getValues();
-    if (values.length < 2) return { success: true, data: [], history: [], headers: [], message: "Vacía" };
-    const headerRowIndex = findHeaderRow(values);
-    if (headerRowIndex === -1) return { success: true, data: [], headers: [], message: "Sin formato válido" };
-    const rawHeaders = values[headerRowIndex].map(h => String(h).replace(/\n/g, " ").replace(/\s+/g, " ").trim());
-    const validIndices = [];
-    const cleanHeaders = [];
-    const usedHeaders = new Set();
-    rawHeaders.forEach((h, index) => {
-      if(h !== "") {
-          const hUpper = h.toUpperCase();
-          if (!usedHeaders.has(hUpper)) {
-              validIndices.push(index);
-              cleanHeaders.push(h);
-              usedHeaders.add(hUpper);
-          }
-      }
-    });
-    const dataRows = values.slice(headerRowIndex + 1);
-    const activeTasks = [];
-    const historyTasks = [];
-    let isReadingHistory = false;
-    for (let i = 0; i < dataRows.length; i++) {
-      const row = dataRows[i];
-      if (row.join("|").toUpperCase().includes("TAREAS REALIZADAS")) { isReadingHistory = true; continue; }
-      if (row.every(c => c === "") || String(row[validIndices[0]]).toUpperCase() === String(cleanHeaders[0]).toUpperCase()) continue;
-      let rowObj = {};
-      let hasData = false;
-      let sortDate = null;
-      validIndices.forEach((colIndex, k) => {
-        const headerName = cleanHeaders[k];
-        let val = row[colIndex];
-        if (val instanceof Date) {
-           if (val.getFullYear() < 1900) val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "HH:mm");
-           else {
-              if (!sortDate) sortDate = val; 
-              val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
-           }
-        } else if (typeof val === 'string') {
-           if(val.match(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/)) {
-               val = val.replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g, (m, d, mm, y) => {
-                   const yy = (y.length === 4) ? y.slice(-2) : y;
-                   return `${d.padStart(2,'0')}/${mm.padStart(2,'0')}/${yy}`;
-               });
-           }
-           else if (val.match(/^\d{4}-\d{2}-\d{2}$/)) {
-               // Manual split to avoid TZ shifts
-               const p = val.split('-');
-               val = `${p[2]}/${p[1]}/${p[0].slice(-2)}`;
-           }
-        }
-        if (val !== "" && val !== undefined) hasData = true;
-        rowObj[headerName] = val;
-      });
-      if (hasData) {
-        rowObj['_sortDate'] = sortDate;
-        rowObj['_rowIndex'] = headerRowIndex + i + 2;
-        if (isReadingHistory) historyTasks.push(rowObj); else activeTasks.push(rowObj);
-      }
-    }
-    
-    const dateSorter = (a, b) => {
-      const dA = a['_sortDate'] instanceof Date ? a['_sortDate'].getTime() : 0;
-      const dB = b['_sortDate'] instanceof Date ? b['_sortDate'].getTime() : 0;
-      return dB - dA;
-    };
-
-
-
-    return { 
-      success: true, 
-      data: activeTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest), 
-      history: historyTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest), 
-      headers: cleanHeaders 
-    };
-  } catch (e) { return { success: false, message: e.toString() }; }
-}
-
-function apiFetchStaffTrackerData(personName) {
-  // AUTO-CREATE FOR ANTONIA'S SPECIAL TABS
-  if (String(personName).toUpperCase().startsWith("ANTONIA_VENTAS")) {
-      const allowedTabs = [
-          "ANTONIA_VENTAS RESUMEN EJECUTIVO",
-          "ANTONIA_VENTAS BANCO DE COTIZACIONES",
-          "ANTONIA_VENTAS PAPA CALIENTE DE COTIZACION"
-      ];
-      const upperName = String(personName).toUpperCase().trim();
-      if (allowedTabs.includes(upperName)) {
-          ensureSheetWithHeaders(upperName, DEFAULT_SALES_HEADERS);
-      }
-
-      // AUTO-ADD COLUMNS FOR 'ANTONIA_VENTAS' (PAPA CALIENTE SUPPORT)
-      if (upperName === "ANTONIA_VENTAS") {
-          try {
-              const sheet = findSheetSmart("ANTONIA_VENTAS");
-              if (sheet) {
-                  const lastCol = sheet.getLastColumn();
-                  if (lastCol > 0) {
-                      const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => String(h).toUpperCase().trim());
-                      const missingCols = [];
-                      if (!headers.includes("MAP COT")) missingCols.push("MAP COT");
-                      if (!headers.includes("PROCESO_LOG")) missingCols.push("PROCESO_LOG");
-
-                      if (missingCols.length > 0) {
-                          sheet.getRange(1, lastCol + 1, 1, missingCols.length)
-                               .setValues([missingCols])
-                               .setFontWeight("bold")
-                               .setBackground("#e6e6e6");
-                      }
-                  }
-              }
-          } catch(e) { console.error("Error adding columns to ANTONIA_VENTAS: " + e.toString()); }
-      }
-  }
-  return internalFetchSheetData(personName);
-}
-
-function apiFetchSalesHistory() {
-  try {
-    const dataRes = internalFetchSheetData(APP_CONFIG.salesSheetName);
-    if (!dataRes.success) return dataRes;
-    const allData = [...dataRes.data, ...dataRes.history];
-    const grouped = {};
-    
-    allData.forEach(row => {
-        const vendedorKey = Object.keys(row).find(k => k.toUpperCase().includes("VENDEDOR"));
-        const clienteKey = Object.keys(row).find(k => k.toUpperCase().includes("CLIENTE"));
-        const descKey = Object.keys(row).find(k => k.toUpperCase().includes("CONCEPTO"));
-        const statusKey = Object.keys(row).find(k => k.toUpperCase().includes("ESTATUS"));
-        const dateKey = Object.keys(row).find(k => k.toUpperCase().includes("FECHA"));
-
-        if (vendedorKey && row[vendedorKey]) {
-            const name = String(row[vendedorKey]).trim().toUpperCase();
-            if (!grouped[name]) grouped[name] = [];
-            
-            let pulse = 0;
-            const status = String(row[statusKey] || "").toUpperCase();
-            if (status.includes("VENDIDA") || status.includes("APROBADA") || status.includes("GANADA")) pulse = 10;
-            else if (status.includes("COTIZADA") || status.includes("ENVIADA")) pulse = 5;
-            else if (status.includes("PERDIDA") || status.includes("CANCELADA")) pulse = -5;
-            else pulse = 1;
-
-            grouped[name].push({
-                client: row[clienteKey] || "S/C",
-                desc: row[descKey] || "",
-                status: status,
-                date: row[dateKey] || "",
-                pulse: pulse,
-                displayDate: row[dateKey] ? String(row[dateKey]).substring(0,5) : ""
-            });
-        }
-    });
-
-    return { success: true, data: grouped };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
-}
-
-/**
- * ======================================================================
- * OPTIMIZACIÓN SCRIPTMASTER V153: PROTOCOLO ANTI-BLOQUEO (FILTROS)
- * ======================================================================
- */
-function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
-  if (!tasksArray || tasksArray.length === 0) return { success: true };
-  const lock = LockService.getScriptLock();
-  if (useOwnLock) {
-    if (!lock.tryLock(10000)) {
-        return { success: false, message: "Hoja ocupada, intenta de nuevo."};
-    }
-  }
-  
-  try {
-    const sheet = findSheetSmart(sheetName);
-    if (!sheet) return { success: false, message: "Hoja no encontrada: " + sheetName };
-    const dataRange = sheet.getDataRange();
-    let values = dataRange.getValues();
-    if (values.length === 0) return { success: false, message: "Hoja vacía" };
-    
-    const headerRowIndex = findHeaderRow(values);
-    if (headerRowIndex === -1) return { success: false, message: "Sin cabeceras válidas" };
-    // 1. SANITIZAR HEADERS Y ELIMINAR FILTROS ROTOS (FIX CRÍTICO)
-    let headersChanged = false;
-    for(let c = 0; c < values[headerRowIndex].length; c++) {
-        if (values[headerRowIndex][c] === "" || values[headerRowIndex][c] === null) {
-            values[headerRowIndex][c] = "COL_" + (c + 1);
-            headersChanged = true;
-        }
-    }
-
-    if (headersChanged) {
-        const existingFilter = sheet.getFilter();
-        if (existingFilter) {
-            try { existingFilter.remove(); } catch(e) {} 
-        }
-        sheet.getRange(headerRowIndex + 1, 1, 1, values[headerRowIndex].length).setValues([values[headerRowIndex]]);
-        SpreadsheetApp.flush(); 
-    }
-
-    // FIX: HEADERS CON SALTOS DE LINEA (NORMALIZACIÓN ROBUSTA)
-    const headers = values[headerRowIndex].map(h => String(h).toUpperCase().replace(/\n/g, ' ').replace(/\s+/g, ' ').trim());
-    const maxCols = values.reduce((max, r) => Math.max(max, r.length), 0);
-    const totalColumns = Math.max(maxCols, headers.length);
-
-    const colMap = {};
-    headers.forEach((h, i) => colMap[h] = i);
-    const getColIdx = (key) => {
-      const k = key.toUpperCase().trim();
-      if (colMap[k] !== undefined) return colMap[k];
-      const aliases = {
-        'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO'],
-        'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN', 'ACTIVIDAD'],
-        'RESPONSABLE': ['RESPONSABLE', 'RESPONSABLES', 'INVOLUCRADOS', 'VENDEDOR', 'ENCARGADO', 'ASIGNADO'],
-        'RELOJ': ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'],
-        'ESTATUS': ['ESTATUS', 'STATUS'],
-        'CUMPLIMIENTO': ['CUMPLIMIENTO', 'CUMPL.', 'CUMP'],
-        'AVANCE': ['AVANCE', 'AVANCE %', '% AVANCE'],
-        'ALTA': ['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD', 'ALTA'],
-        'FECHA_RESPUESTA': ['FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA', 'FECHA_FIN', 'DEADLINE'],
-        'PRIORIDAD': ['PRIORIDAD', 'PRIORIDADES', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.'],
-        'RIESGOS': ['RIESGO', 'RIESGOS'],
-        'ARCHIVO': ['ARCHIVO', 'ARCHIVOS', 'CLIP', 'LINK', 'URL', 'EVIDENCIA', 'DOCUMENTO', 'FOTO', 'VIDEO'],
-        'CLASIFICACION': ['CLASIFICACION', 'CLASI'],
-        'COMENTARIOS': ['COMENTARIOS', 'COMENTARIO', 'COMENTARIOS SEMANA EN CURSO', 'OBSERVACIONES', 'NOTAS', 'DETALLES'],
-        'PREVIOS': ['COMENTARIOS PREVIOS', 'PREVIOS', 'COMENTARIOS SEMANA PREVIA'],
-        'FECHA_TERMINO': ['FECHA TERMINO', 'FECHA REAL', 'TERMINO', 'REALIZADO']
-      };
-      for (let main in aliases) {
-        if (aliases[main].includes(k)) {
-             for(let alias of aliases[main]) if(colMap[alias] !== undefined) return colMap[alias];
-        }
-      }
-      return -1;
-    };
-    const folioIdx = getColIdx('FOLIO') > -1 ? getColIdx('FOLIO') : getColIdx('ID');
-    let rowsToAppend = [];
-    let singleRowIndex = -1;
-    let modified = false;
-
-    // 2. Procesar Tareas
-    tasksArray.forEach(task => {
-      let rowIndex = -1;
-      
-      const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
-
-      if (task._rowIndex) {
-        const candidateRowIndex = parseInt(task._rowIndex) - 1;
-        // 2.1 VALIDACIÓN DE SEGURIDAD (ANTI-DESPLAZAMIENTO)
-        // Verificamos que el Folio en esa fila coincida con el payload.
-        // Si hubo movimientos (filas borradas/insertadas), el índice ya no coincidirá.
-        if (candidateRowIndex > headerRowIndex && candidateRowIndex < values.length && folioIdx > -1 && tFolio) {
-             const rowFolio = String(values[candidateRowIndex][folioIdx] || "").toUpperCase().trim();
-             if (rowFolio === tFolio) {
-                 rowIndex = candidateRowIndex;
-             } else {
-                 console.warn(`[SYNC WARNING] Desplazamiento detectado. Folio Payload: ${tFolio} vs Folio Fila: ${rowFolio} (Fila ${candidateRowIndex+1}). Activando búsqueda.`);
-             }
-        } else if (!tFolio) {
-             // Si no hay folio (ej. solo fila), confiamos en el índice si es válido
-             if (candidateRowIndex > headerRowIndex && candidateRowIndex < values.length) rowIndex = candidateRowIndex;
-        }
-      }
-
-      if (rowIndex === -1 && tFolio && folioIdx > -1) {
-           // Búsqueda Robusta por Folio
-           for (let i = headerRowIndex + 1; i < values.length; i++) {
-             const row = values[i];
-             if (String(row[folioIdx]).toUpperCase().trim() === tFolio) { rowIndex = i; break; }
-          }
-      }
-
-      if (rowIndex > -1 && rowIndex < values.length) {
-         Object.keys(task).forEach(key => {
-            if (key.startsWith('_')) return;
-            const cIdx = getColIdx(key);
-            if (cIdx > -1) values[rowIndex][cIdx] = task[key];
-        });
-        singleRowIndex = rowIndex;
-        modified = true;
-      } 
-      else {
-          // BATCH DEDUP: Check if already appending this ID in current batch
-          let appendedRowIndex = -1;
-          const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
-
-          if (folioIdx > -1 && tFolio) {
-               for(let k=0; k<rowsToAppend.length; k++) {
-                   if(String(rowsToAppend[k][folioIdx]).toUpperCase().trim() === tFolio) {
-                       appendedRowIndex = k;
-                       break;
-                   }
-               }
-          }
-
-          if (appendedRowIndex > -1) {
-              // Update the pending row instead of creating duplicate
-              const targetRow = rowsToAppend[appendedRowIndex];
-              Object.keys(task).forEach(key => {
-                  if (key.startsWith('_')) return;
-                  const cIdx = getColIdx(key);
-                  if (cIdx > -1) targetRow[cIdx] = task[key];
-              });
-          } else {
-              const newRow = new Array(totalColumns).fill("");
-              Object.keys(task).forEach(key => {
-                  if (key.startsWith('_')) return;
-                  const cIdx = getColIdx(key);
-                  if (cIdx > -1) newRow[cIdx] = task[key];
-              });
-              if (folioIdx > -1 && !newRow[folioIdx] && (task['FOLIO'] || task['ID'])) {
-                  newRow[folioIdx] = task['FOLIO'] || task['ID'];
-              }
-              const statusIdx = getColIdx('ESTATUS');
-              if(statusIdx > -1 && !newRow[statusIdx]) newRow[statusIdx] = 'ASIGNADO';
-              rowsToAppend.push(newRow);
-          }
-      }
-    });
-    // 3. AUTO-ARCHIVADO
-    let rowsMoved = false;
-    const avanceIdx = getColIdx('AVANCE');
-    const fechaTerminoIdx = getColIdx('FECHA_TERMINO');
-
-    if (avanceIdx > -1) {
-        let separatorIndex = -1;
-        for(let i=0; i<values.length; i++) {
-            if(String(values[i][0]).toUpperCase().includes("TAREAS REALIZADAS") || 
-               String(values[i].join("|")).toUpperCase().includes("TAREAS REALIZADAS")) { 
-                separatorIndex = i;
-                break;
-            }
-        }
-
-        let headerAndTop = values.slice(0, headerRowIndex + 1);
-        let activeRows = [];
-        let separatorRow = [];
-        let historyRows = [];
-        if (separatorIndex === -1) {
-            activeRows = values.slice(headerRowIndex + 1);
-        } else {
-            activeRows = values.slice(headerRowIndex + 1, separatorIndex);
-            separatorRow = [values[separatorIndex]];
-            historyRows = values.slice(separatorIndex + 1);
-        }
-
-        const newActiveRows = [];
-        const movedRows = [];
-        
-        activeRows.forEach(row => {
-            const val = String(row[avanceIdx] || "").trim();
-
-            // FIX ROBUSTO: Detección de 100% (Soporta "100,0", "100.0", "1", "1.0")
-            let isComplete = false;
-            const strictMatch = val === "100" || val === "100%" || val === "1.0" || val === "1";
-
-            if (strictMatch) {
-                isComplete = true;
-            } else {
-                // Limpieza para formatos de moneda/porcentaje latinos (ej. "100,0")
-                const cleanVal = val.replace('%', '').replace(',', '.').trim();
-                const num = parseFloat(cleanVal);
-                if (!isNaN(num)) {
-                   // Comprobar si es 1 (Factor) o 100 (Entero)
-                   if (Math.abs(num - 100) < 0.01 || Math.abs(num - 1) < 0.001) {
-                       isComplete = true;
-                   }
+        // Llamada al Backend
+        google.script.run
+            .withSuccessHandler(function(textoTranscrito) {
+                // Actualizar el Textarea y notificar a Vue
+                const textarea = document.getElementById('campoConcepto');
+                if(textarea) {
+                    const textoActual = textarea.value;
+                    textarea.value = textoActual + (textoActual ? " " : "") + textoTranscrito;
+                    textarea.dispatchEvent(new Event('input')); // Forzar actualización v-model
                 }
-            }
 
-            if (isComplete) {
-                // AUTO-TIMESTAMP: FECHA TERMINO REAL
-                if (fechaTerminoIdx > -1) {
-                   if (!row[fechaTerminoIdx]) {
-                       row[fechaTerminoIdx] = Utilities.formatDate(new Date(), SS.getSpreadsheetTimeZone(), "dd/MM/yy");
-                   }
-                }
-                movedRows.push(row);
-                rowsMoved = true;
-            } else {
-                newActiveRows.push(row);
-            }
-        });
-        if (rowsMoved || (rowsToAppend.length > 0 && separatorIndex === -1)) {
-            if (separatorRow.length === 0) {
-                const sep = new Array(totalColumns).fill("");
-                const titleCol = totalColumns > 2 ? 2 : 0; 
-                sep[titleCol] = "TAREAS REALIZADAS";
-                separatorRow = [sep];
-            }
-            values = [ ...headerAndTop, ...rowsToAppend, ...newActiveRows, ...separatorRow, ...movedRows, ...historyRows ];
-            rowsToAppend = []; 
-            modified = true;
-            singleRowIndex = -1;
-        }
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Listo!',
+                    text: 'Texto agregado correctamente.',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    background: '#1a1a1a',
+                    color: '#ffffff'
+                });
+            })
+            .withFailureHandler(function(err) {
+                Swal.fire('Error', 'Falló la transcripción: ' + err, 'error');
+            })
+            .transcribirConGemini(base64Data, mimeType);
+    };
+}
+
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+async function toggleVoiceRecording(btnElement) {
+    const icon = btnElement.querySelector('i');
+
+    // MOBILE STRATEGY: Bypass getUserMedia on mobile to avoid permission issues
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+
+    if (isMobile) {
+        document.getElementById('audioInputGemini').click();
+        return;
     }
 
-    // 4. ESCRITURA BLINDADA
-    if (modified) {
-       const finalMaxCols = values.reduce((max, r) => Math.max(max, r.length), totalColumns);
-       const normalizedValues = values.map(r => {
-           if (r.length === finalMaxCols) return r;
-           const diff = finalMaxCols - r.length;
-           return r.concat(new Array(diff).fill(""));
-       });
-       if (tasksArray.length === 1 && singleRowIndex > -1 && !rowsMoved) {
-          let singleRow = values[singleRowIndex];
-          if(singleRow.length < finalMaxCols) {
-               singleRow = singleRow.concat(new Array(finalMaxCols - singleRow.length).fill(""));
-          }
-          sheet.getRange(singleRowIndex + 1, 1, 1, finalMaxCols).setValues([singleRow]);
-       } else {
-          // REMOVE FILTER IF EXISTS TO AVOID "HEADER MUST HAVE VALUE" ERROR
-          const existingFilter = sheet.getFilter();
-          if (existingFilter) {
-              try { existingFilter.remove(); } catch(e) {}
-          }
-
-          if(values.length < dataRange.getNumRows()) sheet.clearContents();
-          if(headerRowIndex < normalizedValues.length) {
-              for(let c=0; c<normalizedValues[headerRowIndex].length; c++){
-                  if(!normalizedValues[headerRowIndex][c]) normalizedValues[headerRowIndex][c] = "COL_" + (c+1);
-              }
-          }
-          sheet.getRange(1, 1, normalizedValues.length, finalMaxCols).setValues(normalizedValues);
-       }
-    }
-
-    if (rowsToAppend.length > 0) {
-        const finalMaxCols = values.length > 0 ? values[0].length : totalColumns;
-        const normalizedAppend = rowsToAppend.map(r => {
-             if (r.length >= finalMaxCols) return r;
-             return r.concat(new Array(finalMaxCols - r.length).fill(""));
-        });
-        const insertPos = headerRowIndex + 2;
-        sheet.insertRowsBefore(insertPos, rowsToAppend.length);
-        sheet.getRange(insertPos, 1, normalizedAppend.length, finalMaxCols).setValues(normalizedAppend);
-
-        // 5. AUTO-HEALING: FORMATO CONDICIONAL (SEMAFORO)
-        // Se ejecuta solo al crear nuevas tareas para garantizar que el rango cubra la nueva fila superior.
-        const excludedForFormatting = [APP_CONFIG.logSheetName, APP_CONFIG.draftSheetName, APP_CONFIG.salesSheetName, "DB_SITIOS", "DB_PROYECTOS", "DB_DIRECTORY"];
-        if (!excludedForFormatting.includes(sheetName) && !sheetName.startsWith("DB_")) {
-             try { applyTrafficLightToSheet(sheet); } catch(e) { console.warn("Auto-Format Error: " + e.toString()); }
-        }
-    }
-    
-    SpreadsheetApp.flush();
-    return { success: true, moved: rowsMoved };
-  } catch (e) {
-    console.error(e);
-    return { success: false, message: e.toString() };
-  } finally {
-    if (useOwnLock) lock.releaseLock();
-  }
-}
-
-function apiUpdatePPCV3(taskData, username) {
-  // Ensure backward compatibility with sheet headers
-  if (taskData['COMENTARIOS SEMANA EN CURSO'] !== undefined) taskData['COMENTARIOS'] = taskData['COMENTARIOS SEMANA EN CURSO'];
-  if (taskData['COMENTARIOS SEMANA PREVIA'] !== undefined) taskData['COMENTARIOS PREVIOS'] = taskData['COMENTARIOS SEMANA PREVIA'];
-
-  const targetSheet = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
-
-  // EXPLICIT REMAPPING FOR PPCV4 (TOÑITA) TO MATCH SCREENSHOT HEADERS EXACTLY
-  if (targetSheet === 'PPCV4') {
-      if (taskData['FECHA']) taskData['Fecha de Alta'] = taskData['FECHA'];
-      if (taskData['CONCEPTO']) taskData['Descripción de la Actividad'] = taskData['CONCEPTO'];
-      if (taskData['ARCHIVO']) taskData['Archivos'] = taskData['ARCHIVO'];
-      // Keep original keys too, internalBatchUpdateTasks will handle duplicates/aliases, but explicit keys take precedence in matching
-  }
-
-  const res = internalBatchUpdateTasks(targetSheet, [taskData]);
-  if(res.success) {
-      const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
-      registrarLog(username || "DESCONOCIDO", action, `Update ${targetSheet} ID: ${taskData['ID']||taskData['FOLIO']}`);
-  }
-  return res;
-}
-
-function internalUpdateTask(personName, taskData, username) {
-    try {
-        // GUARD: PPCV3 Inmutabilidad (Solo modificable por Weekly Plan)
-        if (String(personName).trim().toUpperCase() === String(APP_CONFIG.ppcSheetName).trim().toUpperCase()) {
-            return { success: false, message: "Operación no permitida: PPCV3 es de solo lectura desde esta vista." };
-        }
-
-        const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
-
-        // --- NEW RESTRICTION BLOCK (ANGEL, TERESA, EDUARDO, MANZANARES, RAMIRO, SEBASTIAN, EDGAR) ---
-        const restrictedUsers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "EDGAR_LOPEZ"];
-        if (restrictedUsers.includes(String(username).toUpperCase().trim())) {
-             const allowed = ['FOLIO', 'ID', 'AVANCE', 'AVANCE %', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', '_rowIndex'];
-             // Helper to check if key matches allowed
-             const isAllowed = (k) => {
-                 const kUp = k.toUpperCase();
-                 if (k.startsWith('_')) return true;
-                 return allowed.some(a => kUp.includes(a));
-             };
-
-             Object.keys(taskData).forEach(key => {
-                 if (!isAllowed(key)) {
-                     delete taskData[key];
-                 }
-             });
-        }
-        // --- END NEW RESTRICTION BLOCK ---
-
-        if (isAntonia) {
-             // 1. AUTO-INCREMENT FOLIO (Before Saving)
-             if (!taskData['FOLIO'] && !taskData['ID']) {
-                 // NEW TASK -> GENERATE ID
-                 const seqNum = generateNumericSequence('ANTONIA_SEQ_V2');
-                 taskData['FOLIO'] = "AV-" + seqNum;
-             } else {
-                 // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
-                 // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
-
-                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'PROCESO', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
-
-                 Object.keys(taskData).forEach(key => {
-                     const kUp = key.toUpperCase();
-                     if (key.startsWith('_')) return; // Preserve internal keys
-
-                     const isBase = allowedBase.includes(kUp);
-                     const isDate = kUp.includes('FECHA') || kUp.includes('ALTA'); // Allow Date fields
-
-                     if (!isBase && !isDate) {
-                         delete taskData[key];
-                     }
-                 });
-             }
-        }
-
-        const res = internalBatchUpdateTasks(personName, [taskData]);
-
-        if (res.success && username) {
-             const action = (taskData['COMENTARIOS'] || taskData['comentarios'] || taskData['COMENTARIOS SEMANA EN CURSO']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
-             registrarLog(username, action, `Update Task ID: ${taskData['ID']||taskData['FOLIO']} en ${personName}`);
-        }
-
-        // --- SMART ARCHIVING TRIGGER (SINGLE EDIT) ---
-        if ((isAntonia || String(personName).toUpperCase().includes("ANTONIA_VENTAS")) && res.success) {
-            try {
-                if (taskData['COTIZACION'] || taskData['ARCHIVO']) {
-                    processQuoteRow(taskData);
-                }
-            } catch(e) { console.error("Single-Edit Archiving Error: " + e.toString()); }
-        }
-        // ---------------------------------------------
-
-        if (isAntonia) {
-             const distData = JSON.parse(JSON.stringify(taskData));
-             delete distData._rowIndex;
-             delete distData['PROCESO_LOG'];
-                          delete distData['PROCESO'];
-
-             if (taskData._assignToWorker && taskData._assignStep) {
-                 try {
-                     const assignData = JSON.parse(JSON.stringify(distData));
-                     assignData['ESTATUS'] = 'PENDIENTE';
-                     assignData['AVANCE'] = '0%';
-                     const tRes = internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
-                     if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${taskData._assignToWorker}: ${tRes.message}`);
-                 } catch(e) {
-                     registrarLog("ANTONIA", "DIST_ERROR", e.toString());
-                 }
-             }
-
-             // MODIFICADO: Se comenta la distribución a vendedores para evitar duplicidad y tráfico innecesario.
-             // "ya no mandará la misma tarea a la hoja de los vendedores"
-             // UPDATE: Se reactiva la distribución por reporte de bug (No se reflejaban actividades).
-
-             const vendedorKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
-             if (vendedorKey && taskData[vendedorKey]) {
-                 const vendedores = String(taskData[vendedorKey]).split(',').map(s => s.trim());
-
-                 vendedores.forEach(vName => {
-                     if (vName.toUpperCase() !== "ANTONIA_VENTAS") {
-                         try {
-                            // TRAFFIC SPLITTING REFACTORIZADO
-                            let targetSheet = vName;
-                            let hasSuffix = targetSheet.toUpperCase().includes("(VENTAS)");
-                            let finalTarget = null;
-
-                            if (hasSuffix) {
-                                finalTarget = targetSheet;
-                            } else {
-                                let potentialSheet = targetSheet + " (VENTAS)";
-                                if (findSheetSmart(potentialSheet)) {
-                                    finalTarget = potentialSheet;
-                                }
-                            }
-
-                            if (finalTarget) {
-                                 const vRes = internalBatchUpdateTasks(finalTarget, [distData]);
-                                 if(!vRes.success) registrarLog("ANTONIA", "DIST_FAIL", "Fallo copia a " + finalTarget + ": " + vRes.message);
-                            } else {
-                                 registrarLog("ANTONIA", "DIST_SKIP", "Omitido " + vName + " - No se encontró tabla (VENTAS).");
-                            }
-                         } catch(e){
-                            registrarLog("ANTONIA", "DIST_ERROR", e.toString());
-                         }
-                     }
-                 });
-             }
-
-             try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
-        } else {
-             try {
-                 const syncData = JSON.parse(JSON.stringify(taskData));
-                 delete syncData._rowIndex;
-                 delete syncData['PROCESO_LOG'];
-                 delete syncData['PROCESO'];
-                 
-                 const getTVal = (keys) => {
-                     for (let k of keys) {
-                         let found = Object.keys(syncData).find(key => key.toUpperCase().trim() === k);
-                         if (found && syncData[found]) return syncData[found];
-                     }
-                     return "";
-                 };
-                 
-                 const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
-                 const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'])).replace(/%/g, '').trim();
-                 const avanceNum = parseFloat(avanceRaw);
-                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1 || avanceRaw.toUpperCase() === 'SI';
-                 
-                 const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
-                 
-                 if (tFolio) {
-                     const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                     if (antData.success && antData.data) {
-                         const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                         
-                         if (targetRow) {
-                             let log = [];
-                             try {
-                                 if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
-                             } catch(e) {}
-                             
-                             let updated = false;
-                             const updatedLog = log.map(entry => {
-                                 let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ");
-                                 let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ") : "";
-                                 
-                                 if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
-                                     entry.status = 'DONE';
-                                     entry.timestamp = new Date().getTime();
-                                     entry.dateStr = new Date().toLocaleString();
-                                     updated = true;
-                                     registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
-                                 }
-                                 return entry;
-                             });
-                             
-                             if (updated) {
-                                 const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                                 let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
-                                 let mapCotParts = stepsOrder.map(step => {
-                                     const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
-                                     if (stepEntry) {
-                                         if (stepEntry.status === 'DONE') return '🟢 ' + step;
-                                         if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
-                                         if (stepEntry.status === 'PENDING') return '🔴 ' + step;
-                                     }
-                                     let oldPart = oldParts.find(p => p.includes(step));
-                                     if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
-                                     if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
-                                     if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
-                                     return '⚪ ' + step;
-                                 });
-                                 
-                                 let syncToAntonia = {
-                                     'FOLIO': targetRow['FOLIO'] || tFolio,
-                                     'PROCESO_LOG': JSON.stringify(updatedLog),
-                                     'MAP COT': mapCotParts.join(' | ')
-                                 };
-                                 
-                                 const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
-                                 fileCols.forEach(col => {
-                                     let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
-                                     if (wKey && taskData[wKey] && String(taskData[wKey]).trim() !== "") {
-                                         syncToAntonia[wKey] = taskData[wKey];
-                                     }
-                                 });
-                                 
-                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncToAntonia]);
-                             } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
-                             }
-                         }
-                     }
-                 }
-
-                 // Sincronización Lateral (Peer-to-Peer via VENDEDOR field)
-                 const vKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
-                 if (vKey && taskData[vKey]) {
-                     const vList = String(taskData[vKey]).split(',').map(s => s.trim());
-                     vList.forEach(otherVendor => {
-                         // Ignorar si es el mismo usuario que está editando
-                         // "personName" es la hoja actual (e.g. "JUAN (VENTAS)")
-                         if (otherVendor.toUpperCase() === "ANTONIA_VENTAS") return;
-
-                         // Normalizar nombres para comparación
-                         const currentSheetNorm = String(personName).toUpperCase().replace(/\s*\(VENTAS\)/, "").trim();
-                         const otherVendorNorm = String(otherVendor).toUpperCase().replace(/\s*\(VENTAS\)/, "").trim();
-
-                         if (currentSheetNorm !== otherVendorNorm) {
-                             // Distribuir a este otro vendedor
-                             let targetSheet = otherVendor;
-                             if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
-                                 let potential = targetSheet + " (VENTAS)";
-                                 if (findSheetSmart(potential)) targetSheet = potential;
-                             }
-                             internalBatchUpdateTasks(targetSheet, [syncData]);
-                         }
-                     });
-                 }
-
-             } catch (e) {
-                 console.error("Error en sincronización inversa: " + e.toString());
-             }
-        }
-        // RETURN UPDATED DATA (Critical for Frontend Folio Update)
-        res.data = taskData;
-        return res;
-    } catch(e) { return {success:false, message:e.toString()}; }
-}
-
-function apiUpdateTask(personName, taskData, username) {
-  return internalUpdateTask(personName, taskData, username);
-}
-
-function apiFetchDrafts() {
-  try {
-    const sheet = findSheetSmart(APP_CONFIG.draftSheetName);
-    if (!sheet) return { success: true, data: [] };
-    const rows = sheet.getDataRange().getValues();
-    if (rows.length < 1) return { success: true, data: [] }; 
-    const startRow = (rows[0][0] === "ESPECIALIDAD") ? 1 : 0;
-    const drafts = rows.slice(startRow).map(r => {
-      let diasObj = {l:false, m:false, x:false, j:false, v:false, s:false, d:false};
-      try {
-          if (r[19]) diasObj = JSON.parse(r[19]);
-      } catch(e) {}
-
-      return {
-        especialidad: r[0], concepto: r[1], responsable: r[2], horas: r[3], cumplimiento: r[4],
-        archivoUrl: r[5], comentarios: r[6], comentariosPrevios: r[7],
-        prioridades: r[8], riesgos: r[9], restricciones: r[10], fechaRespuesta: r[11],
-        clasificacion: r[12], fechaAlta: r[13],
-        // New Fields
-        rutaCritica: r[14] || "",
-        zona: r[15] || "",
-        contratista: r[16] || "",
-        cuantReq: r[17] || "",
-        cuantReal: r[18] || "",
-        dias: diasObj
-      };
-    }).filter(d => d.concepto);
-    return { success: true, data: drafts };
-  } catch(e) { return { success: false, message: e.toString() };
-  }
-}
-
-function apiSyncDrafts(drafts) {
-  const lock = LockService.getScriptLock();
-  if (lock.tryLock(5000)) {
-    try {
-      let sheet = findSheetSmart(APP_CONFIG.draftSheetName);
-      if (!sheet) { sheet = SS.insertSheet(APP_CONFIG.draftSheetName); }
-      sheet.clear();
-      const headers = [
-          "ESPECIALIDAD", "CONCEPTO", "RESPONSABLE", "HORAS", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "PREVIOS",
-          "PRIORIDAD", "RIESGOS", "RESTRICCIONES", "FECHA_RESP", "CLASIFICACION", "FECHA_ALTA",
-          "RUTA_CRITICA", "ZONA", "CONTRATISTA", "CUANT_REQ", "CUANT_REAL", "DIAS_JSON"
-      ];
-      if (drafts && drafts.length > 0) {
-        const rows = drafts.map(d => [
-          d.especialidad || "", d.concepto || "", d.responsable || "", d.horas || "", d.cumplimiento || "NO",
-          d.archivoUrl || "", d.comentarios || "", d.comentariosPrevios || "",
-          d.prioridades || "", d.riesgos || "", d.restricciones || "", d.fechaRespuesta || "", 
-          d.clasificacion || "", d.fechaAlta || new Date(),
-          d.rutaCritica || "", d.zona || "", d.contratista || "", d.cuantReq || "", d.cuantReal || "",
-          JSON.stringify(d.dias || {})
-        ]);
-        sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-        sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
-      } else {
-        sheet.appendRow(headers);
-      }
-      return { success: true };
-    } catch(e) { return { success: false, message: e.toString() }; } finally { lock.releaseLock();
-    }
-  }
-  return { success: false, message: "Ocupado syncing drafts" };
-}
-
-function apiClearDrafts() {
-  try {
-    const sheet = findSheetSmart(APP_CONFIG.draftSheetName);
-    if(sheet) sheet.clear();
-    return { success: true };
-  } catch(e) { return { success: false }; }
-}
-
-function ensureSheetWithHeaders(sheetName, headers) {
-    let sheet = findSheetSmart(sheetName);
-    if (!sheet) {
-        sheet = SS.insertSheet(sheetName);
-        sheet.appendRow(headers);
-        // Formato básico
-        sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold").setBackground("#e6e6e6");
-    }
-    return sheet;
-}
-
-function saveChildData(sheetName, items, headers) {
-    if (!items || items.length === 0) return;
-    const sheet = ensureSheetWithHeaders(sheetName, headers);
-
-    // Convertir objetos a array basado en headers
-    const rows = items.map(item => {
-        return headers.map(h => item[h] || item[h.replace(" ", "_")] || "");
-    });
-
-    // Append rows (BATCH)
-    if (rows.length > 0) {
-        sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
-    }
-}
-
-function apiSavePPCData(payload, activeUser) {
-  const lock = LockService.getScriptLock();
-  // Esperar hasta 30 segundos para obtener el candado y evitar condiciones de carrera
-  if (lock.tryLock(30000)) {
-    try {
-      const items = Array.isArray(payload) ? payload : [payload];
-      
-      // 1. VERIFICACIÓN CRÍTICA DE PPCV3
-      let sheetPPC = findSheetSmart(APP_CONFIG.ppcSheetName);
-      if (!sheetPPC) { 
-        sheetPPC = SS.insertSheet(APP_CONFIG.ppcSheetName);
-        // Standardize headers for robustness
-        sheetPPC.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
-      }
-
-      // 1.0.1 AUTO-MIGRACIÓN PARA JESUS_CANTU (Añadir columnas faltantes)
-      if (activeUser === 'JESUS_CANTU') {
-          const newCols = [
-              "RUTA_CRITICA", "ZONA", "CUANT_REQUERIDO", "CUANT_REAL", "CONTRATISTA",
-              "DIAS_L", "DIAS_M", "DIAS_X", "DIAS_J", "DIAS_V", "DIAS_S", "DIAS_D"
-          ];
-          const currentHeaders = sheetPPC.getRange(1, 1, 1, sheetPPC.getLastColumn()).getValues()[0].map(h => String(h).toUpperCase().trim());
-          const missing = newCols.filter(c => !currentHeaders.includes(c));
-
-          if (missing.length > 0) {
-              const startCol = sheetPPC.getLastColumn() + 1;
-              sheetPPC.getRange(1, startCol, 1, missing.length).setValues([missing])
-                      .setFontWeight("bold")
-                      .setBackground("#e6e6e6");
-          }
-      }
-
-      // 1.1 VERIFICACIÓN CRÍTICA DE PPCV4 (Para ANTONIA_VENTAS)
-      if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
-          let sheetPPC4 = findSheetSmart('PPCV4');
-          if (!sheetPPC4) {
-             sheetPPC4 = SS.insertSheet('PPCV4');
-             sheetPPC4.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
-          }
-      }
-      
-      const fechaHoy = new Date();
-      const fechaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
-      
-      // Estructuras para Batch Operations
-      const tasksBySheet = {};
-      const logEntries = [];
-      const generatedIds = [];
-
-      const addTaskToSheet = (sheetName, task) => {
-          if (!sheetName) return;
-          const key = sheetName.trim();
-          if (!tasksBySheet[key]) tasksBySheet[key] = [];
-          tasksBySheet[key].push(task);
-      };
-
-      // 2. PREPARACIÓN DE DATOS EN MEMORIA
-      items.forEach(item => {
-          // Use existing ID if provided (for updates/tests) or generate new
-          let id = item.id;
-          if (!id) {
-              if (activeUser === 'PREWORK_ORDER') {
-                  id = generateWorkOrderFolio(item.cliente, item.especialidad);
-              } else {
-                  id = "PPC-" + Math.floor(Math.random() * 1000000);
-              }
-          }
-          generatedIds.push(id);
-          const comentarios = item.comentarios || "";
-
-          // --- NUEVO: GUARDADO DE DETALLES EN HOJAS HIJAS ---
-          // A. Materiales
-          if (item.materiales && item.materiales.length > 0) {
-             const matItems = item.materiales.map(m => ({
-                 FOLIO: id, ...m,
-                 RESIDENTE: m.papaCaliente ? m.papaCaliente.residente : "",
-                 COMPRAS: m.papaCaliente ? m.papaCaliente.compras : "",
-                 CONTROLLER: m.papaCaliente ? m.papaCaliente.controller : "",
-                 ORDEN_COMPRA: m.papaCaliente ? m.papaCaliente.ordenCompra : "",
-                 PAGOS: m.papaCaliente ? m.papaCaliente.pagos : "",
-                 ALMACEN: m.papaCaliente ? m.papaCaliente.almacen : "",
-                 LOGISTICA: m.papaCaliente ? m.papaCaliente.logistica : "",
-                 RESIDENTE_OBRA: m.papaCaliente ? m.papaCaliente.residenteObra : ""
-             }));
-             saveChildData(APP_CONFIG.woMaterialsSheet, matItems, ["FOLIO", "CANTIDAD", "UNIDAD", "TIPO", "DESCRIPCION", "COSTO", "ESPECIFICACION", "TOTAL", "RESIDENTE", "COMPRAS", "CONTROLLER", "ORDEN_COMPRA", "PAGOS", "ALMACEN", "LOGISTICA", "RESIDENTE_OBRA"]);
-          }
-
-          // B. Mano de Obra
-          if (item.manoObra && item.manoObra.length > 0) {
-             const laborItems = item.manoObra.map(l => ({ FOLIO: id, ...l }));
-             saveChildData(APP_CONFIG.woLaborSheet, laborItems, ["FOLIO", "CATEGORIA", "SALARIO", "PERSONAL", "SEMANAS", "EXTRAS", "NOCTURNO", "FIN_SEMANA", "OTROS", "TOTAL"]);
-          }
-
-          // C. Herramientas
-          if (item.herramientas && item.herramientas.length > 0) {
-             const toolItems = item.herramientas.map(t => ({
-                 FOLIO: id, ...t,
-                 RESIDENTE: t.papaCaliente ? t.papaCaliente.residente : "",
-                 CONTROLLER: t.papaCaliente ? t.papaCaliente.controller : "",
-                 ALMACEN: t.papaCaliente ? t.papaCaliente.almacen : "",
-                 LOGISTICA: t.papaCaliente ? t.papaCaliente.logistica : "",
-                 RESIDENTE_FIN: t.papaCaliente ? t.papaCaliente.residenteFin : ""
-             }));
-             saveChildData(APP_CONFIG.woToolsSheet, toolItems, ["FOLIO", "CANTIDAD", "UNIDAD", "DESCRIPCION", "COSTO", "TOTAL", "RESIDENTE", "CONTROLLER", "ALMACEN", "LOGISTICA", "RESIDENTE_FIN"]);
-          }
-
-          // D. Equipos
-          if (item.equipos && item.equipos.length > 0) {
-             const eqItems = item.equipos.map(e => ({ FOLIO: id, ...e }));
-             saveChildData(APP_CONFIG.woEquipSheet, eqItems, ["FOLIO", "CANTIDAD", "UNIDAD", "TIPO", "DESCRIPCION", "ESPECIFICACION", "DIAS", "HORAS", "COSTO", "TOTAL"]);
-          }
-
-          // E. Programa
-          if (item.programa && item.programa.length > 0) {
-             const progItems = item.programa.map(p => ({
-                 FOLIO: id,
-                 ...p,
-                 SECCION: p.seccion || "",
-                 ESTATUS: p.checkStatus || (p.isActive ? 'APPLY' : 'PENDING')
-             }));
-             saveChildData(APP_CONFIG.woProgramSheet, progItems, ["FOLIO", "DESCRIPCION", "FECHA", "DURACION", "UNIDAD_DURACION", "UNIDAD", "CANTIDAD", "PRECIO", "TOTAL", "RESPONSABLE", "SECCION", "ESTATUS"]);
-          }
-
-          // F. Detalles Extra (Checklist, Costos Adicionales) - JSON
-          let detallesExtra = "";
-          if (item.checkList || item.additionalCosts) {
-              detallesExtra = JSON.stringify({
-                  checkList: item.checkList,
-                  costs: item.additionalCosts
-              });
-          }
-
-          // Mapeo Explícito para PPCV3
-          const taskData = {
-                 'FOLIO': id,
-                 'CONCEPTO': item.concepto || item.CONCEPTO,
-                 'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "Media",
-                 'AREA': item.especialidad || item.ESPECIALIDAD,
-                 'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
-                 'FECHA': fechaStr,
-                 'RELOJ': item.horas || item.RELOJ,
-                 'ESTATUS': "ASIGNADO",
-                 'PRIORIDAD': item.prioridad || item.prioridades || item.PRIORIDAD,
-                 'RESTRICCIONES': item.restricciones,
-                 'RIESGOS': item.riesgos || item.RIESGOS,
-                 'FECHA_RESPUESTA': item.fechaRespuesta,
-                 'AVANCE': "0%",
-                 'COMENTARIOS': comentarios,
-                 'ARCHIVO': item.archivoUrl,
-                 'CUMPLIMIENTO': item.cumplimiento || item.CUMPLIMIENTO,
-                 'COMENTARIOS PREVIOS': item.comentariosPrevios || "",
-                 'REQUISITOR': item.requisitor,
-                 'CONTACTO': item.contacto,
-                 'CELULAR': item.celular,
-                 'FECHA_COTIZACION': item.fechaCotizacion,
-                 'CLIENTE': item.cliente,
-                 'TRABAJO': item.TRABAJO,
-                 'DETALLES_EXTRA': detallesExtra, // Nueva Columna
-                 // CAMPOS ESPECIFICOS JESUS_CANTU (Mapping Uppercase from Front)
-                 'RUTA_CRITICA': item.rutaCritica || item.RUTA_CRITICA,
-                 'ZONA': item.zona || item.ZONA,
-                 'CONTRATISTA': item.contratista || item.CONTRATISTA,
-                 'CUANT_REQUERIDO': item.cuantReq || item.CUANT_REQUERIDO,
-                 'CUANT_REAL': item.cuantReal || item.CUANT_REAL,
-                 'DIAS_L': item.dias ? (item.dias.l ? "x" : "") : (item.DIAS_L || ""),
-                 'DIAS_M': item.dias ? (item.dias.m ? "x" : "") : (item.DIAS_M || ""),
-                 'DIAS_X': item.dias ? (item.dias.x ? "x" : "") : (item.DIAS_X || ""),
-                 'DIAS_J': item.dias ? (item.dias.j ? "x" : "") : (item.DIAS_J || ""),
-                 'DIAS_V': item.dias ? (item.dias.v ? "x" : "") : (item.DIAS_V || ""),
-                 'DIAS_S': item.dias ? (item.dias.s ? "x" : "") : (item.DIAS_S || ""),
-                 'DIAS_D': item.dias ? (item.dias.d ? "x" : "") : (item.DIAS_D || "")
-          };
-          
-          // A. Persistencia en PPC Maestro (PPCV3)
-          addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
-
-          // A.1. Persistencia Condicional en PPCV4 (Solo ANTONIA_VENTAS)
-          if (String(activeUser).toUpperCase().trim() === 'ANTONIA_VENTAS') {
-              // Create specific task object for PPCV4 to match headers exactly if aliases fail
-              const taskPPC4 = { ...taskData };
-              // Ensure critical fields map to Screenshot Headers
-              if (taskData['FECHA']) taskPPC4['Fecha de Alta'] = taskData['FECHA'];
-              if (taskData['CONCEPTO']) taskPPC4['Descripción de la Actividad'] = taskData['CONCEPTO'];
-              if (taskData['ARCHIVO']) taskPPC4['Archivos'] = taskData['ARCHIVO'];
-              if (taskData['COMENTARIOS']) taskPPC4['Comentarios Semana en Curso'] = taskData['COMENTARIOS'];
-              if (taskData['INVOLUCRADOS']) taskPPC4['RESPONSABLE'] = taskData['INVOLUCRADOS'];
-
-              addTaskToSheet('PPCV4', taskPPC4);
-          }
-
-          // B. Respaldo Obligatorio en ADMINISTRADOR (Control)
-          addTaskToSheet("ADMINISTRADOR", taskData);
-
-          // C. Distribución al Staff (Tracker Personal)
-          const responsables = String(item.responsable || item.RESPONSABLE || "").split(",").map(s => s.trim()).filter(s => s);
-
-          responsables.forEach(personName => {
-              if (!personName.toUpperCase().includes("(VENTAS)")) {
-                  // LOGICA ESPECIAL JESUS_CANTU: Filtrar columnas para evitar rotura en Tracker
-                  if (activeUser === 'JESUS_CANTU') {
-                      const staffData = {
-                          'FOLIO': taskData.FOLIO,
-                          'CONCEPTO': taskData.CONCEPTO,
-                          'AREA': taskData.AREA,
-                          'RESPONSABLE': taskData.INVOLUCRADOS,
-                          'FECHA': taskData.FECHA,
-                          'ESTATUS': taskData.ESTATUS,
-                          'AVANCE': taskData.AVANCE,
-                          'CLASIFICACION': taskData.CLASIFICACION,
-                          'PRIORIDAD': taskData.PRIORIDAD
-                          // Se omiten RUTA_CRITICA, ZONA, DIAS_X, etc.
-                      };
-                      addTaskToSheet(personName, staffData);
-                  } else {
-                      addTaskToSheet(personName, taskData);
-                  }
-              }
-          });
-
-          // D. Preparar Log (En Memoria)
-          logEntries.push([new Date(), activeUser || "DESCONOCIDO", "GUARDADO_PPC", `ID: ${id} | Comentarios: ${comentarios}`]);
-      });
-
-      // 3. EJECUCIÓN DE ESCRITURA (BATCH)
-
-      // A. Guardado Crítico (PPCV3)
-      // Usamos useOwnLock = false porque ya tenemos el lock aquí.
-      if (tasksBySheet[APP_CONFIG.ppcSheetName]) {
-          const ppcResult = internalBatchUpdateTasks(APP_CONFIG.ppcSheetName, tasksBySheet[APP_CONFIG.ppcSheetName], false);
-          if (!ppcResult.success) {
-              throw new Error("CRITICAL: Falló guardado en PPCV3. " + ppcResult.message);
-          }
-          delete tasksBySheet[APP_CONFIG.ppcSheetName];
-      }
-
-      // B. Distribución Secundaria (Staff / Admin)
-      for (const [targetSheet, tasks] of Object.entries(tasksBySheet)) {
-          try {
-            const res = internalBatchUpdateTasks(targetSheet, tasks, false);
-            if (!res.success) console.warn(`Fallo secundario en ${targetSheet}: ${res.message}`);
-          } catch(err) {
-             console.warn(`Error en distribución a ${targetSheet}: ${err.toString()}`);
-          }
-      }
-
-      // C. Escritura de Logs en Lote (Optimización V8)
-      if (logEntries.length > 0) {
+    if (!isRecording) {
+        // Start Recording
         try {
-            let sheetLog = SS.getSheetByName(APP_CONFIG.logSheetName);
-            if (!sheetLog) {
-              sheetLog = SS.insertSheet(APP_CONFIG.logSheetName);
-              sheetLog.appendRow(["FECHA", "USUARIO", "ACCION", "DETALLES"]);
-            }
-            const lastRow = sheetLog.getLastRow();
-            // batch write logs
-            sheetLog.getRange(lastRow + 1, 1, logEntries.length, 4).setValues(logEntries);
-        } catch(logErr) {
-            console.error("Error escribiendo logs: " + logErr.toString());
-        }
-      }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
 
-      return { success: true, message: "Datos procesados y distribuidos correctamente.", ids: generatedIds };
-    } catch (e) { 
-        console.error(e);
-        registrarLog(activeUser || "SYSTEM", "ERROR_CRITICO_PPC", e.toString());
-        return { success: false, message: "Error al guardar: " + e.toString() };
-    } finally {
-        lock.releaseLock();
-    }
-  }
-  return { success: false, message: "Sistema Ocupado, intenta de nuevo." };
-}
-
-function uploadFileToDrive(data, type, name) {
-  try {
-    const folderId = APP_CONFIG.folderIdUploads;
-    let folder;
-    if (folderId && folderId.trim() !== "") { try { folder = DriveApp.getFolderById(folderId); } catch(e) { folder = DriveApp.getRootFolder();
-    } } 
-    else { folder = DriveApp.getRootFolder();
-    }
-    // FIX: Default to octet-stream if type is missing (e.g. .dwg, .zip)
-    const mimeType = (type && type.trim() !== "") ? type : "application/octet-stream";
-    const blob = Utilities.newBlob(Utilities.base64Decode(data.split(',')[1]), mimeType, name);
-    const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    return { success: true, fileUrl: file.getUrl() };
-  } catch (e) { return { success: false, message: e.toString() };
-  }
-}
-
-function apiFetchPPCData() { 
-  try { 
-    const s = findSheetSmart(APP_CONFIG.ppcSheetName);
-    if(!s) return {success:true,data:[]};
-    const range = s.getDataRange();
-    const values = range.getValues();
-    if (values.length < 2) return {success:true, data:[]};
-    const headerIdx = findHeaderRow(values);
-    if (headerIdx === -1) return {success:true, data:[]};
-
-    const headers = values[headerIdx].map(h => String(h).toUpperCase().replace(/\n/g, " ").trim());
-    const colMap = {
-      id: headers.findIndex(h => h.includes("ID") || h.includes("FOLIO")),
-      esp: headers.findIndex(h => h.includes("ESPECIALIDAD")),
-      con: headers.findIndex(h => h.includes("DESCRIPCI") || h.includes("CONCEPTO")), 
-      resp: headers.findIndex(h => h.includes("RESPONSABLE") || h.includes("INVOLUCRADOS")),
-      fecha: headers.findIndex(h => h.includes("FECHA") || h.includes("ALTA")),
-      reloj: headers.findIndex(h => h.includes("RELOJ")),
-      cump: headers.findIndex(h => h.includes("CUMPLIMIENTO")),
-      arch: headers.findIndex(h => h.includes("ARCHIVO") || h.includes("CLIP")),
-      com: headers.findIndex(h => (h.includes("COMENTARIOS") && h.includes("CURSO")) || h === "COMENTARIOS"),
-      prev: headers.findIndex(h => (h.includes("COMENTARIOS") && h.includes("PREVIA")) || h.includes("PREVIOS"))
-    };
-
-    let dataRows = values.slice(headerIdx + 1);
-    if(dataRows.length > 300) dataRows = dataRows.slice(dataRows.length - 300);
-    const resultData = dataRows.map(r => {
-      const getVal = (idx) => (idx > -1 && r[idx] !== undefined) ? r[idx] : "";
-      return {
-        id: getVal(colMap.id), especialidad: getVal(colMap.esp), concepto: getVal(colMap.con),
-        responsable: getVal(colMap.resp), fechaAlta: getVal(colMap.fecha), horas: getVal(colMap.reloj),
-        cumplimiento: getVal(colMap.cump), archivoUrl: getVal(colMap.arch), comentarios: getVal(colMap.com),
-        comentariosPrevios: getVal(colMap.prev)
-      };
-    }).filter(x => x.concepto).reverse();
-    return { success: true, data: resultData }; 
-  } catch(e){ return {success:false, message: e.toString()} } 
-}
-
-function apiFetchWeeklyPlanData(username) {
-  try {
-    const isJesus = String(username).toUpperCase().trim() === 'JESUS_CANTU';
-    const sheetName = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
-    const sheet = findSheetSmart(sheetName);
-    if (!sheet) return { success: false, message: "No existe la hoja " + sheetName };
-    const data = sheet.getDataRange().getValues();
-    if (data.length < 2) return { success: true, headers: [], data: [] };
-    const headerRowIdx = findHeaderRow(data);
-    if (headerRowIdx === -1) return { success: false, message: "Cabeceras no encontradas en PPCV3." };
-    const originalHeaders = data[headerRowIdx].map(h => String(h).trim());
-    
-    // CUSTOM VIEW FOR JESUS_CANTU
-    if (isJesus) {
-        // Define fixed header structure for the customized view
-        const jesusHeaders = [
-            'RUTA_CRITICA', 'ZONA', 'ESPECIALIDAD', 'CONCEPTO',
-            'CUANT_REQUERIDO', 'CUANT_REAL', 'RESPONSABLE', 'CONTRATISTA',
-            'DIAS_L', 'DIAS_M', 'DIAS_X', 'DIAS_J', 'DIAS_V', 'DIAS_S', 'DIAS_D',
-            'CUMPLIMIENTO'
-        ];
-
-        // Map data rows to these headers based on column matching
-        const rows = data.slice(headerRowIdx + 1);
-        const result = rows.map((r, i) => {
-            const rowObj = { _rowIndex: headerRowIdx + i + 2 };
-            // Helper to find value in row by fuzzy header match
-            const getVal = (candidates) => {
-                for (let c of candidates) {
-                    const idx = originalHeaders.findIndex(h => h.toUpperCase().trim() === c.toUpperCase().trim() || h.toUpperCase().trim().includes(c.toUpperCase().trim()));
-                    if (idx > -1) return r[idx];
-                }
-                return "";
+            mediaRecorder.ondataavailable = event => {
+                audioChunks.push(event.data);
             };
 
-            rowObj['RUTA_CRITICA'] = getVal(['RUTA_CRITICA', 'RUTA CRITICA', 'CRITICA']);
-            rowObj['ZONA'] = getVal(['ZONA', 'UBICACION', 'AREA GEOGRAFICA']);
-            rowObj['ESPECIALIDAD'] = getVal(['ESPECIALIDAD', 'AREA', 'DISCIPLINA']);
-            rowObj['CONCEPTO'] = getVal(['CONCEPTO', 'DESCRIPCION', 'DEFINIDA', 'ATERRIZADA', 'ACTIVIDAD']);
+            mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = () => {
+                    const base64String = reader.result.split(',')[1];
+                    const mimeType = 'audio/webm'; // Chrome records in webm
 
-            // CUANTIFICACION LOGIC (Handle Merged Headers)
-            rowObj['CUANT_REQUERIDO'] = getVal(['CUANT_REQUERIDO', 'REQUERIDO']);
-            rowObj['CUANT_REAL'] = getVal(['CUANT_REAL', 'REAL']);
+                    Swal.fire({
+                        title: 'Transcribiendo...',
+                        text: 'Enviando audio a Gemini AI',
+                        didOpen: () => Swal.showLoading(),
+                        allowOutsideClick: false,
+                        background: '#1a1a1a',
+                        color: '#ffffff'
+                    });
 
-            if (!rowObj['CUANT_REQUERIDO']) {
-                const qIdx = originalHeaders.findIndex(h => h.toUpperCase().includes('CUANTIFICACIÓN') || h.toUpperCase().includes('CUANTIFICACION'));
-                if (qIdx > -1) {
-                    rowObj['CUANT_REQUERIDO'] = r[qIdx];
-                    rowObj['CUANT_REAL'] = r[qIdx + 1];
-                }
+                    google.script.run
+                        .withSuccessHandler(text => {
+                            const textarea = document.getElementById('campoConcepto');
+                            if(textarea) {
+                                const current = textarea.value;
+                                textarea.value = current + (current ? " " : "") + text;
+                                textarea.dispatchEvent(new Event('input'));
+                            }
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Transcrito!',
+                                timer: 1500,
+                                showConfirmButton: false,
+                                background: '#1a1a1a',
+                                color: '#ffffff'
+                            });
+                        })
+                        .withFailureHandler(err => {
+                            Swal.fire({
+                                title: 'Error',
+                                text: 'No se pudo transcribir: ' + err,
+                                icon: 'error',
+                                background: '#1a1a1a',
+                                color: '#ffffff'
+                            });
+                        })
+                        .transcribirConGemini(base64String, mimeType);
+                };
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+
+            // Visual Feedback
+            btnElement.classList.remove('btn-primary');
+            btnElement.classList.add('btn-danger', 'pulse-recording');
+            if(icon) {
+                icon.classList.remove('fa-microphone');
+                icon.classList.add('fa-stop');
             }
 
-            rowObj['RESPONSABLE'] = getVal(['RESPONSABLE', 'ENCARGADO', 'PERSONA RESPONSABLE']);
-            rowObj['CONTRATISTA'] = getVal(['CONTRATISTA', 'PROVEEDOR']);
-            rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L']);
-            rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M']);
-            rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI']);
-            rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J']);
-            rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V']);
-            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S']);
-            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D']);
-            rowObj['CUMPLIMIENTO'] = getVal(['CUMPLIMIENTO']);
-
-            // Add ID if available for saving
-            rowObj['ID'] = getVal(['ID', 'FOLIO']);
-            rowObj['FOLIO'] = rowObj['ID'];
-
-            // HIDDEN FIELDS PRESERVATION (CRITICAL FOR SYNC)
-            rowObj['FECHA'] = getVal(['FECHA', 'ALTA', 'FECHA INICIO']);
-            rowObj['ESTATUS'] = getVal(['ESTATUS', 'STATUS']);
-            rowObj['AVANCE'] = getVal(['AVANCE', 'AVANCE %']);
-            rowObj['CLASIFICACION'] = getVal(['CLASIFICACION']);
-            rowObj['PRIORIDAD'] = getVal(['PRIORIDAD']);
-
-            return rowObj;
-        }).filter(r => r["CONCEPTO"] || r["ID"]);
-
-        return { success: true, headers: jesusHeaders, data: result.reverse() };
-    }
-
-    const mappedHeaders = originalHeaders.map(h => {
-        const up = h.toUpperCase();
-        if (up.includes("ESPECIALIDAD") || up.includes("AREA") || up.includes("DEPARTAMENTO")) return "ESPECIALIDAD";
-        if (up.includes("DESCRIPCI") || up.includes("CONCEPTO")) return "CONCEPTO"; 
-        if (up.includes("INVOLUCRADOS") || up.includes("RESPONSABLE") || up.includes("VENDEDOR") || up.includes("ENCARGADO")) return "RESPONSABLE";
-        if (up.includes("ALTA") || up.includes("FECHA")) return "FECHA";
-        if (up.includes("RELOJ") || up.includes("HORAS")) return "RELOJ";
-        if (up.includes("ARCHIV") || up.includes("CLIP") || up.includes("LINK") || up.includes("EVIDENCIA")) return "ARCHIVO";
-        if (up.includes("CUMPLIMIENTO")) return "CUMPLIMIENTO";
-        if (up === "COMENTARIOS" || up === "COMENTARIOS SEMANA EN CURSO" || up.includes("OBSERVACIONES")) return "COMENTARIOS SEMANA EN CURSO";
-        if (up === "COMENTARIOS PREVIOS" || up === "COMENTARIOS SEMANA PREVIA" || up === "PREVIOS") return "COMENTARIOS SEMANA PREVIA";
-        return up; 
-    });
-    const displayHeaders = ["SEMANA", ...mappedHeaders];
-    const rows = data.slice(headerRowIdx + 1);
-    const result = rows.map((r, i) => {
-      const rowObj = { _rowIndex: headerRowIdx + i + 2 };
-      mappedHeaders.forEach((h, colIdx) => {
-        let val = r[colIdx];
-        if (val instanceof Date) {
-           if (val.getFullYear() < 1900) {
-              val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "HH:mm");
-           } else {
-              val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
-           }
-        }
-        rowObj[h] = val;
-      });
-      const fechaVal = rowObj["FECHA"];
-      let semanaNum = "-";
-      if (fechaVal) {
-        let dateObj = null;
-        if (String(fechaVal).includes("/")) {
-          const parts = String(fechaVal).split("/"); 
-          if(parts.length === 3) dateObj = new Date(parts[2], parts[1]-1, parts[0]);
-        } else if (fechaVal instanceof Date) { dateObj = fechaVal; } else { dateObj = new Date(fechaVal); }
-        if (dateObj && !isNaN(dateObj.getTime())) semanaNum = getWeekNumber(dateObj); 
-      }
-      rowObj["SEMANA"] = semanaNum;
-      
-      return rowObj;
-    }).filter(r => r["CONCEPTO"] || r["ID"] || r["FOLIO"]);
-    return { success: true, headers: displayHeaders, data: result.reverse() }; 
-  } catch (e) {
-    console.error(e);
-    return { success: false, message: e.toString() };
-  }
-}
-
-function getWeekNumber(d) {
-  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-  var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-  var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
-  return weekNo;
-}
-
-// 1. Guardar Nuevo Sitio (Padre)
-function apiSaveSite(siteData) {
-  const lock = LockService.getScriptLock();
-  if (lock.tryLock(5000)) {
-    try {
-      let sheet = findSheetSmart("DB_SITIOS");
-      if (!sheet) {
-        sheet = SS.insertSheet("DB_SITIOS");
-        sheet.appendRow(["ID_SITIO", "NOMBRE", "CLIENTE", "TIPO", "ESTATUS", "FECHA_CREACION", "CREADO_POR"]);
-      }
-      
-      const data = sheet.getDataRange().getValues();
-      const cleanName = siteData.name.toUpperCase().trim();
-      const nameColIdx = data.length > 0 ? data[0].indexOf("NOMBRE") : 1;
-      for(let i=1; i<data.length; i++) {
-         if (data[i][nameColIdx] && String(data[i][nameColIdx]).toUpperCase().trim() === cleanName) {
-             return { success: false, message: "Ya existe un sitio con ese nombre."};
-         }
-      }
-
-      const id = "SITE-" + new Date().getTime();
-      sheet.appendRow([
-        id,
-        cleanName,
-        siteData.client.toUpperCase().trim(),
-        siteData.type || "CLIENTE", 
-        "ACTIVO",
-        new Date(),
-        siteData.createdBy ? siteData.createdBy.toUpperCase().trim() : "ANONIMO"
-      ]);
-      SpreadsheetApp.flush(); 
-
-      // AUTOMATIZACIÓN: CREAR ESTRUCTURA ESTÁNDAR AUTOMÁTICAMENTE
-      apiCreateStandardStructure(id, siteData.createdBy);
-
-      registrarLog(siteData.createdBy || "ANONIMO", "NUEVO SITIO", `Sitio: ${cleanName} (${id})`);
-
-      return { success: true, id: id, message: "Sitio creado correctamente con estructura PPC completa." };
-    } catch (e) {
-      return { success: false, message: e.toString() };
-    } finally {
-      lock.releaseLock();
-    }
-  }
-  return { success: false, message: "El sistema está ocupado." };
-}
-
-// 2. Guardar Nuevo Subproyecto (Hijo)
-function apiSaveSubProject(subProjectData) {
-  const lock = LockService.getScriptLock();
-  if (lock.tryLock(5000)) {
-    try {
-      let sheet = findSheetSmart("DB_PROYECTOS");
-      if (!sheet) {
-        sheet = SS.insertSheet("DB_PROYECTOS");
-        sheet.appendRow(["ID_PROYECTO", "ID_SITIO", "NOMBRE_SUBPROYECTO", "TIPO", "ESTATUS", "FECHA_CREACION", "CREADO_POR"]);
-      }
-      
-      const cleanName = subProjectData.name.toUpperCase().trim();
-      const data = sheet.getDataRange().getValues();
-      let idSitioIdx = 1; 
-      let nameIdx = 2;
-      const headerRow = findHeaderRow(data);
-      if (headerRow > -1) {
-          const headers = data[headerRow].map(h=>String(h).toUpperCase());
-          idSitioIdx = headers.indexOf("ID_SITIO");
-          nameIdx = headers.indexOf("NOMBRE_SUBPROYECTO");
-      }
-
-      for(let i=1; i<data.length; i++) {
-          if (data[i][idSitioIdx] == subProjectData.parentId && 
-              String(data[i][nameIdx]).toUpperCase().trim() === cleanName) {
-              return { success: false, message: "Ya existe ese subproyecto en este sitio."};
-          }
-      }
-
-      const id = "PROJ-" + new Date().getTime() + "-" + Math.floor(Math.random()*1000);
-      sheet.appendRow([
-        id,
-        subProjectData.parentId,
-        cleanName,
-        subProjectData.type || "GENERAL", 
-        "ACTIVO",
-        new Date(),
-        subProjectData.createdBy ? subProjectData.createdBy.toUpperCase().trim() : "ANONIMO"
-      ]);
-      SpreadsheetApp.flush(); 
-
-      registrarLog(subProjectData.createdBy || "ANONIMO", "NUEVO SUBPROYECTO", `Subproyecto: ${cleanName} (${id})`);
-
-      return { success: true, id: id, message: "Subproyecto agregado." };
-    } catch (e) {
-      return { success: false, message: e.toString() };
-    } finally {
-      lock.releaseLock();
-    }
-  }
-  return { success: false, message: "El sistema está ocupado." };
-}
-
-// 3. Obtener Árbol Completo
-function apiFetchCascadeTree() {
-  try {
-    const sites = [];
-    const sheetSites = findSheetSmart("DB_SITIOS");
-    if (sheetSites) {
-      const values = sheetSites.getDataRange().getValues();
-      const headerRowIdx = findHeaderRow(values);
-      if (headerRowIdx !== -1 && values.length > headerRowIdx + 1) {
-        const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
-        const colMap = {
-           id: headers.findIndex(h => h.includes("ID")),
-           name: headers.findIndex(h => h.includes("NOMBRE")),
-           client: headers.findIndex(h => h.includes("CLIENTE")),
-           type: headers.findIndex(h => h.includes("TIPO")),
-           status: headers.findIndex(h => h.includes("ESTATUS")),
-           date: headers.findIndex(h => h.includes("FECHA"))
-        };
-        for (let i = headerRowIdx + 1; i < values.length; i++) {
-          const row = values[i];
-          if (colMap.id > -1 && colMap.name > -1 && row[colMap.id]) {
-             let dateStr = "";
-             if (colMap.date > -1 && row[colMap.date]) {
-                 try { dateStr = Utilities.formatDate(new Date(row[colMap.date]), SS.getSpreadsheetTimeZone(), "dd/MM/yy HH:mm");
-                 } catch(e) {}
-             }
-             sites.push({
-               id: String(row[colMap.id]).trim(),
-               name: String(row[colMap.name]).trim(),
-               client: (colMap.client > -1) ? String(row[colMap.client]) : "",
-               type: (colMap.type > -1) ? String(row[colMap.type]) : "CLIENTE",
-               status: (colMap.status > -1) ? String(row[colMap.status]) : "ACTIVO",
-               createdAt: dateStr,
-               subProjects: [],
-               expanded: false
-             });
-          }
-        }
-      }
-    }
-
-    const sheetProjs = findSheetSmart("DB_PROYECTOS");
-    if (sheetProjs) {
-      const values = sheetProjs.getDataRange().getValues();
-      const headerRowIdx = findHeaderRow(values);
-      if (headerRowIdx !== -1 && values.length > headerRowIdx + 1) {
-        const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
-        const colMap = {
-           parentId: headers.findIndex(h => h.includes("SITIO") || h.includes("PADRE")),
-           name: headers.findIndex(h => h.includes("NOMBRE") || h.includes("SUBPROYECTO")),
-           type: headers.findIndex(h => h.includes("TIPO") || h.includes("ESPECIALIDAD")),
-           status: headers.findIndex(h => h.includes("ESTATUS"))
-        };
-        for (let i = headerRowIdx + 1; i < values.length; i++) {
-          const row = values[i];
-          if (colMap.parentId > -1 && colMap.name > -1 && row[colMap.parentId]) {
-             const parentId = String(row[colMap.parentId]).trim();
-             const parent = sites.find(s => String(s.id).trim() === parentId);
-             if (parent) {
-               // CAMBIO: Si es PPC, asignamos el icono correcto
-               const pName = String(row[colMap.name]).trim().toUpperCase();
-               let icon = "fa-clipboard-list";
-               if (pName.includes("PPC")) icon = "fa-tasks";
-
-               parent.subProjects.push({
-                 id: row[0],
-                 name: String(row[colMap.name]).trim(),
-                 type: (colMap.type > -1) ? String(row[colMap.type]) : "GENERAL",
-                 status: (colMap.status > -1) ? String(row[colMap.status]) : "ACTIVO",
-                 icon: icon
-               });
-             }
-          }
-        }
-      }
-    }
-    return { success: true, data: sites };
-  } catch (e) {
-    console.error(e);
-    return { success: false, message: "Error leyendo DB: " + e.toString() };
-  }
-}
-
-function apiFetchProjectTasks(projectName) {
-  try {
-    const sheet = findSheetSmart("ADMINISTRADOR");
-    if (!sheet) return { success: false, message: "No se encuentra la hoja ADMINISTRADOR" };
-
-    const values = sheet.getDataRange().getValues();
-    if (values.length < 2) return { success: true, data: [], headers: [] };
-
-    const headerRowIdx = findHeaderRow(values);
-    if (headerRowIdx === -1) return { success: false, message: "Sin cabeceras válidas" };
-
-    const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
-    const projectTag = `[PROY: ${String(projectName).toUpperCase().trim()}]`;
-    
-    // Indices clave
-    let colIdx = {
-       concepto: headers.indexOf("CONCEPTO"),
-       comentarios: headers.indexOf("COMENTARIOS")
-    };
-    if (colIdx.concepto === -1) colIdx.concepto = headers.findIndex(h => h.includes("CONCEPTO") || h.includes("DESCRIPCI"));
-    if (colIdx.comentarios === -1) colIdx.comentarios = headers.findIndex(h => h.includes("COMENTARIOS"));
-    const dataRows = values.slice(headerRowIdx + 1);
-    const filteredTasks = [];
-    for (let i = 0; i < dataRows.length; i++) {
-        const row = dataRows[i];
-        const comText = (colIdx.comentarios > -1 && row[colIdx.comentarios]) ? String(row[colIdx.comentarios]).toUpperCase() : "";
-        const descText = (colIdx.concepto > -1 && row[colIdx.concepto]) ? String(row[colIdx.concepto]).toUpperCase() : "";
-        if (comText.includes(projectTag) || descText.includes(projectTag)) {
-            let rowObj = { _rowIndex: headerRowIdx + i + 2 };
-            headers.forEach((h, k) => {
-                let val = row[k];
-                if (val instanceof Date) {
-                    val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                title: 'Permiso Requerido',
+                text: 'Acceso web denegado. ¿Usar grabadora nativa?',
+                icon: 'warning',
+                background: '#1a1a1a',
+                color: '#ffffff',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, Abrir',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('audioInputGemini').click();
                 }
-                rowObj[h] = val;
             });
-            filteredTasks.push(rowObj);
+        }
+    } else {
+        // Stop Recording
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+        isRecording = false;
+
+        // Visual Feedback Reset
+        btnElement.classList.remove('btn-danger', 'pulse-recording');
+        btnElement.classList.add('btn-primary');
+        if(icon) {
+            icon.classList.remove('fa-stop');
+            icon.classList.add('fa-microphone');
         }
     }
+}
 
-    if (sheetName.includes('ANTONIA_VENTAS')) {
-        const estatusIdx = headers.indexOf('ESTATUS');
-        const avanceIdx = headers.indexOf('AVANCE');
-        const mapCotIdx = headers.indexOf('MAP COT');
+  const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+  const app = createApp({
+    setup() {
+      // ESTADO GLOBAL
+      const isRecording = ref(false);
+      let recognition = null;
+      const isLoggedIn = ref(false); const loginPass = ref(''); const loginUser = ref(''); const loggingIn = ref(false); const currentUser = ref(''); const currentUsername = ref('');
+      const currentRole = ref(''); // NUEVO: Estado para el rol del usuario
+      const currentView = ref('DASHBOARD'); const currentDept = ref('');
+      const config = ref({ departments: {}, staff: [], directory: [], specialModules: [] });
+      const staffTracker = ref({ name: '', data: [], history: [], headers: [], isLoading: false, previousView: 'DEPT' });
 
-        if (mapCotIdx !== -1) {
-            headers.splice(mapCotIdx, 1); // remove
-
-            // Recalculate positions
-            const estIdx2 = headers.indexOf('ESTATUS');
-            if (estIdx2 !== -1) {
-                headers.splice(estIdx2 + 1, 0, 'MAP COT');
-            } else {
-                headers.push('MAP COT');
+      // MOCK DATA FOR ANTONIA_VENTAS - PAPA CALIENTE
+      const hotPotatoData = ref({
+          columns: [
+            {
+              title: "Levantamiento de Cotización",
+              subHeader: "Conocimiento",
+              items: [
+                { name: "Teresa", level: "AAA" },
+                { name: "Ramiro", level: "AAA" },
+                { name: "Correa", level: "AA" },
+                { name: "Cesar Garcia", level: "A" },
+                { name: "Reynaldo", level: "AA", highlight: true },
+                { name: "Cesar Gomez", level: "A" },
+                { name: "Judith", level: "AA", highlight: true },
+                { name: "Gallardo", level: "AAA" },
+                { name: "Sebastian", level: "AA" },
+                { name: "Jehu", level: "A" },
+                { name: "Eduardo Manz", level: "AAA" },
+                { name: "Emiliano", level: "A" },
+                { name: "Ing Edgar", level: "AAA" },
+                { name: "Luis Ramirez", level: "AA" }
+              ]
+            },
+            {
+              title: "Diseño",
+              items: [
+                { name: "Arq Angel", level: "AAA" },
+                { name: "Ramiro", level: "A" },
+                { name: "Reynaldo", level: "AAA", highlight: true },
+                { name: "Judith", level: "AA", highlight: true },
+                { name: "Teresa", level: "A" },
+                { name: "Jehu", level: "AA" },
+                { name: "Gaallardo", level: "AAA" },
+                { name: "Sebastian", level: "AA" },
+                { name: "Eduardo Ma", level: "A" },
+                { name: "Ing Edgar", level: "AAA" }
+              ]
+            },
+            {
+              title: "Calculo",
+              items: [
+                 { name: "Ramiro", level: "AA" },
+                 { name: "Reynaldo", level: "AAA" },
+                 { name: "Gaallardo", level: "AAA" },
+                 { name: "Sebastian", level: "AA" },
+                 { name: "Eduardo Ma", level: "AA" },
+                 { name: "Ing Edgar", level: "AAA" },
+                 { name: "Luis Ramirez", level: "AA A", extra: "Excel" }
+              ]
+            },
+            {
+              title: "Presupuestos",
+              items: [
+                { name: "Teresa", level: "AAA Alto", extra: "Opwr" },
+                { name: "Ramiro", level: "AAA Alto", extra: "Opwr" },
+                { name: "Correa", level: "AA", extra: "Opwr" },
+                { name: "Cesar Garcia", level: "A", extra: "excel" },
+                { name: "Cesar Gomez", level: "A", extra: "excel" },
+                { name: "Judith", level: "AAA B" },
+                { name: "Geraldin", level: "A" },
+                { name: "Valeria", level: "A Baja" },
+                { name: "Gallardo", level: "AAA", extra: "Excel" },
+                { name: "Sebastian", level: "AA A", extra: "Opwr" },
+                { name: "Jehu", level: "A", extra: "Opwr" },
+                { name: "Eduardo Manz", level: "AAA", extra: "Excel" },
+                { name: "Emiliano", level: "A", extra: "Excel" },
+                { name: "Luis Ramirez", level: "AA A", extra: "Excel" }
+              ]
+            },
+            {
+                title: "Ejecución de Obra",
+                isYellow: true,
+                items: [
+                    { name: "Correa", level: "AA" },
+                    { name: "Cesar Garcia", level: "A" },
+                    { name: "Reynaldo", level: "AA" },
+                    { name: "Gilberto" },
+                    { name: "Jose Manuel" },
+                    { name: "Emiliano Arredondeo" },
+                    { name: "Luis Ramirez" },
+                    { name: "REFORZAR", isFooter: true }
+                ]
             }
-        }
-    }
-    return { success: true, data: filteredTasks.reverse(), headers: headers };
+          ],
+          notes: [
+              { label: "Nota:", text: "Se requiere personal Capacitado Luis Carlos Utilizar Scanner" },
+              { label: "Olivo", text: "Se requiere Personal para dar atención al cl Luis Carlos Utilizar render IA" },
+              { label: "Olivo", text: "Formación de Atencion al cliente OLIVO REFORZAR HOME OFFICE Teresa REFORZAR HOME OFFICE" },
+              { label: "Luis Carlos", text: "Estandarizar como Holtmont Requiere la formación 1 AA 1 AAA" },
+              { label: "Luis Carlos", text: "Desarrrollar el Sentido Comun 2 a 3 meses 3 a 5 meses" },
+              { label: "Luis Carlos", text: "Identificar Territorio Apache" },
+              { label: "Luis Carlos", text: "Identificar el sentido de Urgencia y Necesidad del cliente Teresa Flexibil Aptabilidad" },
+              { label: "Luis Carlos", text: "Mantener la Comunicación Luis Carlos Ramo Industrial" },
+              { label: "", text: "Manejar Opus" },
+              { label: "Luis Carlos", text: "Se requiere un responsable del Proceso 1 er Etapa Adaptarlo" },
+              { label: "", text: "2da Etapa Home office" },
+              { label: "Juan Jose", text: "SE requiere Contratar Personal Zonificar Presupuestos por maquiladora" },
+              { label: "", text: "MTY 1 hvac y Eléctrico" },
+              { label: "", text: "MTY 1 Construcción REY 2 Cotizadores" },
+              { label: "", text: "Zonificar Venta o maquiladora" },
+              { label: "", text: "REY 2 Cotizadores" }
+          ]
+      });
+      const staffTrackerFilters = ref({});
+      const activeTrackerTab = ref('OPERATIVO');
+      const trackerSubView = ref('TASKS');
+      const currentStaffName = ref('');
+      const weeklyPlanData = ref({ headers: [], data: [], isLoading: false });
 
-  } catch (e) {
-    console.error(e);
-    return { success: false, message: e.toString() };
-  }
-}
+      // PERSONAL AGENDA STATE
+      const personalAgenda = ref({
+          activeTab: 'TIMELINE',
+          isLoading: false,
+          timeline: [],
+          habits: [],
+          meals: [],
+          metrics: { totalEvents: 0, pendingTasks: 0, urgentTasks: 0, completedHabits: 0, progress: 0 }
+      });
 
-// *** MODIFICADO PARA INCLUIR ETIQUETAS DE LOS NUEVOS PPCs ***
-function apiSaveProjectTask(taskData, projectName, username) {
-    try {
-        const nameUpper = String(projectName).toUpperCase().trim();
-        const tag = `[PROY: ${nameUpper}]`;
-        
-        let coms = taskData['COMENTARIOS'] || "";
-        
-        // Verificamos si ya tiene la etiqueta para no duplicar
-        if (!String(coms).toUpperCase().includes(tag)) {
-            taskData['COMENTARIOS'] = (coms + " " + tag).trim();
-        }
-        
-        const res = internalBatchUpdateTasks("ADMINISTRADOR", [taskData]);
-        if(res.success) {
-            registrarLog(username || "DESCONOCIDO", "ACTUALIZAR PROYECTO", `Proyecto: ${projectName}, ID: ${taskData['ID']||taskData['FOLIO']}`);
-        }
-        return res;
-    } catch (e) {
-        return { success: false, message: e.toString() };
-    }
-}
+      // AGENDA IMPROVEMENTS STATE
+      const showNewActivityModal = ref(false);
+      const newActivity = ref({ title: '', date: new Date().toISOString().split('T')[0], startTime: '09:00', endTime: '10:00', category: 'Trabajo' });
+      const selectedDailyDay = ref('');
 
-/**
- * ======================================================================
- * FUNCIONALIDAD ADICIONAL: BOTONES EN HOJA (COMANDOS UI)
- * ======================================================================
- */
+      // CALENDAR STATE
+      const dashboardCalendar = ref({ currentDate: new Date(), tasks: [] });
+      const calendarLoading = ref(false);
+      const calendarUserFilter = ref('');
+      const calendarInterval = ref(null);
 
-function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  ui.createMenu('⚡ HOLTMONT CMD')
-    .addItem('✅ REALIZAR ALTA (Fila Actual)', 'cmdRealizarAlta')
-    .addItem('🔄 ACTUALIZAR (Fila Actual)', 'cmdActualizar')
-    .addSeparator()
-    .addItem('🎨 Aplicar Formato Condicional (Semaforo)', 'setupConditionalFormatting')
-    .addItem('🗂️ Organizar Banco (Retroactivo)', 'runFullArchivingBatch')
-    .addToUi();
-}
+      const searchQuery = ref(''); const isCompact = ref(false);
+      const showPassword = ref(false); // NUEVA VARIABLE PARA TOGGLE PASSWORD
+      const currentTheme = ref('light');
 
-/**
- * ASIGNAR A BOTÓN: "REALIZAR ALTA"
- * Lee la fila activa, genera ID si falta, y distribuye.
- */
-function cmdRealizarAlta() {
-  const sheet = SS.getActiveSheet();
-  const row = sheet.getActiveRange().getRow();
-  const ui = SpreadsheetApp.getUi();
-  
-  const dataRange = sheet.getDataRange();
-  const values = dataRange.getValues();
-  const headerIdx = findHeaderRow(values);
+      // INFO BANK STATE (LUIS_CARLOS 2025)
+      const infoBankState = ref({ view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false });
+      const ibYears = ['2025', '2026'];
+      const ibMonths = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const ibCompanies = ref([]);
+      const ibFolders = [
+          { name: 'SCOPE', icon: 'fa-crosshairs', color: '#007bff' },
+          { name: 'CORREOS', icon: 'fa-envelope', color: '#ffc107' },
+          { name: 'DISEÑOS Y PLANOS', icon: 'fa-drafting-compass', color: '#6610f2' },
+          { name: 'ANALISIS Y MERCADEO', icon: 'fa-chart-line', color: '#28a745' },
+          { name: 'COTIZACIÓN ENVIADA AL CLIENTE', icon: 'fa-file-invoice-dollar', color: '#17a2b8' },
+          { name: 'CRONOGRAMA', icon: 'fa-calendar-alt', color: '#dc3545' },
+          { name: 'TRACKER', icon: 'fa-tasks', color: '#e83e8c' },
+          { name: 'COTIZACIONES', icon: 'fa-calculator', color: '#20c997' },
+          { name: 'PREOPERATIVA', icon: 'fa-hard-hat', color: '#fd7e14' }
+      ];
 
-  if (headerIdx === -1 || row <= headerIdx + 1) {
-    ui.alert("⚠️ Por favor selecciona una celda dentro de una fila de datos válida.");
-    return;
-  }
+      const filteredIbCompanies = computed(() => {
+          return ibCompanies.value;
+      });
 
-  const headers = values[headerIdx].map(h => String(h).toUpperCase().trim());
-  const rowData = values[row - 1];
-  const taskObj = {};
-  headers.forEach((h, i) => {
-    if (h) taskObj[h] = rowData[i];
-  });
-  if (!taskObj["CONCEPTO"] && !taskObj["DESCRIPCION"]) {
-    ui.alert("❌ Falta el CONCEPTO o DESCRIPCIÓN.");
-    return;
-  }
+      const selectIbYear = (y) => { infoBankState.value.selectedYear = y; infoBankState.value.view = 'MONTHS'; };
+      const selectIbMonth = (m) => {
+          infoBankState.value.selectedMonth = m;
+          infoBankState.value.view = 'COMPANIES';
+          fetchInfoBankCompanies();
+      };
 
-  if (!taskObj["FOLIO"] && !taskObj["ID"]) {
-    taskObj["FOLIO"] = "PPC-" + Math.floor(Math.random() * 100000);
-    const folioCol = headers.indexOf("FOLIO") > -1 ? headers.indexOf("FOLIO") : headers.indexOf("ID");
-    if (folioCol > -1) {
-      sheet.getRange(row, folioCol + 1).setValue(taskObj["FOLIO"]);
-    }
-  }
+      const fetchInfoBankCompanies = () => {
+          infoBankState.value.isLoading = true;
+          ibCompanies.value = [];
+          google.script.run.withSuccessHandler(res => {
+              infoBankState.value.isLoading = false;
+              if (res.success) {
+                  ibCompanies.value = res.data;
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiFetchInfoBankCompanies(infoBankState.value.selectedYear, infoBankState.value.selectedMonth);
+      };
+      const selectIbCompany = (c) => { infoBankState.value.selectedCompany = c; infoBankState.value.view = 'FOLDERS'; };
 
-  SS.toast("Guardando y distribuyendo tarea...", "Holtmont", 5);
-  
-  const currentSheetName = sheet.getName();
-  taskObj['ESTATUS'] = taskObj['ESTATUS'] || 'ASIGNADO';
-  const involucrados = taskObj["INVOLUCRADOS"] || taskObj["RESPONSABLE"] || "";
-  const listaInv = String(involucrados).split(",").map(s => s.trim()).filter(s => s);
-  
-  internalBatchUpdateTasks("ADMINISTRADOR", [taskObj]);
-  listaInv.forEach(nombre => {
-    internalBatchUpdateTasks(nombre, [taskObj]);
-  });
-  if (currentSheetName !== "ADMINISTRADOR" && !listaInv.includes(currentSheetName)) {
-    internalBatchUpdateTasks(currentSheetName, [taskObj]);
-  }
+      const openIbFolder = (f) => {
+          infoBankState.value.selectedFolder = f.name;
+          infoBankState.value.view = 'FILES';
+          fetchInfoBankFiles();
+      };
 
-  ui.alert(`✅ Tarea Guardada: ${taskObj["FOLIO"] || taskObj["ID"]}\nDistribulda a: ADMINISTRADOR y ${listaInv.join(", ")}`);
-}
+      const animateInfoBankRows = () => {
+          anime({
+              targets: '.info-bank-row',
+              translateY: [20, 0],
+              opacity: [0, 1],
+              delay: anime.stagger(50),
+              easing: 'easeOutQuad',
+              duration: 800
+          });
+      };
 
-/**
- * ASIGNAR A BOTÓN: "ACTUALIZAR"
- */
-function cmdActualizar() {
-  const sheet = SS.getActiveSheet();
-  const row = sheet.getActiveRange().getRow();
-  const ui = SpreadsheetApp.getUi();
+      const fetchInfoBankFiles = () => {
+          infoBankState.value.isLoading = true;
+          infoBankState.value.files = [];
+          google.script.run.withSuccessHandler(res => {
+              infoBankState.value.isLoading = false;
+              if (res.success) {
+                  infoBankState.value.files = res.data;
+                  nextTick(() => { animateInfoBankRows(); });
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiFetchInfoBankData(infoBankState.value.selectedYear || '2025', infoBankState.value.selectedMonth, infoBankState.value.selectedCompany, infoBankState.value.selectedFolder);
+      };
 
-  const dataRange = sheet.getDataRange();
-  const values = dataRange.getValues();
-  const headerIdx = findHeaderRow(values);
-  if (headerIdx === -1 || row <= headerIdx + 1) {
-    ui.alert("⚠️ Selecciona una fila de datos válida.");
-    return;
-  }
+      const getBadgeClass = (status) => {
+          if (!status) return 'bg-light text-dark border';
+          const s = String(status).toUpperCase();
+          if (s.includes('VENDIDA') || s.includes('GANADA') || s.includes('APROBADA')) return 'bg-success text-white';
+          if (s.includes('COTIZADA') || s.includes('ENVIADA')) return 'bg-info text-dark';
+          if (s.includes('PERDIDA') || s.includes('CANCELADA')) return 'bg-danger text-white';
+          if (s.includes('PENDIENTE')) return 'bg-warning text-dark';
+          return 'bg-light text-dark border';
+      };
 
-  const headers = values[headerIdx].map(h => String(h).toUpperCase().trim());
-  const rowData = values[row - 1];
-  const taskObj = { _rowIndex: row }; 
+      const goBackInfoBank = () => {
+          if (infoBankState.value.view === 'FOLDERS') { infoBankState.value.view = 'COMPANIES'; infoBankState.value.selectedCompany = ''; }
+          else if (infoBankState.value.view === 'COMPANIES') { infoBankState.value.view = 'MONTHS'; infoBankState.value.selectedMonth = ''; }
+          else if (infoBankState.value.view === 'MONTHS') { infoBankState.value.view = 'YEARS'; infoBankState.value.selectedYear = ''; }
+          else if (infoBankState.value.view === 'FILES') { infoBankState.value.view = 'FOLDERS'; infoBankState.value.selectedFolder = ''; infoBankState.value.files = []; }
+      };
+      const resetInfoBank = () => { infoBankState.value = { view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false }; };
 
-  headers.forEach((h, i) => {
-    if (h) taskObj[h] = rowData[i];
-  });
-  const id = taskObj["FOLIO"] || taskObj["ID"];
-  if (!id) {
-    ui.alert("❌ No se encontró un FOLIO o ID en esta fila. No se puede sincronizar.");
-    return;
-  }
+      // REFS FOR TABLES (Pulse Effect)
+      const trackerTable = ref(null);
+      const projectTable = ref(null);
+      const ppcDraftTable = ref(null);
 
-  SS.toast("Sincronizando cambios...", "Holtmont", 3);
+      const pulseNewRow = (refName, position = 'first') => {
+          nextTick(() => {
+              let container = null;
+              if (refName === 'trackerTable') container = trackerTable.value;
+              if (refName === 'projectTable') container = projectTable.value;
+              if (refName === 'ppcDraftTable') container = ppcDraftTable.value;
 
-  const resLocal = internalBatchUpdateTasks(sheet.getName(), [taskObj]);
-  if (sheet.getName() !== "ADMINISTRADOR") {
-     const syncObj = { ...taskObj };
-     delete syncObj._rowIndex;
-     internalBatchUpdateTasks("ADMINISTRADOR", [syncObj]);
-  }
+              if (!container) return;
 
-  if (resLocal.moved) {
-    ui.alert("✅ Tarea Actualizada y ARCHIVADA (Completada).");
-  } else {
-    SS.toast("✅ Actualización completada.");
-  }
-}
+              let row;
+              if (position === 'first') {
+                  row = container.querySelector('tbody tr:first-child');
+              } else {
+                  row = container.querySelector('tbody tr:last-child');
+              }
 
-// --- FUNCIÓN GENERADORA (NUEVA) ---
-// Usar esta función para crear los subproyectos automáticamente
-function apiCreateStandardStructure(siteId, user) {
-    STANDARD_PROJECT_STRUCTURE.forEach(name => {
-        // Determinamos el tipo para que el Front sepa cómo dibujarlo
-        let tipo = "GENERAL";
-        if (name.includes("PPC")) tipo = "PPC_MASTER"; 
-        
-        apiSaveSubProject({
-            parentId: siteId,
-            name: name,
-            type: tipo,
-            createdBy: user || "SISTEMA"
-        });
-    });
-}
+              if (!row) return;
 
-/**
- * GENERADOR DE FOLIO NUMÉRICO SECUENCIAL (NUEVO)
- */
-function generateNumericSequence(key) {
-  const lock = LockService.getScriptLock();
-  try {
-    if (lock.tryLock(5000)) {
-       const props = PropertiesService.getScriptProperties();
-       let val = Number(props.getProperty(key) || 1000);
-       // Check if the value got corrupted (e.g., from a timestamp)
-       if (val > 10000000) {
-           val = 1000;
-       }
-       val++;
-       props.setProperty(key, String(val));
-       return String(val);
-    }
-  } catch(e) { console.error(e); } finally { lock.releaseLock(); }
-  // Fallback to a random 4-digit number to avoid long timestamps
-  return String(Math.floor(1000 + Math.random() * 9000));
-}
+              anime({
+                  targets: row,
+                  backgroundColor: ['#00ff9d', 'rgba(0,0,0,0)'],
+                  boxShadow: ['0 0 15px rgba(0, 255, 157, 0.5)', '0 0 0 rgba(0,0,0,0)'],
+                  easing: 'easeOutQuad',
+                  duration: 2000
+              });
+          });
+      };
 
-/**
- * GENERADOR DE UNIQUEID (APP-SHEET STYLE)
- * Genera string alfanumérico de 8 caracteres.
- * (MANTENIDO POR COMPATIBILIDAD, AUNQUE DEPRECADO EN FLUJOS NUEVOS)
- */
-function generateAppSheetId() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
-  for (let i = 0; i < 8; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
+      const triggerConfetti = (x, y) => {
+          const container = document.createElement('div');
+          Object.assign(container.style, { position: 'fixed', left: x + 'px', top: y + 'px', width: '0', height: '0', pointerEvents: 'none', zIndex: '9999' });
+          document.body.appendChild(container);
+          const colors = ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6'];
+          if (currentTheme.value === 'cyberpunk') colors.push('#00ff9d', '#ff0099');
+          for (let i = 0; i < 30; i++) {
+              const p = document.createElement('div');
+              Object.assign(p.style, { position: 'absolute', width: '4px', height: '4px', borderRadius: '50%', backgroundColor: colors[Math.floor(Math.random() * colors.length)] });
+              container.appendChild(p);
+          }
+          anime({
+              targets: container.children,
+              translateX: () => anime.random(-100, 100),
+              translateY: () => anime.random(-100, 100),
+              scale: [1, 0],
+              rotate: () => anime.random(0, 360),
+              opacity: [1, 0],
+              duration: () => anime.random(800, 1000),
+              easing: 'easeOutCirc',
+              complete: () => { if (container.parentNode) container.parentNode.removeChild(container); }
+          });
+      };
 
-function generateWorkOrderFolio(clientName, deptName) {
-  try {
-      const props = PropertiesService.getScriptProperties();
-      // Incrementar secuencia
-      let seq = Number(props.getProperty('WORKORDER_SEQ') || 0) + 1;
-      props.setProperty('WORKORDER_SEQ', String(seq));
+      const ppcData = ref({ cumplimiento: 'NO', cliente: '', comentarios:'', comentariosPrevios:'', zona: '', contratista: '', rutaCritica: 'NO', cuantReq: '', cuantReal: '', dias: {l:false, m:false, x:false, j:false, v:false, s:false, d:false} });
 
-      const seqStr = String(seq).padStart(4, '0');
+      const isSubmitting = ref(false);
+      const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
+      const ppcExistingData = ref([]);
 
-      // Abreviatura Cliente: Iniciales de las primeras 2 palabras o primeras 2 letras
-      const cleanClient = (clientName || "XX").toUpperCase().replace(/[^A-Z0-9]/g, ' ').trim();
-      const words = cleanClient.split(/\s+/).filter(w => w.length > 0);
-      let clientStr = "XX";
-      if (words.length >= 2) {
-          clientStr = words[0][0] + words[1][0];
-      } else if (words.length === 1) {
-          clientStr = words[0].substring(0, 2);
-      }
+      const cotizadorSearch = ref('');
+      const filteredCotizadores = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(cotizadorSearch.value.toLowerCase()) && !workorderData.value.cotizador.includes(p.name)).slice(0,5));
+      const addCotizador = (name) => { workorderData.value.cotizador.push(name); cotizadorSearch.value = ''; };
+      const removeCotizador = (idx) => { workorderData.value.cotizador.splice(idx, 1); };
 
-      // Simplificar departamento
-      const rawDept = (deptName || "General").trim().toUpperCase();
+      const cotizadorSearchTop = ref('');
+      const filteredCotizadoresTop = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(cotizadorSearchTop.value.toLowerCase()) && !workorderData.value.cotizador.includes(p.name)).slice(0,5));
+      const addCotizadorTop = (name) => { workorderData.value.cotizador.push(name); cotizadorSearchTop.value = ''; };
+
+      // WORKORDER STATE
+      const workorderData = ref({
+          cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+          cotizador: [], departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+          prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
+          checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
+          restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
+          files: [],
+          designValidation: { items: [{ diseno: [], maquinados: [], dibujos: [] }] }
+      });
+      const workorderTypes = ['Construcción', 'Remodelación', 'Reparación', 'Mantenimiento', 'Reconfiguración', 'Póliza', 'Inspección'];
+      const currentWorkorderId = ref(null);
+      const nextSequence = ref('0000');
+
+      const fetchNextSequence = () => {
+          google.script.run.withSuccessHandler(seq => {
+              if (seq) nextSequence.value = seq;
+          }).apiGetNextWorkOrderSeq();
+      };
+
+      const generatedFolio = computed(() => {
+          // Secuencia
+          const seqStr = nextSequence.value;
+
+          // Cliente: Iniciales de primeras 2 palabras
+          const cleanClient = (workorderData.value.cliente || "XX").toUpperCase().replace(/[^A-Z0-9]/g, ' ').trim();
+          const words = cleanClient.split(/\s+/).filter(w => w.length > 0);
+          let clientStr = "XX";
+          if (words.length >= 2) {
+              clientStr = words[0][0] + words[1][0];
+          } else if (words.length === 1) {
+              clientStr = words[0].substring(0, 2);
+          }
+
+          // Departamento
+          const rawDept = (workorderData.value.departamento || workorderData.value.tipoTrabajo || "General").trim().toUpperCase();
+          let deptStr = ABBR_MAP[rawDept];
+          if (!deptStr) {
+              if (rawDept.length > 6) {
+                  deptStr = rawDept.substring(0, 1) + rawDept.substring(1, 5).toLowerCase();
+              } else {
+                  deptStr = rawDept.substring(0, 1) + rawDept.substring(1).toLowerCase();
+              }
+          }
+
+          // Fecha: ddMMyy
+          const date = new Date();
+          const d = String(date.getDate()).padStart(2, '0');
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const y = String(date.getFullYear()).slice(-2);
+          const dateStr = `${d}${m}${y}`;
+
+          return `${seqStr}${clientStr} ${deptStr} ${dateStr}`;
+      });
+
+      const addWorkorderItem = () => {
+          workorderData.value.items.push({ unidad: '', cantidad: 0, precio: 0, utilidad: 0 });
+      };
+      const removeWorkorderItem = (idx) => {
+          workorderData.value.items.splice(idx, 1);
+      };
+      const formatCurrency = (val) => {
+          return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+      };
+
+      const isUploadingFile = ref(false); const uploadSuccess = ref(false); const fileInput = ref(null);
+      const currentUploadType = ref('');
+      const currentIframeUrl = ref(''); const iframeTitle = ref('');
+      const showExtraModal = ref(false);
+      const showTimePopup = ref(false);
+      const timePopupValue = ref('');
+      const timePopupTarget = ref(null);
+      const openTimePopup = (targetObj, key) => {
+          timePopupTarget.value = { target: targetObj, key: key };
+          const now = new Date();
+          const hh = String(now.getHours()).padStart(2,'0');
+          const mm = String(now.getMinutes()).padStart(2,'0');
+          timePopupValue.value = `${hh}:${mm}`;
+          showTimePopup.value = true;
+      };
+      const saveTimePopup = () => {
+          if(timePopupTarget.value) {
+              timePopupTarget.value.target[timePopupTarget.value.key] = timePopupValue.value;
+          }
+          showTimePopup.value = false;
+      };
+      const extraData = ref({ restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' });
+      const priorityOpts = ['URGENTE', 'MEDIA', 'BAJA']; const riskOpts = ['ALTO', 'BAJO', 'CATASTROFICO'];
+      const cellFileInput = ref(null); const uploadingCell = ref({row:null, col:null});
+      const dynamicPpc = ref({ especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' });
+      const vehicleData = ref({});
+      const vehicleControlData = ref({}); // Decoupled data for duplicated section
+      const vehicleControlData2 = ref({}); // Second independent vehicle control
+      const showWorkOrderLogic = ref(true); // Logic display state
+
+      // New Logic Toggles State
+      const showLogic = ref({
+          workType: false,
+          restrictions: false,
+          docs: false,
+          vehicle: false,
+          labor: false,
+          design: false
+      });
+
+      // SECTION VISIBILITY STATE
+      const sectionVisibility = ref({
+          checklist: false,
+          vehiclePrototype: false
+      });
+
+      // INSTRUCTIONS TOGGLES
+      const showInstr = ref({
+          client: false,
+          rfq: false,
+          date: false,
+          dept: false,
+          resp: false,
+          chatgpt: false,
+          neural: false
+      });
+
+      // PROTOTYPES STATE
+      // DEFAULTS FOR FIXED SECTIONS
+      const defaultReqCotizacion = [
+          { description: 'Pre diseño Arquitectura para definir el cuarto 6x6 con 2 ventanas, doble puerta, y plafón', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'pre Diseño Eléctrico estudio de iluminación, calculo eléctrico para instalación de Equipo', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Pre Diseño de HVAC, calculo de cargas térmicas, tomado encuenta si la nave tiene clima', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Pre Analisis de Riesgo', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Precios Unitarios Gerente mapear la cotización', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Cotizador Jr Hvac', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Cotizador Jr Eléctrico', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 },
+          { description: 'Cotizador Jr Construcción', isActive: false, checkStatus: null, duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0 }
+      ];
+      const defaultCotPreconstruccion = [
+          { description: 'Junta Preoperativa Work Order', isActive: false, checkStatus: null },
+          { description: 'Realizar cursos de seguridad', isActive: false, checkStatus: null },
+          { description: 'Realizar Analisis de Riesgo', isActive: false, checkStatus: null },
+          { description: 'Comprar de Materiales', isActive: false, checkStatus: null },
+          { description: 'Paquete de Herramientas para el proyecto / listado de herramien', isActive: false, checkStatus: null },
+          { description: 'logistica para llevar herramientas a la obra y materiales', isActive: false, checkStatus: null },
+          { description: 'logistica de trabajadoes a la obra', isActive: false, checkStatus: null },
+          { description: 'permismso de seguridad', isActive: false, checkStatus: null },
+          { description: 'sua', isActive: false, checkStatus: null },
+          { description: 'preparacion en sitio para arranque', isActive: false, checkStatus: null }
+      ];
+
+      const projectProgram = ref({
+          timeEstimated: 1,
+          timeUnit: 'dias',
+          visita: [{ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: [] }],
+          reqCotizacion: [],
+          cotPreconstruccion: [],
+          cotTrabajo: []
+      });
+
+      // RESOURCE MODAL STATE
+      const currentActivityContext = ref(null);
+      const showResourceModal = ref(false);
+      const currentResourceTab = ref('MATERIALES');
+
+      const setCheckStatus = (item, status) => {
+          if (item.checkStatus === status) {
+              item.checkStatus = null;
+              item.isActive = false;
+          } else {
+              item.checkStatus = status;
+              item.isActive = (status === 'APPLY');
+          }
+      };
+
+      const addProjectItem = (section) => {
+          if (!projectProgram.value[section]) projectProgram.value[section] = [];
+          // Unique ID for Cotización Trabajo rows to link resources
+          const newRow = { id: Date.now() + Math.random().toString(16).slice(2), description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: [] };
+          projectProgram.value[section].push(newRow);
+      };
+      const removeProjectItem = (section, idx) => projectProgram.value[section].splice(idx, 1);
+
+      const openResourcePopup = (activity) => {
+          if (!activity.id) activity.id = Date.now() + Math.random().toString(16).slice(2);
+          currentActivityContext.value = activity;
+          showResourceModal.value = true;
+      };
+
+      const addResourceToActivity = (type) => {
+          if (!currentActivityContext.value) return;
+          const actId = currentActivityContext.value.id;
+          if (type === 'MATERIALES') {
+              requiredMaterials.value.items.push({ quantity: '', unit: '', type: '', description: '', cost: '', spec: '', total: 0, activityId: actId });
+          } else if (type === 'HERRAMIENTAS') {
+              toolsRequired.value.items.push({ quantity: '', unit: '', description: '', cost: '', total: 0, activityId: actId });
+          } else if (type === 'MANO_OBRA') {
+              laborTable.value.items.push({ category: '', salary: '', personnel: '1', weeks: '1', overtime: '0', night: '0', weekend: '0', others: '0', total: 0, activityId: actId });
+          } else if (type === 'EQUIPOS') {
+              specialEquipment.value.items.push({ quantity: '1', unit: 'unidad', type: '', description: '', spec: '', days: '1', hours: '0', cost: '', total: 0, activityId: actId });
+          }
+      };
+
+      const getActivityTotal = (activityId) => {
+          if (!activityId) return 0;
+          let total = 0;
+          total += requiredMaterials.value.items.filter(i => i.activityId === activityId).reduce((acc, i) => acc + (parseFloat(i.total)||0), 0);
+          total += toolsRequired.value.items.filter(i => i.activityId === activityId).reduce((acc, i) => acc + (parseFloat(i.total)||0), 0);
+          total += laborTable.value.items.filter(i => i.activityId === activityId).reduce((acc, i) => acc + (parseFloat(i.total)||0), 0);
+          total += specialEquipment.value.items.filter(i => i.activityId === activityId).reduce((acc, i) => acc + (parseFloat(i.total)||0), 0);
+          return total;
+      };
+
+      const reqCotizacionTotal = computed(() => projectProgram.value.reqCotizacion.filter(i => i.isActive).reduce((acc, i) => acc + (parseFloat(i.total)||0), 0));
+      const cotPreconstruccionTotal = computed(() => projectProgram.value.cotPreconstruccion.filter(i => i.isActive).reduce((acc, i) => acc + (parseFloat(i.total)||0), 0));
+
+      const projectRespDropdownOpen = ref(null);
+      const openRespDropdown = (idx, item) => {
+          if (projectRespDropdownOpen.value === idx) {
+              projectRespDropdownOpen.value = null;
+          } else {
+              projectRespDropdownOpen.value = idx;
+              if (!Array.isArray(item.responsable)) {
+                 item.responsable = item.responsable ? String(item.responsable).split(',').map(s=>s.trim()) : [];
+              }
+          }
+      };
+      const toggleProjectResponsable = (item, name) => {
+          if (!Array.isArray(item.responsable)) {
+             item.responsable = item.responsable ? String(item.responsable).split(',').map(s=>s.trim()) : [];
+          }
+          const idx = item.responsable.indexOf(name);
+          if (idx > -1) item.responsable.splice(idx, 1);
+          else item.responsable.push(name);
+      };
+      const updateProjectRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.price)||0); };
+
+      // MANO DE OBRA STATE
+      const laborTable = ref({ items: [{ category: 'Albañil', salary: '1200', personnel: '1', weeks: '1', overtime: '0', night: '0', weekend: '0', others: '0', total: 1200 }] });
+      const addLaborItem = () => laborTable.value.items.push({ category: '', salary: '', personnel: '', weeks: '', overtime: '0', night: '0', weekend: '0', others: '0', total: 0 });
+      const removeLaborItem = (idx) => laborTable.value.items.splice(idx, 1);
+      const updateLaborRowTotal = (item) => {
+           const salary = parseFloat(item.salary) || 0;
+           const personnel = parseFloat(item.personnel) || 0;
+           const weeks = parseFloat(item.weeks) || 0;
+           const overtime = parseFloat(item.overtime) || 0; // Hours
+           const night = parseFloat(item.night) || 0; // Hours
+           const weekend = parseFloat(item.weekend) || 0; // Hours
+           const others = parseFloat(item.others) || 0; // Money
+
+           const base = salary * personnel * weeks;
+           // New factors: Overtime 2x, Night 1.35x, Weekend 2x
+           const hourlyRate = salary / 48; // Assuming 48 hours per week (standard in MX) or user wants 40?
+           // Usually 48 in Mexico for operational. The previous code had 40.
+           // Let's check calculation. 2800 salary / 48 = 58.33.
+           // The image shows Costo por Hora $602.88 which seems high for $2800 salary.
+           // Maybe Costo por Hora is sum of all?
+           // Let's stick to simple logic first.
+           // If user wants specific calc, I'll update.
+           // User image shows factor 2x, 1.35x, 2x.
+           const hRate = salary / 48;
+           const extraCost = (overtime * hRate * 2) + (night * hRate * 1.35) + (weekend * hRate * 2);
+           item.total = base + extraCost + others;
+      };
+      // Initial calculation for default item
+      updateLaborRowTotal(laborTable.value.items[0]);
+
+      const laborTableTotal = computed(() => laborTable.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+      const totalPersonnel = computed(() => laborTable.value.items.reduce((acc, item) => acc + (parseFloat(item.personnel)||0), 0));
+      const costPerWeekCrew = computed(() => laborTable.value.items.reduce((acc, item) => acc + ((parseFloat(item.salary)||0) * (parseFloat(item.personnel)||0)), 0));
+      const weeksRequired = computed(() => {
+          const max = Math.max(...laborTable.value.items.map(i => parseFloat(i.weeks)||0));
+          return max === -Infinity ? 0 : max;
+      });
+      // New Computed Properties
+      const eppCost = computed(() => costPerWeekCrew.value * 0.06);
+      const netCostPerWeek = computed(() => costPerWeekCrew.value + eppCost.value);
+
+      const hoursRequired = computed(() => {
+          // Sum of all hours? Or logic.
+          // Image shows 144 hours. 3 weeks.
+          // Maybe 48 * weeks?
+          // Or sum of (weeks * 48 * personnel)?
+          // Let's assume standard week is 48 hrs.
+          return weeksRequired.value * 48;
+      });
+
+      const costPerHour = computed(() => {
+          return hoursRequired.value > 0 ? (laborTableTotal.value / hoursRequired.value) : 0;
+      });
+
+      const totalOvertime = computed(() => laborTable.value.items.reduce((acc, item) => acc + (parseFloat(item.overtime)||0), 0));
+      const totalNight = computed(() => laborTable.value.items.reduce((acc, item) => acc + (parseFloat(item.night)||0), 0));
+      const totalWeekend = computed(() => laborTable.value.items.reduce((acc, item) => acc + (parseFloat(item.weekend)||0), 0));
+
+      const requiredMaterials = ref({ items: [{
+          quantity: '', unit: '', type: '', description: '', cost: '', spec: '', total: 0,
+          papaCaliente: { residente: '', compras: '', controller: '', ordenCompra: '', pagos: '', almacen: '', logistica: '', residenteObra: '' }
+      }] });
+      const addMaterialItem = () => requiredMaterials.value.items.push({
+          quantity: '', unit: '', type: '', description: '', cost: '', spec: '', total: 0,
+          papaCaliente: { residente: '', compras: '', controller: '', ordenCompra: '', pagos: '', almacen: '', logistica: '', residenteObra: '' }
+      });
+      const removeMaterialItem = (idx) => requiredMaterials.value.items.splice(idx, 1);
+      const updateMaterialRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.cost)||0); };
+      const materialsTotal = computed(() => requiredMaterials.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+
+      // NEW TABLES & DASHBOARD LOGIC
+      const toolsRequired = ref({ items: [{
+          quantity: '', unit: '', description: '', cost: '', total: 0,
+          papaCaliente: { residente: '', controller: '', almacen: '', logistica: '', residenteFin: '' }
+      }] });
+      const addToolItem = () => toolsRequired.value.items.push({
+          quantity: '', unit: '', description: '', cost: '', total: 0,
+          papaCaliente: { residente: '', controller: '', almacen: '', logistica: '', residenteFin: '' }
+      });
+      const removeToolItem = (idx) => toolsRequired.value.items.splice(idx, 1);
+      const updateToolRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.cost)||0); };
+      const toolsTotal = computed(() => toolsRequired.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+
+      // DESIGN VALIDATION LOGIC
+      const designUploadContext = ref({ row: null, col: '', type: '' });
+      const designFileInput = ref(null);
+      const addDesignRow = () => {
+          if(!workorderData.value.designValidation) workorderData.value.designValidation = { items: [] };
+          workorderData.value.designValidation.items.push({ diseno: [], maquinados: [], dibujos: [] });
+      };
+      const removeDesignRow = (idx) => workorderData.value.designValidation.items.splice(idx, 1);
+      const triggerDesignUpload = (idx, col, type) => {
+          designUploadContext.value = { row: idx, col: col, type: type };
+          designFileInput.value.click();
+      };
+      const handleDesignFileSelect = (e) => {
+          const file = e.target.files[0];
+          if(!file) return;
+          isUploadingFile.value = true;
+          const r = new FileReader();
+          r.onload = (ev) => {
+              google.script.run.withSuccessHandler(res => {
+                  isUploadingFile.value = false;
+                  if(res.success){
+                      const ctx = designUploadContext.value;
+                      if (workorderData.value.designValidation.items[ctx.row]) {
+                          workorderData.value.designValidation.items[ctx.row][ctx.col].push({
+                              url: res.fileUrl,
+                              type: ctx.type,
+                              name: file.name
+                          });
+                      }
+                      Swal.fire('Archivo Subido', '', 'success');
+                  } else {
+                      Swal.fire('Error', res.message, 'error');
+                  }
+                  e.target.value = null;
+              }).uploadFileToDrive(ev.target.result, file.type, file.name);
+          };
+          r.readAsDataURL(file);
+      };
+
+      const specialEquipment = ref({ items: [{ quantity: '1', unit: 'unidad', type: '', description: '', spec: '', days: '1', hours: '0', cost: '', total: 0 }] });
+      const addSpecialEquipItem = () => specialEquipment.value.items.push({ quantity: '1', unit: 'unidad', type: '', description: '', spec: '', days: '1', hours: '0', cost: '', total: 0 });
+      const removeSpecialEquipItem = (idx) => specialEquipment.value.items.splice(idx, 1);
+      const updateSpecialEquipRowTotal = (item) => { item.total = (parseFloat(item.quantity)||0) * (parseFloat(item.days)||0) * (parseFloat(item.cost)||0); };
+      const specialEquipTotal = computed(() => specialEquipment.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+
+      const additionalCosts = ref({ insumos: 0, viaticos: 0, transporte: 0 });
+
+      // const laborTotal = computed(() => projectProgram.value.items.reduce((acc, item) => acc + (parseFloat(item.total)||0), 0));
+      const laborTotal = computed(() => laborTableTotal.value); // Use new Labor Table
+      const dashboardSubtotal = computed(() => {
+          return materialsTotal.value + laborTotal.value + toolsTotal.value + specialEquipTotal.value +
+                 (parseFloat(additionalCosts.value.insumos)||0) + (parseFloat(additionalCosts.value.viaticos)||0) + (parseFloat(additionalCosts.value.transporte)||0) +
+                 reqCotizacionTotal.value + cotPreconstruccionTotal.value;
+      });
+      const dashboardUtility = computed(() => dashboardSubtotal.value * 0.15);
+      const dashboardTotal = computed(() => dashboardSubtotal.value + dashboardUtility.value);
+
+      // ANIME.JS ANIMATION LOGIC
+      const animatedTotals = Vue.reactive({ subtotal: 0, utility: 0, total: 0 });
+
+      watch([dashboardSubtotal, dashboardUtility, dashboardTotal], ([newSub, newUtil, newTot]) => {
+          anime({
+              targets: animatedTotals,
+              subtotal: newSub,
+              utility: newUtil,
+              total: newTot,
+              round: 1,
+              easing: 'easeOutExpo',
+              duration: 1500
+          });
+      }, { immediate: true });
+
+      const selectedFinancing = ref(null); // Financing toggle state
+      const selectedWeek = ref('');
+      const currentModuleId = ref('');
+
       const ABBR_MAP = {
           "ELECTROMECANICA": "Electro",
           "ELECTROMECÁNICA": "Electro",
@@ -2489,1689 +5249,2699 @@ function generateWorkOrderFolio(clientName, deptName) {
           "EHS": "EHS"
       };
 
-      let deptStr = ABBR_MAP[rawDept];
+      const AVATAR_MAP = {
+        "ANTONIA_VENTAS": "https://lh3.googleusercontent.com/d/1n6idfK8Sjy8lUvDIy0XxzEzG7GwJ21d1",
+        "EDUARDO TERAN": "https://lh3.googleusercontent.com/d/1RlUv7Z2LFeiaAqkm859Khg0gfIWWipJq",
+        "RAMIRO RODRIGUEZ": "https://lh3.googleusercontent.com/d/1EjsGgw5c7efDgr76f3ZJ_GBgfpiBe71F",
+        "JUDITH ECHAVARRIA": "https://lh3.googleusercontent.com/d/1FOAsKoz3jzi1Fl5-Agh1OcmdB_NjxN2l",
+        "SEBASTIAN PADILLA": "https://lh3.googleusercontent.com/d/15je2SNtrYP32WPLD7uxUFIcrhdv4owyO"
+      };
 
-      // Si no está en el mapa, intentar capitalizar primera letra y resto minúsculas
-      if (!deptStr) {
-          if (rawDept.length > 6) {
-              deptStr = rawDept.substring(0, 1) + rawDept.substring(1, 5).toLowerCase();
-          } else {
-              deptStr = rawDept.substring(0, 1) + rawDept.substring(1).toLowerCase();
-          }
-      }
+      const DEFAULT_AVATAR = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
 
-      const date = new Date();
-      const d = String(date.getDate()).padStart(2, '0');
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const y = String(date.getFullYear()).slice(-2);
-      const dateStr = `${d}${m}${y}`;
+      const getAvatarUrl = (nombre) => {
+          if (!nombre) return DEFAULT_AVATAR;
+          const key = String(nombre).toUpperCase().trim();
+          return AVATAR_MAP[key] ? AVATAR_MAP[key] : DEFAULT_AVATAR;
+      };
 
-      return `${seqStr}${clientStr} ${deptStr} ${dateStr}`;
-  } catch(e) {
-      console.error(e);
-      return "WO-" + new Date().getTime();
-  }
-}
+      // NUEVOS FILTROS PPC SEMANAL
+      const filterSpecialty = ref('');
+      const filterCompliance = ref('');
 
-function apiGetNextWorkOrderSeq() {
-  try {
-    const props = PropertiesService.getScriptProperties();
-    let seq = Number(props.getProperty('WORKORDER_SEQ') || 0) + 1;
-    return String(seq).padStart(4, '0');
-  } catch(e) {
-    return "0000";
-  }
-}
+      // ECG (Electrocardiograma) STATE
+      const ecgData = ref({});
+      const ecgChartInstances = {};
 
-/*
- * ======================================================================
- * AUTOMATIZACIÓN DIARIA: CONTADOR DE DÍAS (VENTAS)
- * ======================================================================
- */
-function incrementarContadorDias() {
-  // Lista de hojas a procesar (Antonia + Vendedores)
-  const sheetsToProcess = ["ANTONIA_VENTAS"];
-  
-  try {
-      const directory = getDirectoryFromDB();
-      directory.forEach(user => {
-          if ((user.dept === 'VENTAS' || user.type === 'VENTAS' || user.type === 'HIBRIDO') && user.name !== "ANTONIA_VENTAS") {
-              sheetsToProcess.push(user.name + " (VENTAS)"); // Estándar: NOMBRE (VENTAS)
-              // También intentar sin sufijo si es un usuario que usa su hoja principal como ventas (poco probable en config actual pero por seguridad)
-              if (user.type === 'VENTAS') sheetsToProcess.push(user.name);
-          }
+      // KPI STATE
+      const kpiData = ref({
+          dashboardVentas: [],
+          productividadDiaria: {},
+          dashboardTracker: [],
+          puntualidad: [],
+          visitas: [],
+          preWO: [],
+          entregaCotiz: {},
+          archivos100: [],
+          disenos: [],
+          planeacion: {},
+          ventas: { semanal: {}, mensual: {}, anual: {} },
+          controlProy: {},
+          lecciones: [],
+          isLoading: false
       });
-  } catch(e) { console.error("Error obteniendo directorio para contador", e); }
+      const kpiChartInstances = {};
 
-  // Eliminar duplicados
-  const uniqueSheets = [...new Set(sheetsToProcess)];
+      // EXECUTIVE SUMMARY DATA
+      const executiveSummaryData = ref({
+          clients: [],
+          clientsTotal: 0,
+          vendors: [],
+          vendorsTotalCount: 0,
+          vendorsTotalAmount: 0,
+          monthly: [],
+          monthlyTotal2024: 0,
+          monthlyTotal2025: 0,
+          monthlyTotalForecast: 0,
+          areas: [],
+          areasTotal: 0,
+          areaForecast: []
+      });
+      const execChartInstances = {};
 
-  const today = new Date();
-  today.setHours(0,0,0,0);
+      // --- GESTIÓN DE PROYECTOS (V138 - CASCADA) ---
+      const showPpcSelectorModal = ref(false);
+      const ppcMode = ref('SELECT');
+      const currentPpcProject = ref(null);
+      const newProject = ref({ name: '', client: '', type: 'OBRA CIVIL', creationMode: 'SUB', parentId: '', createdBy: '' });
+      watch(() => newProject.value.creationMode, (newVal) => {
+          if (newVal === 'SITE') { newProject.value.type = 'CLIENTE'; } else { newProject.value.type = 'OBRA CIVIL'; }
+      });
+      const activeProjectsList = ref([]);
+      const showSubProjectModal = ref(false);
+      const currentTargetSite = ref({});
+      const newSubProject = ref({ name: '', type: 'OBRA CIVIL', createdBy: '' });
 
-  uniqueSheets.forEach(sheetName => {
-      try {
-        const sheet = findSheetSmart(sheetName);
-        if (!sheet) return;
+      // EMPLEADOS MANAGEMENT
+      const showEmployeeModal = ref(false);
+      const newEmployee = ref({ name: '', dept: '', type: 'ESTANDAR' });
 
-        const dataRange = sheet.getDataRange();
-        const values = dataRange.getValues();
-        if (values.length < 2) return; 
+      const openNewEmployeeModal = () => {
+          newEmployee.value = { name: '', dept: '', type: 'ESTANDAR' };
+          showEmployeeModal.value = true;
+      };
 
-        // Buscar Cabeceras
-        const headerRowIdx = findHeaderRow(values);
-        if (headerRowIdx === -1) return;
+      const saveNewEmployee = () => {
+          if(!newEmployee.value.name || !newEmployee.value.dept) return;
+          isSubmitting.value = true;
+          google.script.run.withSuccessHandler(res => {
+              isSubmitting.value = false;
+              if (res.success) {
+                  Swal.fire({ icon: 'success', title: 'Empleado Creado', text: 'Se han generado las hojas correspondientes.', timer: 2000, showConfirmButton: false });
+                  showEmployeeModal.value = false;
+                  // Reload config to update directory list
+                  loadConfig(currentRole.value, currentUsername.value);
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiAddEmployee(JSON.parse(JSON.stringify(newEmployee.value)));
+      };
 
-        const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
-        
-        // Buscar columnas clave
-        let diasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ");
-        
-        const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO'];
-        let fechaIdx = -1;
-        for(let alias of fechaAliases) {
-            const idx = headers.indexOf(alias);
-            if(idx > -1) { fechaIdx = idx; break; }
-        }
+      const deleteEmployee = (name) => {
+          Swal.fire({
+              title: '¿Eliminar del Directorio?',
+              text: `Se eliminará a "${name}" de las listas. Sus hojas de Excel NO se borrarán.`,
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#d33',
+              confirmButtonText: 'Sí, eliminar'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  Swal.showLoading();
+                  google.script.run.withSuccessHandler(res => {
+                      Swal.close();
+                      if (res.success) {
+                          Swal.fire('Eliminado', '', 'success');
+                          loadConfig(currentRole.value, currentUsername.value);
+                      } else {
+                          Swal.fire('Error', res.message, 'error');
+                      }
+                  }).apiDeleteEmployee(name);
+              }
+          });
+      };
 
-        if (diasIdx === -1 || fechaIdx === -1) return;
+      // *** MODIFICADO: ESTRUCTURA DE CARPETAS CON NUEVOS PPCs ***
+      const projectSubFolders = ref([
+          { name: "PPC INTERNO", icon: "fa-tasks", color: "#fd7e14", bg: "#fff4de" },
+          { name: "PPC PREOPERATIVO", icon: "fa-tasks", color: "#fd7e14", bg: "#fff4de" },
+          { name: "PPC CLIENTE", icon: "fa-tasks", color: "#fd7e14", bg: "#fff4de" },
+          { name: "DOCUMENTOS", icon: "fa-file-alt", color: "#3699ff", bg: "#e1f0ff" },
+          { name: "PLANOS Y DISEÑOS", icon: "fa-drafting-compass", color: "#6610f2", bg: "#eee5ff" },
+          { name: "FOTOGRAFIAS", icon: "fa-images", color: "#e83e8c", bg: "#ffe2e5" },
+          { name: "CORRESPONDENCIA", icon: "fa-envelope-open-text", color: "#ffc107", bg: "#fff4de" },
+          { name: "REPORTES", icon: "fa-chart-pie", color: "#198754", bg: "#c9f7f5" }
+      ]);
+      const projectCards = ref([]);
+      const projectTasks = ref({ data: [], headers: [], isLoading: false });
 
-        const newColumnValues = [];
-        let updatedCount = 0;
-        let startRow = headerRowIdx + 1; // 0-based index of first data row
+      const toggleExpand = (item) => { item.expanded = !item.expanded; };
 
-        // Iterar solo datos
-        for (let i = startRow; i < values.length; i++) {
-            let fechaVal = values[i][fechaIdx];
-            let newVal = values[i][diasIdx];
+      // *** MODIFICADO: ABRIR CONTENIDO CON ETIQUETADO DINÁMICO ***
+      const openFolderContent = (folder, projectName) => {
+          if (folder.name.includes("PPC")) {
+             // ETIQUETA DINÁMICA: "NAVE PPC INTERNO", "AMPLIACION PPC CLIENTE", etc.
+             const compoundName = `${projectName} ${folder.name}`;
+             currentPpcProject.value = { name: compoundName };
+             currentView.value = 'PROJECT_TASKS_VIEW';
+             loadProjectTasks(compoundName);
+          } else {
+             Swal.fire({ title: `${folder.name} (${projectName})`, text: 'Carpeta vacía por el momento.', icon: 'info', iconColor: folder.color, confirmButtonColor: folder.color });
+          }
+      };
 
-            // Lógica: TODAY - FECHA = DÍAS
-            let calculated = false;
-            if (fechaVal instanceof Date) {
-                fechaVal.setHours(0,0,0,0);
-                const diffTime = today - fechaVal;
-                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                newVal = Math.max(0, diffDays);
-                calculated = true;
-            } else if (typeof fechaVal === 'string' && fechaVal.trim() !== "") {
-                if(fechaVal.match(/\d{1,2}\/\d{1,2}\/\d{2,4}/)) {
-                    try {
-                        const parts = fechaVal.split('/');
-                        let y = parts[2];
-                        if(y.length === 2) y = '20'+y;
-                        const dObj = new Date(y, parts[1]-1, parts[0]);
-                        if(!isNaN(dObj.getTime())) {
-                            dObj.setHours(0,0,0,0);
-                            const diffDays = Math.floor((today - dObj) / (1000 * 60 * 60 * 24));
-                            newVal = Math.max(0, diffDays);
-                            calculated = true;
-                        }
-                    } catch(e) {}
-                }
-            }
-            
-            if (calculated) updatedCount++;
-            else if (newVal === undefined) newVal = ""; // Keep clean if calculation fails
-            
-            newColumnValues.push([newVal]);
-        }
+      const loadProjectTasks = (projectName) => {
+          projectTasks.value.isLoading = true;
+          google.script.run.withSuccessHandler(res => {
+              projectTasks.value.isLoading = false;
+              if (res.success) { projectTasks.value.data = res.data; projectTasks.value.headers = res.headers; }
+              else { Swal.fire('Error', res.message, 'error'); }
+          }).apiFetchProjectTasks(projectName);
+      };
 
-        // Batch Update
-        if (newColumnValues.length > 0) {
-            sheet.getRange(startRow + 1, diasIdx + 1, newColumnValues.length, 1).setValues(newColumnValues);
-            // Re-apply traffic light just in case
-            try { applyTrafficLightToSheet(sheet); } catch(e){}
-        }
-        
-        console.log(`[CONTADOR] ${sheetName}: ${updatedCount} actualizados.`);
+      const refreshProjectTasks = () => { if(currentPpcProject.value) loadProjectTasks(currentPpcProject.value.name); };
+      const addNewProjectTask = () => {
+          if (!projectTasks.value.headers.length) return;
+          const row = { _isNew: true };
+          projectTasks.value.headers.forEach(h => row[h] = "");
+          row['ESTATUS'] = 'PENDIENTE';
+          projectTasks.value.data.unshift(row);
+          pulseNewRow('projectTable', 'first');
+      };
+      const saveProjectRow = (row) => {
+          if(!currentPpcProject.value) return;
+          if (row._isSaving) return;
+          row._isSaving = true;
 
-      } catch (e) {
-        console.error(`Error procesando ${sheetName}:`, e);
-      }
-  });
-  
-  registrarLog("SISTEMA", "CONTADOR_DIARIO", `Actualización masiva de días completada.`);
-}
+          Swal.showLoading();
+          google.script.run.withSuccessHandler(res => {
+              row._isSaving = false;
+              Swal.close();
+              if (res.success) { row._isNew = false; if(res.moved) { refreshProjectTasks(); Swal.fire({ icon: 'success', title: 'Archivado', timer: 1000, showConfirmButton: false }); } else { Swal.fire({ icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false }); refreshProjectTasks(); } }
+              else { Swal.fire('Error', res.message, 'error'); }
+          }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiSaveProjectTask(JSON.parse(JSON.stringify(row)), currentPpcProject.value.name, currentUsername.value);
+      };
 
-function instalarDisparador() {
-  const funcionObjetivo = "incrementarContadorDias";
+      const loadCascadeTree = () => {
+          google.script.run.withSuccessHandler(res => {
+              if (res.success && res.data.length > 0) {
+                  const oldState = {}; activeProjectsList.value.forEach(p => oldState[p.id] = p.expanded);
+                  activeProjectsList.value = res.data.map(site => ({ ...site, expanded: oldState[site.id] || false }));
+              }
+          }).apiFetchCascadeTree();
+      };
 
-  // Verificar si ya existe el disparador para evitar duplicados
-  const triggers = ScriptApp.getProjectTriggers();
-  for (let i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === funcionObjetivo) {
-      console.log(`El disparador para '${funcionObjetivo}' ya existe.`);
-      return;
-    }
-  }
+      const openPpcProjectSelector = () => { showPpcSelectorModal.value = true; ppcMode.value = 'SELECT'; newProject.value = { name: '', client: '', type: 'OBRA CIVIL', creationMode: 'SUB', parentId: '', createdBy: '' }; };
+      const selectPpcProject = (proj) => { currentPpcProject.value = proj; showPpcSelectorModal.value = false; if (currentView.value === 'PROJECTS') { openModule({ id: 'PPC_MASTER', type: 'ppc_native' }); } };
+      const createNewProject = () => {
+          if (!newProject.value.name || !newProject.value.createdBy) return;
+          isSubmitting.value = true;
+          if (newProject.value.creationMode === 'SUB') {
+              google.script.run.withSuccessHandler(res => {
+                  if (res.success) {
+                      Swal.fire({ icon: 'success', title: '¡Creado!', text: 'Se ha guardado en la base de datos.', timer: 1500, showConfirmButton: false });
+                      google.script.run.withSuccessHandler(treeRes => { isSubmitting.value = false; if (treeRes.success) { activeProjectsList.value = treeRes.data; const parent = activeProjectsList.value.find(p => String(p.id) === String(newProject.value.parentId)); if (parent) { const createdSub = parent.subProjects.find(s => s.name === newProject.value.name.toUpperCase().trim()); if (createdSub) selectPpcProject(createdSub); } newProject.value = { name: '', client: '', type: 'OBRA CIVIL', creationMode: 'SUB', parentId: '', createdBy: '' }; } }).apiFetchCascadeTree();
+                  } else { isSubmitting.value = false; Swal.fire('Error', res.message, 'error'); }
+              }).apiSaveSubProject({ parentId: newProject.value.parentId, name: newProject.value.name, type: newProject.value.type, createdBy: newProject.value.createdBy });
+          } else {
+              google.script.run.withSuccessHandler(res => {
+                  if (res.success) {
+                      Swal.fire({ icon: 'success', title: 'Sitio Creado', text: 'Ahora agrega subproyectos.', timer: 2000, showConfirmButton: false });
+                      google.script.run.withSuccessHandler(treeRes => { isSubmitting.value = false; if(treeRes.success) { activeProjectsList.value = treeRes.data; newProject.value.creationMode = 'SUB'; newProject.value.parentId = res.id; newProject.value.name = ''; } }).apiFetchCascadeTree();
+                  } else { isSubmitting.value = false; Swal.fire('Error', res.message, 'error'); }
+              }).apiSaveSite({ name: newProject.value.name, client: newProject.value.client, type: newProject.value.type, createdBy: newProject.value.createdBy });
+          }
+      };
 
-  // Crear nuevo disparador diario entre 1 am y 2 am
-  ScriptApp.newTrigger(funcionObjetivo)
-      .timeBased()
-      .everyDays(1)
-      .atHour(1) // 1 am
-      .create();
+      const openAddSubProject = (site) => { currentTargetSite.value = site; newSubProject.value = { name: '', type: 'OBRA CIVIL', createdBy: '' }; showSubProjectModal.value = true; };
+      const createSubProject = () => {
+          if (!newSubProject.value.name || !newSubProject.value.createdBy) return;
+          isSubmitting.value = true;
+          google.script.run.withSuccessHandler(res => {
+              if (res.success) {
+                  Swal.fire({ icon: 'success', title: 'Subproyecto Agregado', timer: 1500, showConfirmButton: false });
+                  showSubProjectModal.value = false;
+                  google.script.run.withSuccessHandler(treeRes => { isSubmitting.value = false; if(treeRes.success) { activeProjectsList.value = treeRes.data; const updatedSite = activeProjectsList.value.find(s => s.id === currentTargetSite.value.id); if(updatedSite) updatedSite.expanded = true; } }).apiFetchCascadeTree();
+              } else { isSubmitting.value = false; Swal.fire('Error', res.message, 'error'); }
+          }).apiSaveSubProject({ parentId: currentTargetSite.value.id, name: newSubProject.value.name, type: newSubProject.value.type, createdBy: newSubProject.value.createdBy });
+      };
+      const openProjectTask = (sub) => { currentPpcProject.value = sub; openModule({ id: "PPC_DINAMICO", type: "ppc_dynamic_view" }); };
 
-  console.log(`Disparador instalado para '${funcionObjetivo}' (Diario 1am-2am).`);
-  registrarLog("ADMIN", "CONFIG_TRIGGER", "Se instaló el disparador automático diario.");
-}
+      // --- LOGICA GENERAL Y COMPUTED ---
+      const salesStaff = computed(() => (config.value.directory || []).filter(p => p.dept === 'VENTAS' && p.name !== 'ANTONIA_VENTAS').map(p => p.name));
+      const filteredStaff = computed(() => config.value.staff.filter(p => p.dept === currentDept.value && p.name.toLowerCase().includes(searchQuery.value.toLowerCase())));
+      const filteredDirectory = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(staffSearch.value.toLowerCase()) && !selectedResponsables.value.includes(p.name)).slice(0,5));
+      const pageTitle = computed(() => currentView.value);
+      const currentDeptData = computed(() => config.value.departments[currentDept.value] || {});
 
-function generarFolioAutomatico(e) {
-  const lock = LockService.getScriptLock();
-  try {
-    lock.waitLock(30000);
-  } catch (e) {
-    console.error('Could not obtain lock after 30 seconds.');
-    return;
-  }
+      const deptStats = computed(() => {
+          const stats = []; let totalActual=0; let totalCumplidas=0; let totalGlobalDB=0;
+          const deptsToIterate = config.value.allDepartments || config.value.departments;
+          for (const key in deptsToIterate) {
+              const deptLabel = deptsToIterate[key].label;
+              const actual = activityQueue.value.filter(i => i.especialidad === key).length;
+              const totalDB = ppcExistingData.value.filter(i => i.especialidad === key || i.especialidad === deptLabel);
+              const cumplidas = totalDB.filter(i => String(i.cumplimiento).toUpperCase() === 'SI').length;
+              let prom = 0; if (totalDB.length > 0) prom = Math.round((cumplidas / totalDB.length) * 100);
+              totalActual += actual; totalCumplidas += cumplidas; totalGlobalDB += totalDB.length;
+              stats.push({ key: key, label: deptLabel.toUpperCase(), actual: actual, cumplidas: cumplidas, promedio: prom + '%', anterior: '0%' });
+          }
+          let totalProm = 0; if (totalGlobalDB > 0) totalProm = Math.round((totalCumplidas / totalGlobalDB) * 100);
+          stats.push({ key: 'TOTAL', label: 'TOTAL', actual: totalActual, cumplidas: totalCumplidas, promedio: totalProm + '%', anterior: '0%' });
+          return stats;
+      });
 
-  try {
-    const ss = e ? e.source : SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(FOLIO_CONFIG.SHEET_NAME);
+      const availableWeeks = computed(() => { const allWeeks = weeklyPlanData.value.data.map(i => i.SEMANA).filter(w => w && w !== '-'); return [...new Set(allWeeks)].sort((a,b) => b - a); });
+      const availableSpecialties = computed(() => [...new Set(weeklyPlanData.value.data.map(r => r.ESPECIALIDAD).filter(x => x))].sort());
 
-    if (!sheet) return;
+      const filteredWeeklyData = computed(() => {
+          let data = weeklyPlanData.value.data;
+          if (selectedWeek.value) { data = data.filter(r => String(r.SEMANA) == String(selectedWeek.value)); }
+          if (filterSpecialty.value) { data = data.filter(r => String(r.ESPECIALIDAD).trim() === String(filterSpecialty.value).trim()); }
+          if (filterCompliance.value) { data = data.filter(r => String(r.CUMPLIMIENTO).toUpperCase().trim() === String(filterCompliance.value).toUpperCase().trim()); }
+          return data;
+      });
 
-    const lastRow = sheet.getLastRow();
-    if (lastRow < 2) return;
+      const weeklyStats = computed(() => {
+           const data = filteredWeeklyData.value || []; const stats = []; let grandTotal = 0; let grandSi = 0;
+           const depts = config.value.allDepartments || config.value.departments || {}; const norm = s => String(s||'').toUpperCase().trim();
+           for (const key in depts) {
+               const label = depts[key].label.toUpperCase();
+               const items = data.filter(r => { const s = norm(r['ESPECIALIDAD'] || r['AREA']); return s === key || s === norm(depts[key].label); });
+               const t = items.length; const s = items.filter(r => norm(r['CUMPLIMIENTO']) === 'SI').length; const n = t - s; const p = t > 0 ? Math.round((s/t)*100) : 0;
+               stats.push({ label: label, total: t, si: s, no: n, avg: p + '%' }); grandTotal += t; grandSi += s;
+           }
+           const grandNo = grandTotal - grandSi; const grandAvg = grandTotal > 0 ? Math.round((grandSi/grandTotal)*100) : 0;
+           stats.push({ label: 'TOTAL GLOBAL', total: grandTotal, si: grandSi, no: grandNo, avg: grandAvg + '%', isTotal: true }); return stats;
+      });
 
-    const lastCol = sheet.getLastColumn();
-    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
-    const folioIndex = headers.indexOf(FOLIO_CONFIG.COLUMN_NAME);
+      const isCol = (h, list) => list.includes(String(h).toUpperCase().trim());
 
-    if (folioIndex === -1) {
-      console.error(`Column '${FOLIO_CONFIG.COLUMN_NAME}' not found in sheet '${FOLIO_CONFIG.SHEET_NAME}'`);
-      return;
-    }
+      const getUniqueValues = (h) => {
+          if (!staffTracker.value.data) return [];
+          const values = new Set();
+          staffTracker.value.data.forEach(row => {
+              if (row[h]) values.add(String(row[h]).trim());
+          });
+          return Array.from(values).sort();
+      };
 
-    const folioColNum = folioIndex + 1;
-    const targetCell = sheet.getRange(lastRow, folioColNum);
-    const targetValue = targetCell.getValue();
 
-    if (targetValue === "" || targetValue === null) {
-      let newFolio = 1;
+      const visibleTrackerHeaders = computed(() => {
+          if (!staffTracker.value.headers) return [];
+          return staffTracker.value.headers.filter(h => {
+              const up = String(h).toUpperCase().trim();
+              return up !== 'PROCESO_LOG' && up !== 'PROCESO';
+          });
+      });
 
-      if (lastRow > 2) {
-        const numRows = lastRow - 2;
-        if (numRows > 0) {
-            const previousValues = sheet.getRange(2, folioColNum, numRows, 1).getValues().flat();
-            const numbers = previousValues.filter(val => typeof val === 'number' && !isNaN(val));
-            if (numbers.length > 0) {
-              const maxVal = Math.max(...numbers);
-              newFolio = maxVal + 1;
-            }
-        }
-      }
+const filteredStaffTrackerData = computed(() => {
+          if (!staffTracker.value.data) return [];
+          return staffTracker.value.data.filter(row => {
+              for (const key in staffTrackerFilters.value) {
+                  const filterVal = staffTrackerFilters.value[key];
+                  if (filterVal) {
+                      const rowVal = String(row[key] || '').trim();
+                      // Simple equality check (case-sensitive as values come from set) or insensitive?
+                      // Let's use exact match since options come from data.
+                      if (rowVal !== filterVal) return false;
+                  }
+              }
+              return true;
+          });
+      });
 
-      targetCell.setValue(newFolio);
-      console.log(`Generated Folio: ${newFolio} for row ${lastRow}`);
-    }
+      const isFieldEditable = (h, row) => {
+          const restrictedRoles = ['ANGEL_USER', 'TERESA_USER', 'EDUARDO_USER', 'MANZANARES_USER', 'RAMIRO_USER', 'SEBASTIAN_USER', 'EDGAR_USER'];
+          if (restrictedRoles.includes(currentRole.value)) {
+              const hUp = String(h).toUpperCase();
+              const allowed = ['AVANCE', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT'];
+              return allowed.some(a => hUp.includes(a));
+          }
 
-  } catch (err) {
-    console.error(err);
-  } finally {
-    lock.releaseLock();
-  }
-}
+          if (currentRole.value === 'TONITA') {
+              if (row._isNew) return true;
+              if (!row['FOLIO'] && !row['ID']) return true;
 
-// ==========================================
-// _TEST_SUITE.js
-// ==========================================
+              const hUp = String(h).toUpperCase();
+              const allowed = ['FECHA', 'FECHA VISITA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'ESTATUS', 'STATUS', 'AVANCE', 'AVANCE %', 'ARCHIVO', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'ENTREGA', 'VENDEDOR', 'RESPONSABLE'];
+              return allowed.some(a => hUp.includes(a));
+          }
+          return true;
+      };
 
-function test_Generacion_MAP_COT() {
-  console.log("🛠️ INICIANDO TEST: Generación Correcta de MAP COT");
+      const calculateDiasCounter = (row) => {
+          // Permite ejecutar en cualquier hoja que tenga las columnas
+          // if (!staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) return; 
+          
+          const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
+          if (!hDias) return;
+          
+          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
+          if (!hFecha || !row[hFecha]) return;
+          
+          let dObj = null;
+          const val = row[hFecha];
+          if (val instanceof Date) dObj = val;
+          else if (typeof val === 'string') {
+              const parts = val.split('/');
+              if (parts.length === 3) {
+                   let y = parts[2];
+                   if (y.length === 2) y = '20' + y;
+                   // Javascript Date parsing with hyphens is very error prone due to UTC vs Local Time
+                   // It's safer to use the Date(year, monthIndex, day) constructor
+                   dObj = new Date(parseInt(y), parseInt(parts[1]) - 1, parseInt(parts[0]));
+              }
+          }
+          if (dObj && !isNaN(dObj.getTime())) {
+              const now = new Date();
+              dObj.setHours(0,0,0,0);
+              now.setHours(0,0,0,0);
+              const diffTime = now - dObj;
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              row[hDias] = Math.max(0, diffDays);
+          }
+      };
 
-  const origFetch = internalFetchSheetData;
-  const origBatch = internalBatchUpdateTasks;
-  const origLog = registrarLog;
+      const getColumnStyle = (h) => {
+          const up = String(h).toUpperCase().trim(); let w = '120px'; let fs = '12px'; let pad = '8px 4px'; let align = 'left'; let colColor = '#333';
+          if (up === 'CONCEPTO' || up.includes('DESCRIP')) {
+              if (currentView.value === 'WEEKLY_PLAN') {
+                  w = '150px';
+              } else {
+                  w = (currentUsername.value === 'ANTONIA_VENTAS') ? '350px' : '380px';
+              }
+          }
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'F. ENTREGA' || up === 'F. VISITA' || up === 'FECHA VISITA' || up === 'F. INICIO')) { w = '60px'; fs = '10px'; colColor = '#000'; }
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'ESTATUS' || up === 'STATUS')) { w = '350px'; }
 
-  let capturedSync = null;
 
-  try {
-      internalFetchSheetData = function(sheetName) {
-          if (sheetName === "ANTONIA_VENTAS") {
-              return {
-                  success: true,
-                  data: [{
-                      'FOLIO': 'AV-TEST-001',
-                      'PROCESO_LOG': JSON.stringify([
-                          {step: "L", status: "DONE", assignee: "USER1"},
-                          {step: "CD", status: "IN_PROGRESS", assignee: "ANGEL SALINAS"}
-                      ]),
-                      'MAP COT': '🟢 L | 🔴 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC'
-                  }]
+          else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
+          else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
+          else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUsername.value === 'ANTONIA_VENTAS') ? '70px' : '40px'; fs = '10px'; align = 'center'; }
+          else if (up.includes('CUMPLIMIENTO')) { w = '50px'; align = 'center'; fs = '11px'; }
+          else if (up.includes('ARCHIVO') || up.includes('CLIP')) { w = '40px'; align = 'center'; }
+          else if (up === 'SEMANA') { w = '50px'; align = 'center'; }
+          else if (up === 'HORA') { w = '50px'; fs = '10px'; }
+          else if (up === 'FECHA ESTIMADA DE FIN' || up === 'FECHA DE ENTREGA') { w = '75px'; fs = '10px'; }
+          else if (up === 'HORA ESTIMADA DE FIN') { w = '60px'; fs = '10px'; }
+          else if (up.includes('PRIORIDAD')) { w = '70px'; fs = '10px'; }
+          else if (up.includes('RIESGO')) { w = '70px'; fs = '10px'; }
+          else if (up === 'REQUISITOR') { w = '90px'; fs = '11px'; }
+          else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; }
+          else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
+          else if (up.includes('AVANCE')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
+          else if (isCol(h, ['ESTATUS','STATUS'])) { w = '65px'; fs = '10px'; pad = '8px 1px'; }
+          else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; }
+          else if (up === 'F2') { w = '35px'; fs = '10px'; align='center'; }
+          else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; }
+          else if (up.includes('TIMEOUT') || up.includes('TIME OUT')) { w = '70px'; fs = '10px'; align='center'; }
+          else if (up.includes('LAYOUT') || up.includes('TIMELINE')) { w = '70px'; fs = '10px'; align='center'; }
+          else if (up.includes('VENDEDOR') || (currentUsername.value === 'ANTONIA_VENTAS' && up.includes('RESPONSABLE'))) { w = '50px'; fs = '10px'; align='center'; colColor = '#000'; }
+          else if (up === 'CLIENTE') w = '100px';
+
+          // OVERRIDE FOR PPCV3 (WEEKLY_PLAN)
+          if (currentView.value === 'WEEKLY_PLAN') {
+              if (['ESPECIALIDAD', 'RESPONSABLE', 'FECHA', 'RELOJ', 'CUMPLIMIENTO'].includes(up)) {
+                  w = 'auto';
+              }
+          }
+
+          return { width: w, fontSize: fs, padding: pad, textAlign: align, overflow: 'hidden', textOverflow: 'ellipsis', color: colColor };
+      };
+
+      const getHeaderLabel = (h) => {
+          const up = String(h).toUpperCase().trim();
+          if (up === 'DIAS' && currentUsername.value === 'ANTONIA_VENTAS') return 'Días Finaliz. Cotiz';
+          if (up === 'CLASIFICACION') return 'CLASI';
+          if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN';
+          if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN';
+          return h;
+      };
+      const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
+      const getTrafficStyle = (row) => { 
+          const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); 
+          const d = parseInt(row['DIAS']||row['RELOJ']||row['DÍAS FINALIZ. COTIZ']||row['DIAS FINALIZ. COTIZ']||0); 
+          if (isNaN(d)) return {}; 
+          
+          let limit = 0, buffer = 0;
+          if(t==='A') { limit=3; buffer=1; }
+          else if(t==='AA') { limit=15; buffer=3; }
+          else if(t==='AAA') { limit=30; buffer=5; }
+          else return {};
+
+          if(d > limit) return {backgroundColor:'#e74c3c', color:'white'}; // Rojo
+          if(d >= (limit - buffer)) return {backgroundColor:'#ffff00', color:'black', fontWeight:'bold'}; // Amarillo
+          return {backgroundColor:'#2ecc71', color:'white'}; // Verde
+      };
+
+      const getFechaInicioTrafficStyle = (row) => {
+          const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','ALTA','F. INICIO','F. VISITA'].includes(String(k).toUpperCase().trim()));
+          if (!startKey) return {};
+          const val = row[startKey];
+          if (!val) return {};
+          let dObj = null;
+          if (val instanceof Date) dObj = val;
+          else if (typeof val === 'string') {
+              const p = val.split('/');
+              if (p.length === 3) dObj = new Date(p[2].length===2?'20'+p[2]:p[2], p[1]-1, p[0]);
+          }
+          if (!dObj || isNaN(dObj.getTime())) return {};
+
+          // Calculate elapsed days
+          const now = new Date();
+          now.setHours(0,0,0,0);
+          dObj.setHours(0,0,0,0);
+          const diff = now - dObj;
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+          const t = String(row['CLASIFICACION']||'').trim().toUpperCase();
+          let limit = 0, buffer = 0;
+          if(t==='A') { limit=3; buffer=1; }
+          else if(t==='AA') { limit=15; buffer=3; }
+          else if(t==='AAA') { limit=30; buffer=5; }
+          else return {};
+
+          if(days > limit) return {backgroundColor:'#e74c3c', color:'black'};
+          if(days >= (limit - buffer)) return {backgroundColor:'#ffff00', color:'black', fontWeight:'bold'};
+          return {backgroundColor:'#2ecc71', color:'black'};
+      };
+      const getFechaRespuestaStyle = (row) => { const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','F. INICIO'].includes(String(k).toUpperCase().trim())); const startDateVal = startKey ? row[startKey] : null; const style = { backgroundColor: '#ffc107', color: 'black' }; if (!startDateVal) return style; let startDate = null; if (typeof startDateVal === 'string') { const parts = startDateVal.split('/'); if (parts.length === 3) { let y = parts[2].length === 2 ? '20' + parts[2] : parts[2]; startDate = new Date(`${y}-${parts[1]}-${parts[0]}`); } } else if (startDateVal instanceof Date) { startDate = startDateVal; } if (startDate && !isNaN(startDate.getTime())) { const diff = new Date() - startDate; if (Math.floor(diff / (1000 * 60 * 60 * 24)) > 3) { style.backgroundColor = '#dc3545'; style.color = 'black'; } } return style; };
+
+      const toInitials = (name) => {
+        if (!name) return '';
+        // Soporta múltiples nombres separados por coma
+        return String(name).split(',').map(n => {
+            const parts = n.trim().split(/\s+/);
+            if (parts.length === 0 || (parts.length === 1 && parts[0] === '')) return '';
+            return parts.map(p => p.charAt(0)).join('').toUpperCase().substring(0, 2);
+        }).join('/');
+      };
+
+      const handleErr = (e) => { loggingIn.value=false; isSubmitting.value=false; Swal.fire('Error',e.message,'error'); };
+      const doLogin = () => { if(!loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role, res.username); loadCascadeTree(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiLogin(loginUser.value, loginPass.value); };
+      const loadConfig = (r, u) => { google.script.run.withSuccessHandler(d => { config.value=d; loadDashboardCalendar(); if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r, u); };
+      const toggleSidebar = () => { isCompact.value = !isCompact.value; };
+      const animateCyberpunkLogo = () => {
+          anime({
+              targets: '.cp-path',
+              strokeDashoffset: [anime.setDashoffset, 0],
+              easing: 'easeInOutSine',
+              duration: 2000,
+              direction: 'alternate',
+              loop: true
+          });
+      };
+
+      const toggleTheme = () => {
+          if (currentTheme.value === 'light') currentTheme.value = 'dark';
+          else if (currentTheme.value === 'dark') currentTheme.value = 'cyberpunk';
+          else currentTheme.value = 'light';
+      };
+      watch(currentTheme, (val) => {
+          document.body.classList.remove('theme-light', 'theme-dark', 'theme-cyberpunk');
+          document.body.classList.add('theme-' + val);
+          if (val === 'cyberpunk') {
+              nextTick(() => animateCyberpunkLogo());
+          }
+      }, { immediate: true });
+
+      const logout = () => {
+          if(calendarInterval.value) clearInterval(calendarInterval.value);
+          google.script.run.apiLogout(currentUsername.value); isLoggedIn.value=false; loginPass.value=''; loginUser.value=''; currentView.value='DASHBOARD';
+      };
+      const goHome = () => { currentView.value='DASHBOARD'; currentDept.value=''; currentModuleId.value=''; loadDashboardCalendar(); };
+      const selectDept = (k) => { currentDept.value=k; currentView.value='DEPT'; searchQuery.value=''; currentModuleId.value=''; };
+      const goBackToDept = () => currentView.value=staffTracker.value.previousView;
+
+      const loadWeeklyPlan = () => { weeklyPlanData.value.isLoading = true; google.script.run.withSuccessHandler(res => { weeklyPlanData.value.isLoading = false; if(res.success){ weeklyPlanData.value.headers = res.headers; weeklyPlanData.value.data = res.data; selectedWeek.value = ''; } else Swal.fire('Error', res.message, 'error'); }).apiFetchWeeklyPlanData(currentUsername.value); };
+      const savePPCV3Row = (row, event) => {
+          if (row._isSaving) return;
+          row._isSaving = true;
+
+          if (event && event.clientX) {
+             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
+             if (isCompleted) triggerConfetti(event.clientX, event.clientY);
+          }
+          const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500 });
+          Toast.fire({ icon: 'info', title: 'Guardando...' });
+          google.script.run.withSuccessHandler(res => {
+              row._isSaving = false;
+              if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' });
+              else Swal.fire('Error', res.message, 'error');
+          }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value);
+      };
+
+      // ECG LOGIC
+      const loadEcgData = () => {
+          if(currentView.value !== 'ECG_VIEW') return;
+          Swal.showLoading();
+          google.script.run.withSuccessHandler(res => {
+              Swal.close();
+              if (res.success) {
+                  ecgData.value = res.data;
+                  nextTick(() => { renderEcgCharts(); });
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiFetchSalesHistory();
+      };
+
+      const renderEcgCharts = () => {
+          Object.keys(ecgData.value).forEach(personName => {
+              const canvasId = 'chart-' + personName.replace(/\s+/g, '');
+              const ctx = document.getElementById(canvasId);
+              if (!ctx) return;
+
+              if (ecgChartInstances[personName]) {
+                  ecgChartInstances[personName].destroy();
+              }
+
+              const dataPoints = ecgData.value[personName];
+              const labels = dataPoints.map(d => d.displayDate);
+              const values = dataPoints.map(d => d.pulse);
+
+              let borderColor = '#00ff00';
+              if(personName.includes("SEBASTIAN")) borderColor = '#00ccff';
+              if(personName.includes("EDUARDO")) borderColor = '#ff9900';
+
+              ecgChartInstances[personName] = new Chart(ctx, {
+                  type: 'line',
+                  data: {
+                      labels: labels,
+                      datasets: [{
+                          label: 'Señal de Ventas',
+                          data: values,
+                          borderColor: borderColor,
+                          borderWidth: 2,
+                          tension: 0.1,
+                          pointRadius: 3,
+                          pointBackgroundColor: '#fff'
+                      }]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                          x: { display: false },
+                          y: {
+                              display: true,
+                              grid: { color: '#222' },
+                              ticks: { color: '#555', callback: (v) => v > 5 ? 'VENDIDA' : (v < 0 ? 'PERDIDA' : '') }
+                          }
+                      },
+                      plugins: {
+                          legend: { display: false },
+                          tooltip: {
+                              callbacks: {
+                                  label: (ctx) => {
+                                      const idx = ctx.dataIndex;
+                                      const item = dataPoints[idx];
+                                      return `${item.status}: ${item.desc} (${item.client})`;
+                                  }
+                              }
+                          }
+                      },
+                      animation: { duration: 1500, easing: 'easeOutQuart' }
+                  }
+              });
+          });
+      };
+
+      const openModule = (m) => {
+          currentModuleId.value = m.id; currentDept.value = '';
+          if(m.type==='mirror_staff') { openStaffTracker({name:m.target}); }
+          else if(m.type==='ppc_native') {
+              if (currentRole.value === 'WORKORDER_USER') {
+                  currentView.value = 'WORKORDER_FORM';
+                  fetchNextSequence();
+                  workorderData.value = {
+                      cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                      cotizador: [], departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+                      prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
+                      checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
+                      restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
+                      files: [],
+                      designValidation: { items: [{ diseno: [], maquinados: [], dibujos: [] }] }
+                  };
+                      projectProgram.value = {
+                          timeEstimated: 1,
+                          timeUnit: 'dias',
+                          visita: [{ description: '', date: '', duration: '', durationUnit: 'dias', unit: '', quantity: '', price: '', total: 0, responsable: [] }],
+                          reqCotizacion: JSON.parse(JSON.stringify(defaultReqCotizacion)),
+                          cotPreconstruccion: JSON.parse(JSON.stringify(defaultCotPreconstruccion)),
+                          cotTrabajo: []
+                      };
+              } else {
+                  currentView.value='PPC_FORM';
+                  google.script.run.withSuccessHandler(res => { if(res.success) ppcExistingData.value = res.data; }).apiFetchPPCData();
+              }
+          }
+          else if(m.type==='ppc_dynamic_view') { currentView.value='PPC_DINAMICO'; dynamicPpc.value = { especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' }; selectedResponsables.value = []; uploadSuccess.value = false; }
+          else if(m.type==='weekly_plan_view') { currentView.value='WEEKLY_PLAN'; loadWeeklyPlan(); }
+          else if(m.type === 'ecg_dashboard') {
+              currentView.value = 'ECG_VIEW';
+              loadEcgData();
+          }
+          else if(m.type === 'kpi_dashboard_view') {
+              // Permitir acceso a LUIS_CARLOS y ANTONIA_VENTAS (o rol TONITA)
+              // if (currentUsername.value !== 'LUIS_CARLOS') { ... } // Comentado para permitir acceso demo
+              currentView.value = 'KPI_DASHBOARD';
+              loadKPIData();
+          }
+      };
+
+      const animateKPICards = () => {
+          anime({
+              targets: '.kpi-card-anim',
+              translateY: [20, 0],
+              opacity: [0, 1],
+              delay: anime.stagger(100),
+              easing: 'easeOutQuad',
+              duration: 800
+          });
+      };
+
+      const loadKPIData = () => {
+          kpiData.value.isLoading = true;
+          // MOCK DATA GENERATION
+          setTimeout(() => {
+              kpiData.value.isLoading = false;
+
+              // --- NUEVOS KPI'S LUIS_CARLOS ---
+              kpiData.value.dashboardVentas = [
+                  { name: 'JUDITH ECHAVARRIA', volumen: 15, eficiencia: 1.2 },
+                  { name: 'EDUARDO MANZANARES', volumen: 12, eficiencia: 1.5 },
+                  { name: 'RAMIRO RODRIGUEZ', volumen: 10, eficiencia: 1.8 },
+                  { name: 'SEBASTIAN PADILLA', volumen: 14, eficiencia: 1.1 },
+                  { name: 'CESAR GOMEZ', volumen: 8, eficiencia: 2.0 },
+                  { name: 'ALFONSO CORREA', volumen: 6, eficiencia: 2.5 },
+                  { name: 'TERESA GARZA', volumen: 9, eficiencia: 1.9 },
+                  { name: 'GUILLERMO DAMICO', volumen: 7, eficiencia: 2.1 },
+                  { name: 'ANGEL SALINAS', volumen: 11, eficiencia: 1.6 },
+                  { name: 'JUAN JOSE SANCHEZ', volumen: 5, eficiencia: 2.8 }
+              ];
+
+              kpiData.value.productividadDiaria = {
+                  labels: ['Lun', 'Mar', 'Mie', 'Jue', 'Vie'],
+                  data: [12, 18, 15, 20, 16]
               };
-          }
-          return { success: true, data: [] };
+
+              kpiData.value.dashboardTracker = [
+                  { name: 'EDUARDO MANZANARES', volumen: 20, eficiencia: 0.8 },
+                  { name: 'JUAN JOSE SANCHEZ', volumen: 18, eficiencia: 0.9 },
+                  { name: 'SELENE BALDONADO', volumen: 15, eficiencia: 1.0 },
+                  { name: 'ROLANDO MORENO', volumen: 14, eficiencia: 1.1 },
+                  { name: 'MIGUEL GALLARDO', volumen: 12, eficiencia: 1.2 },
+                  { name: 'SEBASTIAN PADILLA', volumen: 16, eficiencia: 1.0 },
+                  { name: 'JEHU MARTINEZ', volumen: 10, eficiencia: 1.5 },
+                  { name: 'MIGUEL GONZALEZ', volumen: 8, eficiencia: 2.0 },
+                  { name: 'ALICIA RIVERA', volumen: 9, eficiencia: 1.8 },
+                  { name: 'RICARDO MENDO', volumen: 7, eficiencia: 2.2 }
+              ];
+              // --------------------------------
+
+              kpiData.value.puntualidad = [
+                  { name: 'Antonia', value: 98 }, { name: 'Eduardo T.', value: 95 }, { name: 'Ramiro', value: 92 },
+                  { name: 'Sebastian', value: 96 }, { name: 'Judith', value: 99 }, { name: 'Angel', value: 94 },
+                  { name: 'Teresa', value: 97 }, { name: 'Eduardo M.', value: 93 }
+              ];
+              kpiData.value.visitas = [
+                  { name: 'Judith', value: 85 }, { name: 'Ramiro', value: 88 }, { name: 'Eduardo M.', value: 90 }
+              ];
+              kpiData.value.preWO = [
+                  { name: 'Judith', value: 92 }, { name: 'Ramiro', value: 85 }, { name: 'Antonia', value: 95 }
+              ];
+              kpiData.value.entregaCotiz = {
+                  labels: ['Cotizador', 'Estrategia', 'Serv. Cliente'],
+                  data: [95, 88, 92]
+              };
+              kpiData.value.archivos100 = [
+                  { name: 'Judith', value: 100 }, { name: 'Ramiro', value: 95 }, { name: 'Eduardo M.', value: 98 }
+              ];
+              kpiData.value.disenos = [
+                  { name: 'Angel', value: 96 }, { name: 'Edgar', value: 94 }
+              ];
+              kpiData.value.planeacion = {
+                  labels: ['Planeación', 'Diseño', 'Materiales', 'Herramientas', 'Análisis Riesgo'],
+                  data: [90, 85, 95, 92, 88]
+              };
+              kpiData.value.ventas = {
+                  semanal: { labels: ['Ventas', 'Const.', 'HVAC'], data: [5, 12, 8] },
+                  mensual: { labels: ['Ventas', 'Const.', 'HVAC'], data: [25, 45, 30] },
+                  anual: { labels: ['Ventas', 'Const.', 'HVAC'], data: [300, 550, 400] }
+              };
+              kpiData.value.controlProy = {
+                  labels: ['Cotizador', 'Residente'],
+                  data: [88, 92]
+              };
+              kpiData.value.lecciones = [
+                  { tema: 'Falta de EPP en visita', tipo: 'Tarjeta Roja', fecha: '15/01' },
+                  { tema: 'Retraso Material', tipo: 'Lección', fecha: '20/01' },
+                  { tema: 'Cota errónea en plano', tipo: 'Tarjeta Roja', fecha: '22/01' },
+                  { tema: 'Mejora en logística', tipo: 'Lección', fecha: '25/01' }
+              ];
+
+              nextTick(() => {
+                  renderKPICharts();
+                  animateKPICards();
+              });
+          }, 800);
       };
 
-      internalBatchUpdateTasks = function(sheetName, tasksArray) {
-          if (sheetName === "ANTONIA_VENTAS" && tasksArray[0] && tasksArray[0]['PROCESO_LOG']) {
-              capturedSync = tasksArray[0];
-          }
-          return { success: true, moved: false };
-      };
-
-      registrarLog = function() {};
-
-      internalUpdateTask("ANGEL SALINAS (VENTAS)", {
-          'FOLIO': 'AV-TEST-001',
-          'AVANCE': '100%',
-          'ESTATUS': 'DONE'
-      }, "TEST_RUNNER");
-
-      const expected = "🟢 L | 🟢 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC";
-      const result = capturedSync ? capturedSync['MAP COT'] : null;
-
-      if (result === expected) {
-          console.log("✅ test_Generacion_MAP_COT Pasó.");
-      } else {
-          console.error("❌ test_Generacion_MAP_COT Falló.");
-          console.error("Esperado: " + expected);
-          console.error("Recibido: " + result);
-      }
-  } finally {
-      internalFetchSheetData = origFetch;
-      internalBatchUpdateTasks = origBatch;
-      registrarLog = origLog;
-  }
-}
-
-function test_Security_Filter_AllowedBase() {
-  console.log("🛠️ INICIANDO TEST: Filtrado de Seguridad (allowedBase)");
-
-  const origBatch = internalBatchUpdateTasks;
-  const origLog = registrarLog;
-
-  let capturedUpdate = null;
-
-  try {
-      internalBatchUpdateTasks = function(sheetName, tasksArray) {
-          if (sheetName === 'ANTONIA_VENTAS' && tasksArray[0] && tasksArray[0].FOLIO === 'AV-9999') {
-            capturedUpdate = tasksArray[0];
-          }
-          return { success: true };
-      };
-      registrarLog = function() {};
-
-      const payload = {
-          'FOLIO': 'AV-9999',
-          'PROCESO_LOG': '[{"step":"L", "status":"DONE"}]',
-          'FORMULA_SECRETA': 'malicious data',
-          'ESTATUS': 'PENDIENTE'
-      };
-
-      // Call internalUpdateTask as ANTONIA_VENTAS to trigger the filter logic directly
-      internalUpdateTask("ANTONIA_VENTAS", payload, "ANTONIA_VENTAS");
-
-      if (capturedUpdate && capturedUpdate['FORMULA_SECRETA'] === undefined && capturedUpdate['PROCESO_LOG'] !== undefined) {
-          console.log("✅ test_Security_Filter_AllowedBase Pasó.");
-      } else {
-          console.error("❌ test_Security_Filter_AllowedBase Falló.");
-          console.log("Keys persistidas: ", capturedUpdate ? Object.keys(capturedUpdate) : "none");
-      }
-  } finally {
-      internalBatchUpdateTasks = origBatch;
-      registrarLog = origLog;
-  }
-}
-
-function test_Flujo_Completo_Delegacion_y_Sincronizacion() {
-    console.log("🛠️ INICIANDO TEST: Flujo Completo de Delegación y Sincronización (Test Case 3)");
-
-    const origFetch = internalFetchSheetData;
-    const origBatch = internalBatchUpdateTasks;
-    const origLog = registrarLog;
-
-    let dbAntonia = [{
-        'FOLIO': 'AV-E2E-001',
-        'CLIENTE': 'TEST E2E',
-        'ESTATUS': 'PENDIENTE',
-        'MAP COT': '⚪ L | ⚪ CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC'
-    }];
-
-    let dbAngel = [];
-
-    try {
-        internalFetchSheetData = function(sheetName) {
-            if (sheetName === "ANTONIA_VENTAS") return { success: true, data: dbAntonia };
-            return { success: true, data: [] };
-        };
-
-        internalBatchUpdateTasks = function(sheetName, tasksArray) {
-            if (sheetName === "ANTONIA_VENTAS") {
-                const task = tasksArray[0];
-                const row = dbAntonia.find(r => r.FOLIO === task.FOLIO);
-                if (row) Object.assign(row, task);
-                else dbAntonia.push(task);
-            } else if (sheetName === "ANGEL SALINAS" || sheetName === "ANGEL SALINAS (VENTAS)") {
-                 dbAngel.push(tasksArray[0]);
-            }
-            return { success: true, moved: false };
-        };
-        registrarLog = function() {};
-
-        // Paso 1 (Delegar) -> Simulado desde Frontend a internalUpdateTask
-        const taskRow = Object.assign({}, dbAntonia[0]);
-        taskRow._assignToWorker = "ANGEL SALINAS (VENTAS)";
-        taskRow._assignStep = "CD";
-        taskRow.PROCESO_LOG = JSON.stringify([{step: "CD", status: "IN_PROGRESS", assignee: "ANGEL SALINAS", timestamp: new Date().getTime()}]);
-        taskRow["MAP COT"] = '⚪ L | 🔴 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC';
-
-        internalUpdateTask("ANTONIA_VENTAS", taskRow, "ANTONIA_VENTAS");
-
-        // Validación Paso 2 (Backend)
-        const updatedAntoniaRow = dbAntonia.find(r => r.FOLIO === 'AV-E2E-001');
-        const log = JSON.parse(updatedAntoniaRow.PROCESO_LOG);
-        if (log[0].step !== "CD" || log[0].status !== "IN_PROGRESS" || log[0].assignee !== "ANGEL SALINAS") {
-            console.error("❌ Falló Paso 2: El PROCESO_LOG no se actualizó correctamente.");
-            return;
-        }
-
-        if (dbAngel.length === 0 || dbAngel[0].FOLIO !== 'AV-E2E-001') {
-            console.error("❌ Falló Paso 2: La tarea no se distribuyó a la hoja de ANGEL SALINAS.");
-            return;
-        }
-
-        // Paso 3 (Completar Tarea)
-        const angelTask = Object.assign({}, dbAngel[0]);
-        angelTask.AVANCE = "100%";
-        angelTask.ESTATUS = "DONE";
-        angelTask.COTIZACION = "http://test.url";
-
-        internalUpdateTask("ANGEL SALINAS (VENTAS)", angelTask, "ANGEL_USER");
-
-        // Validación Paso 4 (Sincronización Inversa)
-        const finalAntoniaRow = dbAntonia.find(r => r.FOLIO === 'AV-E2E-001');
-        const finalLog = JSON.parse(finalAntoniaRow.PROCESO_LOG);
-
-        if (finalLog[0].status !== "DONE") {
-            console.error("❌ Falló Paso 4: El estado en PROCESO_LOG no es DONE.");
-            return;
-        }
-
-        if (finalAntoniaRow["MAP COT"] !== "⚪ L | 🟢 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC") {
-            console.error("❌ Falló Paso 4: El MAP COT no se regeneró a verde (🟢). Recibido: " + finalAntoniaRow["MAP COT"]);
-            return;
-        }
-
-        if (finalAntoniaRow.COTIZACION !== "http://test.url") {
-             console.error("❌ Falló Paso 4: El archivo no se sincronizó.");
-             return;
-        }
-
-        console.log("✅ test_Flujo_Completo_Delegacion_y_Sincronizacion Pasó.");
-
-    } finally {
-        internalFetchSheetData = origFetch;
-        internalBatchUpdateTasks = origBatch;
-        registrarLog = origLog;
-    }
-}
-
-function test_Cierre_Terminal_RCC() {
-    console.log("🛠️ INICIANDO TEST: Cierre Terminal RCC (Test Case 4)");
-
-    // Este test verifica que cuando la hoja de Antonia actualiza un ESTATUS final (ej. PERDIDA X PRECIO)
-    // El frontend lo maneja (simulado pasando el payload) y que se mantenga el estado.
-    // La mayor parte de la lógica de cierre está en el frontend en 'advanceProcess',
-    // Aquí probamos que internalUpdateTask lo acepte y guarde.
-
-    const origBatch = internalBatchUpdateTasks;
-    const origLog = registrarLog;
-
-    let capturedUpdate = null;
-
-    try {
-        internalBatchUpdateTasks = function(sheetName, tasksArray) {
-            if (sheetName === "ANTONIA_VENTAS") capturedUpdate = tasksArray[0];
-            return { success: true };
-        };
-        registrarLog = function() {};
-
-        const payload = {
-            'FOLIO': 'AV-TERM-001',
-            'ESTATUS': 'PERDIDA X PRECIO',
-            'MAP COT': '🟢 L | 🟢 CD | 🟢 EP | 🟢 CI | 🟢 EV | 🟢 CEC | 🔴 RCC'
-        };
-
-        internalUpdateTask("ANTONIA_VENTAS", payload, "ANTONIA_VENTAS");
-
-        if (capturedUpdate && capturedUpdate.ESTATUS === "PERDIDA X PRECIO") {
-            console.log("✅ test_Cierre_Terminal_RCC Pasó.");
-        } else {
-            console.error("❌ test_Cierre_Terminal_RCC Falló.");
-        }
-
-    } finally {
-        internalBatchUpdateTasks = origBatch;
-        registrarLog = origLog;
-    }
-}
-
-
-
-
-
-
-function test_SavePPCV3_Flow() {
-  console.log("🛠️ INICIANDO TEST: Persistencia en PPCV3");
-
-  // 1. Simular Payload
-  const testId = "TEST-" + new Date().getTime();
-  const payload = {
-    concepto: "TEST_AUTO_UNITARIO_" + testId,
-    especialidad: "PRUEBAS",
-    responsable: "JESUS_CANTU",
-    horas: "1",
-    prioridad: "Alta",
-    comentarios: "Prueba de integridad de datos",
-    // Explicit ID for verification
-    id: testId
-  };
-
-  const user = "JESUS_CANTU";
-
-  console.log("📋 Payload simulado:", payload);
-
-  // 2. Ejecutar Guardado
-  const result = apiSavePPCData(payload, user);
-
-  if (!result.success) {
-    console.error("❌ FALLO: La función apiSavePPCData retornó error.", result);
-    return;
-  }
-  console.log("✅ apiSavePPCData ejecutado con éxito.");
-
-  // 3. Verificación
-  const sheet = SS.getSheetByName(APP_CONFIG.ppcSheetName);
-  const data = sheet.getDataRange().getValues();
-
-  // Buscar el ID
-  let found = false;
-  let foundRowData = [];
-
-  // Asumimos que los headers están en alguna fila, usamos findHeaderRow o búsqueda bruta
-  // Búsqueda bruta del ID en toda la hoja para estar seguros
-  for (let i = 0; i < data.length; i++) {
-    const rowStr = data[i].join("|");
-    if (rowStr.includes(testId)) {
-      found = true;
-      foundRowData = data[i];
-      break;
-    }
-  }
-
-  if (found) {
-    console.log("✅ PRUEBA PASADA: Datos persistidos en PPCV3. ID encontrado: " + testId);
-    console.log("📄 Datos de fila:", foundRowData);
-  } else {
-    console.error("❌ FALLO: Datos no encontrados en PPCV3. El ID " + testId + " no aparece en la hoja.");
-    // Log last 5 rows for debug
-    console.log("🔍 Últimas 5 filas de la hoja:", data.slice(-5));
-    throw new Error("Persistencia fallida en PPCV3");
-  }
-}
-
-function test_WorkOrder_Generation() {
-  console.log("🛠️ INICIANDO TEST: Workorder ID Generation");
-  const user = "PREWORK_ORDER";
-  const payload = {
-      cliente: "MERCEDES BENZ",
-      especialidad: "ELECTROMECANICA",
-      concepto: "TEST WO",
-      responsable: "JUAN PEREZ",
-      // ...
-  };
-
-  // Call API
-  const res = apiSavePPCData(payload, user);
-
-  if (res.success && res.ids && res.ids.length > 0) {
-      const id = res.ids[0];
-      console.log("Generated ID:", id);
-      // Expected: Sequence(4) + ME + Space + ELECTROMECANICA + Space + Date(6)
-      // e.g. 0002ME ELECTROMECANICA 010126
-      if (id.match(/^\d{4}[A-Z]{2} .+ \d{6}$/)) {
-          console.log("✅ ID Format Correct");
-      } else {
-          console.error("❌ ID Format Incorrect:", id);
-      }
-  } else {
-      console.error("❌ Failed to save or generate ID", res);
-  }
-}
-
-function test_Directory_CRUD() {
-  console.log("🛠️ INICIANDO TEST: Directory CRUD & Migration");
-
-  // 1. Test Migration / Fetch
-  const dir1 = getDirectoryFromDB();
-  console.log("Directory Size:", dir1.length);
-  if (dir1.length > 0) {
-      console.log("✅ getDirectoryFromDB returned data (Migration or Fetch worked)");
-  } else {
-      console.error("❌ getDirectoryFromDB returned empty");
-  }
-
-  // 2. Test Add
-  const testUser = { name: "TEST_USER_AUTO", dept: "TEST_DEPT", type: "ESTANDAR" };
-  const addRes = apiAddEmployee(testUser);
-  if (addRes.success) {
-      console.log("✅ apiAddEmployee Success");
-  } else {
-      console.error("❌ apiAddEmployee Failed:", addRes.message);
-  }
-
-  // 3. Verify Added
-  const dir2 = getDirectoryFromDB();
-  const found = dir2.find(u => u.name === "TEST_USER_AUTO");
-  if (found) {
-      console.log("✅ User found in Directory DB");
-  } else {
-      console.error("❌ User NOT found in Directory DB after adding");
-  }
-
-  // 4. Test Delete
-  const delRes = apiDeleteEmployee("TEST_USER_AUTO");
-  if (delRes.success) {
-      console.log("✅ apiDeleteEmployee Success");
-  } else {
-      console.error("❌ apiDeleteEmployee Failed:", delRes.message);
-  }
-
-  // 5. Verify Deleted
-  const dir3 = getDirectoryFromDB();
-  const found2 = dir3.find(u => u.name === "TEST_USER_AUTO");
-  if (!found2) {
-      console.log("✅ User successfully removed from DB");
-  } else {
-      console.error("❌ User STILL found in DB after deleting");
-  }
-}
-
-function test_ReverseSync_Flow() {
-  console.log("🛠️ INICIANDO TEST: Sincronización Inversa (Ventas -> Antonia)");
-
-  // 1. Simular Datos de Tarea
-  const testId = "TEST-SYNC-" + new Date().getTime();
-  const taskData = {
-    FOLIO: testId,
-    CONCEPTO: "TEST_REVERSE_SYNC",
-    VENDEDOR: "TEST_USER (VENTAS)",
-    AVANCE: "50%",
-    COTIZACION: "http://fake-url.com/cotizacion.pdf"
-  };
-
-  const personName = "TEST_USER (VENTAS)";
-
-  // 2. Ejecutar internalUpdateTask
-  // Nota: Esto intentará escribir en las hojas reales si existen.
-  // En este entorno simulado, verificamos que no lance errores y que la lógica pase.
-
-  console.log("Simulando actualización en: " + personName);
-  const result = internalUpdateTask(personName, taskData, "TEST_ADMIN");
-
-  if (result.success) {
-      console.log("✅ Update local exitoso.");
-      // Aquí idealmente verificaríamos que ANTONIA_VENTAS se actualizó,
-      // pero sin acceso a la hoja en tiempo real, confiamos en que el log no muestre error de sync.
-      console.log("ℹ️ Verificar logs del sistema para confirmar 'Sincronización Inversa'.");
-  } else {
-      console.error("❌ Falló update local: " + result.message);
-  }
-}
-
-/**
- * ======================================================================
- * MODULE: FORMATO CONDICIONAL (SEMAFORIZACIÓN)
- * ======================================================================
- */
-function applyTrafficLightToSheet(sheet) {
-  if (!sheet) return false;
-  const sNameUpper = sheet.getName().toUpperCase().trim();
-
-  // Exclusiones Internas (Seguridad)
-  const excludedSubstrings = ["LOG_", "DB_", "DATOS", "BORRADOR"];
-  if (excludedSubstrings.some(ex => sNameUpper.includes(ex))) return false;
-
-  const lastRow = sheet.getLastRow();
-  const lastCol = sheet.getLastColumn();
-  if (lastRow < 2) return false;
-
-  // 1. Encontrar Cabeceras
-  const values = sheet.getRange(1, 1, Math.min(20, lastRow), lastCol).getValues();
-  const headerRowIdx = findHeaderRow(values);
-  if (headerRowIdx === -1) return false;
-
-  const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
-
-  // 2. Identificar Columnas
-  const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'FECHA_ALTA', 'F. INICIO', 'F. VISITA', 'F. ENTREGA'];
-  const colFechaIndices = [];
-  headers.forEach((h, i) => {
-      if (fechaAliases.includes(h) || h.startsWith("FECHA ")) {
-          colFechaIndices.push(i);
-      }
-  });
-  
-  const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
-  const colDiasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ");
-
-  if (colFechaIndices.length === 0 || colClasiIdx === -1) return false;
-
-  const rowHeader = headerRowIdx + 1; // 1-based (Fila de Titulos)
-  const colClasiLet = colIndexToLetter(colClasiIdx + 1);
-  
-  // Identify PRIMARY Date Column (for linking DIAS coloring)
-  let primaryFechaIdx = -1;
-  for(let alias of fechaAliases) {
-      const idx = headers.indexOf(alias);
-      if(idx > -1) { primaryFechaIdx = idx; break; }
-  }
-  if(primaryFechaIdx === -1 && colFechaIndices.length > 0) primaryFechaIdx = colFechaIndices[0];
-
-  // 3. Limpieza Inteligente de Reglas Antiguas
-  const rules = sheet.getConditionalFormatRules();
-  const cleanRules = rules.filter(r => {
-      const formula = (r.getBooleanCondition() && r.getBooleanCondition().getCriteriaType() === SpreadsheetApp.BooleanCriteria.CUSTOM_FORMULA)
-                      ? r.getBooleanCondition().getCriteriaValues()[0]
-                      : "";
-      // Eliminamos reglas de semáforo viejas (detectadas por referencia a CLASI + TODAY)
-      if (formula.includes("TODAY") && formula.includes(colClasiLet) && formula.includes("ISNUMBER")) return false;
-      return true;
-  });
-
-  const newRules = [];
-
-  // 4. Iterar sobre TODAS las columnas de fecha encontradas
-  colFechaIndices.forEach(idx => {
-      const colFechaLet = colIndexToLetter(idx + 1);
-      
-      const rangesToColor = [sheet.getRange(rowHeader, idx + 1, sheet.getMaxRows() - rowHeader + 1, 1)];
-      if (idx === primaryFechaIdx && colDiasIdx > -1) {
-          rangesToColor.push(sheet.getRange(rowHeader, colDiasIdx + 1, sheet.getMaxRows() - rowHeader + 1, 1));
-      }
-
-      const addRulePair = (clase, dias, buffer) => {
-          const formulaBase = `AND(UPPER(TRIM($${colClasiLet}${rowHeader}))="${clase}", ISNUMBER($${colFechaLet}${rowHeader}), ROW()>${rowHeader})`;
-          const diffFormula = `(TODAY() - INT($${colFechaLet}${rowHeader}))`;
-
-          // VENCIDO (ROJO): > dias
-          newRules.push(SpreadsheetApp.newConditionalFormatRule()
-              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} > ${dias})`)
-              .setBackground("#FF0000")
-              .setFontColor("#FFFFFF")
-              .setRanges(rangesToColor)
-              .build());
-
-          // POR VENCER (AMARILLO): Entre (dias - buffer) y dias
-          const warningStart = dias - buffer;
-          newRules.push(SpreadsheetApp.newConditionalFormatRule()
-              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} >= ${warningStart}, ${diffFormula} <= ${dias})`)
-              .setBackground("#FFFF00")
-              .setFontColor("#000000")
-              .setRanges(rangesToColor)
-              .build());
-
-          // A TIEMPO (VERDE): < warningStart
-          newRules.push(SpreadsheetApp.newConditionalFormatRule()
-              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} < ${warningStart})`)
-              .setBackground("#00FF00")
-              .setFontColor("#000000")
-              .setRanges(rangesToColor)
-              .build());
-      };
-
-      // Configuración: Clase, Límite, Buffer (Días de aviso antes del límite)
-      addRulePair("A", 3, 1);    // Verde < 2, Amarillo 2-3, Rojo > 3
-      addRulePair("AA", 15, 3);  // Verde < 12, Amarillo 12-15, Rojo > 15
-      addRulePair("AAA", 30, 5); // Verde < 25, Amarillo 25-30, Rojo > 30
-  });
-
-  sheet.setConditionalFormatRules(newRules.concat(cleanRules));
-  return true;
-}
-
-function setupConditionalFormatting() {
-  const ui = SpreadsheetApp.getUi();
-  const excludedSheets = [
-      APP_CONFIG.logSheetName.toUpperCase(),
-      APP_CONFIG.salesSheetName.toUpperCase(),
-      APP_CONFIG.draftSheetName.toUpperCase()
-  ];
-
-  const allSheets = SS.getSheets();
-  let logMsg = "";
-  let count = 0;
-
-  allSheets.forEach(sheet => {
-    const sName = sheet.getName().trim();
-    const sNameUpper = sName.toUpperCase();
-
-    if (excludedSheets.includes(sNameUpper)) return;
-
-    // Delegamos a la nueva función robusta
-    if (applyTrafficLightToSheet(sheet)) {
-       logMsg += `✅ ${sName}\n`;
-       count++;
-    }
-  });
-
-  if (count > 0) {
-      ui.alert(`Semaforización aplicada a ${count} hojas:\n${logMsg}`);
-  } else {
-      ui.alert("⚠️ No se encontraron hojas aptas (con columnas CLASIFICACION y FECHA) para aplicar formato.");
-  }
-}
-
-function colIndexToLetter(col) {
-  let temp, letter = '';
-  while (col > 0) {
-    temp = (col - 1) % 26;
-    letter = String.fromCharCode(temp + 65) + letter;
-    col = (col - temp - 1) / 26;
-  }
-  return letter;
-}
-
-function test_NumericSequence_Generation() {
-  console.log("🛠️ INICIANDO TEST: Generación de Secuencia Numérica");
-  try {
-      const lock = LockService.getScriptLock();
-      const props = PropertiesService.getScriptProperties();
-
-      // Mock properties for testing if not set
-      if (!props.getProperty('ANTONIA_SEQ')) {
-          props.setProperty('ANTONIA_SEQ', '1000');
-          console.log("Inicializando ANTONIA_SEQ a 1000 para prueba.");
-      }
-
-      const val1 = generateNumericSequence('ANTONIA_SEQ');
-      const val2 = generateNumericSequence('ANTONIA_SEQ');
-
-      console.log("Valor 1:", val1);
-      console.log("Valor 2:", val2);
-
-      if (Number(val2) === Number(val1) + 1) {
-          console.log("✅ Secuencia incrementa correctamente.");
-      } else {
-          console.error("❌ Secuencia falló en incrementar.");
-      }
-
-      if (!isNaN(val1)) {
-          console.log("✅ El folio es numérico.");
-      } else {
-          console.error("❌ El folio NO es numérico.");
-      }
-
-  } catch (e) {
-      console.error("❌ Error en prueba:", e);
-  }
-}
-
-function test_Antonia_Distribution_Manual() {
-  console.log("🛠️ INICIANDO TEST: Distribución Manual Antonia -> Vendedor");
-
-  // 1. Datos simulados
-  const taskData = {
-    FOLIO: "TEST-DIST-" + new Date().getTime(),
-    CONCEPTO: "PRUEBA DISTRIBUCION",
-    VENDEDOR: "TEST_USER (VENTAS)", // Asume que existe hoja TEST_USER (VENTAS) o similar
-    ESTATUS: "COTIZADA"
-  };
-
-}
-
-function apiFetchInfoBankCompanies(year, monthName) {
-  try {
-    const sheetName = "ANTONIA_VENTAS";
-    const res = internalFetchSheetData(sheetName);
-    if (!res.success) return { success: false, message: res.message };
-
-    const monthMap = {
-        'ENERO': 0, 'FEBRERO': 1, 'MARZO': 2, 'ABRIL': 3, 'MAYO': 4, 'JUNIO': 5,
-        'JULIO': 6, 'AGOSTO': 7, 'SEPTIEMBRE': 8, 'OCTUBRE': 9, 'NOVIEMBRE': 10, 'DICIEMBRE': 11
-    };
-    const targetMonth = monthMap[String(monthName).toUpperCase().trim()];
-    const targetYear = parseInt(year) || new Date().getFullYear();
-
-    if (targetMonth === undefined) return { success: false, message: "Mes inválido" };
-
-    const clients = new Set();
-
-    res.data.forEach(row => {
-       // Helper para buscar valores insensible a mayúsculas
-       const keys = Object.keys(row);
-       const upperKeys = keys.map(k => k.toUpperCase().trim());
-       const getVal = (targetKeys) => {
-           for (const t of targetKeys) {
-               const idx = upperKeys.indexOf(t);
-               if (idx > -1) return row[keys[idx]];
-           }
-           return null;
-       };
-
-       const dateVal = getVal(['FECHA INICIO', 'F. INICIO', 'F. VISITA', 'F. ENTREGA', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
-
-       if (!dateVal) return;
-
-       let dObj = null;
-       if (dateVal instanceof Date) {
-           dObj = dateVal;
-       } else {
-           // Try parsing string dd/mm/yy
-           const parts = String(dateVal).split('/');
-           if (parts.length === 3) {
-               let y = parseInt(parts[2]);
-               if (y < 100) y += 2000;
-               dObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
-           }
-       }
-
-       if (!dObj || isNaN(dObj.getTime())) return;
-       if (dObj.getMonth() !== targetMonth) return;
-       if (dObj.getFullYear() !== targetYear) return;
-
-       const c = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
-       if (c) clients.add(c);
-    });
-
-    return { success: true, data: Array.from(clients).sort() };
-  } catch(e) {
-    return { success: false, message: e.toString() };
-  }
-}
-
-function apiFetchInfoBankData(year, monthName, companyName, folderName) {
-  try {
-    const sheetName = "ANTONIA_VENTAS";
-    const res = internalFetchSheetData(sheetName);
-    if (!res.success) return { success: false, message: res.message };
-
-    const monthMap = {
-        'ENERO': 0, 'FEBRERO': 1, 'MARZO': 2, 'ABRIL': 3, 'MAYO': 4, 'JUNIO': 5,
-        'JULIO': 6, 'AGOSTO': 7, 'SEPTIEMBRE': 8, 'OCTUBRE': 9, 'NOVIEMBRE': 10, 'DICIEMBRE': 11
-    };
-    const targetMonth = monthMap[String(monthName).toUpperCase().trim()];
-    const targetYear = parseInt(year) || 2025;
-    const targetCompany = String(companyName).toUpperCase().trim();
-
-    if (targetMonth === undefined) return { success: false, message: "Mes inválido" };
-
-    // Filtrar datos
-    const filtered = res.data.filter(row => {
-       // Helper para buscar valores insensible a mayúsculas
-       const keys = Object.keys(row);
-       const upperKeys = keys.map(k => k.toUpperCase().trim());
-       const getVal = (targetKeys) => {
-           for (const t of targetKeys) {
-               const idx = upperKeys.indexOf(t);
-               if (idx > -1) return row[keys[idx]];
-           }
-           return null;
-       };
-
-       // 1. Company Match (Loose)
-       const rowClient = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
-       if (!rowClient) return false;
-       
-       // Check bidirectional inclusion to handle variations
-       if (!rowClient.includes(targetCompany) && !targetCompany.includes(rowClient)) return false;
-
-       // 2. Date Match (Prioridad: FECHA INICIO)
-       // Se prioriza 'FECHA INICIO' tal cual pidió el usuario, luego fallbacks.
-       const dateVal = getVal(['FECHA INICIO', 'F. INICIO', 'F. VISITA', 'F. ENTREGA', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
-
-       if (!dateVal) return false;
-       
-       let dObj = null;
-       if (dateVal instanceof Date) {
-           dObj = dateVal;
-       } else {
-           // Try parsing string dd/mm/yy
-           const parts = String(dateVal).split('/');
-           if (parts.length === 3) {
-               let y = parseInt(parts[2]);
-               if (y < 100) y += 2000;
-               dObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
-           }
-       }
-       
-       if (!dObj || isNaN(dObj.getTime())) return false;
-       if (dObj.getMonth() !== targetMonth) return false;
-       if (dObj.getFullYear() !== targetYear) return false;
-
-       return true;
-    });
-
-    // NORMALIZACION DE DATOS PARA EL FRONTEND (SOLICITUD USUARIO)
-    const mappedData = filtered.map(row => {
-       const keys = Object.keys(row);
-       const upperKeys = keys.map(k => k.toUpperCase().trim());
-       const getVal = (targetKeys) => {
-           for (const t of targetKeys) {
-               const idx = upperKeys.indexOf(t);
-               if (idx > -1) return row[keys[idx]];
-           }
-           return "";
-       };
-
-       return {
-           'FECHA_INICIO': getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']),
-           'AREA': getVal(['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD']),
-           'CONCEPTO': getVal(['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'ACTIVIDAD']),
-           'VENDEDOR': getVal(['VENDEDOR', 'RESPONSABLE', 'ENCARGADO', 'INVOLUCRADOS']),
-           'ESTATUS': getVal(['ESTATUS', 'STATUS', 'ESTADO']),
-           'FOLIO': getVal(['FOLIO', 'ID']),
-           'COTIZACION': getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF'])
-       };
-    });
-
-    return { success: true, data: mappedData };
-  } catch(e) {
-    return { success: false, message: e.toString() };
-  }
-}
-function apiFetchDistinctClients() {
-  try {
-    const sheetName = "ANTONIA_VENTAS";
-    const res = internalFetchSheetData(sheetName);
-    if (!res.success) return { success: false, message: res.message };
-
-    const clients = new Set();
-    
-    // Add existing static list for robustness (optional, but good practice to not lose hardcoded ones if needed)
-    // Actually, user said "I need all those from the ANTONIA_VENTAS list", implying dynamic. 
-    // Let's check headers to find 'CLIENTE'
-    // internalFetchSheetData returns objects with keys uppercased and trimmed.
-    
-    res.data.forEach(row => {
-        if (row['CLIENTE']) {
-            const c = String(row['CLIENTE']).trim().toUpperCase();
-            if (c) clients.add(c);
-        }
-    });
-
-    const sortedClients = Array.from(clients).sort();
-    return { success: true, data: sortedClients };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
-}
-
-function apiSaveTrackerBatch(personName, tasks, username) {
-  const lock = LockService.getScriptLock();
-  if (lock.tryLock(30000)) {
-    try {
-      const processedTasks = [];
-      const distributionTasks = [];
-      const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
-
-      // Sequence Auto-Healing Logic for Antonia
-      let seqKey = 'ANTONIA_SEQ_V2';
-      if (isAntonia) {
-          const props = PropertiesService.getScriptProperties();
-          let currentSeq = Number(props.getProperty(seqKey) || 1000);
-
-          // AUTO-HEALING: Scan batch for higher existing IDs to sync sequence
-          let needsHeal = false;
-          tasks.forEach(t => {
-              const folioVal = String(t['FOLIO'] || t['ID'] || "");
-              if (folioVal.startsWith("AV-")) {
-                  const numPart = folioVal.replace("AV-", "");
-                  const fid = parseInt(numPart);
-                  if (!isNaN(fid) && fid > currentSeq) {
-                      currentSeq = fid;
-                      needsHeal = true;
+      const renderKPICharts = () => {
+          const createChart = (id, config) => {
+              const ctx = document.getElementById(id);
+              if (!ctx) return;
+              if (kpiChartInstances[id]) kpiChartInstances[id].destroy();
+              kpiChartInstances[id] = new Chart(ctx, config);
+          };
+
+          // --- NUEVOS GRAFICOS LUIS_CARLOS ---
+          // DASHBOARD VENTAS
+          createChart('chartDashboardVentas', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.dashboardVentas.map(d => d.name.split(' ')[0]), // Primer nombre
+                  datasets: [
+                      {
+                          label: 'Eficiencia (Días)',
+                          data: kpiData.value.dashboardVentas.map(d => d.eficiencia),
+                          type: 'line',
+                          borderColor: '#4472C4',
+                          backgroundColor: '#4472C4',
+                          borderWidth: 2,
+                          tension: 0.1,
+                          yAxisID: 'y'
+                      },
+                      {
+                          label: 'Volumen',
+                          data: kpiData.value.dashboardVentas.map(d => d.volumen),
+                          backgroundColor: 'rgba(255, 87, 34, 0.6)',
+                          yAxisID: 'y1'
+                      }
+                  ]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: {
+                          type: 'linear',
+                          display: true,
+                          position: 'left',
+                          title: { display: true, text: 'Días Promedio' },
+                          beginAtZero: true
+                      },
+                      y1: {
+                          type: 'linear',
+                          display: true,
+                          position: 'right',
+                          title: { display: true, text: 'Tareas' },
+                          grid: { drawOnChartArea: false },
+                          beginAtZero: true
+                      }
                   }
               }
           });
-          if (needsHeal) {
-              props.setProperty(seqKey, String(currentSeq));
-          }
-      }
 
-      tasks.forEach(task => {
-        let taskData = {...task};
-
-        if (isAntonia) {
-             if (!taskData['FOLIO'] && !taskData['ID']) {
-                 // GHOST BUSTING: Verificar contenido antes de asignar Folio
-                 const clean = (val) => val ? String(val).trim() : "";
-                 const c = clean(taskData['CONCEPTO']);
-                 const d = clean(taskData['DESCRIPCION']);
-                 const cl = clean(taskData['CLIENTE']);
-                 const v = clean(taskData['VENDEDOR']);
-
-                 // Ignorar si VENDEDOR es solo el default "ANTONIA_VENTAS" y no hay nada más
-                 const isVendedorDefault = v.toUpperCase() === "ANTONIA_VENTAS";
-
-                 const hasContent = (c !== "") ||
-                                    (d !== "") ||
-                                    (cl !== "") ||
-                                    (v !== "" && !isVendedorDefault);
-
-                 if (!hasContent) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
-
-                 // Use robust locked generator to avoid duplicates during mass-inserts
-                 const seqNum = generateNumericSequence(seqKey);
-                 taskData['FOLIO'] = "AV-" + seqNum;
-             } else {
-                 // RESTRICTIONS FOR EXISTING TASKS
-                 const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'PROCESO', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
-                 Object.keys(taskData).forEach(key => {
-                     const kUp = key.toUpperCase();
-                     if (key.startsWith('_')) return;
-                     const isBase = allowedBase.includes(kUp);
-                     const isDate = kUp.includes('FECHA') || kUp.includes('ALTA');
-                     if (!isBase && !isDate) {
-                         delete taskData[key];
-                     }
-                 });
-             }
-             // Prepare distribution data
-             const distData = JSON.parse(JSON.stringify(taskData));
-             delete distData._rowIndex;
-             delete distData['PROCESO_LOG'];
-                          delete distData['PROCESO'];
-             if (taskData._assignToWorker && taskData._assignStep) {
-                 try {
-                     const assignData = JSON.parse(JSON.stringify(distData));
-                     assignData['ESTATUS'] = 'PENDIENTE';
-                     assignData['AVANCE'] = '0%';
-                     internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
-                 } catch(e) {}
-             }
-             distributionTasks.push(distData);
-        } else {
-             // REVERSE SYNC PREPARATION
-             const distData = JSON.parse(JSON.stringify(taskData));
-             delete distData._rowIndex;
-             delete distData['PROCESO_LOG'];
-                          delete distData['PROCESO'];
-             distributionTasks.push(distData);
-        }
-        processedTasks.push(taskData);
-      });
-
-      // Sequence handled safely per-task by generateNumericSequence
-
-      // Batch Update Main Sheet
-      const res = internalBatchUpdateTasks(personName, processedTasks, false); // Already locked
-
-      if (res.success) {
-          // --- SMART ARCHIVING TRIGGER (ANTONIA) ---
-          // "Trigger the archiver logic whenever Antonia saves data"
-          if (isAntonia || String(personName).toUpperCase().includes("ANTONIA_VENTAS")) {
-              try {
-                  processedTasks.forEach(row => {
-                      // Only process if it has a file
-                      if (row['COTIZACION'] || row['ARCHIVO']) {
-                          processQuoteRow(row);
-                      }
-                  });
-              } catch (archErr) {
-                  console.error("Auto-Archiving Error: " + archErr.toString());
+          // PRODUCTIVIDAD DIARIA (ANTONIA)
+          createChart('chartProductividadDiaria', {
+              type: 'line',
+              data: {
+                  labels: kpiData.value.productividadDiaria.labels,
+                  datasets: [{
+                      label: 'Tareas Completadas',
+                      data: kpiData.value.productividadDiaria.data,
+                      borderColor: '#009688',
+                      backgroundColor: 'rgba(0, 150, 136, 0.2)',
+                      fill: true,
+                      tension: 0.3
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: { y: { beginAtZero: true } }
               }
-          }
-          // -----------------------------------------
+          });
 
-          // Handle Distribution for Antonia
-          if (isAntonia && distributionTasks.length > 0) {
-              // Group by vendor to batch updates
-              const byVendor = {};
-              distributionTasks.forEach(t => {
-                  const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR");
-                  if (vendedorKey && t[vendedorKey]) {
-                       const vNames = String(t[vendedorKey]).split(',').map(s => s.trim());
-                       vNames.forEach(vName => {
-                           if (vName.toUpperCase() !== "ANTONIA_VENTAS") {
-                               let target = vName;
-                               // Logic to find target sheet (suffix check)
-                               let finalTarget = null;
-                               if (target.toUpperCase().includes("(VENTAS)")) finalTarget = target;
-                               else {
-                                   if (findSheetSmart(target + " (VENTAS)")) finalTarget = target + " (VENTAS)";
-                               }
+          // DASHBOARD TRACKER
+          createChart('chartDashboardTracker', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.dashboardTracker.map(d => d.name.split(' ')[0]),
+                  datasets: [
+                      {
+                          label: 'Eficiencia (Días)',
+                          data: kpiData.value.dashboardTracker.map(d => d.eficiencia),
+                          type: 'line',
+                          borderColor: '#673AB7',
+                          backgroundColor: '#673AB7',
+                          borderWidth: 2,
+                          tension: 0.1,
+                          yAxisID: 'y'
+                      },
+                      {
+                          label: 'Volumen',
+                          data: kpiData.value.dashboardTracker.map(d => d.volumen),
+                          backgroundColor: 'rgba(103, 58, 183, 0.6)',
+                          yAxisID: 'y1'
+                      }
+                  ]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: {
+                          type: 'linear',
+                          display: true,
+                          position: 'left',
+                          title: { display: true, text: 'Días Promedio' },
+                          beginAtZero: true
+                      },
+                      y1: {
+                          type: 'linear',
+                          display: true,
+                          position: 'right',
+                          title: { display: true, text: 'Tareas' },
+                          grid: { drawOnChartArea: false },
+                          beginAtZero: true
+                      }
+                  }
+              }
+          });
+          // -----------------------------------
 
-                               if (finalTarget) {
-                                   if (!byVendor[finalTarget]) byVendor[finalTarget] = [];
-                                   byVendor[finalTarget].push(t);
-                               }
-                           }
-                       });
+          // 1. PUNTUALIDAD
+          createChart('chartPuntualidad', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.puntualidad.map(d => d.name),
+                  datasets: [{ label: '% Puntualidad', data: kpiData.value.puntualidad.map(d => d.value), backgroundColor: '#4472C4' }]
+              },
+              options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, scales: { x: { min: 80, max: 100 } } }
+          });
+
+          // 2. VISITAS
+          createChart('chartVisitas', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.visitas.map(d => d.name),
+                  datasets: [{ label: '% Tiempo', data: kpiData.value.visitas.map(d => d.value), backgroundColor: '#ED7D31' }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
+
+          // 3. PRE WO
+          createChart('chartPreWO', {
+              type: 'doughnut',
+              data: {
+                  labels: kpiData.value.preWO.map(d => d.name),
+                  datasets: [{ data: kpiData.value.preWO.map(d => d.value), backgroundColor: ['#A5A5A5', '#7F7F7F', '#595959'] }]
+              },
+              options: { responsive: true, maintainAspectRatio: false }
+          });
+
+          // 4. ENTREGA COTIZACIONES
+          createChart('chartEntregaCotiz', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.entregaCotiz.labels,
+                  datasets: [{ label: '% A Tiempo', data: kpiData.value.entregaCotiz.data, backgroundColor: ['#FFC000', '#FFD966', '#BF9000'] }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
+
+          // 5. ARCHIVOS 100%
+          createChart('chartArchivos100', {
+              type: 'polarArea',
+              data: {
+                  labels: kpiData.value.archivos100.map(d => d.name),
+                  datasets: [{ data: kpiData.value.archivos100.map(d => d.value), backgroundColor: ['#5B9BD5', '#4472C4', '#2F5597'] }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 80 } } }
+          });
+
+          // 6. DISEÑOS
+          createChart('chartDisenos', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.disenos.map(d => d.name),
+                  datasets: [{ label: '% Entrega', data: kpiData.value.disenos.map(d => d.value), backgroundColor: '#70AD47' }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
+
+          // 7. PLANEACION
+          createChart('chartPlaneacion', {
+              type: 'radar',
+              data: {
+                  labels: kpiData.value.planeacion.labels,
+                  datasets: [{ label: '% Cumplimiento', data: kpiData.value.planeacion.data, backgroundColor: 'rgba(38, 68, 120, 0.2)', borderColor: '#264478', pointBackgroundColor: '#264478' }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 50, max: 100 } } }
+          });
+
+          // 8. VENTAS
+          const createVentasChart = (ctxId, dataObj) => {
+              createChart(ctxId, {
+                  type: 'line',
+                  data: {
+                      labels: dataObj.labels,
+                      datasets: [{ label: 'Ventas', data: dataObj.data, borderColor: '#9E480E', tension: 0.1, fill: true, backgroundColor: 'rgba(158, 72, 14, 0.1)' }]
+                  },
+                  options: { responsive: true, maintainAspectRatio: false }
+              });
+          };
+          createVentasChart('chartVentasSem', kpiData.value.ventas.semanal);
+          createVentasChart('chartVentasMes', kpiData.value.ventas.mensual);
+          createVentasChart('chartVentasAnual', kpiData.value.ventas.anual);
+
+          // 9. CONTROL PROYECTO
+          createChart('chartControlProy', {
+              type: 'bar',
+              data: {
+                  labels: kpiData.value.controlProy.labels,
+                  datasets: [{ label: '% Control', data: kpiData.value.controlProy.data, backgroundColor: ['#997300', '#7F6000'] }]
+              },
+              options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100 } } }
+          });
+      };
+
+      const loadExecutiveSummary = () => {
+          // MOCK DATA
+          executiveSummaryData.value.clients = [
+              {name: 'BRUNSWICK', amount: 0},
+              {name: 'BSN MEDICAL', amount: 0},
+              {name: 'COM TREVIÑO REY', amount: 0},
+              {name: 'COM TREVIÑO LA', amount: 3270280.85},
+              {name: 'CORNING 1', amount: 0},
+              {name: 'CORNING RAM', amount: 0},
+              {name: 'EATON 1 MARKET P', amount: 0},
+              {name: 'REXNORD MTY', amount: 83590.00},
+              {name: 'WOODC RY', amount: 306850.00},
+              {name: 'OTROS', amount: 0}
+          ];
+          executiveSummaryData.value.clientsTotal = 3660720.85;
+
+          executiveSummaryData.value.vendors = [
+              {name: 'Ramiro Rodriguez', count: 1, amount: 220800.00, percent: 4.42, remaining: 4779200.00},
+              {name: 'Juan Alvarado', count: 4, amount: 2072774.85, percent: 41.46, remaining: 2927225.15},
+              {name: 'Juan Jose Sanchez', count: 3, amount: 1367146.00, percent: 27.34, remaining: 3632854.00},
+              {name: 'Luis Carlos Holt', count: 0, amount: 0, percent: 0.00, remaining: 5000000.00}
+          ];
+          executiveSummaryData.value.vendorsTotalCount = 8;
+          executiveSummaryData.value.vendorsTotalAmount = 3660720.85;
+
+          executiveSummaryData.value.monthly = [
+              {month: 'ENERO', v2025: 26245680.93, v2026: 3660720.85, forecast: 26245680.93},
+              {month: 'FEBRERO', v2025: 33911547.89, v2026: 0, forecast: 30078614.41},
+              {month: 'MARZO', v2025: 16258865.91, v2026: 0, forecast: 23168740.16},
+              {month: 'ABRIL', v2025: 26662791.36, v2026: 0, forecast: 24915765.76},
+              {month: 'MAYO', v2025: 11582533.75, v2026: 0, forecast: 18249149.76},
+              {month: 'JUNIO', v2025: 14660284.03, v2026: 0, forecast: 16454716.89},
+              {month: 'JULIO', v2025: 28124530.98, v2026: 0, forecast: 22289623.94},
+              {month: 'AGOSTO', v2025: 13615686.55, v2026: 0, forecast: 17952655.24},
+              {month: 'SEPTIEMBRE', v2025: 12429716.58, v2026: 0, forecast: 15191185.91},
+              {month: 'OCTUBRE', v2025: 18231948.14, v2026: 0, forecast: 16711567.03},
+              {month: 'NOVIEMBRE', v2025: 39601797.11, v2026: 0, forecast: 28156682.07},
+              {month: 'DICIEMBRE', v2025: 52190345.61, v2026: 0, forecast: 40173513.84}
+          ];
+          executiveSummaryData.value.monthlyTotal2025 = 293515728.84;
+          executiveSummaryData.value.monthlyTotal2026 = 3660720.85;
+          executiveSummaryData.value.monthlyTotalForecast = 279587895.93;
+
+          executiveSummaryData.value.areas = [
+              {name: 'HVAC eventual', amount: 1367146.00},
+              {name: 'Construccion', amount: 220800.00},
+              {name: 'Electromecanica', amount: 2072774.85}
+          ];
+          executiveSummaryData.value.areasTotal = 3660720.85;
+
+          executiveSummaryData.value.areaForecast = [
+              {name: 'HVAC eventual', quoted: 1367146.00, sold: 136714.00},
+              {name: 'Construccion', quoted: 220800.00, sold: 22080.00},
+              {name: 'Electromecanica', quoted: 2072774.85, sold: 0.00}
+          ];
+
+          nextTick(() => {
+              renderExecutiveCharts();
+              anime({
+                  targets: '.exec-anim-enter',
+                  translateY: [20, 0],
+                  opacity: [0, 1],
+                  delay: anime.stagger(100),
+                  easing: 'easeOutQuad',
+                  duration: 800
+              });
+          });
+      };
+
+      const renderExecutiveCharts = () => {
+          // Chart Colors
+          const colorBlue = '#4472C4'; // Excel Blue
+          const colorOrange = '#ED7D31'; // Excel Orange
+
+          // 1. PRONOSTICO VENTA (Bar)
+          const ctxVenta = document.getElementById('chartExecVenta');
+          if(ctxVenta) {
+              if(execChartInstances['venta']) execChartInstances['venta'].destroy();
+              execChartInstances['venta'] = new Chart(ctxVenta, {
+                  type: 'bar',
+                  data: {
+                      labels: ['HVAC eventual', 'Construccion', 'Electromecanica'],
+                      datasets: [
+                          { label: 'COTIZADO', data: [1367146, 220800, 2072774], backgroundColor: colorBlue },
+                          { label: 'VENTA', data: [136714, 22080, 0], backgroundColor: colorOrange }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                          legend: { position: 'right' }
+                      }
                   }
               });
+          }
 
-              // Execute distribution batches
-              for (const [vSheet, vTasks] of Object.entries(byVendor)) {
-                   internalBatchUpdateTasks(vSheet, vTasks, false);
+          // 2. PRONOSTICO ANUAL (Line)
+          const ctxAnual = document.getElementById('chartExecAnual');
+          if(ctxAnual) {
+              if(execChartInstances['anual']) execChartInstances['anual'].destroy();
+              execChartInstances['anual'] = new Chart(ctxAnual, {
+                  type: 'line',
+                  data: {
+                      labels: executiveSummaryData.value.monthly.map(m => m.month.substring(0,3)),
+                      datasets: [
+                          { label: 'Real', data: executiveSummaryData.value.monthly.map(m => m.v2025), borderColor: colorBlue, backgroundColor: colorBlue, tension: 0 },
+                          { label: 'Pronóstico', data: executiveSummaryData.value.monthly.map(m => m.forecast), borderColor: colorOrange, backgroundColor: colorOrange, tension: 0, borderDash: [5,5] }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false
+                  }
+              });
+          }
+
+          // 3. COTIZADO MENSUAL (Line)
+          const ctxMensual = document.getElementById('chartExecMensual');
+          if(ctxMensual) {
+              if(execChartInstances['mensual']) execChartInstances['mensual'].destroy();
+              execChartInstances['mensual'] = new Chart(ctxMensual, {
+                  type: 'line',
+                  data: {
+                      labels: executiveSummaryData.value.monthly.map(m => m.month),
+                      datasets: [
+                          { label: 'Cotizado', data: [10000000, 15000000, 12000000, 20000000, 15000000, 18000000, 25000000, 20000000, 22000000, 28000000, 35000000, 45000000], borderColor: colorOrange, backgroundColor: colorOrange, tension: 0.1 }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: false } }
+                  }
+              });
+          }
+      };
+
+      const closeIframe = () => currentView.value='DASHBOARD';
+
+      const openStaffTracker = (p) => {
+          currentStaffName.value = p.name;
+          activeTrackerTab.value = 'OPERATIVO';
+          staffTracker.value.previousView = currentView.value;
+          currentView.value = 'STAFF_TRACKER';
+          loadTrackerData();
+      };
+
+      const switchTrackerTab = (tab) => {
+          if (activeTrackerTab.value === tab) return;
+          activeTrackerTab.value = tab;
+          loadTrackerData();
+      };
+
+      const loadTrackerData = () => {
+          staffTrackerFilters.value = {};
+          
+          let sheetName = currentStaffName.value;
+          if (activeTrackerTab.value === 'VENTAS') {
+              sheetName = sheetName + " VENTAS";
+          } else if (activeTrackerTab.value === 'RESUMEN_EJECUTIVO') {
+              sheetName = sheetName + " RESUMEN EJECUTIVO";
+          } else if (activeTrackerTab.value === 'BANCO_COTIZACIONES') {
+              sheetName = sheetName + " BANCO DE COTIZACIONES";
+          } else if (activeTrackerTab.value === 'PAPA_CALIENTE') {
+              // Use main sheet for data source
+              // sheetName = sheetName + " PAPA CALIENTE DE COTIZACION";
+          }
+          staffTracker.value.name = sheetName;
+          staffTracker.value.isLoading = true;
+
+          google.script.run.withSuccessHandler(res => {
+              staffTracker.value.isLoading = false;
+              if (res.success) {
+                  staffTracker.value.data = res.data;
+                  staffTracker.value.history = res.history;
+                  staffTracker.value.headers = res.headers;
+                  // Recalcular Días (Contador) para todas las hojas (si tienen las columnas)
+                  // Se ejecuta siempre, la función calculateDiasCounter valida si existen las columnas
+                  staffTracker.value.data.forEach(row => calculateDiasCounter(row));
+              } else {
+                  if (res.message && res.message.includes("Falta hoja")) {
+                      staffTracker.value.data = [];
+                      staffTracker.value.history = [];
+                      staffTracker.value.headers = [];
+                      Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Vista vacía (Sin hoja)', showConfirmButton: false, timer: 2000 });
+                  } else {
+                      Swal.fire('Error', res.message, 'error');
+                  }
+              }
+          }).withFailureHandler(handleErr).apiFetchStaffTrackerData(sheetName);
+      };
+
+      const reloadStaffTracker = () => loadTrackerData();
+
+      const saveAllTrackerRows = () => {
+          if (staffTracker.value.data.length === 0) return;
+          Swal.fire({
+              title: '¿Guardar Todo?',
+              text: `Se guardarán ${staffTracker.value.data.length} filas.`,
+              icon: 'question',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, Guardar'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  Swal.showLoading();
+                  google.script.run.withSuccessHandler(res => {
+                      Swal.close();
+                      if (res.success) {
+                          Swal.fire('Guardado', 'Todas las tareas han sido actualizadas.', 'success');
+                          loadTrackerData(); // Reload to get updated IDs/States
+                      } else {
+                          Swal.fire('Error', res.message, 'error');
+                      }
+                  }).apiSaveTrackerBatch(staffTracker.value.name, JSON.parse(JSON.stringify(staffTracker.value.data)), currentUsername.value);
+              }
+          });
+      };
+
+      const addNewRow = () => {
+          if(!staffTracker.value.headers.length) return;
+          const row={_isNew:true};
+          staffTracker.value.headers.forEach(h => { if(isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) row[h]=0; else row[h]=""; });
+          staffTracker.value.data.unshift(row);
+          pulseNewRow('trackerTable', 'first');
+      };
+      const saveRow = (row, event) => {
+          if (row._isSaving) return;
+          row._isSaving = true;
+
+          if (event && event.clientX) {
+             const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
+             if (isCompleted) triggerConfetti(event.clientX, event.clientY);
+          }
+          Swal.showLoading();
+          google.script.run.withSuccessHandler(res => {
+              row._isSaving = false;
+              Swal.close();
+              if(res.success){
+                  row._isNew=false;
+                  if (res.data && (res.data.FOLIO || res.data.ID)) {
+                      row.FOLIO = res.data.FOLIO || res.data.ID;
+                      if (row.ID === undefined) row.ID = row.FOLIO;
+                  }
+                  if(res.moved){
+                      reloadStaffTracker();
+                      Swal.fire({icon: 'success', title: 'Archivado', text: 'Tarea movida a Realizadas (100%)', timer: 1500, showConfirmButton: false});
+                  } else {
+                      Swal.fire({icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false});
+                  }
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
+      };
+
+      const deleteFile = (row, h, urlToDelete) => {
+          if (!isFieldEditable(h, row)) return;
+          Swal.fire({
+              title: '¿Eliminar archivo?',
+              text: "Se quitará este archivo de la celda.",
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonColor: '#d33',
+              cancelButtonColor: '#3085d6',
+              confirmButtonText: 'Sí, eliminar',
+              cancelButtonText: 'Cancelar'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  let urls = String(row[h]).split(/[\n\s]+/).filter(u => u.startsWith('http'));
+                  urls = urls.filter(u => u !== urlToDelete);
+                  row[h] = urls.join('\n');
+                  saveRow(row);
+              }
+          });
+      };
+
+      const openCellUpload = (row, col) => { uploadingCell.value = {row, col}; cellFileInput.value.click(); };
+      const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
+      const addResponsable = (n) => { selectedResponsables.value.push(n); staffSearch.value=''; };
+      const openFileDialog = () => fileInput.value.click();
+      const handleFileSelect = (e) => {
+          const file = e.target.files[0];
+          if(!file) return;
+          isUploadingFile.value=true;
+          const r = new FileReader();
+          r.onload=(ev)=>google.script.run.withSuccessHandler(res=>{
+              isUploadingFile.value=false;
+              if(res.success){
+                  uploadSuccess.value=true;
+                  if(currentView.value === 'PPC_DINAMICO') {
+                      dynamicPpc.value.archivoUrl=res.fileUrl;
+                  } else if (currentView.value === 'WORKORDER_FORM') {
+                      const tag = currentUploadType.value ? `[${currentUploadType.value}] ` : '';
+                      workorderData.value.files.push(tag + res.fileUrl);
+                      Swal.fire('Archivo Subido', '', 'success');
+                  } else {
+                      ppcData.value.archivoUrl=res.fileUrl;
+                  }
+                  if (currentView.value !== 'WORKORDER_FORM') Swal.fire('Archivo Subido','','success');
+              }
+          }).uploadFileToDrive(ev.target.result,file.type,file.name);
+          r.readAsDataURL(file);
+      };
+      const triggerUpload = (type) => { currentUploadType.value = type; fileInput.value.click(); };
+      const promptExtraData = () => { if(!ppcData.value.concepto || !selectedResponsables.value.length) return Swal.fire('Faltan datos básicos','','warning'); extraData.value = { restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' }; showExtraModal.value = true; };
+      const confirmAddToQueue = () => {
+          // WORKORDER FLOW
+          if (currentView.value === 'WORKORDER_FORM') {
+             if (!currentWorkorderId.value) return;
+             isSubmitting.value = true;
+             let fResp = extraData.value.fechaRespuesta;
+             if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; }
+             const updatePayload = {
+                 FOLIO: currentWorkorderId.value,
+                 CLASIFICACION: extraData.value.clasificacion,
+                 PRIORIDAD: extraData.value.prioridades,
+                 RIESGOS: extraData.value.riesgos,
+                 RESTRICCIONES: extraData.value.restricciones,
+                 FECHA_RESPUESTA: fResp
+             };
+             google.script.run.withSuccessHandler(res => {
+                 isSubmitting.value = false;
+                 if(res.success) {
+                     Swal.fire({ icon:'success', title: 'Workorder Completa', text: `Folio: ${currentWorkorderId.value} actualizado con detalles.`, timer: 2000, showConfirmButton: false });
+                     showExtraModal.value = false;
+                     workorderData.value = {
+                         cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                         cotizador: '', departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+                         prioridad: 'AAA - Alta Prioridad', conceptoDesc: ''
+                     };
+                     currentWorkorderId.value = null;
+                 } else {
+                     Swal.fire('Error', res.message, 'error');
+                 }
+             }).apiUpdatePPCV3(updatePayload, currentUsername.value);
+             return;
+          }
+
+          const item = JSON.parse(JSON.stringify(ppcData.value)); item.responsable = selectedResponsables.value.join(','); item.restricciones = extraData.value.restricciones; item.prioridades = extraData.value.prioridades; item.riesgos = extraData.value.riesgos; item.clasificacion = extraData.value.clasificacion; if(currentPpcProject.value) { const tag = `[PROY: ${currentPpcProject.value.name}]`; item.comentarios = (item.comentarios ? item.comentarios + ' ' : '') + tag; } let fResp = extraData.value.fechaRespuesta; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } item.fechaRespuesta = fResp; item.fechaAlta = new Date().toISOString(); activityQueue.value.push(item); ppcData.value.concepto=''; ppcData.value.horas=''; ppcData.value.comentarios=''; ppcData.value.comentariosPrevios=''; selectedResponsables.value=[]; uploadSuccess.value=false; showExtraModal.value = false; syncQueueToBackend(); pulseNewRow('ppcDraftTable', 'last');
+      };
+      const syncQueueToBackend = () => { google.script.run.apiSyncDrafts(JSON.parse(JSON.stringify(activityQueue.value))); };
+
+      const saveWorkOrder = () => {
+        if(!workorderData.value.cliente || !workorderData.value.tipoTrabajo || !workorderData.value.cotizador.length) {
+            return Swal.fire('Faltan datos obligatorios', 'Cliente, Tipo de Trabajo y quien Elaboró son requeridos.', 'warning');
+        }
+        isSubmitting.value = true;
+
+        let fEnt = workorderData.value.fechaEntrega;
+        if(fEnt) { const parts = fEnt.split('-'); if(parts.length === 3) fEnt = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; }
+
+        // Construct Rich Description (CONCEPTO)
+        let conceptoStr = workorderData.value.conceptoDesc || '';
+        conceptoStr += `\n[TIPO: ${workorderData.value.tipoTrabajo || 'N/A'}]`;
+        if (workorderData.value.tiempoEstimado) conceptoStr += ` [TIEMPO: ${workorderData.value.tiempoEstimado}]`;
+
+        // Serialize Vehicle Control Data
+        const vCtrl = vehicleControlData.value;
+        if (Object.keys(vCtrl).length > 0) {
+            conceptoStr += `\n\n[CONTROL VEHICULO]`;
+            if (vCtrl.cotizacion) conceptoStr += `\nCotización: ${vCtrl.cotizacion}`;
+            if (vCtrl.chofer) conceptoStr += `\nChofer: ${vCtrl.chofer}`;
+            if (vCtrl.vehiculo) conceptoStr += `\nVehiculo: ${vCtrl.vehiculo}`;
+            if (vCtrl.gasolina) conceptoStr += `\nGasolina: ${vCtrl.gasolina}`;
+            if (vCtrl.horaSalida) conceptoStr += `\nHora Salida: ${vCtrl.horaSalida}`;
+            if (vCtrl.evaluacion) conceptoStr += `\nEvaluación: ${vCtrl.evaluacion}`;
+            if (vCtrl.multas) conceptoStr += `\nMultas: ${vCtrl.multas}`;
+            if (vCtrl.horaLlegada) conceptoStr += `\nHora Llegada: ${vCtrl.horaLlegada}`;
+            if (vCtrl.ruta) conceptoStr += `\nRuta: ${vCtrl.ruta}`;
+            if (vCtrl.verifVehiculo) conceptoStr += `\nVerificación: ${vCtrl.verifVehiculo}`;
+        }
+
+        // Serialize Vehicle Control Data 2 (Final)
+        const vCtrl2 = vehicleControlData2.value;
+        if (Object.keys(vCtrl2).length > 0) {
+            conceptoStr += `\n\n[CONTROL VEHICULO FINAL]`;
+            if (vCtrl2.cotizacion) conceptoStr += `\nCotización: ${vCtrl2.cotizacion}`;
+            if (vCtrl2.chofer) conceptoStr += `\nChofer: ${vCtrl2.chofer}`;
+            if (vCtrl2.vehiculo) conceptoStr += `\nVehiculo: ${vCtrl2.vehiculo}`;
+            if (vCtrl2.gasolina) conceptoStr += `\nGasolina: ${vCtrl2.gasolina}`;
+            if (vCtrl2.horaSalida) conceptoStr += `\nHora Salida: ${vCtrl2.horaSalida}`;
+            if (vCtrl2.evaluacion) conceptoStr += `\nEvaluación: ${vCtrl2.evaluacion}`;
+            if (vCtrl2.multas) conceptoStr += `\nMultas: ${vCtrl2.multas}`;
+            if (vCtrl2.horaLlegada) conceptoStr += `\nHora Llegada: ${vCtrl2.horaLlegada}`;
+            if (vCtrl2.ruta) conceptoStr += `\nRuta: ${vCtrl2.ruta}`;
+            if (vCtrl2.verifVehiculo) conceptoStr += `\nVerificación: ${vCtrl2.verifVehiculo}`;
+        }
+
+        const fullClientName = workorderData.value.cliente;
+
+        const fullRequisitor = workorderData.value.newRequisitor
+            ? `${workorderData.value.newRequisitor} (${workorderData.value.contactName || ''})`
+            : (workorderData.value.contactName || '');
+
+        // Use selected Department for Especialidad (Folio generation), fallback to Tipo if missing
+        const spec = workorderData.value.departamento || workorderData.value.tipoTrabajo;
+
+        // Collect Design Files
+        const designFiles = [];
+        if (workorderData.value.designValidation && workorderData.value.designValidation.items) {
+            workorderData.value.designValidation.items.forEach(item => {
+                ['diseno', 'maquinados', 'dibujos'].forEach(col => {
+                    if (item[col]) {
+                        item[col].forEach(f => {
+                             designFiles.push(`[${col.toUpperCase()}-${f.type}] ${f.url}`);
+                        });
+                    }
+                });
+            });
+        }
+
+        const payload = {
+            cliente: fullClientName,
+            especialidad: spec, // Mapping Department to Area/Especialidad for Folio
+            concepto: conceptoStr,
+            responsable: workorderData.value.cotizador.join(', '),
+            requisitor: fullRequisitor,
+            contacto: workorderData.value.contacto,
+            celular: workorderData.value.celular,
+            prioridad: workorderData.value.prioridad,
+            fechaRespuesta: fEnt, // Mapped to Fecha Entrega
+            comentarios: '',
+            restricciones: Object.entries(workorderData.value.restricciones)
+                .filter(([k, v]) => v)
+                .map(([k, v]) => `[${k.toUpperCase()}: ${v}]`)
+                .join(' '),
+            archivoUrl: [...workorderData.value.files, ...designFiles].join('\n'),
+            horas: 0,
+            cumplimiento: 'NO',
+            TRABAJO: workorderData.value.tipoTrabajo,
+            // CAMPOS DE DETALLE (NUEVO)
+            materiales: JSON.parse(JSON.stringify(requiredMaterials.value.items)),
+            manoObra: JSON.parse(JSON.stringify(laborTable.value.items)),
+            herramientas: JSON.parse(JSON.stringify(toolsRequired.value.items)),
+            equipos: JSON.parse(JSON.stringify(specialEquipment.value.items)),
+            programa: [
+                ...projectProgram.value.visita.map(i => ({...i, seccion: 'VISITA'})),
+                ...projectProgram.value.reqCotizacion.map(i => ({...i, seccion: 'REQUERIMIENTO'})),
+                ...projectProgram.value.cotPreconstruccion.map(i => ({...i, seccion: 'PRECONSTRUCCION'})),
+                ...projectProgram.value.cotTrabajo.map(i => ({...i, seccion: 'TRABAJO'}))
+            ].map(i => ({
+                ...i,
+                DESCRIPCION: i.description,
+                FECHA: i.date,
+                DURACION: i.duration,
+                UNIDAD_DURACION: i.durationUnit,
+                UNIDAD: i.unit,
+                CANTIDAD: i.quantity,
+                PRECIO: i.price,
+                TOTAL: i.total,
+                RESPONSABLE: Array.isArray(i.responsable) ? i.responsable.join(', ') : i.responsable
+            })),
+            checkList: JSON.parse(JSON.stringify(workorderData.value.checkList)),
+            additionalCosts: JSON.parse(JSON.stringify(additionalCosts.value))
+        };
+
+        google.script.run.withSuccessHandler(res => {
+            isSubmitting.value = false;
+            if(res.success) {
+                if (res.ids && res.ids.length > 0) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Pre Work Order Guardada',
+                        text: `Folio Generado: ${res.ids[0]}`,
+                        confirmButtonText: 'Aceptar'
+                    }).then(() => {
+                        // Reset Form
+                        workorderData.value = {
+                            cliente: '', planta: '', requisitor: '', newRequisitor: '', contactName: '', contacto: '', celular: '', fechaCotizacion: '', proyecto: '',
+                            cotizador: [], departamento: '', tipoTrabajo: '', fechaEntrega: '', tiempoEstimado: '', items: [],
+                            prioridad: 'AAA - Alta Prioridad', conceptoDesc: '',
+                      checkList: { libreta: false, cinta: false, bernier: false, chaleco: false, laser: false, epp: false, casco: false, credencial: false, zapato: false, sua: false, lentes: false },
+                      restricciones: { produccion: '', seguridad: '', dificultad: '', horarios: '', especificidad: '' },
+                      files: [],
+                      designValidation: { items: [{ diseno: [], maquinados: [], dibujos: [] }] }
+                        };
+                        currentWorkorderId.value = null;
+                    });
+                } else {
+                    Swal.fire('Guardado', 'Pre Work Order guardada.', 'success');
+                }
+            } else {
+                Swal.fire('Error', res.message, 'error');
+            }
+        }).apiSavePPCData([payload], currentUsername.value);
+      };
+      const saveDynamicPPC = () => { if(!dynamicPpc.value.especialidad || !dynamicPpc.value.concepto || !selectedResponsables.value.length) return Swal.fire('Faltan datos','','warning'); isSubmitting.value = true; let fResp = dynamicPpc.value.fechaFin; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } let finalComs = dynamicPpc.value.comentarios || ''; if(currentPpcProject.value) { finalComs = (finalComs ? finalComs + ' ' : '') + `[PROY: ${currentPpcProject.value.name}]`; } const payload = { especialidad: dynamicPpc.value.especialidad, concepto: dynamicPpc.value.concepto, responsable: selectedResponsables.value.join(','), clasificacion: dynamicPpc.value.clasificacion, riesgos: dynamicPpc.value.riesgos, prioridad: dynamicPpc.value.prioridad, fechaRespuesta: fResp, archivoUrl: dynamicPpc.value.archivoUrl, comentarios: finalComs, horas: '', cumplimiento: 'NO' }; google.script.run.withSuccessHandler(res => { isSubmitting.value = false; if(res.success){ Swal.fire('Registro Guardado','Enviado a PPC y Tracker','success'); dynamicPpc.value = { especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' }; selectedResponsables.value = []; uploadSuccess.value = false; } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiSavePPCData([payload], currentUsername.value); };
+      const submitBatch = () => { isSubmitting.value=true; google.script.run.withSuccessHandler(res => { isSubmitting.value=false; if(res.success){ Swal.fire('Guardado','','success'); google.script.run.withSuccessHandler(r => { if(r.success) ppcExistingData.value = r.data; }).apiFetchPPCData(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiSavePPCData(JSON.parse(JSON.stringify(activityQueue.value)), currentUsername.value); };
+      const clearQueue = () => { Swal.fire({ title: '¿Limpiar tabla?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }).then((result) => { if (result.isConfirmed) { activityQueue.value = []; google.script.run.apiClearDrafts(); } }); };
+      const toIsoDate = (val) => { if (!val) return ''; const parts = String(val).split('/'); if (parts.length === 3) { let y = parts[2]; if (y.length === 2) y = '20' + y; return `${y}-${parts[1]}-${parts[0]}`; } return ''; };
+      const formatDisplayDate = (val) => { if(!val) return ''; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{2}$/)) return val; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return val.replace(/\/(\d{4})$/, (m, y) => "/" + y.slice(-2)); return val; };
+      const updateDateFromPicker = (e, row, h) => {
+          const val = e.target.value;
+          if (!val) { row[h] = ''; return; }
+          const parts = val.split('-');
+          if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+          calculateDiasCounter(row);
+      };
+
+      // CALENDAR LOGIC
+      const weekDays = computed(() => {
+          const startOfWeek = new Date(dashboardCalendar.value.currentDate);
+          const day = startOfWeek.getDay() || 7; // Make Sunday 7
+          startOfWeek.setHours(0,0,0,0);
+          if (day !== 1) startOfWeek.setDate(startOfWeek.getDate() - (day - 1));
+
+          const finalDays = [];
+          for (let i = 0; i < 7; i++) {
+              const d = new Date(startOfWeek);
+              d.setDate(startOfWeek.getDate() + i);
+
+              const today = new Date();
+              const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+
+              const dd = String(d.getDate()).padStart(2, '0');
+              const mm = String(d.getMonth() + 1).padStart(2, '0');
+              const yy = String(d.getFullYear()).slice(-2);
+              const dateStr = `${dd}/${mm}/${yy}`;
+
+              finalDays.push({
+                  name: ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'][d.getDay()],
+                  number: d.getDate(),
+                  dateStr: dateStr,
+                  isToday: isToday
+              });
+          }
+          return finalDays;
+      });
+
+      const currentMonthYearLabel = computed(() => {
+          const d = dashboardCalendar.value.currentDate;
+          const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+          return `${months[d.getMonth()]} De ${d.getFullYear()}`;
+      });
+
+      const navigateCalendar = (dir) => {
+          anime({
+              targets: '.calendar-grid',
+              opacity: [1, 0],
+              translateX: [0, dir * -30],
+              easing: 'easeInQuad',
+              duration: 200,
+              complete: () => {
+                  const d = new Date(dashboardCalendar.value.currentDate);
+                  d.setDate(d.getDate() + (dir * 7));
+                  dashboardCalendar.value.currentDate = d;
+                  nextTick(() => {
+                      anime.set('.calendar-grid', { translateX: dir * 30, opacity: 0 });
+                      anime({
+                          targets: '.calendar-grid',
+                          opacity: [0, 1],
+                          translateX: [dir * 30, 0],
+                          easing: 'easeOutQuad',
+                          duration: 300
+                      });
+                  });
+              }
+          });
+      };
+
+      const animateCalendarTasks = () => {
+          anime({
+              targets: '.task-anim-enter',
+              translateY: [20, 0],
+              opacity: [0, 1],
+              delay: anime.stagger(50),
+              easing: 'easeOutCubic',
+              duration: 600
+          });
+      };
+
+      const animTaskHover = (el) => {
+          anime.remove(el);
+          anime({
+              targets: el,
+              scale: 1.05,
+              boxShadow: '0 15px 30px rgba(0,0,0,0.15)',
+              zIndex: 100,
+              duration: 800,
+              easing: 'easeOutElastic(1, .6)'
+          });
+      };
+
+      const animTaskLeave = (el) => {
+          anime.remove(el);
+          anime({
+              targets: el,
+              scale: 1,
+              boxShadow: '0 2px 6px rgba(0,0,0,0.02)',
+              zIndex: 1,
+              duration: 600,
+              easing: 'easeOutElastic(1, .6)'
+          });
+      };
+
+      const loadDashboardCalendar = () => {
+          calendarLoading.value = true;
+          let target = currentUser.value;
+
+          // ADMIN FILTER OVERRIDE
+          if (currentRole.value === 'ADMIN' && calendarUserFilter.value) {
+              target = calendarUserFilter.value;
+          } else {
+              const mods = config.value.specialModules || [];
+              const salesMod = mods.find(m => m.type === 'mirror_staff' && String(m.target).toUpperCase().includes('VENTAS'));
+              const trackerMod = mods.find(m => m.type === 'mirror_staff' && !String(m.target).toUpperCase().includes('VENTAS'));
+
+              if (salesMod) target = salesMod.target;
+              else if (trackerMod) target = trackerMod.target;
+
+              if (currentRole.value === 'TONITA' || currentUsername.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+          }
+
+          google.script.run.withSuccessHandler(res => {
+              calendarLoading.value = false;
+              if (res.success) {
+                  dashboardCalendar.value.tasks = res.data;
+                  nextTick(() => animateCalendarTasks());
+              } else {
+                  console.error("Calendar Load Error", res.message);
+              }
+          }).apiFetchCombinedCalendarData(target);
+      };
+
+      watch(weekDays, () => {
+          nextTick(() => animateCalendarTasks());
+      });
+
+      onMounted(() => {
+          calendarInterval.value = setInterval(() => {
+              if (isLoggedIn.value && currentView.value === 'DASHBOARD') {
+                  // Silent update (no loading spinner for polling)
+                  let target = currentUser.value;
+                  if (currentRole.value === 'ADMIN' && calendarUserFilter.value) {
+                      target = calendarUserFilter.value;
+                  } else {
+                      const mods = config.value.specialModules || [];
+                      const salesMod = mods.find(m => m.type === 'mirror_staff' && String(m.target).toUpperCase().includes('VENTAS'));
+                      const trackerMod = mods.find(m => m.type === 'mirror_staff' && !String(m.target).toUpperCase().includes('VENTAS'));
+                      if (salesMod) target = salesMod.target;
+                      else if (trackerMod) target = trackerMod.target;
+                      if (currentRole.value === 'TONITA' || currentUsername.value === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+                  }
+                  google.script.run.withSuccessHandler(res => {
+                      if (res.success) dashboardCalendar.value.tasks = res.data;
+                  }).apiFetchCombinedCalendarData(target);
+              }
+          }, 60000); // 60 seconds polling
+      });
+
+      const getTasksForDay = (dateStr) => {
+          if (!dashboardCalendar.value.tasks) return [];
+          return dashboardCalendar.value.tasks.filter(t => {
+              const tDate = t['FECHA'] || t['FECHA INICIO'] || t['ALTA'] || t['FECHA DE INICIO'] || t['FECHA VISITA'];
+              return tDate === dateStr;
+          });
+      };
+
+      const getTaskColor = (task) => {
+          const status = String(task.ESTATUS || task.STATUS || '').toUpperCase();
+          // 1. COMPLETADO (Verde)
+          if (status.includes('DONE') || status.includes('COMPLET') || status.includes('REALIZAD') || status === '100%') return '#28a745';
+          // 2. CANCELADO (Rojo)
+          if (status.includes('DETENID') || status.includes('CANCEL')) return '#dc3545';
+
+          // 3. SEMÁFORO (Traffic Light) - Solo si hay Clasificación y Fecha
+          const clasi = String(task.CLASIFICACION || task.CLASI || '').toUpperCase().trim();
+          const dateKey = Object.keys(task).find(k => ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'ALTA', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO'].includes(String(k).toUpperCase().trim()));
+          const dateVal = dateKey ? task[dateKey] : null;
+
+          if (clasi && dateVal) {
+              let days = 0;
+              let dObj = null;
+              if (dateVal instanceof Date) {
+                  dObj = dateVal;
+              } else if (typeof dateVal === 'string') {
+                  const parts = dateVal.split('/');
+                  if (parts.length === 3) {
+                      let y = parts[2];
+                      if (y.length === 2) y = '20' + y;
+                      dObj = new Date(y, parts[1]-1, parts[0]);
+                  } else if (dateVal.includes('-')) {
+                      dObj = new Date(dateVal);
+                  }
               }
 
-              // Sync to ADMIN
-              internalBatchUpdateTasks("ADMINISTRADOR", distributionTasks, false);
+              // Realtime calculate Días based on dates instead of relying on statically sent values from backend
+              // This ensures if the midnight trigger doesn't run, the user still sees current elapsed days.
+              if (dObj && !isNaN(dObj.getTime())) {
+                  const now = new Date();
+                  now.setHours(0,0,0,0);
+                  dObj.setHours(0,0,0,0);
+                  const diffTime = now - dObj;
+                  days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+              } else {
+                  // Fallback to static if date is unparseable
+                  const diasKey = Object.keys(task).find(k => ['DIAS', 'RELOJ', 'DÍAS', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ'].includes(String(k).toUpperCase().trim()));
+                  if (diasKey && task[diasKey] !== "" && !isNaN(task[diasKey])) {
+                      days = parseInt(task[diasKey]);
+                  }
+              }
+
+              if (true) {
+                  let limit = 0, buffer = 0;
+                  if (clasi === 'A') { limit = 3; buffer = 1; }
+                  else if (clasi === 'AA') { limit = 15; buffer = 3; }
+                  else if (clasi === 'AAA') { limit = 30; buffer = 5; }
+
+                  if (limit > 0) {
+                      if (days > limit) return '#e74c3c'; // Rojo (Vencido)
+                      if (days >= (limit - buffer)) return '#ffff00'; // Amarillo (Por Vencer)
+                      return '#2ecc71'; // Verde (A Tiempo)
+                  }
+              }
           }
 
-          // Handle Reverse Sync (Vendor -> Antonia)
-          if (!isAntonia && distributionTasks.length > 0) {
-               const syncPayloads = [];
-               let antDataFetched = false;
-               let antDataRows = [];
+          // 4. FALLBACK POR ESTATUS
+          if (status.includes('PROCESO') || status.includes('ASIGNAD')) return '#0d6efd';
+          if (status.includes('PENDIENTE')) return '#ffc107';
+          return '#6c757d';
+      };
 
-               distributionTasks.forEach(taskData => {
-                   const getTVal = (keys) => {
-                       for (let k of keys) {
-                           let found = Object.keys(taskData).find(key => key.toUpperCase().trim() === k);
-                           if (found && taskData[found]) return taskData[found];
-                       }
-                       return "";
-                   };
-                   
-                   const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
-                   const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'])).replace(/%/g, '').trim();
-                   const avanceNum = parseFloat(avanceRaw);
-                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1 || avanceRaw.toUpperCase() === 'SI';
-                   const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
-                   
-                   if (tFolio && isDone) {
-                       if (!antDataFetched) {
-                           const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                           if (antData.success && antData.data) antDataRows = antData.data;
-                           antDataFetched = true;
-                       }
-                       
-                       const targetRow = antDataRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                       if (targetRow) {
-                           let log = [];
-                           try {
-                               if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
-                           } catch(e) {}
-                           
-                           let updated = false;
-                           let updatedLog = [];
-                           if (Array.isArray(log)) {
-                               updatedLog = log.map(entry => {
-                                   let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ");
-                                   let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ") : "";
-                                   
-                                   if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
-                                       entry.status = 'DONE';
-                                       entry.timestamp = new Date().getTime();
-                                       entry.dateStr = new Date().toLocaleString();
-                                       updated = true;
-                                       registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
-                                   }
-                                   return entry;
-                               });
-                           }
-                           
-                           if (updated) {
-                               const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
-                               let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
-                               let mapCotParts = stepsOrder.map(step => {
-                                   const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
-                                   if (stepEntry) {
-                                       if (stepEntry.status === 'DONE') return '🟢 ' + step;
-                                       if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
-                                       if (stepEntry.status === 'PENDING') return '🔴 ' + step;
-                                   }
-                                   let oldPart = oldParts.find(p => p.includes(step));
-                                   if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
-                                   if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
-                                   if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
-                                   return '⚪ ' + step;
-                               });
-                               
-                               let syncToAntonia = {
-                                   'FOLIO': targetRow['FOLIO'] || tFolio,
-                                   'PROCESO_LOG': JSON.stringify(updatedLog),
-                                   'MAP COT': mapCotParts.join(' | ')
-                               };
-                               
-                               const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
-                               fileCols.forEach(col => {
-                                   let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
-                                   if (wKey && taskData[wKey] && String(taskData[wKey]).trim() !== "") {
-                                       syncToAntonia[wKey] = taskData[wKey];
-                                   }
-                               });
-                               
-                               syncPayloads.push(syncToAntonia);
-                           }
-                       }
-                   }
-               });
-               
-               if (syncPayloads.length > 0) {
-                   internalBatchUpdateTasks("ANTONIA_VENTAS", syncPayloads, false);
-               }
-               
-               if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                   internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
-               }
+      const isTaskDone = (task) => {
+          const status = String(task.ESTATUS || '').toUpperCase();
+          const avance = String(task.AVANCE || '').replace('%','').trim();
+          return status.includes('DONE') || status.includes('REALIZAD') || avance === '100' || avance === '1.0';
+      };
 
-               // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)
-               const peerUpdates = {};
-               distributionTasks.forEach(t => {
-                   const vKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR");
-                   if(vKey && t[vKey]) {
-                       const vList = String(t[vKey]).split(',').map(s => s.trim());
-                       vList.forEach(otherVendor => {
-                           if (otherVendor.toUpperCase() === "ANTONIA_VENTAS") return;
-                           const currentSheetNorm = String(personName).toUpperCase().replace(/\s*\(VENTAS\)/, "").trim();
-                           const otherVendorNorm = String(otherVendor).toUpperCase().replace(/\s*\(VENTAS\)/, "").trim();
-
-                           if (currentSheetNorm !== otherVendorNorm) {
-                               let targetSheet = otherVendor;
-                               if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
-                                   let potential = targetSheet + " (VENTAS)";
-                                   if (findSheetSmart(potential)) targetSheet = potential;
-                               }
-                               if(!peerUpdates[targetSheet]) peerUpdates[targetSheet] = [];
-                               peerUpdates[targetSheet].push(t);
-                           }
-                       });
-                   }
-               });
-
-               for (const [target, tasks] of Object.entries(peerUpdates)) {
-                   internalBatchUpdateTasks(target, tasks, false);
-               }
+      const getResponsible = (task) => {
+          if (!task) return '';
+          const keys = Object.keys(task);
+          const targetKeys = ['VENDEDOR', 'RESPONSABLE', 'RESPONSABLES'];
+          for (const t of targetKeys) {
+              const foundKey = keys.find(k => k.toUpperCase().trim() === t);
+              if (foundKey && task[foundKey]) return task[foundKey];
           }
+          return '';
+      };
 
-          registrarLog(username, "BATCH_UPDATE", `Actualizadas ${tasks.length} tareas en ${personName}`);
-      }
+      const loadPersonalAgenda = () => {
+          personalAgenda.value.isLoading = true;
+          google.script.run.withSuccessHandler(res => {
+              personalAgenda.value.isLoading = false;
+              if (res.success) {
+                  const tasks = (res.data.workTasks || []).map(t => {
+                      let dateStr = '';
+                      const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'FECHAS', 'F. INICIO'];
+                      for (const k of dateKeys) {
+                          if (t[k]) { dateStr = t[k]; break; }
+                      }
 
-      return { success: true, message: "Guardado exitoso" };
+                      return {
+                          id: t.FOLIO || t.ID || Math.random().toString(36),
+                          type: 'WORK',
+                          title: t.CONCEPTO || 'Tarea sin descripción',
+                          client: t.CLIENTE || 'Sin Cliente',
+                          time: '09:00', // Default
+                          date: dateStr,
+                          status: t.ESTATUS || 'PENDING',
+                          original: t,
+                          color: getTaskColor(t) // Reuse existing color logic
+                      };
+                  });
 
-    } catch (e) {
-      return { success: false, message: e.toString() };
-    } finally {
-      lock.releaseLock();
-    }
-  } else {
-      return { success: false, message: "Sistema ocupado" };
-  }
-}
+                  const events = (res.data.personalEvents || []).map(e => ({
+                      id: e.ID,
+                      type: 'PERSONAL',
+                      title: e.TITULO,
+                      desc: e.DESCRIPCION || e.DETALLES,
+                      time: e.HORA_INICIO || '12:00',
+                      date: e.FECHA,
+                      status: 'PENDING',
+                      original: e,
+                      color: '#00d2ff'
+                  }));
 
-function apiFetchCombinedCalendarData(sheetName) {
-  try {
-      const results = [];
-      const baseName = String(sheetName).replace(/\s*\(VENTAS\)/i, "").trim();
-      // Si es ANTONIA_VENTAS, solo buscamos ahí (ella distribuye)
-      const targets = (baseName.toUpperCase() === "ANTONIA_VENTAS") ? ["ANTONIA_VENTAS"] : [baseName, baseName + " (VENTAS)"];
+                  // Combine and sort by time
+                  const timeline = [...tasks, ...events].sort((a, b) => {
+                      const timeA = a.time || '00:00';
+                      const timeB = b.time || '00:00';
+                      return timeA.localeCompare(timeB);
+                  }).map(t => {
+                      t.isDone = (t.status === 'DONE' || t.status === 'REALIZADO' || t.status === 'COMPLETADA' || t.status === '100%');
+                      if(t.type === 'WORK' && isTaskDone(t.original)) t.isDone = true;
+                      return t;
+                  });
 
-      targets.forEach(t => {
-          const res = internalFetchSheetData(t);
-          if (res.success && res.data) {
-              results.push(...res.data);
-          }
+                  personalAgenda.value.timeline = timeline;
+
+                  if (!selectedDailyDay.value && weekDays.value.length > 0) {
+                      const today = weekDays.value.find(d => d.isToday);
+                      selectedDailyDay.value = today ? today.dateStr : weekDays.value[0].dateStr;
+                  }
+
+                  personalAgenda.value.habits = res.data.habits || [];
+                  personalAgenda.value.habitLogs = res.data.habitLogs || [];
+
+                  // Update Metrics
+                  personalAgenda.value.metrics = {
+                      totalEvents: timeline.length,
+                      pendingTasks: tasks.filter(t => !isTaskDone(t.original)).length,
+                      urgentTasks: tasks.filter(t => t.color === '#e74c3c').length,
+                      completedHabits: (res.data.habitLogs || []).length,
+                      progress: 0 // To be calculated
+                  };
+
+                  // Calculate progress (completed items / total)
+                  const totalItems = timeline.length;
+                  const completedItems = timeline.filter(i => {
+                      if (i.type === 'WORK') return isTaskDone(i.original);
+                      return false; // Personal events don't have explicit status yet in this simple logic
+                  }).length;
+
+                  if (totalItems > 0) {
+                      personalAgenda.value.metrics.progress = Math.round((completedItems / totalItems) * 100);
+                  }
+
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiFetchUnifiedAgenda(currentUser.value);
+      };
+
+      const renderPersonalCharts = () => {
+          nextTick(() => {
+              const ctxActivity = document.getElementById('paChartActivity');
+              const ctxBalance = document.getElementById('paChartBalance');
+
+              if (ctxActivity) {
+                  if (window.paCharts) {
+                      if (window.paCharts.activity) window.paCharts.activity.destroy();
+                      if (window.paCharts.balance) window.paCharts.balance.destroy();
+                  } else {
+                      window.paCharts = {};
+                  }
+
+                  const tasksCount = personalAgenda.value.metrics.totalEvents || 0;
+                  const habitsCount = personalAgenda.value.metrics.completedHabits || 0;
+
+                  window.paCharts.activity = new Chart(ctxActivity, {
+                      type: 'bar',
+                      data: {
+                          labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+                          datasets: [{
+                              label: 'Tareas Completadas',
+                              data: [5, 8, 6, tasksCount, 0, 0, 0],
+                              backgroundColor: '#3699ff',
+                              borderRadius: 4
+                          }, {
+                              label: 'Hábitos',
+                              data: [3, 4, 3, habitsCount, 0, 0, 0],
+                              backgroundColor: '#28a745',
+                              borderRadius: 4
+                          }]
+                      },
+                      options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                  });
+              }
+
+              if (ctxBalance) {
+                  const workCount = personalAgenda.value.timeline.filter(i => i.type === 'WORK').length;
+                  const personalCount = personalAgenda.value.timeline.filter(i => i.type === 'PERSONAL').length;
+
+                  window.paCharts.balance = new Chart(ctxBalance, {
+                      type: 'doughnut',
+                      data: {
+                          labels: ['Trabajo', 'Personal', 'Salud/Hábitos'],
+                          datasets: [{
+                              data: [workCount, personalCount, personalAgenda.value.habits.length],
+                              backgroundColor: ['#0d6efd', '#0dcaf0', '#20c997']
+                          }]
+                      },
+                      options: { responsive: true, maintainAspectRatio: false }
+                  });
+              }
+          });
+      };
+
+      const isHabitDone = (habit) => {
+          if (!habit || !habit.LOG_JSON) return false;
+          try {
+              const log = JSON.parse(habit.LOG_JSON);
+              const today = new Date().toLocaleDateString('en-GB');
+              if (Array.isArray(log)) return false;
+              return !!log[today];
+          } catch(e) { return false; }
+      };
+
+      const toggleHabit = (habit) => {
+          let log = {};
+          try { log = JSON.parse(habit.LOG_JSON || '{}'); } catch(e){}
+          if (Array.isArray(log)) log = {};
+
+          const today = new Date().toLocaleDateString('en-GB');
+          log[today] = !log[today];
+
+          habit.LOG_JSON = JSON.stringify(log);
+
+          const payload = {
+              ID: habit.ID,
+              USUARIO: currentUser.value,
+              HABITO: habit.HABITO,
+              META: habit.META,
+              LOG_JSON: habit.LOG_JSON,
+              FECHA_ACTUALIZACION: new Date().toISOString()
+          };
+          google.script.run.withFailureHandler(handleErr).apiSaveHabitLog(payload);
+
+          const doneCount = personalAgenda.value.habits.filter(h => isHabitDone(h)).length;
+          personalAgenda.value.metrics.completedHabits = doneCount;
+      };
+
+      const promptAddHabit = () => {
+          Swal.fire({
+              title: 'Nuevo Hábito',
+              input: 'text',
+              inputLabel: 'Nombre del hábito (Ej: Leer, Ejercicio)',
+              showCancelButton: true,
+              confirmButtonText: 'Crear'
+          }).then((result) => {
+              if (result.isConfirmed && result.value) {
+                  const newHabit = {
+                      ID: 'H-' + Date.now(),
+                      USUARIO: currentUser.value,
+                      HABITO: result.value,
+                      META: 7,
+                      LOG_JSON: '{}',
+                      FECHA_ACTUALIZACION: new Date().toISOString()
+                  };
+                  personalAgenda.value.habits.push(newHabit);
+                  google.script.run.withFailureHandler(handleErr).apiSaveHabitLog(newHabit);
+                  Swal.fire('Hábito Creado', '', 'success');
+              }
+          });
+      };
+
+      const addMeal = (category) => {
+          Swal.fire({
+              title: `Registrar ${category}`,
+              input: 'text',
+              inputPlaceholder: 'Ej: Avena con frutas...',
+              showCancelButton: true,
+              confirmButtonText: 'Guardar'
+          }).then((result) => {
+              if(result.isConfirmed && result.value) {
+                  const newEvent = {
+                      ID: 'M-' + Date.now(),
+                      USUARIO: currentUser.value,
+                      TITULO: category,
+                      TIPO: 'COMIDA', // Special type for filtering
+                      CLASIFICACION: category, // Desayuno, Comida, etc.
+                      DETALLES: result.value,
+                      FECHA: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD
+                      HORA_INICIO: new Date().toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'}),
+                      ESTATUS: 'REALIZADO'
+                  };
+                  // Optimistic update
+                  const timelineItem = {
+                      id: newEvent.ID,
+                      type: 'PERSONAL', // Merged into timeline as personal
+                      title: newEvent.TITULO,
+                      desc: newEvent.DETALLES,
+                      time: newEvent.HORA_INICIO,
+                      date: newEvent.FECHA.toLocaleDateString('en-GB'),
+                      status: 'PENDING',
+                      original: newEvent,
+                      color: '#28a745' // Green for meals
+                  };
+                  personalAgenda.value.timeline.push(timelineItem);
+                  personalAgenda.value.timeline.sort((a,b) => a.time.localeCompare(b.time));
+
+                  google.script.run.apiSavePersonalEvent(newEvent);
+                  Swal.fire('Registrado', '', 'success');
+              }
+          });
+      };
+
+      const getMeals = (cat) => {
+          return personalAgenda.value.timeline.filter(i => {
+              return i.type === 'PERSONAL' &&
+                     i.original.TIPO === 'COMIDA' &&
+                     i.original.CLASIFICACION === cat;
+          });
+      };
+
+      const filteredDailyTasks = computed(() => {
+          if (!selectedDailyDay.value) return [];
+          return personalAgenda.value.timeline.filter(t => t.date === selectedDailyDay.value);
       });
 
-      // --- ADDED: Personal Agenda Integration for Dashboard ---
-      const personalRes = internalFetchSheetData("AGENDA_PERSONAL");
-      if (personalRes.success && personalRes.data) {
-          const myEvents = personalRes.data.filter(e => String(e.USUARIO).trim().toUpperCase() === baseName.toUpperCase());
-          const mappedEvents = myEvents.map(e => ({
-              ...e,
-              CONCEPTO: e.TITULO || e.CONCEPTO,
-              CLIENTE: "PERSONAL"
-          }));
-          results.push(...mappedEvents);
-      }
-      // --------------------------------------------------------
+      const saveActivity = () => {
+          if (!newActivity.value.title) return;
+          isSubmitting.value = true;
 
-      // Deduplicate by ID/FOLIO
-      const uniqueTasks = {};
-      results.forEach(r => {
-          const id = r.ID || r.FOLIO || (r.CONCEPTO ? r.CONCEPTO + r.FECHA : null);
-          if (id) uniqueTasks[id] = r;
-      });
-
-      const finalData = Object.values(uniqueTasks);
-
-      // Simple Sort by Date string (DD/MM/YY) if possible, else original order
-      // internalFetchSheetData already sorts by date desc.
-      // Merging two sorted lists... roughly fine.
-
-      return { success: true, data: finalData };
-  } catch(e) {
-      return { success: false, message: e.toString() };
-  }
-}
-
-/**
- * ======================================================================
- * MODULO: AGENDA PERSONAL (HOLTZAR INTEGRATION)
- * ======================================================================
- */
-
-function apiFetchUnifiedAgenda(username) {
-  // 1. Fetch Work Tasks (Existing Logic)
-  let workTasks = [];
-  try {
-     // Determine target for work tasks based on role/user
-     let target = username;
-     if (String(username).toUpperCase() === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
-
-     const workRes = apiFetchCombinedCalendarData(target);
-     if (workRes.success) {
-         // Filter out Personal Events to avoid duplication (fetched separately below)
-         workTasks = workRes.data.filter(t => t.CLIENTE !== "PERSONAL");
-     }
-  } catch(e) { console.error("Error fetching work tasks", e); }
-
-  // 2. Fetch Personal Events
-  let personalEvents = [];
-  try {
-     const sheet = findSheetSmart("AGENDA_PERSONAL");
-     if (sheet) {
-        const res = internalFetchSheetData("AGENDA_PERSONAL");
-        if(res.success) {
-            // Filter by user if possible, for now return all found
-            personalEvents = res.data.filter(r => !r.USUARIO || r.USUARIO === username);
-        }
-     } else {
-        // MOCK DATA FOR DEMO IF SHEET DOESN'T EXIST
-        const today = new Date();
-        const y = today.getFullYear();
-        const m = today.getMonth(); // 0-indexed
-        const d = today.getDate();
-
-        personalEvents = [
-            { ID: 'P-1', TITULO: 'Rutina Mañana', TIPO: 'PERSONAL', HORA_INICIO: '06:00', HORA_FIN: '07:00', DETALLES: 'Meditación y Café', FECHA: new Date(y, m, d), CLASIFICACION: 'PERSONAL' },
-            { ID: 'P-2', TITULO: 'Gimnasio', TIPO: 'PERSONAL', HORA_INICIO: '07:30', HORA_FIN: '08:30', DETALLES: 'Cardio', FECHA: new Date(y, m, d), CLASIFICACION: 'SALUD' },
-            { ID: 'P-3', TITULO: 'Comida', TIPO: 'COMIDA', HORA_INICIO: '14:00', HORA_FIN: '15:00', DETALLES: 'Pollo y Arroz', FECHA: new Date(y, m, d), CLASIFICACION: 'SALUD' }
-        ];
-     }
-  } catch(e) { console.error("Error fetching personal events", e); }
-
-  // 3. Fetch Habits
-  let habits = [];
-  try {
-      const sheet = findSheetSmart("HABITOS_LOG");
-      if (sheet) {
-         const res = internalFetchSheetData("HABITOS_LOG");
-         if (res.success) habits = res.data.filter(r => !r.USUARIO || r.USUARIO === username);
-      } else {
-         // MOCK DATA
-         habits = [
-             { ID: 'H1', HABITO: 'Leer 30min', META: 5, LOG_JSON: JSON.stringify([true, true, false, true, false, false, false]) },
-             { ID: 'H2', HABITO: 'Ejercicio', META: 4, LOG_JSON: JSON.stringify([false, true, true, false, false, false, false]) },
-             { ID: 'H3', HABITO: 'Meditar', META: 7, LOG_JSON: JSON.stringify([true, true, true, true, true, false, false]) }
-         ];
-      }
-  } catch(e) { console.error("Error fetching habits", e); }
-
-  return { success: true, workTasks: workTasks, personalEvents: personalEvents, habits: habits };
-}
-
-function apiSavePersonalEvent(eventData) {
-    // Ensure sheet exists
-    let sheet = findSheetSmart("AGENDA_PERSONAL");
-    if (!sheet) {
-        sheet = SS.insertSheet("AGENDA_PERSONAL");
-        sheet.appendRow(["ID", "USUARIO", "TITULO", "TIPO", "FECHA", "HORA_INICIO", "HORA_FIN", "DETALLES", "CLASIFICACION", "ESTATUS"]);
-    }
-    return internalBatchUpdateTasks("AGENDA_PERSONAL", [eventData]);
-}
-
-function apiSaveHabitLog(habitData) {
-    // Ensure sheet exists
-    let sheet = findSheetSmart("HABITOS_LOG");
-    if (!sheet) {
-        sheet = SS.insertSheet("HABITOS_LOG");
-        sheet.appendRow(["ID", "USUARIO", "HABITO", "META", "LOG_JSON", "FECHA_ACTUALIZACION"]);
-    }
-    // If saving a habit update, we might need to find the existing row.
-    // internalBatchUpdateTasks handles updates by ID/FOLIO.
-    return internalBatchUpdateTasks("HABITOS_LOG", [habitData]);
-}
-
-/**
- * Jutsu de Transcripción con Gemini Flash
- */
-function transcribirConGemini(base64Audio, mimeType) {
-  // IMPORTANTE: Reemplazar con la API Key real del proyecto
-  const API_KEY = "AIzaSyA7Lv551Quq7lMCynU7kRq9T1_MIaK6kkc";
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-
-  const payload = {
-    contents: [{
-      parts: [
-        { text: "Transcribe el siguiente audio exactamente como se escucha. Corrige ortografía básica. Solo dame el texto limpio en español." },
-        {
-          inline_data: {
-            mime_type: mimeType || "audio/mp3",
-            data: base64Audio
+          let dateStr = "";
+          if (newActivity.value.date) {
+              const parts = newActivity.value.date.split('-');
+              dateStr = `${parts[2]}/${parts[1]}/${parts[0].substring(2)}`;
           }
-        }
-      ]
-    }]
-  };
 
-  const options = {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
+          const payload = {
+              ID: 'A-' + Date.now(),
+              USUARIO: currentUser.value,
+              TITULO: newActivity.value.title,
+              TIPO: 'EVENTO',
+              FECHA: newActivity.value.date,
+              HORA_INICIO: newActivity.value.startTime,
+              HORA_FIN: newActivity.value.endTime,
+              CLASIFICACION: newActivity.value.category,
+              ESTATUS: 'PENDIENTE'
+          };
 
-  try {
-    const response = UrlFetchApp.fetch(url, options);
-    const json = JSON.parse(response.getContentText());
+          google.script.run.withSuccessHandler(res => {
+              isSubmitting.value = false;
+              if (res.success) {
+                  Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Actividad Creada', showConfirmButton: false, timer: 1500 });
+                  showNewActivityModal.value = false;
+                  newActivity.value = { title: '', date: new Date().toISOString().split('T')[0], startTime: '09:00', endTime: '10:00', category: 'Trabajo' };
+                  loadPersonalAgenda();
+              } else {
+                  Swal.fire('Error', res.message, 'error');
+              }
+          }).apiSavePersonalEvent(payload);
+      };
 
-    if (json.candidates && json.candidates[0].content) {
-      return json.candidates[0].content.parts[0].text;
-    } else {
-      return "Error: No pude escuchar el audio claramente.";
-    }
-  } catch (e) {
-    return "Error en el sistema: " + e.toString();
-  }
-}
+      const toggleActivityStatus = (task) => {
+          task.isDone = !task.isDone;
 
-/**
- * JUTSU DE AUTORIZACIÓN FORZADA
- * Ejecuta esto manualmente desde el editor en la PC una vez.
- */
-function forzarPermisos() {
-  console.log("Concentrando chakra para conectar con el exterior...");
-  // Solo llamamos a esto para que Google detecte que necesitamos el permiso
-  // No importa si falla la URL, lo que importa es que pida el permiso.
-  try {
-    UrlFetchApp.fetch("https://www.google.com");
-    console.log("¡Conexión establecida! Chakra fluyendo.");
-  } catch (e) {
-    console.log("Error (esperado si no hay internet, pero ya tienes permisos): " + e.toString());
-  }
-}
+          if (task.type === 'WORK') {
+              const updatePayload = { ...task.original };
+              updatePayload.ESTATUS = task.isDone ? 'DONE' : 'PENDIENTE';
+              updatePayload.AVANCE = task.isDone ? '100%' : '0%';
 
-function test_SystemConfig_Label() {
-  console.log("🛠️ INICIANDO TEST: Etiquetas de Configuración de Sistema");
+              google.script.run.withSuccessHandler(res => {
+                  if(!res.success) { task.isDone = !task.isDone; Swal.fire('Error', res.message, 'error'); }
+                  else loadPersonalAgenda();
+              }).apiUpdateTask(currentUser.value, updatePayload, currentUser.value);
 
-  // Caso 1: JESUS_CANTU
-  const configJesus = getSystemConfig('PPC_ADMIN', 'JESUS_CANTU');
-  const ppcModJesus = configJesus.specialModules.find(m => m.id === 'PPC_MASTER');
+          } else {
+              const updatePayload = { ...task.original };
+              updatePayload.ESTATUS = task.isDone ? 'REALIZADO' : 'PENDIENTE';
 
-  if (ppcModJesus && ppcModJesus.label === 'REUNION INTERDICIPLINARIO') {
-      console.log("✅ JESUS_CANTU: Etiqueta correcta 'REUNION INTERDICIPLINARIO'");
-  } else {
-      console.error("❌ JESUS_CANTU: Fallo. Etiqueta actual: " + (ppcModJesus ? ppcModJesus.label : 'N/A'));
-  }
-
-  // Caso 2: ANTONIA_VENTAS
-  const configAntonia = getSystemConfig('TONITA', 'ANTONIA_VENTAS');
-  const ppcModAntonia = configAntonia.specialModules.find(m => m.id === 'PPC_MASTER');
-
-  if (ppcModAntonia && ppcModAntonia.label === 'PPC Maestro') {
-      console.log("✅ ANTONIA_VENTAS: Etiqueta correcta 'PPC Maestro'");
-  } else {
-      console.error("❌ ANTONIA_VENTAS: Fallo. Etiqueta actual: " + (ppcModAntonia ? ppcModAntonia.label : 'N/A'));
-  }
-}
-
-/*
- * ======================================================================
- * MODULE: SMART ARCHIVER (BANCO DE COTIZACIONES)
- * ======================================================================
- */
-
-function getOrCreateFolder(parent, name) {
-  const folders = parent.getFoldersByName(name);
-  if (folders.hasNext()) {
-    return folders.next();
-  } else {
-    return parent.createFolder(name);
-  }
-}
-
-function getBankRootFolder() {
-  // Use config ID if available, otherwise find/create "Banco de Cotizaciones" in Root
-  if (APP_CONFIG.folderIdUploads && APP_CONFIG.folderIdUploads.trim() !== "") {
-      try {
-          return DriveApp.getFolderById(APP_CONFIG.folderIdUploads);
-      } catch(e) {
-          console.warn("Invalid Config Folder ID, falling back to Root search.");
-      }
-  }
-
-  const rootName = "Banco de Cotizaciones";
-  const folders = DriveApp.getFoldersByName(rootName);
-  if (folders.hasNext()) {
-      return folders.next();
-  } else {
-      return DriveApp.createFolder(rootName);
-  }
-}
-
-function archiveFile(fileUrl, targetFolder) {
-  try {
-      if (!fileUrl || !String(fileUrl).includes("drive.google.com")) return { success: false, message: "No Drive URL" };
-
-      // Extract ID
-      let id = "";
-      const match = fileUrl.match(/[-\w]{25,}/);
-      if (match) id = match[0];
-
-      if (!id) return { success: false, message: "Invalid ID extraction" };
-
-      const file = DriveApp.getFileById(id);
-      if (!file) return { success: false, message: "File not found" };
-
-      // Check if file is already in target folder
-      const parents = file.getParents();
-      let alreadyThere = false;
-      while (parents.hasNext()) {
-          const p = parents.next();
-          if (p.getId() === targetFolder.getId()) {
-              alreadyThere = true;
-              break;
+              google.script.run.withSuccessHandler(res => {
+                  if(!res.success) { task.isDone = !task.isDone; Swal.fire('Error', res.message, 'error'); }
+              }).apiSavePersonalEvent(updatePayload);
           }
-      }
+      };
 
-      if (!alreadyThere) {
-          // Move file (Standard: Move to organized folder to ensure structure)
-          file.moveTo(targetFolder);
-          return { success: true, message: "Moved" };
-      }
-      return { success: true, message: "Already there" };
+      const focusReqInput = (id) => {
+          const el = document.getElementById(id);
+          if(el) el.focus();
+      };
 
-  } catch (e) {
-      console.error("Archive Error: " + e.toString());
-      return { success: false, message: e.toString() };
-  }
-}
+      const toggleDictation = () => {
+          // 1. Verificar soporte del navegador (El Chakra del Navegador)
+          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-function processQuoteRow(row) {
-    try {
-        // 1. Validate Data
-        // Header mapping from internalFetchSheetData aliases:
-        // CLIENTE -> row['CLIENTE']
-        // FECHA -> row['FECHA'] or row['FECHA INICIO'] ...
-        // ARCHIVO -> row['ARCHIVO'] or row['COTIZACION']
+          if (!SpeechRecognition) {
+              Swal.fire('Error de Jutsu', 'Tu navegador no soporta reconocimiento de voz nativo. Intenta usar Chrome.', 'error');
+              return;
+          }
 
-        const client = row['CLIENTE'];
-        const dateVal = row['FECHA'] || row['FECHA INICIO'] || row['F. INICIO'] || row['F. VISITA'] || row['F. ENTREGA'] || row['ALTA'] || row['FECHA_ALTA'];
-        const fileVal = row['COTIZACION'] || row['ARCHIVO'] || row['LINK'] || row['EVIDENCIA'];
+          // 2. Si ya estamos grabando, detenemos el jutsu
+          if (isRecording.value) {
+              if (recognition) recognition.stop();
+              isRecording.value = false;
+              return;
+          }
 
-        if (!client || !dateVal || !fileVal) return { success: false, message: "Missing Data" };
+          // 3. Iniciar el Jutsu de Escucha
+          try {
+              recognition = new SpeechRecognition();
+              recognition.lang = 'es-MX'; // Idioma de la Aldea (México)
+              recognition.interimResults = false; // Solo queremos el resultado final
+              recognition.maxAlternatives = 1;
 
-        // 2. Parse Date
-        let dateObj = null;
-        if (dateVal instanceof Date) {
-            dateObj = dateVal;
-        } else if (typeof dateVal === 'string') {
-            const parts = dateVal.split('/');
-            if (parts.length === 3) {
-               let y = parseInt(parts[2]);
-               if (y < 100) y += 2000;
-               dateObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+              recognition.onstart = () => {
+                  isRecording.value = true;
+                  // Opcional: Sonido de inicio o vibración si es tablet
+                  if(window.navigator && window.navigator.vibrate) window.navigator.vibrate(100);
+              };
+
+              recognition.onend = () => {
+                  isRecording.value = false;
+              };
+
+              recognition.onresult = (event) => {
+                  const transcript = event.results[0][0].transcript;
+
+                  // Concatenamos el texto con un espacio si ya hay algo escrito
+                  const currentText = workorderData.value.conceptoDesc || '';
+                  workorderData.value.conceptoDesc = currentText + (currentText.length > 0 ? ' ' : '') + transcript;
+              };
+
+              recognition.onerror = (event) => {
+                  console.error("Error en reconocimiento:", event.error);
+                  isRecording.value = false;
+                  if (event.error === 'not-allowed') {
+                      Swal.fire('Permiso Denegado', 'Necesitas dar permiso al micrófono para usar este Jutsu.', 'warning');
+                  }
+              };
+
+              recognition.start();
+
+          } catch (error) {
+              console.error("Error al invocar SpeechRecognition", error);
+              isRecording.value = false;
+          }
+      };
+
+      const syncReqToMat = (idx, text) => {
+          while (requiredMaterials.value.items.length <= idx) {
+              addMaterialItem();
+          }
+          requiredMaterials.value.items[idx].description = text;
+      };
+
+      const openVendorSelector = (row, field) => {
+          if (!isFieldEditable(field, row)) return;
+
+          const currentVals = row[field] ? String(row[field]).split(',').map(s => s.trim()) : [];
+
+          let htmlContent = '<div style="text-align:left; max-height:300px; overflow-y:auto;">';
+          salesStaff.value.forEach(staff => {
+              const checked = currentVals.includes(staff) ? 'checked' : '';
+              htmlContent += `
+                  <div class="form-check">
+                      <input class="form-check-input" type="checkbox" value="${staff}" id="chk_${staff.replace(/\s+/g,'_')}" ${checked}>
+                      <label class="form-check-label" for="chk_${staff.replace(/\s+/g,'_')}">
+                          ${staff}
+                      </label>
+                  </div>
+              `;
+          });
+          htmlContent += '</div>';
+
+          Swal.fire({
+              title: 'Asignar Vendedores',
+              html: htmlContent,
+              showCancelButton: true,
+              confirmButtonText: 'Aplicar',
+              preConfirm: () => {
+                  const selected = [];
+                  salesStaff.value.forEach(staff => {
+                      const el = document.getElementById('chk_' + staff.replace(/\s+/g,'_'));
+                      if (el && el.checked) selected.push(staff);
+                  });
+                  return selected.join(', ');
+              }
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  row[field] = result.value;
+              }
+          });
+      };
+
+      const ANTONIA_STATUS_OPTIONS = [
+          { label: 'Pendiente', bg: '#ffffff', color: '#000000', border: '1px solid #ccc' },
+          { label: 'En Revisión', bg: '#FFCDD2', color: '#B71C1C' },
+          { label: 'Falta Información', bg: '#FFE0B2', color: '#E65100' },
+          { label: 'Pendiente Visita', bg: '#FFF9C4', color: '#F57F17' },
+          { label: 'En Espera de Otro Departamento', bg: '#C8E6C9', color: '#1B5E20' },
+          { label: 'Perdida x Tiempo', bg: '#B71C1C', color: '#ffffff' },
+          { label: 'Perdida x Precio', bg: '#D32F2F', color: '#ffffff' },
+          { label: 'Cancelada x Planta', bg: '#006064', color: '#ffffff' },
+          { label: 'No se Asistió a la Visita', bg: '#1B5E20', color: '#ffffff' },
+          { label: 'Asignado', bg: '#2E7D32', color: '#ffffff' },
+          { label: 'Enviada', bg: '#4CAF50', color: '#ffffff' }
+      ];
+
+      const getAntoniaStatusStyle = (val) => {
+          const v = String(val || '').toUpperCase().trim();
+          const opt = ANTONIA_STATUS_OPTIONS.find(o => o.label.toUpperCase() === v) || { bg: '#ffffff', color: '#000000', border: '1px solid #ccc' };
+          return { backgroundColor: opt.bg, color: opt.color, border: opt.border || 'none', fontWeight: 'bold' };
+      };
+
+      const openStatusSelector = (row, field) => {
+          if (!isFieldEditable(field, row)) return;
+
+          let htmlContent = '<div style="display:flex; flex-direction:column; gap:8px;">';
+          ANTONIA_STATUS_OPTIONS.forEach((opt, idx) => {
+              htmlContent += `<div id="status-opt-${idx}" style="background:${opt.bg}; color:${opt.color}; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold; border: 1px solid ${opt.border || 'transparent'}">${opt.label}</div>`;
+          });
+          htmlContent += '</div>';
+
+          Swal.fire({
+              title: 'Seleccionar Estatus',
+              html: htmlContent,
+              showConfirmButton: false,
+              showCancelButton: true,
+              cancelButtonText: 'Cancelar',
+              didOpen: () => {
+                   ANTONIA_STATUS_OPTIONS.forEach((opt, idx) => {
+                       const el = document.getElementById(`status-opt-${idx}`);
+                       if(el) {
+                           el.addEventListener('click', () => {
+                               row[field] = opt.label;
+                               Swal.close();
+                           });
+                       }
+                   });
+              }
+          });
+      };
+
+      const openHotPotatoView = () => {
+          activeTrackerTab.value = 'PAPA_CALIENTE';
+          trackerSubView.value = 'HOT_POTATO';
+          loadTrackerData();
+      };
+
+      const showProcessFlow = ref(false);
+      const openProcessFlow = () => {
+          showProcessFlow.value = true;
+          nextTick(() => {
+              anime({
+                  targets: '.flow-node',
+                  scale: [0, 1],
+                  opacity: [0, 1],
+                  delay: anime.stagger(100),
+                  easing: 'spring(1, 80, 10, 0)'
+              });
+              anime({
+                  targets: '.connection-line',
+                  strokeDashoffset: [anime.setDashoffset, 0],
+                  easing: 'easeInOutSine',
+                  duration: 2000,
+                  delay: 500
+              });
+          });
+      };
+
+      // --- PAPA CALIENTE LOGIC (PROCESO) ---
+      const PROCESS_STEPS = [
+          "L",
+          "CD",
+          "EP",
+          "CI",
+          "EV",
+          "CEC",
+          "RCC"
+      ];
+
+      const FULL_PROCESS_NAMES = {
+          "L": "Levantamiento",
+          "CD": "Calculo y Diseño",
+          "EP": "Elaboracion Presupuesto",
+          "CI": "Cotizacion Interna",
+          "EV": "Estrategia Ventas",
+          "CEC": "Cotizacion Enviada al cliente",
+          "RCC": "Revision de Cotizacion Cliente"
+      };
+
+      const LEGACY_PROCESS_MAP = {
+          "Levantamiento": "L",
+          "Calculo y Diseño": "CD",
+          "Elaboracion Presupuesto": "EP",
+          "Cotizacion Interna": "CI",
+          "Estrategia Ventas": "EV",
+          "Cotizacion Enviada al cliente": "CEC",
+          "Revision de Cotizacion Cliente": "RCC"
+      };
+
+      const getFullProcessName = (abbr) => {
+          return FULL_PROCESS_NAMES[abbr] || abbr;
+      };
+
+      const generateEmojiTimeline = (row) => {
+          let log = [];
+          try {
+              log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
+          } catch(e) { log = []; }
+          if (!Array.isArray(log)) log = [];
+
+          let currentStepId = PROCESS_STEPS[0];
+          if (log.length > 0) {
+              const lastLog = log[log.length - 1];
+              if (lastLog.to) {
+                  currentStepId = lastLog.to;
+              }
+          } else {
+              let mapCot = row["MAP COT"] || row.PROCESO;
+              if (mapCot) {
+                  if (mapCot.includes('🔴')) {
+                     const match = mapCot.match(/🔴\s*([A-Z]+)/);
+                     if (match) currentStepId = match[1];
+                  } else {
+                     currentStepId = mapCot;
+                  }
+              }
+          }
+          if (LEGACY_PROCESS_MAP[currentStepId]) {
+              currentStepId = LEGACY_PROCESS_MAP[currentStepId];
+          }
+
+          const currentIdx = PROCESS_STEPS.indexOf(currentStepId);
+          if (currentIdx === -1) currentStepId = PROCESS_STEPS[0];
+
+          let parts = [];
+          for (let i = 0; i < PROCESS_STEPS.length; i++) {
+              let step = PROCESS_STEPS[i];
+              if (i < currentIdx) {
+                  parts.push('🟢 ' + step);
+              } else if (i === currentIdx) {
+                  parts.push('🔴 ' + step);
+              } else {
+                  parts.push('⚪ ' + step);
+              }
+          }
+          return parts.join(' | ');
+      };
+
+      const getProcessStatus = (row) => {
+          let log = [];
+          try {
+              log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
+          } catch(e) { log = []; }
+          if (!Array.isArray(log)) log = [];
+
+          let val = null;
+          if (log.length > 0) {
+              const lastLog = log[log.length - 1];
+              if (lastLog.to) {
+                  val = lastLog.to;
+              }
+          }
+          if (!val) {
+              let mapCot = row["MAP COT"] || row.PROCESO;
+              if (mapCot) {
+                  if (mapCot.includes('🔴')) {
+                     const match = mapCot.match(/🔴\s*([A-Z]+)/);
+                     if (match) val = match[1];
+                  } else {
+                     val = mapCot;
+                  }
+              }
+          }
+          if (!val) return PROCESS_STEPS[0];
+          if (LEGACY_PROCESS_MAP[val]) {
+              val = LEGACY_PROCESS_MAP[val];
+          }
+          return val;
+      };
+
+      const getProcessBtnClass = (row) => {
+          const status = getProcessStatus(row);
+          const idx = PROCESS_STEPS.indexOf(status);
+          if (idx === -1) return 'btn-outline-secondary';
+          if (idx === PROCESS_STEPS.length - 1) return 'btn-success text-white';
+
+          const colors = [
+              'btn-outline-primary', 'btn-outline-info', 'btn-outline-warning text-dark',
+              'btn-outline-danger', 'btn-outline-dark', 'btn-primary text-white'
+          ];
+          return colors[idx] || 'btn-outline-primary';
+      };
+
+      const getProcessTimeline = (row) => {
+          let log = [];
+          try {
+              if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG);
+          } catch(e) {}
+          
+          let mapCot = row["MAP COT"] || row.PROCESO || "";
+          let parsedParts = mapCot.split(/\||>|\//).map(p => p.trim()).filter(p => p);
+          
+          let startDate = new Date();
+          const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO', 'F. VISITA'];
+          for (const k of dateKeys) {
+              if (row[k]) {
+                  const val = row[k];
+                  if (val instanceof Date) startDate = val;
+                  else if (typeof val === 'string') {
+                      const parts = val.split('/');
+                      if (parts.length === 3) {
+                          let y = parts[2];
+                          if (y.length === 2) y = '20' + y;
+                          startDate = new Date(y, parts[1]-1, parts[0]);
+                      }
+                  }
+                  break;
+              }
+          }
+
+          const formatDiff = (diffMs) => {
+              const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+              const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+              if (days > 0) return `${days}d ${hours}h`;
+              if (hours > 0) return `${hours}h`;
+              return '< 1h';
+          };
+          
+          return PROCESS_STEPS.map((stepId, idx) => {
+              let statusChar = '⚪';
+              let matchingPart = parsedParts.find(p => p.includes(stepId));
+              if (matchingPart) {
+                  if (matchingPart.includes('🟢')) statusChar = '🟢';
+                  else if (matchingPart.includes('🔴')) statusChar = '🔴';
+                  else if (matchingPart.includes('🟡')) statusChar = '🟡';
+              } else {
+                  const currentStatus = getProcessStatus(row);
+                  const currentIdx = PROCESS_STEPS.indexOf(currentStatus);
+                  if (idx < currentIdx) statusChar = '🟢';
+                  else if (idx === currentIdx) statusChar = '🔴';
+              }
+              
+              let isDone = statusChar === '🟢';
+              let isCurrent = statusChar === '🔴';
+              let isInProgress = statusChar === '🟡';
+              
+              let stepEntry = log.find(l => l.step === stepId || l.to === stepId);
+              let timeLabel = '';
+              
+              const formatShortDate = (ts) => {
+                  const d = new Date(ts);
+                  const pad = (n) => n.toString().padStart(2, '0');
+                  const yy = d.getFullYear().toString().slice(2);
+                  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${yy} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+              };
+
+              if (isDone || isInProgress) {
+                  if (stepEntry && stepEntry.timestamp) {
+                      timeLabel = formatShortDate(stepEntry.timestamp);
+                  } else if (stepEntry && stepEntry.dateStr) {
+                      timeLabel = stepEntry.dateStr;
+                  } else {
+                      timeLabel = '';
+                  }
+              } else if (isCurrent) {
+                  let prevTime = startDate.getTime();
+                  if (idx > 0) {
+                      let prevEntry = log.find(l => l.step === PROCESS_STEPS[idx-1] || l.to === PROCESS_STEPS[idx-1]);
+                      if (prevEntry && prevEntry.timestamp) prevTime = prevEntry.timestamp;
+                  }
+                  const diff = new Date().getTime() - prevTime;
+                  timeLabel = formatDiff(diff);
+              } else {
+                  timeLabel = '-';
+              }
+              
+              return {
+                  id: stepId,
+                  isDone: isDone,
+                  isCurrent: isCurrent || isInProgress,
+                  isInProgress: isInProgress,
+                  timeLabel: timeLabel,
+                  assignee: stepEntry ? stepEntry.assignee : ""
+              };
+          });
+      };
+
+      const advanceProcess = async (row) => {
+          if (!row) return;
+          const currentStatus = getProcessStatus(row);
+          if (!currentStatus) return;
+
+          let title = "Avanzar a " + currentStatus + "?";
+          
+          if (currentStatus === 'Revision de Cotizacion Cliente' || currentStatus === 'RCC') {
+              const termRes = await Swal.fire({
+                  title: 'Finalizar Cotización',
+                  text: 'Selecciona el estatus final de esta cotización',
+                  icon: 'question',
+                  showDenyButton: true,
+                  showCancelButton: true,
+                  confirmButtonText: 'Ganada',
+                  confirmButtonColor: '#28a745',
+                  denyButtonText: 'Perdida x Precio',
+                  denyButtonColor: '#dc3545',
+                  cancelButtonText: 'Descuento',
+                  cancelButtonColor: '#007bff'
+              });
+              
+              if (termRes.isConfirmed) {
+                  row.ESTATUS = 'GANADA';
+              } else if (termRes.isDenied) {
+                  row.ESTATUS = 'PERDIDA X PRECIO';
+              } else if (termRes.dismiss === Swal.DismissReason.cancel) {
+                  row.ESTATUS = 'DESCUENTO';
+              } else {
+                  return; // Escaped
+              }
+              
+              let mapCot = row["MAP COT"] || row.PROCESO || "";
+              if (!mapCot.includes('🟢')) {
+                   const parts = PROCESS_STEPS.map(p => '🟢 ' + p);
+                   row["MAP COT"] = parts.join(' | ');
+              }
+              if (row._assignToWorker) delete row._assignToWorker;
+              if (row._assignStep) delete row._assignStep;
+              
+              Swal.fire({
+                  title: 'Guardando...',
+                  text: 'Finalizando cotización y actualizando estado...',
+                  allowOutsideClick: false,
+                  didOpen: () => { Swal.showLoading(); }
+              });
+              try {
+                  const res = await new Promise((resolve) => {
+                      google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+                  });
+                  if (res && res.success) {
+                      Swal.fire({ title: 'Éxito', text: 'Cotización finalizada correctamente.', icon: 'success', timer: 1500 });
+                      if (res.data) Object.assign(row, res.data);
+                  } else {
+                      throw new Error(res?.message || 'Error desconocido');
+                  }
+              } catch(err) {
+                  Swal.fire('Error', 'No se pudo guardar: ' + err.toString(), 'error');
+              }
+              return;
+          }
+
+          const staffOptions = {};
+          if (config.value && Array.isArray(config.value.directory)) {
+              config.value.directory.forEach(p => {
+                  if (p.name !== 'ANTONIA_VENTAS') {
+                      staffOptions[p.name] = p.name;
+                  }
+              });
+          }
+          
+          const { value: selectedWorker, isDismissed } = await Swal.fire({
+              title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
+              text: `¿A quién se le asignará esta tarea?`,
+              input: 'select',
+              inputOptions: staffOptions,
+              inputPlaceholder: 'Selecciona un responsable...',
+              showCancelButton: true,
+              confirmButtonText: 'Asignar',
+              cancelButtonText: 'Cancelar'
+          });
+
+          if (isDismissed || !selectedWorker) return;
+
+          let log = [];
+          try { if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG); } catch(e){}
+          
+          let existing = log.find(e => e.step === currentStatus || e.to === currentStatus);
+          if (existing) {
+               existing.status = 'IN_PROGRESS';
+               existing.assignee = selectedWorker;
+               existing.timestamp = new Date().getTime();
+               existing.dateStr = new Date().toLocaleString();
+          } else {
+               log.push({
+                   step: currentStatus,
+                   status: 'IN_PROGRESS',
+                   assignee: selectedWorker,
+                   timestamp: new Date().getTime(),
+                   dateStr: new Date().toLocaleString()
+               });
+          }
+          
+          row.PROCESO_LOG = JSON.stringify(log);
+          
+          let newParts = PROCESS_STEPS.map(step => {
+              let entry = log.find(l => l.step === step || l.to === step);
+              if (entry) {
+                  if (entry.status === 'DONE') return '🟢 ' + step;
+                  if (entry.status === 'IN_PROGRESS') return '🟡 ' + step;
+              }
+              if (step === currentStatus) return '🔴 ' + step;
+              let idx = PROCESS_STEPS.indexOf(step);
+              let currIdx = PROCESS_STEPS.indexOf(currentStatus);
+              if (idx < currIdx) return '🟢 ' + step;
+              return '⚪ ' + step;
+          });
+          row["MAP COT"] = newParts.join(' | ');
+
+          row._assignToWorker = selectedWorker;
+          row._assignStep = currentStatus;
+
+          Swal.fire({
+              title: 'Procesando...',
+              text: 'Delegando tarea y actualizando estado. Espera un momento...',
+              allowOutsideClick: false,
+              didOpen: () => { Swal.showLoading(); }
+          });
+          
+          try {
+              const res = await new Promise((resolve) => {
+                  google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+              });
+              
+              delete row._assignToWorker;
+              delete row._assignStep;
+              
+              if (res && res.success) {
+                  Swal.fire({ title: 'Éxito', text: 'La tarea se asignó y actualizó correctamente.', icon: 'success', timer: 1500 });
+                  if (res.data) Object.assign(row, res.data);
+              } else {
+                  throw new Error(res?.message || 'Error desconocido');
+              }
+          } catch(err) {
+              Swal.fire('Error', 'No se pudo guardar: ' + err.toString(), 'error');
+          }
+      };
+
+      const getLastUpdate = (row) => {
+          try {
+              if (!row.PROCESO_LOG) return '';
+              const log = JSON.parse(row.PROCESO_LOG);
+              if (!Array.isArray(log) || log.length === 0) return '';
+
+              const last = log[log.length - 1];
+              const lastTime = last.timestamp || 0;
+              if (!lastTime) return '';
+
+              const diff = new Date().getTime() - lastTime;
+              const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+              const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+              if (days > 0) return `Hace ${days}d ${hours}h`;
+              if (hours > 0) return `Hace ${hours}h`;
+              return 'Hace < 1h';
+          } catch(e) { return ''; }
+      };
+
+      return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
+      saveAllTrackerRows,
+      showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
+      projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
+      laborTable, addLaborItem, removeLaborItem, updateLaborRowTotal, laborTableTotal, totalPersonnel, costPerWeekCrew, weeksRequired,
+      requiredMaterials, addMaterialItem, removeMaterialItem, updateMaterialRowTotal, materialsTotal,
+      toolsRequired, addToolItem, removeToolItem, updateToolRowTotal, toolsTotal,
+      specialEquipment, addSpecialEquipItem, removeSpecialEquipItem, updateSpecialEquipRowTotal, specialEquipTotal,
+      additionalCosts, laborTotal, dashboardSubtotal, dashboardUtility, dashboardTotal, animatedTotals,
+      selectedFinancing,
+      addDesignRow, removeDesignRow, triggerDesignUpload, designFileInput, handleDesignFileSelect,
+      eppCost, netCostPerWeek, hoursRequired, costPerHour, totalOvertime, totalNight, totalWeekend,
+      showLogic, sectionVisibility, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
+      cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, cotizadorSearchTop, filteredCotizadoresTop, addCotizadorTop,
+      trackerTable, projectTable, ppcDraftTable,
+      showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
+      infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
+      dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
+      staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
+      currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
+      getProcessTimeline, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName };
+    }
+  });
+  app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
+  app.mount('#app');
+
+  /**
+ * JUTSU DE VOZ NATIVO (Sin Gemini)
+ * Usa el motor de reconocimiento del propio celular/tablet.
+ */
+function iniciarDictadoNativo(campoDestinoId) {
+    // 1. Verificamos si el navegador tiene el Chakra necesario
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        alert("⚠️ Tu navegador no soporta dictado nativo. Intenta usar Chrome (Android) o Safari (iOS).");
+        return;
+    }
+
+    // 2. Invocamos al espíritu del reconocimiento
+    const recognition = new SpeechRecognition();
+    
+    // Configuración del Jutsu
+    recognition.lang = 'es-MX'; // Español de México (puedes cambiarlo a es-ES, etc.)
+    recognition.continuous = false; // Se detiene cuando dejas de hablar
+    recognition.interimResults = false; // Solo muestra el resultado final, no lo que piensa mientras hablas
+
+    // 3. Cuando empieza a escuchar
+    recognition.onstart = function() {
+        // Aquí puedes cambiar el icono del micrófono a "Escuchando..." o ponerlo rojo
+        // Ejemplo visual simple:
+        const btn = document.getElementById('btn-micro-' + campoDestinoId); 
+        if(btn) btn.style.color = 'red'; 
+        
+        // Usamos Toast de Google si está disponible, o un console.log
+        try { google.script.host.editor.focus(); } catch(e){} 
+        console.log("🎤 Escuchando... habla ahora.");
+    };
+
+    // 4. Cuando detecta un error
+    recognition.onerror = function(event) {
+        console.error("Error en dictado:", event.error);
+        const btn = document.getElementById('btn-micro-' + campoDestinoId);
+        if(btn) btn.style.color = 'inherit'; // Volver al color original
+
+        if (event.error === 'not-allowed') {
+            alert("🛑 Permiso de micrófono denegado. Revisa la configuración del navegador.");
+        } else {
+            alert("Error: " + event.error);
+        }
+    };
+
+    // 5. Cuando termina y tiene resultados
+    recognition.onresult = function(event) {
+        const btn = document.getElementById('btn-micro-' + campoDestinoId);
+        if(btn) btn.style.color = 'inherit'; // Volver a normal
+
+        // Obtenemos el texto sagrado
+        const transcript = event.results[0][0].transcript;
+        
+        // Capitalizamos la primera letra (estética ninja)
+        const textoFinal = transcript.charAt(0).toUpperCase() + transcript.slice(1);
+
+        console.log("Texto reconocido:", textoFinal);
+
+        // Insertamos el texto en el campo deseado
+        const campo = document.getElementById(campoDestinoId);
+        if (campo) {
+            // Si ya había texto, agregamos un espacio antes
+            if (campo.value) {
+                campo.value += " " + textoFinal;
+            } else {
+                campo.value = textoFinal;
             }
+            campo.dispatchEvent(new Event('input'));
         }
+    };
 
-        if (!dateObj || isNaN(dateObj.getTime())) return { success: false, message: "Invalid Date" };
-
-        const year = String(dateObj.getFullYear());
-        const months = ["01 - ENERO", "02 - FEBRERO", "03 - MARZO", "04 - ABRIL", "05 - MAYO", "06 - JUNIO",
-                        "07 - JULIO", "08 - AGOSTO", "09 - SEPTIEMBRE", "10 - OCTUBRE", "11 - NOVIEMBRE", "12 - DICIEMBRE"];
-        const month = months[dateObj.getMonth()];
-        const clientName = String(client).toUpperCase().trim().replace(/[\/\\]/g, "-"); // Sanitize
-
-        // 3. Folder Logic
-        const root = getBankRootFolder();
-        const yearFolder = getOrCreateFolder(root, year);
-        const monthFolder = getOrCreateFolder(yearFolder, month);
-        const clientFolder = getOrCreateFolder(monthFolder, clientName);
-
-        // 4. File Logic (Handle multiple files)
-        const urls = String(fileVal).split(/[\n\s,]+/).filter(u => u.toUpperCase().startsWith("HTTP"));
-        let count = 0;
-
-        urls.forEach(url => {
-            const res = archiveFile(url, clientFolder);
-            if (res.success) count++;
-        });
-
-        return { success: true, processed: count };
-
-    } catch (e) {
-        console.error("Process Row Error: " + e.toString());
-        return { success: false, message: e.toString() };
-    }
-}
-
-function batchArchiveExistingQuotes() {
-    const sheetName = "ANTONIA_VENTAS"; // Explicit target
-    const res = internalFetchSheetData(sheetName);
-
-    if (!res.success) {
-        return { success: false, message: "Error reading sheet: " + res.message };
-    }
-
-    let processedTotal = 0;
-    const errors = [];
-
-    res.data.forEach(row => {
-        const result = processQuoteRow(row);
-        if (result.success) processedTotal += (result.processed || 0);
-        else if (result.message !== "Missing Data") errors.push(result.message);
-    });
-
-    const logMsg = `Batch Archive: ${processedTotal} files processed. Errors: ${errors.length}`;
-    console.log(logMsg);
-    registrarLog("SYSTEM", "BATCH_ARCHIVE", logMsg);
-
-    return { success: true, message: logMsg };
-}
-
-function runFullArchivingBatch() {
-    const res = batchArchiveExistingQuotes();
-    const ui = SpreadsheetApp.getUi();
-    if (res.success) {
-        ui.alert("✅ Organización Completa\n\n" + res.message);
-    } else {
-        ui.alert("❌ Error: " + res.message);
-    }
-}
+    // ¡EJECUTAR!
+    recognition.start();
+}  
+</script>
+</body>
+</html>
