@@ -3507,14 +3507,14 @@ function apiSaveTrackerBatch(personName, tasks, username) {
       const distributionTasks = [];
       const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
 
-      // Sequence Logic for Antonia
-      let currentSeq = null;
+      // Sequence Auto-Healing Logic for Antonia
       let seqKey = 'ANTONIA_SEQ_V2';
       if (isAntonia) {
           const props = PropertiesService.getScriptProperties();
-          currentSeq = Number(props.getProperty(seqKey) || 1000);
+          let currentSeq = Number(props.getProperty(seqKey) || 1000);
 
           // AUTO-HEALING: Scan batch for higher existing IDs to sync sequence
+          let needsHeal = false;
           tasks.forEach(t => {
               const folioVal = String(t['FOLIO'] || t['ID'] || "");
               if (folioVal.startsWith("AV-")) {
@@ -3522,9 +3522,13 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                   const fid = parseInt(numPart);
                   if (!isNaN(fid) && fid > currentSeq) {
                       currentSeq = fid;
+                      needsHeal = true;
                   }
               }
           });
+          if (needsHeal) {
+              props.setProperty(seqKey, String(currentSeq));
+          }
       }
 
       tasks.forEach(task => {
@@ -3549,8 +3553,9 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                  if (!hasContent) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
 
-                 currentSeq++;
-                 taskData['FOLIO'] = "AV-" + String(currentSeq);
+                 // Use robust locked generator to avoid duplicates during mass-inserts
+                 const seqNum = generateNumericSequence(seqKey);
+                 taskData['FOLIO'] = "AV-" + seqNum;
              } else {
                  // RESTRICTIONS FOR EXISTING TASKS
                  const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'PROCESO', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO'];
@@ -3589,11 +3594,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
         processedTasks.push(taskData);
       });
 
-      // Save Sequence
-      if (isAntonia && currentSeq !== null) {
-           const props = PropertiesService.getScriptProperties();
-           props.setProperty(seqKey, String(currentSeq));
-      }
+      // Sequence handled safely per-task by generateNumericSequence
 
       // Batch Update Main Sheet
       const res = internalBatchUpdateTasks(personName, processedTasks, false); // Already locked
