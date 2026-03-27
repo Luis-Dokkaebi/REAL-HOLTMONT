@@ -1931,7 +1931,7 @@ function apiFetchWeeklyPlanData(username) {
             rowObj['FOLIO'] = rowObj['ID'];
 
             // HIDDEN FIELDS PRESERVATION (CRITICAL FOR SYNC)
-            rowObj['FECHA'] = getVal(['FECHA', 'ALTA', 'FECHA INICIO']);
+            rowObj['FECHA'] = getVal(['FECHA', 'ALTA', 'FECHA INICIO', 'F. INICIO', 'FECHA_INICIO', 'FECHA VISITA', 'F. VISITA']);
             rowObj['ESTATUS'] = getVal(['ESTATUS', 'STATUS']);
             rowObj['AVANCE'] = getVal(['AVANCE', 'AVANCE %']);
             rowObj['CLASIFICACION'] = getVal(['CLASIFICACION']);
@@ -2567,7 +2567,7 @@ function incrementarContadorDias() {
         // Buscar columnas clave
         let diasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ" || h.includes("DIAS FINALIZ") || h.includes("DÍAS FINALIZ"));
         
-        const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO'];
+        const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'F. INICIO'];
         let fechaIdx = -1;
         for(let alias of fechaAliases) {
             const idx = headers.indexOf(alias);

@@ -5587,7 +5587,7 @@ const filteredStaffTrackerData = computed(() => {
           const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
           if (!hDias) return;
           
-          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO']));
+          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
           if (!hFecha || !row[hFecha]) return;
           
           let dObj = null;
@@ -6888,7 +6888,7 @@ const filteredStaffTrackerData = computed(() => {
 
           // 3. SEMÁFORO (Traffic Light) - Solo si hay Clasificación y Fecha
           const clasi = String(task.CLASIFICACION || task.CLASI || '').toUpperCase().trim();
-          const dateKey = Object.keys(task).find(k => ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'ALTA', 'FECHA VISITA', 'FECHA_ALTA'].includes(String(k).toUpperCase().trim()));
+          const dateKey = Object.keys(task).find(k => ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'ALTA', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO'].includes(String(k).toUpperCase().trim()));
           const dateVal = dateKey ? task[dateKey] : null;
 
           if (clasi && dateVal) {
@@ -6967,7 +6967,7 @@ const filteredStaffTrackerData = computed(() => {
               if (res.success) {
                   const tasks = (res.data.workTasks || []).map(t => {
                       let dateStr = '';
-                      const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'FECHAS'];
+                      const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'FECHAS', 'F. INICIO'];
                       for (const k of dateKeys) {
                           if (t[k]) { dateStr = t[k]; break; }
                       }
@@ -7588,7 +7588,7 @@ const filteredStaffTrackerData = computed(() => {
           let parsedParts = mapCot.split(/\||>|\//).map(p => p.trim()).filter(p => p);
           
           let startDate = new Date();
-          const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA'];
+          const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO', 'F. VISITA'];
           for (const k of dateKeys) {
               if (row[k]) {
                   const val = row[k];
