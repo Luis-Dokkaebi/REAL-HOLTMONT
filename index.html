@@ -5598,7 +5598,9 @@ const filteredStaffTrackerData = computed(() => {
               if (parts.length === 3) {
                    let y = parts[2];
                    if (y.length === 2) y = '20' + y;
-                   dObj = new Date(`${y}-${parts[1]}-${parts[0]}`);
+                   // Javascript Date parsing with hyphens is very error prone due to UTC vs Local Time
+                   // It's safer to use the Date(year, monthIndex, day) constructor
+                   dObj = new Date(parseInt(y), parseInt(parts[1]) - 1, parseInt(parts[0]));
               }
           }
           if (dObj && !isNaN(dObj.getTime())) {
@@ -6905,16 +6907,20 @@ const filteredStaffTrackerData = computed(() => {
                   }
               }
 
-              // Prioritize explicit DIAS/RELOJ if available (backend calculated)
-              const diasKey = Object.keys(task).find(k => ['DIAS', 'RELOJ', 'DÍAS', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ'].includes(String(k).toUpperCase().trim()));
-              if (diasKey && task[diasKey] !== "" && !isNaN(task[diasKey])) {
-                  days = parseInt(task[diasKey]);
-              } else if (dObj && !isNaN(dObj.getTime())) {
+              // Realtime calculate Días based on dates instead of relying on statically sent values from backend
+              // This ensures if the midnight trigger doesn't run, the user still sees current elapsed days.
+              if (dObj && !isNaN(dObj.getTime())) {
                   const now = new Date();
                   now.setHours(0,0,0,0);
                   dObj.setHours(0,0,0,0);
                   const diffTime = now - dObj;
-                  days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                  days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+              } else {
+                  // Fallback to static if date is unparseable
+                  const diasKey = Object.keys(task).find(k => ['DIAS', 'RELOJ', 'DÍAS', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ'].includes(String(k).toUpperCase().trim()));
+                  if (diasKey && task[diasKey] !== "" && !isNaN(task[diasKey])) {
+                      days = parseInt(task[diasKey]);
+                  }
               }
 
               if (true) {
