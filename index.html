@@ -1996,7 +1996,7 @@
                              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:10px; font-weight:bold;">{{ row[h] }}</div>
                              <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option value="A">A</option><option value="AA">AA</option><option value="AAA">AAA</option></select>
                          </div>
-                         <input v-else-if="isCol(h, ['DIAS','RELOJ'])" type="number" v-model="row[h]" :readonly="!isFieldEditable(h, row)" style="text-align:center; font-weight:bold; width:100%; height:100%; border:none; outline:none; padding:6px 0px; background:transparent;" :style="getTrafficStyle(row)">
+                         <input v-else-if="isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])" type="number" v-model="row[h]" :readonly="!isFieldEditable(h, row)" style="text-align:center; font-weight:bold; width:100%; height:100%; border:none; outline:none; padding:6px 0px; background:transparent;" :style="getTrafficStyle(row)">
                          <div v-else-if="String(h).toUpperCase().includes('AVANCE')" style="position:relative; width:100%; height:100%;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" style="text-align:center; font-weight:bold; color:#217346; width:100%; height:100%; border:none; outline:none; padding:6px 10px 6px 0px; background:transparent;" spellcheck="false">
                              <span style="position:absolute; right:2px; top:50%; transform:translateY(-50%); color:#217346; font-size:10px; font-weight:bold; pointer-events:none;">%</span>
@@ -2088,7 +2088,7 @@
                             <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; padding-left:4px; display:flex; align-items:center; color: #000 !important;" :style="Object.assign({color: '#000'}, isCol(h, ['F. ENTREGA']) ? getTrafficStyle(row) : (isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)))">
                                  {{ formatDisplayDate(row[h]) }}
                             </div>
-                            <div v-else-if="isCol(h, ['DIAS','RELOJ'])" style="text-align:center; font-weight:bold; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" :style="getTrafficStyle(row)">
+                            <div v-else-if="isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])" style="text-align:center; font-weight:bold; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" :style="getTrafficStyle(row)">
                                 {{ row[h] }}
                             </div>
                             <div v-else>{{row[h]}}</div>
@@ -5584,10 +5584,10 @@ const filteredStaffTrackerData = computed(() => {
           // Permite ejecutar en cualquier hoja que tenga las columnas
           // if (!staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) return; 
           
-          const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ']));
+          const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
           if (!hDias) return;
           
-          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO']));
+          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
           if (!hFecha || !row[hFecha]) return;
           
           let dObj = null;
@@ -5598,7 +5598,9 @@ const filteredStaffTrackerData = computed(() => {
               if (parts.length === 3) {
                    let y = parts[2];
                    if (y.length === 2) y = '20' + y;
-                   dObj = new Date(`${y}-${parts[1]}-${parts[0]}`);
+                   // Javascript Date parsing with hyphens is very error prone due to UTC vs Local Time
+                   // It's safer to use the Date(year, monthIndex, day) constructor
+                   dObj = new Date(parseInt(y), parseInt(parts[1]) - 1, parseInt(parts[0]));
               }
           }
           if (dObj && !isNaN(dObj.getTime())) {
@@ -5637,7 +5639,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (up.includes('RIESGO')) { w = '70px'; fs = '10px'; }
           else if (up === 'REQUISITOR') { w = '90px'; fs = '11px'; }
           else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; }
-          else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
+          else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('AVANCE')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (isCol(h, ['ESTATUS','STATUS'])) { w = '65px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; }
@@ -5669,7 +5671,7 @@ const filteredStaffTrackerData = computed(() => {
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
       const getTrafficStyle = (row) => { 
           const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); 
-          const d = parseInt(row['DIAS']||row['RELOJ']||0); 
+          const d = parseInt(row['DIAS']||row['RELOJ']||row['DÍAS FINALIZ. COTIZ']||row['DIAS FINALIZ. COTIZ']||0); 
           if (isNaN(d)) return {}; 
           
           let limit = 0, buffer = 0;
@@ -6440,7 +6442,7 @@ const filteredStaffTrackerData = computed(() => {
       const addNewRow = () => {
           if(!staffTracker.value.headers.length) return;
           const row={_isNew:true};
-          staffTracker.value.headers.forEach(h => { if(isCol(h, ['DIAS','RELOJ'])) row[h]=0; else row[h]=""; });
+          staffTracker.value.headers.forEach(h => { if(isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) row[h]=0; else row[h]=""; });
           staffTracker.value.data.unshift(row);
           pulseNewRow('trackerTable', 'first');
       };
@@ -6886,7 +6888,7 @@ const filteredStaffTrackerData = computed(() => {
 
           // 3. SEMÁFORO (Traffic Light) - Solo si hay Clasificación y Fecha
           const clasi = String(task.CLASIFICACION || task.CLASI || '').toUpperCase().trim();
-          const dateKey = Object.keys(task).find(k => ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'ALTA', 'FECHA VISITA', 'FECHA_ALTA'].includes(String(k).toUpperCase().trim()));
+          const dateKey = Object.keys(task).find(k => ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'ALTA', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO'].includes(String(k).toUpperCase().trim()));
           const dateVal = dateKey ? task[dateKey] : null;
 
           if (clasi && dateVal) {
@@ -6905,16 +6907,20 @@ const filteredStaffTrackerData = computed(() => {
                   }
               }
 
-              // Prioritize explicit DIAS/RELOJ if available (backend calculated)
-              const diasKey = Object.keys(task).find(k => ['DIAS', 'RELOJ', 'DÍAS'].includes(String(k).toUpperCase().trim()));
-              if (diasKey && task[diasKey] !== "" && !isNaN(task[diasKey])) {
-                  days = parseInt(task[diasKey]);
-              } else if (dObj && !isNaN(dObj.getTime())) {
+              // Realtime calculate Días based on dates instead of relying on statically sent values from backend
+              // This ensures if the midnight trigger doesn't run, the user still sees current elapsed days.
+              if (dObj && !isNaN(dObj.getTime())) {
                   const now = new Date();
                   now.setHours(0,0,0,0);
                   dObj.setHours(0,0,0,0);
                   const diffTime = now - dObj;
-                  days = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                  days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+              } else {
+                  // Fallback to static if date is unparseable
+                  const diasKey = Object.keys(task).find(k => ['DIAS', 'RELOJ', 'DÍAS', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ'].includes(String(k).toUpperCase().trim()));
+                  if (diasKey && task[diasKey] !== "" && !isNaN(task[diasKey])) {
+                      days = parseInt(task[diasKey]);
+                  }
               }
 
               if (true) {
@@ -6961,7 +6967,7 @@ const filteredStaffTrackerData = computed(() => {
               if (res.success) {
                   const tasks = (res.data.workTasks || []).map(t => {
                       let dateStr = '';
-                      const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'FECHAS'];
+                      const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'FECHAS', 'F. INICIO'];
                       for (const k of dateKeys) {
                           if (t[k]) { dateStr = t[k]; break; }
                       }
@@ -7582,7 +7588,7 @@ const filteredStaffTrackerData = computed(() => {
           let parsedParts = mapCot.split(/\||>|\//).map(p => p.trim()).filter(p => p);
           
           let startDate = new Date();
-          const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA'];
+          const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO', 'F. VISITA'];
           for (const k of dateKeys) {
               if (row[k]) {
                   const val = row[k];
