@@ -20,6 +20,9 @@
     :root { --sidebar-w: 260px; --sidebar-mini: 65px; --primary: #1c1c1c; --accent: #3699ff; --bg-body: #f3f6f9; }
     body { font-family: 'Roboto', sans-serif; background: var(--bg-body); margin: 0; overflow: hidden; font-size: 13px; }
 
+    /* FIX: Ensure Alerts are above Login Overlay */
+    .swal2-container { z-index: 3000 !important; }
+
     .content-wrapper { flex: 1; display: flex; flex-direction: column; background: var(--bg-body); overflow: hidden; position: relative; transition: margin-left 0.3s; }
     .content-wrapper.dark-mode { background: #111 !important; }
     .view-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 20px; width: 100%; box-sizing: border-box; }
