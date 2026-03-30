@@ -6,6 +6,13 @@ El cliente ha solicitado una serie de mejoras en la visualización y funcionalid
 ### 1.1 Objetivo del SDD
 Este documento define las especificaciones funcionales y técnicas para implementar la optimización de la columna "ALTA", el registro automático de fecha y hora, el cálculo dinámico de días transcurridos en la columna "RELOJ", y la integración de botones de adjuntos en columnas específicas.
 
+### 1.2 Alcance
+**Importante:** Estas modificaciones aplican de manera **exclusiva al módulo PPC Maestro** y a las tablas principales del Tracker (hojas individuales del personal que no son de ventas).
+**Quedan explícitamente excluidas:**
+1.  **La tabla principal de `ANTONIA_VENTAS`:** Estas funciones no aplican ni tienen relación con la tabla o vistas de este perfil.
+2.  **Hojas de Ventas:** Todas las hojas o vistas que contengan el sufijo `(VENTAS)` en su nombre quedan excluidas, ya que a estos perfiles se les asigna la actividad directamente por medio del PPC Maestro y poseen una estructura distinta.
+La lógica de frontend y backend deberá evaluar el contexto activo (`currentView === 'PPC_FORM' || 'PPC_DINAMICO'`) o el nombre de la hoja (`staffTracker.name`) para habilitar o deshabilitar estos comportamientos.
+
 ## 2. Requerimientos Funcionales y Casos de Uso
 
 ### 2.1 Optimización de la Columna "ALTA"
@@ -52,8 +59,11 @@ Este documento define las especificaciones funcionales y técnicas para implemen
     *   **Archivo:** `index.html` -> `<script>` -> `addNewRow()`
     *   **Acción:** Al crear el objeto `row`, instanciar `new Date()`. Formatear la fecha a `DD/MM/YY` y la hora a `HH:MM`.
     *   Inyectar estos valores en las celdas cuyos *headers* (alias) coincidan con 'FECHA' y 'HORA'.
+    *   **Restricción de Alcance:** Antes de aplicar la lógica, verificar que no sea la hoja de Antonia Ventas (`staffTracker.value.name !== 'ANTONIA_VENTAS'`) y que no sea una hoja de ventas (`!staffTracker.value.name.includes('(VENTAS)')`).
     *   **Código Propuesto:**
         ```javascript
+        const sheetName = String(staffTracker.value.name).toUpperCase();
+        const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
         const now = new Date();
         const d = String(now.getDate()).padStart(2, '0');
         const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -65,9 +75,9 @@ Este documento define las especificaciones funcionales y técnicas para implemen
             const hUp = String(h).toUpperCase().trim();
             if (isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ'])) {
                 row[h] = 0;
-            } else if (hUp === 'FECHA' || hUp === 'ALTA' || hUp === 'FECHA INICIO') {
+            } else if (!isExcludedSheet && (hUp === 'FECHA' || hUp === 'ALTA' || hUp === 'FECHA INICIO')) {
                 row[h] = `${d}/${m}/${y}`;
-            } else if (hUp === 'HORA') {
+            } else if (!isExcludedSheet && hUp === 'HORA') {
                 row[h] = `${hh}:${mm}`;
             } else {
                 row[h] = "";
@@ -79,7 +89,7 @@ Este documento define las especificaciones funcionales y técnicas para implemen
     *   **Archivo:** `index.html` -> `<script>` -> `calculateDiasCounter(row)`
     *   **Acción:** Actualmente, la función busca la columna de días: `const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ', ...]))`. Esto ya detecta 'RELOJ'.
     *   La resta de fechas ya está implementada en esta función: `const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));`.
-    *   **Validación:** Se debe asegurar que esta función se esté llamando correctamente en la inicialización (`loadTrackerData`) y cada vez que el usuario modifica la fecha manualmente (vía el date picker `updateDateFromPicker`).
+    *   **Validación y Alcance:** Verificar que la función opere correctamente y condicionar su ejecución o el renderizado visual para asegurar que las reglas de exclusión (hojas `(VENTAS)` y tabla de `ANTONIA_VENTAS`) se respeten rigurosamente.
 
 4.  **UI Botones de Archivos ("Correo", "Carpeta"):**
     *   **Archivo:** `index.html` -> `<script>` -> `isMediaColumn(h)`
