@@ -5587,7 +5587,7 @@ const filteredStaffTrackerData = computed(() => {
           const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
           if (!hDias) return;
           
-          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
+          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
           if (!hFecha || !row[hFecha]) return;
           
           let dObj = null;
@@ -5615,7 +5615,8 @@ const filteredStaffTrackerData = computed(() => {
 
       const getColumnStyle = (h) => {
           const up = String(h).toUpperCase().trim(); let w = '120px'; let fs = '12px'; let pad = '8px 4px'; let align = 'left'; let colColor = '#333';
-          if (up === 'CONCEPTO' || up.includes('DESCRIP')) {
+          if (up === 'ALTA') { w = '35px'; align = 'center'; }
+          else if (up === 'CONCEPTO' || up.includes('DESCRIP')) {
               if (currentView.value === 'WEEKLY_PLAN') {
                   w = '150px';
               } else {
@@ -5647,6 +5648,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; }
           else if (up.includes('TIMEOUT') || up.includes('TIME OUT')) { w = '70px'; fs = '10px'; align='center'; }
           else if (up.includes('LAYOUT') || up.includes('TIMELINE')) { w = '70px'; fs = '10px'; align='center'; }
+          else if (up === 'CORREO' || up === 'CARPETA') { w = '40px'; align = 'center'; }
           else if (up.includes('VENDEDOR') || (currentUsername.value === 'ANTONIA_VENTAS' && up.includes('RESPONSABLE'))) { w = '50px'; fs = '10px'; align='center'; colColor = '#000'; }
           else if (up === 'CLIENTE') w = '100px';
 
@@ -5668,7 +5670,7 @@ const filteredStaffTrackerData = computed(() => {
           if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN';
           return h;
       };
-      const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
+      const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE','CORREO','CARPETA'].includes(String(h).toUpperCase());
       const getTrafficStyle = (row) => { 
           const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); 
           const d = parseInt(row['DIAS']||row['RELOJ']||row['DÍAS FINALIZ. COTIZ']||row['DIAS FINALIZ. COTIZ']||0); 
@@ -5686,7 +5688,7 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const getFechaInicioTrafficStyle = (row) => {
-          const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','ALTA','F. INICIO','F. VISITA'].includes(String(k).toUpperCase().trim()));
+          const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','F. INICIO','F. VISITA'].includes(String(k).toUpperCase().trim()));
           if (!startKey) return {};
           const val = row[startKey];
           if (!val) return {};
@@ -6442,7 +6444,20 @@ const filteredStaffTrackerData = computed(() => {
       const addNewRow = () => {
           if(!staffTracker.value.headers.length) return;
           const row={_isNew:true};
-          staffTracker.value.headers.forEach(h => { if(isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) row[h]=0; else row[h]=""; });
+
+          const today = new Date();
+          const pad = n => String(n).padStart(2, '0');
+          const dateStr = `${pad(today.getDate())}/${pad(today.getMonth()+1)}/${String(today.getFullYear()).slice(-2)}`;
+          const timeStr = `${pad(today.getHours())}:${pad(today.getMinutes())}`;
+
+          staffTracker.value.headers.forEach(h => {
+              const hUp = String(h).toUpperCase().trim();
+              if(isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) row[h]=0;
+              else if (hUp.includes('FECHA')) row[h] = dateStr;
+              else if (hUp === 'HORA') row[h] = timeStr;
+              else row[h]="";
+          });
+
           staffTracker.value.data.unshift(row);
           pulseNewRow('trackerTable', 'first');
       };
@@ -6498,7 +6513,7 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const openCellUpload = (row, col) => { uploadingCell.value = {row, col}; cellFileInput.value.click(); };
-      const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
+      const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; if (file.size > 100 * 1024 * 1024) { Swal.fire('Error', 'El archivo no debe pesar más de 100MB', 'error'); return; } Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (colName === 'INFO CLIENTE' || colName === 'REQUISITOR' || colName === 'CORREO' || colName === 'CARPETA') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).withFailureHandler(err => { Swal.close(); Swal.fire('Error', err.message || 'Error al subir archivo', 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
       const addResponsable = (n) => { selectedResponsables.value.push(n); staffSearch.value=''; };
       const openFileDialog = () => fileInput.value.click();
       const handleFileSelect = (e) => {
@@ -6874,7 +6889,7 @@ const filteredStaffTrackerData = computed(() => {
       const getTasksForDay = (dateStr) => {
           if (!dashboardCalendar.value.tasks) return [];
           return dashboardCalendar.value.tasks.filter(t => {
-              const tDate = t['FECHA'] || t['FECHA INICIO'] || t['ALTA'] || t['FECHA DE INICIO'] || t['FECHA VISITA'];
+              const tDate = t['FECHA'] || t['FECHA INICIO'] || t['FECHA DE INICIO'] || t['FECHA VISITA'];
               return tDate === dateStr;
           });
       };
@@ -6888,7 +6903,7 @@ const filteredStaffTrackerData = computed(() => {
 
           // 3. SEMÁFORO (Traffic Light) - Solo si hay Clasificación y Fecha
           const clasi = String(task.CLASIFICACION || task.CLASI || '').toUpperCase().trim();
-          const dateKey = Object.keys(task).find(k => ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'ALTA', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO'].includes(String(k).toUpperCase().trim()));
+          const dateKey = Object.keys(task).find(k => ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO'].includes(String(k).toUpperCase().trim()));
           const dateVal = dateKey ? task[dateKey] : null;
 
           if (clasi && dateVal) {
@@ -7588,7 +7603,7 @@ const filteredStaffTrackerData = computed(() => {
           let parsedParts = mapCot.split(/\||>|\//).map(p => p.trim()).filter(p => p);
           
           let startDate = new Date();
-          const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO', 'F. VISITA'];
+          const dateKeys = ['FECHA', 'FECHA INICIO', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO', 'F. VISITA'];
           for (const k of dateKeys) {
               if (row[k]) {
                   const val = row[k];
