@@ -1,10 +1,14 @@
-1. En `CODIGO.js`:
-   - En la función `apiFetchStaffTrackerData`, cuando agrega columnas para `ANTONIA_VENTAS`, cambiar `PROCESO` por `MAP COT`. Seguirá agregando `PROCESO_LOG`.
-   - Modificar las referencias a `PROCESO` a `MAP COT` en `allowedBase`.
-2. En `index.html`:
-   - En la tabla de `staffTracker` para `ANTONIA_VENTAS` que no es "Papa Caliente" (la vista general), buscar dónde se dibuja la tabla principal de las tareas y asegurar que si la columna es `MAP COT`, renderice exactamente igual a la vista de "Papa Caliente".
-   - Ajustar el CSS/estilo de la columna `MAP COT` para que use el espacio enteramente necesario. (En papa caliente es `width: auto;` y usa el componente visual que muestra círculos).
-   - En Papa Caliente también cambiar `PROCESO` por `MAP COT`.
-   - Modificar las funciones `getProcessStatus`, `getProcessTimeline`, etc., para que lean `MAP COT` en lugar de `PROCESO`.
-   - La sincronización: Cuando una fase pasa de rojo a verde en Papa Caliente / MAP COT en el Excel/Tabla, esto debe marcar la siguiente fase que está en rojo para indicar qué fase de la cotización continúa.
-   - Posicionar `MAP COT` entre `ESTATUS` y `AVANCE` cuando se hace el render.
+1. Modify `index.html` `getColumnStyle(h)`:
+   - Include 'ALTA' in the array for `isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])`. Check that `w` is updated to `'30px'` or `'40px'`.
+
+2. Modify `index.html` `addNewRow()`:
+   - When creating a new `row`, add auto-generated current date (DD/MM/YY) and time (HH:MM).
+   - Inject these into fields that alias 'FECHA' and 'HORA'.
+
+3. Modify `index.html` `saveRow(row, event)` (Fallback for missing dates):
+   - Check if `FECHA` or `HORA` aliases exist and are empty; if so, populate them before saving.
+
+4. Modify `index.html` `isMediaColumn(h)`:
+   - Add `'CORREO'` and `'CARPETA'` to the array to render the attachment UI.
+
+5. Pre-commit step
