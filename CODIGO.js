@@ -915,6 +915,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO'],
         'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN', 'ACTIVIDAD'],
         'RESPONSABLE': ['RESPONSABLE', 'RESPONSABLES', 'INVOLUCRADOS', 'VENDEDOR', 'ENCARGADO', 'ASIGNADO'],
+        'HORA': ['HORA', 'HORA ASIGNACION', 'HORA DE ASIGNACION'],
         'RELOJ': ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'],
         'ESTATUS': ['ESTATUS', 'STATUS'],
         'CUMPLIMIENTO': ['CUMPLIMIENTO', 'CUMPL.', 'CUMP'],
@@ -1576,6 +1577,7 @@ function apiSavePPCData(payload, activeUser) {
       
       const fechaHoy = new Date();
       const fechaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
+      const horaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "HH:mm");
       
       // Estructuras para Batch Operations
       const tasksBySheet = {};
@@ -1673,6 +1675,7 @@ function apiSavePPCData(payload, activeUser) {
                  'AREA': item.especialidad || item.ESPECIALIDAD,
                  'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
                  'FECHA': fechaStr,
+                 'HORA': horaStr,
                  'RELOJ': item.horas || item.RELOJ,
                  'ESTATUS': "ASIGNADO",
                  'PRIORIDAD': item.prioridad || item.prioridades || item.PRIORIDAD,
