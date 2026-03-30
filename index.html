@@ -5581,9 +5581,12 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const calculateDiasCounter = (row) => {
-          // Permite ejecutar en cualquier hoja que tenga las columnas
-          // if (!staffTracker.value.name.toUpperCase().includes('ANTONIA_VENTAS')) return; 
+          if (!staffTracker.value.name) return;
+          const sheetName = String(staffTracker.value.name).toUpperCase();
+          const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
           
+          if (isExcludedSheet) return;
+
           const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
           if (!hDias) return;
           
@@ -5627,7 +5630,7 @@ const filteredStaffTrackerData = computed(() => {
 
 
           else if (currentUsername.value === 'ANTONIA_VENTAS' && up === 'COMENTARIOS') { w = '200px'; }
-          else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO'])) { w = '50px'; fs = '11px'; }
+          else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO', 'ALTA'])) { w = '40px'; fs = '11px'; align = 'center'; }
           else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUsername.value === 'ANTONIA_VENTAS') ? '70px' : '40px'; fs = '10px'; align = 'center'; }
           else if (up.includes('CUMPLIMIENTO')) { w = '50px'; align = 'center'; fs = '11px'; }
           else if (up.includes('ARCHIVO') || up.includes('CLIP')) { w = '40px'; align = 'center'; }
@@ -5668,7 +5671,7 @@ const filteredStaffTrackerData = computed(() => {
           if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN';
           return h;
       };
-      const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE'].includes(String(h).toUpperCase());
+      const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE','CORREO','CARPETA'].includes(String(h).toUpperCase());
       const getTrafficStyle = (row) => { 
           const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); 
           const d = parseInt(row['DIAS']||row['RELOJ']||row['DÍAS FINALIZ. COTIZ']||row['DIAS FINALIZ. COTIZ']||0); 
@@ -6442,13 +6445,56 @@ const filteredStaffTrackerData = computed(() => {
       const addNewRow = () => {
           if(!staffTracker.value.headers.length) return;
           const row={_isNew:true};
-          staffTracker.value.headers.forEach(h => { if(isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) row[h]=0; else row[h]=""; });
+
+          const sheetName = String(staffTracker.value.name).toUpperCase();
+          const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
+          const now = new Date();
+          const d = String(now.getDate()).padStart(2, '0');
+          const m = String(now.getMonth() + 1).padStart(2, '0');
+          const y = String(now.getFullYear()).slice(-2);
+          const hh = String(now.getHours()).padStart(2, '0');
+          const mm = String(now.getMinutes()).padStart(2, '0');
+
+          staffTracker.value.headers.forEach(h => {
+              const hUp = String(h).toUpperCase().trim();
+              if (isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) {
+                  row[h] = 0;
+              } else if (!isExcludedSheet && (hUp === 'FECHA' || hUp === 'ALTA' || hUp === 'FECHA INICIO')) {
+                  row[h] = `${d}/${m}/${y}`;
+              } else if (!isExcludedSheet && hUp === 'HORA') {
+                  row[h] = `${hh}:${mm}`;
+              } else {
+                  row[h] = "";
+              }
+          });
           staffTracker.value.data.unshift(row);
           pulseNewRow('trackerTable', 'first');
       };
       const saveRow = (row, event) => {
           if (row._isSaving) return;
           row._isSaving = true;
+
+          const sheetName = String(staffTracker.value.name).toUpperCase();
+          const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
+
+          if (!isExcludedSheet) {
+              const now = new Date();
+              const d = String(now.getDate()).padStart(2, '0');
+              const m = String(now.getMonth() + 1).padStart(2, '0');
+              const y = String(now.getFullYear()).slice(-2);
+              const hh = String(now.getHours()).padStart(2, '0');
+              const mm = String(now.getMinutes()).padStart(2, '0');
+
+              staffTracker.value.headers.forEach(h => {
+                  const hUp = String(h).toUpperCase().trim();
+                  if ((hUp === 'FECHA' || hUp === 'ALTA' || hUp === 'FECHA INICIO') && !row[h]) {
+                      row[h] = `${d}/${m}/${y}`;
+                  }
+                  if (hUp === 'HORA' && !row[h]) {
+                      row[h] = `${hh}:${mm}`;
+                  }
+              });
+          }
 
           if (event && event.clientX) {
              const isCompleted = Object.entries(row).some(([k, v]) => (String(k).toUpperCase().includes('AVANCE') && String(v) === '100') || (String(k).toUpperCase().includes('CUMPLIMIENTO') && String(v).toUpperCase() === 'SI'));
