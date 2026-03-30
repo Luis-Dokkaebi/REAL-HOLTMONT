@@ -921,17 +921,17 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         'CUMPLIMIENTO': ['CUMPLIMIENTO', 'CUMPL.', 'CUMP'],
         'AVANCE': ['AVANCE', 'AVANCE %', '% AVANCE'],
         'ALTA': ['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD', 'ALTA'],
-        'FECHA_RESPUESTA': ['FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA', 'FECHA_FIN', 'DEADLINE', 'FEC. EST. FIN'],
+        'FECHA_RESPUESTA': ['FECHA_RESPUESTA', 'FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA', 'FECHA_FIN', 'DEADLINE', 'FEC. EST. FIN'],
         'PRIORIDAD': ['PRIORIDAD', 'PRIORIDADES', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.'],
         'RIESGOS': ['RIESGO', 'RIESGOS'],
         'ARCHIVO': ['ARCHIVO', 'ARCHIVOS', 'CLIP', 'LINK', 'URL', 'EVIDENCIA', 'DOCUMENTO', 'FOTO', 'VIDEO'],
         'CLASIFICACION': ['CLASIFICACION', 'CLASI'],
         'COMENTARIOS': ['COMENTARIOS', 'COMENTARIO', 'COMENTARIOS SEMANA EN CURSO', 'OBSERVACIONES', 'NOTAS', 'DETALLES'],
         'PREVIOS': ['COMENTARIOS PREVIOS', 'PREVIOS', 'COMENTARIOS SEMANA PREVIA'],
-        'FECHA_TERMINO': ['FECHA TERMINO', 'FECHA REAL', 'TERMINO', 'REALIZADO']
+        'FECHA_TERMINO': ['FECHA_TERMINO', 'FECHA TERMINO', 'FECHA REAL', 'TERMINO', 'REALIZADO']
       };
       for (let main in aliases) {
-        if (aliases[main].includes(k)) {
+        if (main === k || aliases[main].includes(k)) {
              for(let alias of aliases[main]) if(colMap[alias] !== undefined) return colMap[alias];
         }
       }
