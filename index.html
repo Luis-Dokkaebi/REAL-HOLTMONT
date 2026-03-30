@@ -1517,7 +1517,7 @@
 
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
                 <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
-                <button v-if="['TONITA'].includes(currentRole) || currentUsername === 'ANTONIA_VENTAS' || salesStaff.includes(currentUser)" class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
+                <button class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
                 <button v-if="trackerSubView === 'HISTORY'" class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="openProcessFlow" title="Ver Flujo"><i class="fas fa-project-diagram me-1"></i> FLUJO PROCESO COTIZACION</button>
             </div>
             <div></div>
