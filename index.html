@@ -39,14 +39,14 @@
     .table-excel { width: max-content; min-width: 100%; border-collapse: collapse; background-color: #fff; table-layout: fixed; }
     .table-excel th {
         background-color: #e6e6e6; color: #000; font-weight: 700; text-align: center;
-        border: 1px solid #999; padding: 8px 4px; font-size: 12px;
+        border: 1px solid #999; padding: 8px 4px; font-size: 11px !important; font-family: 'Arial', sans-serif !important;
         position: sticky; top: 0; z-index: 20; white-space: nowrap; box-shadow: 0 1px 0 #999;
     }
-    .table-excel td { border: 1px solid #b2b2b2 !important; padding: 0; margin: 0; height: 30px; vertical-align: middle; position: relative; }
+    .table-excel td { border: 1px solid #b2b2b2 !important; padding: 0; margin: 0; height: 30px; vertical-align: middle; position: relative; font-family: 'Arial', sans-serif !important; font-size: 11px !important; }
 
     .excel-input {
         width: 100%; min-height: 28px; height: 100%; border: none; padding: 4px 6px; outline: none;
-        font-size: 12px; background: transparent; display: block; font-family: inherit;
+        font-size: 11px !important; font-family: 'Arial', sans-serif !important; background: transparent; display: block;
         line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: clip;
     }
     .excel-input:focus { outline: 2px solid #107c41; outline-offset: -2px; z-index: 2; position: relative; background: white; }
@@ -5633,7 +5633,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO', 'ALTA'])) { w = '40px'; fs = '11px'; align = 'center'; }
           else if (isCol(h, ['ID', 'FOLIO'])) { w = (currentUsername.value === 'ANTONIA_VENTAS') ? '70px' : '40px'; fs = '10px'; align = 'center'; }
           else if (up.includes('CUMPLIMIENTO')) { w = '50px'; align = 'center'; fs = '11px'; }
-          else if (up.includes('ARCHIVO') || up.includes('CLIP')) { w = '40px'; align = 'center'; }
+          else if (up.includes('ARCHIVO') || up.includes('CLIP') || up === 'CORREO' || up === 'CARPETA') { w = '40px'; align = 'center'; }
           else if (up === 'SEMANA') { w = '50px'; align = 'center'; }
           else if (up === 'HORA') { w = '50px'; fs = '10px'; }
           else if (up === 'FECHA ESTIMADA DE FIN' || up === 'FECHA DE ENTREGA') { w = '75px'; fs = '10px'; }
