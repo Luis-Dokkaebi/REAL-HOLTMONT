@@ -5565,7 +5565,7 @@ const filteredStaffTrackerData = computed(() => {
           const restrictedRoles = ['ANGEL_USER', 'TERESA_USER', 'EDUARDO_USER', 'MANZANARES_USER', 'RAMIRO_USER', 'SEBASTIAN_USER', 'EDGAR_USER'];
           if (restrictedRoles.includes(currentRole.value)) {
               const hUp = String(h).toUpperCase();
-              const allowed = ['AVANCE', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', 'CORREO', 'CARPETA'];
+              const allowed = ['AVANCE', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', 'CORREO', 'CARPETA', 'COMENTARIOS'];
               return allowed.some(a => hUp.includes(a));
           }
 
@@ -7912,7 +7912,8 @@ const filteredStaffTrackerData = computed(() => {
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
-  app.mount('#app');
+  const mountedApp = app.mount('#app');
+  window.app = mountedApp; // Expose for Playwright verification
 
   /**
  * JUTSU DE VOZ NATIVO (Sin Gemini)
