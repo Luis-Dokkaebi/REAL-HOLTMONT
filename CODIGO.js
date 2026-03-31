@@ -1676,7 +1676,7 @@ function apiSavePPCData(payload, activeUser) {
                  'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
                  'FECHA': fechaStr,
                  'HORA': horaStr,
-                 'RELOJ': item.horas || item.RELOJ,
+                 'RELOJ': item.horas !== undefined ? item.horas : (item.RELOJ !== undefined ? item.RELOJ : 0),
                  'ESTATUS': "ASIGNADO",
                  'PRIORIDAD': item.prioridad || item.prioridades || item.PRIORIDAD,
                  'RESTRICCIONES': item.restricciones,
