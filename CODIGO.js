@@ -1193,7 +1193,7 @@ function internalUpdateTask(personName, taskData, username) {
         // --- NEW RESTRICTION BLOCK (ANGEL, TERESA, EDUARDO, MANZANARES, RAMIRO, SEBASTIAN, EDGAR) ---
         const restrictedUsers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "EDGAR_LOPEZ"];
         if (restrictedUsers.includes(String(username).toUpperCase().trim())) {
-             const allowed = ['FOLIO', 'ID', 'AVANCE', 'AVANCE %', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', '_rowIndex'];
+             const allowed = ['FOLIO', 'ID', 'AVANCE', 'AVANCE %', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', 'COMENTARIOS', '_rowIndex'];
              // Helper to check if key matches allowed
              const isAllowed = (k) => {
                  const kUp = k.toUpperCase();
