@@ -912,7 +912,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       const k = key.toUpperCase().trim();
       if (colMap[k] !== undefined) return colMap[k];
       const aliases = {
-        'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO'],
+        'FECHA': ['FECHA', 'FECHAS', 'FECHA ALTA', 'FECHA INICIO', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'F_INICIO'],
         'CONCEPTO': ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD', 'DESCRIPCIÓN', 'ACTIVIDAD'],
         'RESPONSABLE': ['RESPONSABLE', 'RESPONSABLES', 'INVOLUCRADOS', 'VENDEDOR', 'ENCARGADO', 'ASIGNADO'],
         'HORA': ['HORA', 'HORA ASIGNACION', 'HORA DE ASIGNACION'],
@@ -1676,7 +1676,7 @@ function apiSavePPCData(payload, activeUser) {
                  'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
                  'FECHA': fechaStr,
                  'HORA': horaStr,
-                 'RELOJ': item.horas !== undefined ? item.horas : (item.RELOJ !== undefined ? item.RELOJ : 0),
+                 'RELOJ': (item.horas !== undefined && item.horas !== "") ? item.horas : ((item.RELOJ !== undefined && item.RELOJ !== "") ? item.RELOJ : 0),
                  'ESTATUS': "ASIGNADO",
                  'PRIORIDAD': item.prioridad || item.prioridades || item.PRIORIDAD,
                  'RESTRICCIONES': item.restricciones,

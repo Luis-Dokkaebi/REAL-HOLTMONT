@@ -5590,7 +5590,7 @@ const filteredStaffTrackerData = computed(() => {
           const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
           if (!hDias) return;
           
-          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
+          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
           if (!hFecha || !row[hFecha]) return;
           
           let dObj = null;
@@ -6459,7 +6459,7 @@ const filteredStaffTrackerData = computed(() => {
               const hUp = String(h).toUpperCase().trim();
               if (isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) {
                   row[h] = 0;
-              } else if (!isExcludedSheet && (hUp === 'FECHA' || hUp === 'ALTA' || hUp === 'FECHA INICIO')) {
+              } else if (!isExcludedSheet && (hUp === 'FECHA' || hUp === 'FECHA ALTA' || hUp === 'FECHA INICIO')) {
                   row[h] = `${d}/${m}/${y}`;
               } else if (!isExcludedSheet && hUp === 'HORA') {
                   row[h] = `${hh}:${mm}`;
@@ -6488,7 +6488,7 @@ const filteredStaffTrackerData = computed(() => {
 
               staffTracker.value.headers.forEach(h => {
                   const hUp = String(h).toUpperCase().trim();
-                  if ((hUp === 'FECHA' || hUp === 'ALTA' || hUp === 'FECHA INICIO') && !row[h]) {
+                  if ((hUp === 'FECHA' || hUp === 'FECHA ALTA' || hUp === 'FECHA INICIO') && !row[h]) {
                       row[h] = `${d}/${m}/${y}`;
                   }
                   if (hUp === 'HORA' && !row[h]) {
