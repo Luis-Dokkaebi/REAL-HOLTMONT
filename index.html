@@ -55,12 +55,12 @@
 
     /* MINI DASHBOARD & KPI */
     .mini-table { width: auto !important; min-width: 0 !important; border: none; }
-    .mini-table th { padding: 5px 6px; font-size: 11px; height: auto; line-height: 1.2; border: 1px solid #999; text-align: center; white-space: nowrap; background-color: #e6e6e6; text-transform: lowercase !important; }
-    .mini-table td { height: auto; font-size: 11px; padding: 4px 6px; line-height: 1.2; border: 1px solid #ccc; text-transform: lowercase !important; }
-    .mini-table .total-row td { background-color: #333; color: white; font-weight: bold; border-top: 2px solid #555 !important; text-transform: lowercase !important; }
+    .mini-table th { padding: 5px 6px; font-size: 11px !important; font-family: 'Arial', sans-serif !important; height: auto; line-height: 1.2; border: 1px solid #999; text-align: center; white-space: nowrap; background-color: #e6e6e6; text-transform: lowercase !important; }
+    .mini-table td { height: auto; font-size: 11px !important; font-family: 'Arial', sans-serif !important; padding: 4px 6px; line-height: 1.2; border: 1px solid #ccc; text-transform: lowercase !important; }
+    .mini-table .total-row td { background-color: #333; color: white; font-weight: bold; border-top: 2px solid #555 !important; text-transform: lowercase !important; font-size: 11px !important; font-family: 'Arial', sans-serif !important; }
 
     /* STANDARD TABLES (BOOTSTRAP) */
-    .table th, .table td, .table input, .table select { text-transform: lowercase !important; }
+    .table th, .table td, .table input, .table select { text-transform: lowercase !important; font-size: 11px !important; font-family: 'Arial', sans-serif !important; }
 
     /* DYNAMIC TRACKER FORM */
     .dynamic-tracker { background-color: #f4f6f8 !important; color: #333; flex:1; display:flex; flex-direction:column; padding:0 !important; overflow-y:auto; }
@@ -505,8 +505,8 @@
     .exec-table {
         width: 100%;
         border-collapse: collapse;
-        font-family: 'Arial', sans-serif;
-        font-size: 11px;
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
         background: white;
     }
     .exec-table th {
@@ -517,12 +517,16 @@
         font-weight: bold;
         color: #000;
         text-transform: lowercase !important;
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
     }
     .exec-table td {
         border: 1px solid #000;
         padding: 4px;
         color: #000;
         text-transform: lowercase !important;
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
     }
     .exec-table .total-row td {
         background-color: #333;
@@ -530,6 +534,8 @@
         font-weight: bold;
         border-top: 2px solid #000;
         text-transform: lowercase !important;
+        font-family: 'Arial', sans-serif !important;
+        font-size: 11px !important;
     }
     .exec-header-blue {
         background-color: #8EA9DB !important; /* Darker Blue */
