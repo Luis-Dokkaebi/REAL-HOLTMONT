@@ -2009,7 +2009,7 @@
                              <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; font-size:10px; font-weight:bold;">{{ row[h] }}</div>
                              <select v-model="row[h]" :disabled="!isFieldEditable(h, row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer;"><option value="">-</option><option value="A">A</option><option value="AA">AA</option><option value="AAA">AAA</option></select>
                          </div>
-                         <input v-else-if="isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])" type="number" v-model="row[h]" :readonly="!isFieldEditable(h, row)" style="text-align:center; font-weight:bold; width:100%; height:100%; border:none; outline:none; padding:6px 0px; background:transparent;" :style="getTrafficStyle(row)">
+                         <input v-else-if="(isCol(h, ['DIAS','RELOJ']) || String(h).toUpperCase().includes('DIAS FINALIZ') || String(h).toUpperCase().includes('DÍAS FINALIZ'))" type="number" v-model="row[h]" :readonly="!isFieldEditable(h, row)" style="text-align:center; font-weight:bold; width:100%; height:100%; border:none; outline:none; padding:6px 0px; background:transparent;" :style="getTrafficStyle(row)">
                          <div v-else-if="String(h).toUpperCase().includes('AVANCE')" style="position:relative; width:100%; height:100%;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" style="text-align:center; font-weight:bold; color:#217346; width:100%; height:100%; border:none; outline:none; padding:6px 10px 6px 0px; background:transparent;" spellcheck="false">
                              <span style="position:absolute; right:2px; top:50%; transform:translateY(-50%); color:#217346; font-size:10px; font-weight:bold; pointer-events:none;">%</span>
@@ -2101,7 +2101,7 @@
                             <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; padding-left:4px; display:flex; align-items:center; color: #000 !important;" :style="Object.assign({color: '#000'}, isCol(h, ['F. ENTREGA']) ? getTrafficStyle(row) : (isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)))">
                                  {{ formatDisplayDate(row[h]) }}
                             </div>
-                            <div v-else-if="isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])" style="text-align:center; font-weight:bold; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" :style="getTrafficStyle(row)">
+                            <div v-else-if="(isCol(h, ['DIAS','RELOJ']) || String(h).toUpperCase().includes('DIAS FINALIZ') || String(h).toUpperCase().includes('DÍAS FINALIZ'))" style="text-align:center; font-weight:bold; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" :style="getTrafficStyle(row)">
                                 {{ row[h] }}
                             </div>
                             <div v-else>{{row[h]}}</div>
@@ -5601,23 +5601,31 @@ const filteredStaffTrackerData = computed(() => {
           
           // Removed if (isExcludedSheet) return; to allow dynamic days calculation for Antonia and Ventas
 
-          const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
+          const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ']) || String(h).toUpperCase().includes('DIAS FINALIZ') || String(h).toUpperCase().includes('DÍAS FINALIZ'));
           if (!hDias) return;
           
-          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
+          const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO', 'F. INICIO ', ' F. INICIO']));
           if (!hFecha || !row[hFecha]) return;
           
           let dObj = null;
           const val = row[hFecha];
           if (val instanceof Date) dObj = val;
-          else if (typeof val === 'string') {
-              const parts = val.split('/');
-              if (parts.length === 3) {
-                   let y = parts[2];
-                   if (y.length === 2) y = '20' + y;
-                   // Javascript Date parsing with hyphens is very error prone due to UTC vs Local Time
-                   // It's safer to use the Date(year, monthIndex, day) constructor
-                   dObj = new Date(parseInt(y), parseInt(parts[1]) - 1, parseInt(parts[0]));
+          else if (typeof val === 'string' && val.trim() !== '') {
+              const strVal = val.trim();
+              if (strVal.includes('/')) {
+                  const parts = strVal.split('/');
+                  if (parts.length === 3) {
+                       let y = parts[2];
+                       if (y.length === 2) y = '20' + y;
+                       dObj = new Date(parseInt(y), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                  }
+              } else if (strVal.includes('-') && strVal.length === 10) {
+                  const parts = strVal.split('-');
+                  if (parts.length === 3) {
+                       dObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+                  }
+              } else {
+                  dObj = new Date(strVal);
               }
           }
           if (dObj && !isNaN(dObj.getTime())) {
@@ -5656,7 +5664,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (up.includes('RIESGO')) { w = '70px'; fs = '10px'; }
           else if (up === 'REQUISITOR') { w = '90px'; fs = '11px'; }
           else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; }
-          else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
+          else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION']) || String(h).toUpperCase().includes('DIAS FINALIZ') || String(h).toUpperCase().includes('DÍAS FINALIZ')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('AVANCE')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (isCol(h, ['ESTATUS','STATUS'])) { w = '65px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; }
@@ -5690,7 +5698,7 @@ const filteredStaffTrackerData = computed(() => {
           const clasiKey = Object.keys(row).find(k => ['CLASIFICACION', 'CLASI'].includes(String(k).toUpperCase().trim()));
           const t = clasiKey ? String(row[clasiKey]).trim().toUpperCase() : '';
 
-          const diasKey = Object.keys(row).find(k => ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'].includes(String(k).toUpperCase().trim()));
+          const diasKey = Object.keys(row).find(k => ['DIAS','RELOJ'].includes(String(k).toUpperCase().trim()) || String(k).toUpperCase().includes('DIAS FINALIZ') || String(k).toUpperCase().includes('DÍAS FINALIZ'));
           const d = diasKey ? parseInt(row[diasKey]||0) : 0;
 
           if (isNaN(d)) return {}; 
@@ -5713,9 +5721,17 @@ const filteredStaffTrackerData = computed(() => {
           if (!val) return {};
           let dObj = null;
           if (val instanceof Date) dObj = val;
-          else if (typeof val === 'string') {
-              const p = val.split('/');
-              if (p.length === 3) dObj = new Date(p[2].length===2?'20'+p[2]:p[2], p[1]-1, p[0]);
+          else if (typeof val === 'string' && val.trim() !== '') {
+              const strVal = val.trim();
+              if (strVal.includes('/')) {
+                  const p = strVal.split('/');
+                  if (p.length === 3) dObj = new Date(p[2].length===2?'20'+p[2]:p[2], p[1]-1, p[0]);
+              } else if (strVal.includes('-') && strVal.length === 10) {
+                  const p = strVal.split('-');
+                  if (p.length === 3) dObj = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+              } else {
+                  dObj = new Date(strVal);
+              }
           }
           if (!dObj || isNaN(dObj.getTime())) return {};
 
@@ -6477,7 +6493,7 @@ const filteredStaffTrackerData = computed(() => {
 
           staffTracker.value.headers.forEach(h => {
               const hUp = String(h).toUpperCase().trim();
-              if (isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) {
+              if ((isCol(h, ['DIAS','RELOJ']) || String(h).toUpperCase().includes('DIAS FINALIZ') || String(h).toUpperCase().includes('DÍAS FINALIZ'))) {
                   row[h] = 0;
               } else if (!isExcludedSheet && (hUp === 'FECHA' || hUp === 'FECHA ALTA' || hUp === 'FECHA INICIO')) {
                   row[h] = `${d}/${m}/${y}`;
@@ -6985,7 +7001,7 @@ const filteredStaffTrackerData = computed(() => {
                   days = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
               } else {
                   // Fallback to static if date is unparseable
-                  const diasKey = Object.keys(task).find(k => ['DIAS', 'RELOJ', 'DÍAS', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ'].includes(String(k).toUpperCase().trim()));
+                  const diasKey = Object.keys(task).find(k => ['DIAS', 'RELOJ', 'DÍAS'].includes(String(k).toUpperCase().trim()) || String(k).toUpperCase().includes('DIAS FINALIZ') || String(k).toUpperCase().includes('DÍAS FINALIZ'));
                   if (diasKey && task[diasKey] !== "" && !isNaN(task[diasKey])) {
                       days = parseInt(task[diasKey]);
                   }
