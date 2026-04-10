@@ -5596,9 +5596,10 @@ const filteredStaffTrackerData = computed(() => {
       const calculateDiasCounter = (row) => {
           if (!staffTracker.value.name) return;
           const sheetName = String(staffTracker.value.name).toUpperCase();
-          const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
+          // const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
+          const isExcludedSheet = false; // Enabled for everyone now
           
-          if (isExcludedSheet) return;
+          // Removed if (isExcludedSheet) return; to allow dynamic days calculation for Antonia and Ventas
 
           const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
           if (!hDias) return;
@@ -5686,8 +5687,12 @@ const filteredStaffTrackerData = computed(() => {
       };
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE','CORREO','CARPETA','CORREOS','CARPETAS'].includes(String(h).toUpperCase());
       const getTrafficStyle = (row) => { 
-          const t = String(row['CLASIFICACION']||'').trim().toUpperCase(); 
-          const d = parseInt(row['DIAS']||row['RELOJ']||row['DÍAS FINALIZ. COTIZ']||row['DIAS FINALIZ. COTIZ']||0); 
+          const clasiKey = Object.keys(row).find(k => ['CLASIFICACION', 'CLASI'].includes(String(k).toUpperCase().trim()));
+          const t = clasiKey ? String(row[clasiKey]).trim().toUpperCase() : '';
+
+          const diasKey = Object.keys(row).find(k => ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'].includes(String(k).toUpperCase().trim()));
+          const d = diasKey ? parseInt(row[diasKey]||0) : 0;
+
           if (isNaN(d)) return {}; 
           
           let limit = 0, buffer = 0;
@@ -5721,7 +5726,8 @@ const filteredStaffTrackerData = computed(() => {
           const diff = now - dObj;
           const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
-          const t = String(row['CLASIFICACION']||'').trim().toUpperCase();
+          const clasiKey = Object.keys(row).find(k => ['CLASIFICACION', 'CLASI'].includes(String(k).toUpperCase().trim()));
+          const t = clasiKey ? String(row[clasiKey]).trim().toUpperCase() : '';
           let limit = 0, buffer = 0;
           if(t==='A') { limit=3; buffer=1; }
           else if(t==='AA') { limit=15; buffer=3; }
@@ -6460,7 +6466,8 @@ const filteredStaffTrackerData = computed(() => {
           const row={_isNew:true};
 
           const sheetName = String(staffTracker.value.name).toUpperCase();
-          const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
+          // const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
+          const isExcludedSheet = false; // Enabled for everyone now
           const now = new Date();
           const d = String(now.getDate()).padStart(2, '0');
           const m = String(now.getMonth() + 1).padStart(2, '0');
@@ -6489,7 +6496,8 @@ const filteredStaffTrackerData = computed(() => {
           row._isSaving = true;
 
           const sheetName = String(staffTracker.value.name).toUpperCase();
-          const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
+          // const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
+          const isExcludedSheet = false; // Enabled for everyone now
 
           if (!isExcludedSheet) {
               const now = new Date();
