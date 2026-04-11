@@ -1533,7 +1533,10 @@
                 <button class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
                 <button v-if="trackerSubView === 'HISTORY'" class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="openProcessFlow" title="Ver Flujo"><i class="fas fa-project-diagram me-1"></i> FLUJO PROCESO COTIZACION</button>
             </div>
-            <div></div>
+            <div v-if="trackerSubView === 'HISTORY'">
+                <input v-model="historySearchQuery" class="form-control form-control-sm w-auto" placeholder="Buscar por concepto...">
+            </div>
+            <div v-else></div>
           </div>
           <div class="flex-fill d-flex flex-column" v-if="trackerSubView === 'EXECUTIVE_SUMMARY'" style="background-color:#fff; padding:20px; overflow-y:auto;">
               <div class="d-flex justify-content-between align-items-center mb-4">
@@ -2071,7 +2074,10 @@
                   </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="(row, i) in staffTracker.history" :key="i" :class="{'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
+                    <tr v-if="filteredStaffTrackerHistory.length === 0">
+                        <td :colspan="visibleTrackerHeaders.length + 2" class="text-center p-3 text-muted">No se encontraron resultados</td>
+                    </tr>
+                    <tr v-for="(row, i) in filteredStaffTrackerHistory" :key="i" :class="{'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
                         <td class="row-num">H{{i+1}}</td>
                         <td v-for="(h, idx) in visibleTrackerHeaders" :key="idx" :style="getColumnStyle(h)">
                             <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:12px;">
@@ -4834,6 +4840,8 @@ async function toggleVoiceRecording(btnElement) {
       const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
       const ppcExistingData = ref([]);
 
+      const historySearchQuery = ref('');
+
       const cotizadorSearch = ref('');
       const filteredCotizadores = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(cotizadorSearch.value.toLowerCase()) && !workorderData.value.cotizador.includes(p.name)).slice(0,5));
       const addCotizador = (name) => { workorderData.value.cotizador.push(name); cotizadorSearch.value = ''; };
@@ -5571,6 +5579,23 @@ const filteredStaffTrackerData = computed(() => {
                   }
               }
               return true;
+          });
+      });
+
+      const filteredStaffTrackerHistory = computed(() => {
+          if (!staffTracker.value.history) return [];
+          const query = historySearchQuery.value.toLowerCase().trim();
+          if (!query) return staffTracker.value.history;
+
+          return staffTracker.value.history.filter(row => {
+             // Find CONCEPTO column value for this row
+             const conceptoKeys = Object.keys(row).filter(k => String(k).toUpperCase() === 'CONCEPTO' || String(k).toUpperCase().includes('DESCRIP') || String(k).toUpperCase().includes('COMENTARIO'));
+             for (const key of conceptoKeys) {
+                 if (row[key] && String(row[key]).toLowerCase().includes(query)) {
+                     return true;
+                 }
+             }
+             return false;
           });
       });
 
@@ -7927,7 +7952,7 @@ const filteredStaffTrackerData = computed(() => {
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
-      staffTrackerFilters, filteredStaffTrackerData, getUniqueValues,
+      staffTrackerFilters, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
       getProcessTimeline, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName };
     }
