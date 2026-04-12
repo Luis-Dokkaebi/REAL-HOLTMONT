@@ -2062,7 +2062,7 @@
                              <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none; color: #000 !important;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
-                         <textarea v-else-if="currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP') || String(h).toUpperCase().includes('COMENTARIO'))" v-model="row[h]" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
+                         <textarea v-else-if="(currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP'))) || String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('OBSERVACION') || String(h).toUpperCase().includes('PREVIO')" class="excel-textarea" v-model="row[h]" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true" style="text-align:left;"></textarea>
                          <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
@@ -5691,6 +5691,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; }
           else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('AVANCE')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
+          else if (up.includes('COMENTARIO') || up.includes('PREVIO') || up.includes('OBSERVACION')) { w = '200px'; textAlign = 'left'; }
           else if (isCol(h, ['ESTATUS','STATUS'])) { w = '65px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; }
           else if (up === 'F2') { w = '35px'; fs = '10px'; align='center'; }
