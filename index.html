@@ -7700,6 +7700,9 @@ const filteredStaffTrackerData = computed(() => {
                           let y = parts[2];
                           if (y.length === 2) y = '20' + y;
                           startDate = new Date(y, parts[1]-1, parts[0]);
+                      } else {
+                          const parsed = new Date(val);
+                          if (!isNaN(parsed.getTime())) startDate = parsed;
                       }
                   }
                   break;
