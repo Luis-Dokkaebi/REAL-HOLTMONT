@@ -4110,6 +4110,11 @@ function processQuoteRow(row) {
                let y = parseInt(parts[2]);
                if (y < 100) y += 2000;
                dateObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+            } else {
+               const parsed = new Date(dateVal);
+               if (!isNaN(parsed.getTime())) {
+                   dateObj = parsed;
+               }
             }
         }
 
