@@ -606,6 +606,9 @@ function apiFetchTeamKPIData(username) {
                    if (String(d).includes('/')) {
                        const pts = String(d).split('/');
                        if(pts.length===3) return new Date(pts[2].length===2 ? '20'+pts[2] : pts[2], pts[1]-1, pts[0]);
+                   } else {
+                       const parsed = new Date(d);
+                       if (!isNaN(parsed.getTime())) return parsed;
                    }
                    return new Date(d);
                };
@@ -2609,6 +2612,16 @@ function incrementarContadorDias() {
                             calculated = true;
                         }
                     } catch(e) {}
+                } else {
+                    try {
+                        const parsed = new Date(fechaVal);
+                        if (!isNaN(parsed.getTime())) {
+                            parsed.setHours(0,0,0,0);
+                            const diffDays = Math.floor((today - parsed) / (1000 * 60 * 60 * 24));
+                            newVal = Math.max(0, diffDays);
+                            calculated = true;
+                        }
+                    } catch (e) {}
                 }
             }
             
@@ -3367,6 +3380,9 @@ function apiFetchInfoBankCompanies(year, monthName) {
                let y = parseInt(parts[2]);
                if (y < 100) y += 2000;
                dObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+           } else {
+               const parsed = new Date(dateVal);
+               if (!isNaN(parsed.getTime())) dObj = parsed;
            }
        }
 
@@ -3436,6 +3452,9 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
                let y = parseInt(parts[2]);
                if (y < 100) y += 2000;
                dObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+           } else {
+               const parsed = new Date(dateVal);
+               if (!isNaN(parsed.getTime())) dObj = parsed;
            }
        }
        
@@ -4110,6 +4129,11 @@ function processQuoteRow(row) {
                let y = parseInt(parts[2]);
                if (y < 100) y += 2000;
                dateObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+            } else {
+               const parsed = new Date(dateVal);
+               if (!isNaN(parsed.getTime())) {
+                   dateObj = parsed;
+               }
             }
         }
 
