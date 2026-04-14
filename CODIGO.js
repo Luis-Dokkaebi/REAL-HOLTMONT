@@ -3353,8 +3353,9 @@ function apiFetchInfoBankCompanies(year, monthName) {
     if (targetMonth === undefined) return { success: false, message: "Mes inválido" };
 
     const clients = new Set();
+    const allData = [...res.data, ...(res.history || [])];
 
-    res.data.forEach(row => {
+    allData.forEach(row => {
        // Helper para buscar valores insensible a mayúsculas
        const keys = Object.keys(row);
        const upperKeys = keys.map(k => k.toUpperCase().trim());
@@ -3416,8 +3417,10 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
 
     if (targetMonth === undefined) return { success: false, message: "Mes inválido" };
 
+    const allData = [...res.data, ...(res.history || [])];
+
     // Filtrar datos
-    const filtered = res.data.filter(row => {
+    const filtered = allData.filter(row => {
        // Helper para buscar valores insensible a mayúsculas
        const keys = Object.keys(row);
        const upperKeys = keys.map(k => k.toUpperCase().trim());
@@ -3506,7 +3509,9 @@ function apiFetchDistinctClients() {
     // Let's check headers to find 'CLIENTE'
     // internalFetchSheetData returns objects with keys uppercased and trimmed.
     
-    res.data.forEach(row => {
+    const allData = [...res.data, ...(res.history || [])];
+
+    allData.forEach(row => {
         if (row['CLIENTE']) {
             const c = String(row['CLIENTE']).trim().toUpperCase();
             if (c) clients.add(c);
