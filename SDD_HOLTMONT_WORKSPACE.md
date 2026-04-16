@@ -155,6 +155,7 @@ A continuación, se define el inventario formal de tokens implementado en el sis
 *   `Tamano_Fuente_Formulario` (`--font-size-form`): `13px` (Tamaño base para inputs de formularios dinámicos y modales).
 *   `Regla_Transformacion_Encabezado` (`--text-transform-header`): `lowercase` (Obligatorio: Las cabeceras de las tablas deben leerse en minúsculas para romper la pesadez visual).
 *   `Regla_Transformacion_Datos` (`--text-transform-data`): `uppercase` (Obligatorio: El contenido de las celdas y la entrada de los inputs deben forzarse visualmente a mayúsculas para otorgar uniformidad tipográfica).
+*   `Regla_Transformacion_Nombres` (`--text-transform-initials`): Lógica obligatoria para transformar visualmente el texto de nombres largos a iniciales (ej. Sebastián Padilla -> SP). Se aplica a columnas y atributos como `VENDEDOR`, `RESPONSABLE` e `INVOLUCRADOS` en la vista de Data Grid.
 *   `Grosor_Fuente_Fuerte` (`--font-weight-bold`): `700` (Utilizado para cabeceras y totales numéricos).
 
 #### Tokens de Layout y Espaciado (Metrics)
