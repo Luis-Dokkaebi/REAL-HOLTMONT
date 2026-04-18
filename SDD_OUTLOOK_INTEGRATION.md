@@ -207,39 +207,26 @@ El siguiente fragmento muestra cómo integrar `NotifierService` dentro de la fun
 ```javascript
 /**
  * FRAGMENTO A INSERTAR / MODIFICAR EN apiSaveTrackerBatch
- * Este código debe colocarse justo donde se crea la entrada de "Papa Caliente"
- * para un delegado, o donde se inserta la fila en su Tracker personal.
+ * Este código se coloca justo donde ANTONIA_VENTAS delega una etapa de "Papa Caliente".
+ * Se utilizan las propiedades directas _assignToWorker y _assignStep enviadas por el frontend,
+ * ya que es un método más directo y robusto que parsear el PROCESO_LOG.
  */
 
 // Contexto simulado dentro de apiSaveTrackerBatch...
-// function apiSaveTrackerBatch(personName, tasks, username) { ...
+// if (isAntonia) {
+//     ...
+//     if (taskData._assignToWorker && taskData._assignStep) {
+//         try {
+//             const assignData = JSON.parse(JSON.stringify(distData));
+//             assignData['ESTATUS'] = 'PENDIENTE';
+//             assignData['AVANCE'] = '0%';
+//             internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
 
-  tasks.forEach(function(row) {
+    const folioStr = taskData["FOLIO"] || taskData["ID"] || "SIN-FOLIO";
+    const clienteStr = taskData["CLIENTE"] || "Desconocido";
 
-    // ... Logica existente de validación y extracción de folio ...
-    const folioStr = row["FOLIO"] || "SIN-FOLIO";
-    const clienteStr = row["CLIENTE"] || "Desconocido";
-
-    // Detectamos si el proceso fue delegado recientemente (Nuevo objeto en PROCESO_LOG)
-    // Supongamos que parseamos el nuevo log
-    let newAssignee = null;
-    let stepTitle = "";
-
-    try {
-      if (row["PROCESO_LOG"]) {
-        const logData = typeof row["PROCESO_LOG"] === "string" ? JSON.parse(row["PROCESO_LOG"]) : row["PROCESO_LOG"];
-        if (Array.isArray(logData) && logData.length > 0) {
-          const lastEntry = logData[logData.length - 1];
-          // Verificamos si es una tarea en progreso y asignada a un delegado
-          if (lastEntry.status === "IN_PROGRESS" && lastEntry.assignee) {
-             newAssignee = lastEntry.assignee;
-             stepTitle = lastEntry.step || "Desconocido";
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("No se pudo parsear PROCESO_LOG para notificaciones:", e);
-    }
+    let newAssignee = taskData._assignToWorker;
+    let stepTitle = taskData._assignStep;
 
     // SI HAY UN NUEVO ASIGNADO, DISPARAMOS EVENTO DE OUTLOOK
     if (newAssignee) {
@@ -271,9 +258,9 @@ El siguiente fragmento muestra cómo integrar `NotifierService` dentro de la fun
        }
     }
 
-    // ... Continua el guardado normal de la fila en las Sheets (internalBatchUpdateTasks) ...
-  });
-// }
+    // ... Continua el guardado normal de la fila en las Sheets ...
+//         } catch(e) {}
+//     }
 ```
 
 ## 7. Plan de Ejecución Final
