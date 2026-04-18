@@ -10,6 +10,8 @@ var DEMO_MODE = false; // HOTFIX: MODO DEMO
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 // --- CONFIGURACIÓN ---
+const WEBHOOK_OUTLOOK_URL = "https://hook.us2.make.com/fepkg526j29043bkw5imd8r2fhzmv2wq";
+
 const APP_CONFIG = {
   folderIdUploads: "", 
   ppcSheetName: "PPCV3",          
@@ -108,20 +110,100 @@ const STANDARD_PROJECT_STRUCTURE = [
   "REPORTES"          // PRESERVADO
 ];
 
+const NotifierService = {
+  sendToOutlook: function(payloadData) {
+    if (!WEBHOOK_OUTLOOK_URL || WEBHOOK_OUTLOOK_URL === "URL_DE_POWER_AUTOMATE_AQUI") {
+      return { success: false, message: "Webhook no configurado." };
+    }
+
+    const payload = {
+      folio: payloadData.folio || "Sin Folio",
+      titulo: payloadData.titulo || "Asignación de Tarea",
+      descripcion: payloadData.descripcion || "Tienes una nueva tarea asignada en Holtmont Workspace.",
+      fechaInicio: payloadData.fechaInicio || new Date().toISOString(),
+      fechaFin: payloadData.fechaFin || new Date(new Date().getTime() + (60 * 60 * 1000)).toISOString(),
+      correoDestino: payloadData.correoDestino,
+      asignadoPor: payloadData.asignadoPor || "SISTEMA"
+    };
+
+    const opciones = {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    try {
+      const respuesta = UrlFetchApp.fetch(WEBHOOK_OUTLOOK_URL, opciones);
+      const code = respuesta.getResponseCode();
+
+      if (code === 200 || code === 202) {
+        console.log(`Evento Outlook enviado exitosamente a ${payload.correoDestino}. (Código: ${code})`);
+        return { success: true, code: code };
+      } else {
+        console.error(`Fallo Webhook. Código: ${code}. Respuesta: ${respuesta.getContentText()}`);
+        return { success: false, code: code, message: respuesta.getContentText() };
+      }
+    } catch (e) {
+      console.error(`Excepción HTTP en NotifierService: ${e.toString()}`);
+      return { success: false, code: 500, message: e.toString() };
+    }
+  }
+};
+
+function findUserEmailByLabel(friendlyName) {
+  if (!friendlyName) return null;
+  const nameUpper = String(friendlyName).trim().toUpperCase();
+
+  for (const key in USER_DB) {
+    if (USER_DB[key] && USER_DB[key].label) {
+      if (USER_DB[key].label.toUpperCase() === nameUpper) {
+        return USER_DB[key].email || null;
+      }
+    }
+    if (key.replace(/_/g, " ") === nameUpper) {
+       return USER_DB[key].email || null;
+    }
+  }
+  return null;
+}
+
+function testIntegracionOutlook() {
+  const emailSebastian = findUserEmailByLabel("Sebastian Padilla");
+
+  if (!emailSebastian) {
+    console.error("Error: El usuario SEBASTIAN_PADILLA no tiene un correo configurado.");
+    return;
+  }
+
+  const payload = {
+    folio: "TEST-001",
+    titulo: "[PRUEBA] Integración Holtmont - Outlook",
+    descripcion: "Este es un evento de prueba generado desde Google Apps Script para validar la integración de tareas en el calendario.",
+    fechaInicio: new Date().toISOString(),
+    fechaFin: new Date(new Date().getTime() + (60 * 60 * 1000)).toISOString(),
+    correoDestino: emailSebastian,
+    asignadoPor: "SISTEMA_TEST"
+  };
+
+  const resultado = NotifierService.sendToOutlook(payload);
+  console.log("Resultado de Prueba:", resultado);
+}
+
 // USUARIOS
 const USER_DB = {
-  "LUIS_CARLOS":      { pass: "admin2025", role: "ADMIN", label: "Administrador" },
-  "JESUS_CANTU":      { pass: "ppc2025",   role: "PPC_ADMIN", label: "PPC Manager" },
-  "ANTONIA_VENTAS":   { pass: "tonita2025", role: "TONITA", label: "Ventas" },
-  "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo" },
-  "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas" },
-  "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza" },
-  "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran" },
-  "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares" },
-  "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez" },
-  "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla" },
-  "EDGAR_LOPEZ":      { pass: "edgar2025", role: "EDGAR_USER", label: "Edgar Lopez" },
-  "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder" }
+  "LUIS_CARLOS":      { pass: "admin2025", role: "ADMIN", label: "Administrador", email: "luiscarlos@empresa.com" },
+  "JESUS_CANTU":      { pass: "ppc2025",   role: "PPC_ADMIN", label: "PPC Manager", email: "jesuscantu@empresa.com" },
+  "ANTONIA_VENTAS":   { pass: "tonita2025", role: "TONITA", label: "Ventas", email: "ventas@empresa.com" },
+  "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo", email: "jaimeolivo@empresa.com" },
+  "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas", email: "angel.salinas@empresa.com" },
+  "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza", email: "teresa.garza@empresa.com" },
+  "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran", email: "eduardo.teran@empresa.com" },
+  "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares", email: "eduardo.manzanares@empresa.com" },
+  "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez", email: "ramiro.rodriguez@empresa.com" },
+  "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla", email: "armandoag_1996@hotmail.com" },
+  "EDGAR_LOPEZ":      { pass: "edgar2025", role: "EDGAR_USER", label: "Edgar Lopez", email: "edgar.lopez@empresa.com" },
+  "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder", email: "workorder@empresa.com" }
 };
 
 /* SERVICIO HTML */
@@ -3606,6 +3688,35 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                      assignData['ESTATUS'] = 'PENDIENTE';
                      assignData['AVANCE'] = '0%';
                      internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
+
+                     // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado
+                     const folioStr = taskData["FOLIO"] || taskData["ID"] || "SIN-FOLIO";
+                     const clienteStr = taskData["CLIENTE"] || "Desconocido";
+                     const newAssignee = taskData._assignToWorker;
+                     const stepTitle = taskData._assignStep;
+
+                     const userEmail = findUserEmailByLabel(newAssignee);
+                     if (userEmail) {
+                         const fInicio = new Date();
+                         const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
+
+                         const payloadOutlook = {
+                             folio: folioStr,
+                             titulo: `Asignación Tracker: ${stepTitle} - ${clienteStr}`,
+                             descripcion: `Se te ha asignado la etapa ${stepTitle} para el folio ${folioStr}. Revisa tu Tracker en Holtmont Workspace.`,
+                             fechaInicio: fInicio.toISOString(),
+                             fechaFin: fFin.toISOString(),
+                             correoDestino: userEmail,
+                             asignadoPor: username
+                         };
+
+                         const resultOutlook = NotifierService.sendToOutlook(payloadOutlook);
+                         if (resultOutlook.success) {
+                             console.log(`Notificación Outlook enviada para Folio: ${folioStr}`);
+                         }
+                     } else {
+                         console.warn(`No se encontró email corporativo para delegado: ${newAssignee}`);
+                     }
                  } catch(e) {}
              }
              distributionTasks.push(distData);
@@ -3647,7 +3758,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
               // Group by vendor to batch updates
               const byVendor = {};
               distributionTasks.forEach(t => {
-                  const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR");
+                  const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
                   if (vendedorKey && t[vendedorKey]) {
                        const vNames = String(t[vendedorKey]).split(',').map(s => s.trim());
                        vNames.forEach(vName => {
@@ -3658,11 +3769,33 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                if (target.toUpperCase().includes("(VENTAS)")) finalTarget = target;
                                else {
                                    if (findSheetSmart(target + " (VENTAS)")) finalTarget = target + " (VENTAS)";
+                                   else if (findSheetSmart(target)) finalTarget = target; // Fallback if no ventas sheet
                                }
 
                                if (finalTarget) {
                                    if (!byVendor[finalTarget]) byVendor[finalTarget] = [];
                                    byVendor[finalTarget].push(t);
+                               }
+
+                               // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado a la fila
+                               const folioGen = t["FOLIO"] || t["ID"] || "SIN-FOLIO";
+                               const clienteGen = t["CLIENTE"] || "Desconocido";
+                               const conceptoGen = t["CONCEPTO"] || t["DESCRIPCION"] || "Tarea";
+
+                               const emailGen = findUserEmailByLabel(vName);
+                               if (emailGen) {
+                                   const fIni = new Date();
+                                   const fFi = new Date(fIni.getTime() + (2 * 60 * 60 * 1000));
+                                   const pGeneral = {
+                                       folio: folioGen,
+                                       titulo: `Nueva Asignación: ${conceptoGen} - ${clienteGen}`,
+                                       descripcion: `Se te ha asignado una tarea general (${conceptoGen}) en el Tracker. Folio: ${folioGen}.`,
+                                       fechaInicio: fIni.toISOString(),
+                                       fechaFin: fFi.toISOString(),
+                                       correoDestino: emailGen,
+                                       asignadoPor: username
+                                   };
+                                   NotifierService.sendToOutlook(pGeneral);
                                }
                            }
                        });

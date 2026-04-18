@@ -200,79 +200,88 @@ function testIntegracionOutlook() {
 }
 ```
 
-### 6.4 Módulo: Integración con la Delegación de Tareas (`apiSaveTrackerBatch`)
+### 6.4 Módulo: Integración con la Delegación y Asignación de Tareas (`apiSaveTrackerBatch`)
 
-El siguiente fragmento muestra cómo integrar `NotifierService` dentro de la función de backend responsable de guardar y delegar tareas del Tracker ("Papa Caliente").
+La notificación de Outlook se debe disparar en dos escenarios dentro de `apiSaveTrackerBatch` (cuando el usuario es `ANTONIA_VENTAS`):
+1. **Papa Caliente:** Cuando se delega una etapa específica (usando `_assignToWorker`).
+2. **Asignación General:** Cuando se distribuye una tarea general a un usuario a través de la columna `VENDEDOR` o `RESPONSABLE`.
+
+El siguiente fragmento ilustra cómo inyectar `NotifierService` en ambos flujos.
 
 ```javascript
 /**
- * FRAGMENTO A INSERTAR / MODIFICAR EN apiSaveTrackerBatch
- * Este código debe colocarse justo donde se crea la entrada de "Papa Caliente"
- * para un delegado, o donde se inserta la fila en su Tracker personal.
+ * FRAGMENTOS A INSERTAR / MODIFICAR EN apiSaveTrackerBatch
  */
 
-// Contexto simulado dentro de apiSaveTrackerBatch...
-// function apiSaveTrackerBatch(personName, tasks, username) { ...
+// -------------------------------------------------------------
+// ESCENARIO 1: PAPA CALIENTE (Dentro del loop de tareas, if isAntonia)
+// -------------------------------------------------------------
+// if (taskData._assignToWorker && taskData._assignStep) {
+//     try {
+//         const assignData = JSON.parse(JSON.stringify(distData));
+//         ...
+//         internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
 
-  tasks.forEach(function(row) {
+         // INTEGRACIÓN OUTLOOK: Enviar evento al delegado
+         const folioStr = taskData["FOLIO"] || taskData["ID"] || "SIN-FOLIO";
+         const clienteStr = taskData["CLIENTE"] || "Desconocido";
+         const newAssignee = taskData._assignToWorker;
+         const stepTitle = taskData._assignStep;
 
-    // ... Logica existente de validación y extracción de folio ...
-    const folioStr = row["FOLIO"] || "SIN-FOLIO";
-    const clienteStr = row["CLIENTE"] || "Desconocido";
+         const userEmail = findUserEmailByLabel(newAssignee);
+         if (userEmail) {
+             const fInicio = new Date();
+             const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
+             const payloadOutlook = {
+                 folio: folioStr,
+                 titulo: `Asignación Papa Caliente: ${stepTitle} - ${clienteStr}`,
+                 descripcion: `Se te ha delegado la etapa ${stepTitle} para el folio ${folioStr}. Revisa tu Tracker.`,
+                 fechaInicio: fInicio.toISOString(),
+                 fechaFin: fFin.toISOString(),
+                 correoDestino: userEmail,
+                 asignadoPor: username
+             };
+             NotifierService.sendToOutlook(payloadOutlook);
+         }
+//     } catch(e) {}
+// }
 
-    // Detectamos si el proceso fue delegado recientemente (Nuevo objeto en PROCESO_LOG)
-    // Supongamos que parseamos el nuevo log
-    let newAssignee = null;
-    let stepTitle = "";
+// -------------------------------------------------------------
+// ESCENARIO 2: ASIGNACIÓN GENERAL (Dentro del loop de distribución de Antonia)
+// -------------------------------------------------------------
+// if (isAntonia && distributionTasks.length > 0) {
+//    distributionTasks.forEach(t => {
+//        const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE");
+//        if (vendedorKey && t[vendedorKey]) {
+//            const vNames = String(t[vendedorKey]).split(',').map(s => s.trim());
+//            vNames.forEach(vName => {
+//                if (vName.toUpperCase() !== "ANTONIA_VENTAS") {
+                     // Lógica existente para agrupar tareas (byVendor)...
 
-    try {
-      if (row["PROCESO_LOG"]) {
-        const logData = typeof row["PROCESO_LOG"] === "string" ? JSON.parse(row["PROCESO_LOG"]) : row["PROCESO_LOG"];
-        if (Array.isArray(logData) && logData.length > 0) {
-          const lastEntry = logData[logData.length - 1];
-          // Verificamos si es una tarea en progreso y asignada a un delegado
-          if (lastEntry.status === "IN_PROGRESS" && lastEntry.assignee) {
-             newAssignee = lastEntry.assignee;
-             stepTitle = lastEntry.step || "Desconocido";
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("No se pudo parsear PROCESO_LOG para notificaciones:", e);
-    }
+                     // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado a la fila
+                     const folioGen = t["FOLIO"] || t["ID"] || "SIN-FOLIO";
+                     const clienteGen = t["CLIENTE"] || "Desconocido";
+                     const conceptoGen = t["CONCEPTO"] || t["DESCRIPCION"] || "Tarea";
 
-    // SI HAY UN NUEVO ASIGNADO, DISPARAMOS EVENTO DE OUTLOOK
-    if (newAssignee) {
-       const userEmail = findUserEmailByLabel(newAssignee);
-
-       if (userEmail) {
-          // Preparamos fechas (Asumimos inicio ahora, fin en 2 horas por default)
-          const fInicio = new Date();
-          const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
-
-          const payloadOutlook = {
-            folio: folioStr,
-            titulo: `Asignación Tracker: ${stepTitle} - ${clienteStr}`,
-            descripcion: `Se te ha asignado la etapa ${stepTitle} para el folio ${folioStr}. Revisa tu Tracker en Holtmont Workspace.`,
-            fechaInicio: fInicio.toISOString(),
-            fechaFin: fFin.toISOString(),
-            correoDestino: userEmail,
-            asignadoPor: username
-          };
-
-          // Invocamos el servicio (puede ser asíncrono o sincrono)
-          const resultOutlook = NotifierService.sendToOutlook(payloadOutlook);
-
-          if (resultOutlook.success) {
-            console.log(`Notificación Outlook enviada para Folio: ${folioStr}`);
-          }
-       } else {
-          console.warn(`No se encontró email corporativo para delegado: ${newAssignee}`);
-       }
-    }
-
-    // ... Continua el guardado normal de la fila en las Sheets (internalBatchUpdateTasks) ...
-  });
+                     const emailGen = findUserEmailByLabel(vName);
+                     if (emailGen) {
+                         const fIni = new Date();
+                         const fFi = new Date(fIni.getTime() + (2 * 60 * 60 * 1000));
+                         const pGeneral = {
+                             folio: folioGen,
+                             titulo: `Nueva Asignación: ${conceptoGen} - ${clienteGen}`,
+                             descripcion: `Se te ha asignado una tarea general (${conceptoGen}) en el Tracker. Folio: ${folioGen}.`,
+                             fechaInicio: fIni.toISOString(),
+                             fechaFin: fFi.toISOString(),
+                             correoDestino: emailGen,
+                             asignadoPor: username
+                         };
+                         NotifierService.sendToOutlook(pGeneral);
+                     }
+//                }
+//            });
+//        }
+//    });
 // }
 ```
 
