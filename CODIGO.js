@@ -3758,7 +3758,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
               // Group by vendor to batch updates
               const byVendor = {};
               distributionTasks.forEach(t => {
-                  const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR");
+                  const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
                   if (vendedorKey && t[vendedorKey]) {
                        const vNames = String(t[vendedorKey]).split(',').map(s => s.trim());
                        vNames.forEach(vName => {
@@ -3769,11 +3769,33 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                if (target.toUpperCase().includes("(VENTAS)")) finalTarget = target;
                                else {
                                    if (findSheetSmart(target + " (VENTAS)")) finalTarget = target + " (VENTAS)";
+                                   else if (findSheetSmart(target)) finalTarget = target; // Fallback if no ventas sheet
                                }
 
                                if (finalTarget) {
                                    if (!byVendor[finalTarget]) byVendor[finalTarget] = [];
                                    byVendor[finalTarget].push(t);
+                               }
+
+                               // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado a la fila
+                               const folioGen = t["FOLIO"] || t["ID"] || "SIN-FOLIO";
+                               const clienteGen = t["CLIENTE"] || "Desconocido";
+                               const conceptoGen = t["CONCEPTO"] || t["DESCRIPCION"] || "Tarea";
+
+                               const emailGen = findUserEmailByLabel(vName);
+                               if (emailGen) {
+                                   const fIni = new Date();
+                                   const fFi = new Date(fIni.getTime() + (2 * 60 * 60 * 1000));
+                                   const pGeneral = {
+                                       folio: folioGen,
+                                       titulo: `Nueva Asignación: ${conceptoGen} - ${clienteGen}`,
+                                       descripcion: `Se te ha asignado una tarea general (${conceptoGen}) en el Tracker. Folio: ${folioGen}.`,
+                                       fechaInicio: fIni.toISOString(),
+                                       fechaFin: fFi.toISOString(),
+                                       correoDestino: emailGen,
+                                       asignadoPor: username
+                                   };
+                                   NotifierService.sendToOutlook(pGeneral);
                                }
                            }
                        });
