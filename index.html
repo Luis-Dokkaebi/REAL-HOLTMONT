@@ -2062,7 +2062,7 @@
                              <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none; color: #000 !important;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
-                         <textarea v-else-if="(String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES')) || (currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')))" v-model="row[h]" class="excel-textarea" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
+                         <textarea v-else-if="(String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES')) || (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP'))" v-model="row[h]" class="excel-textarea" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
                          <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
@@ -2230,10 +2230,9 @@
                                         <select v-model="row[h]" @change="savePPCV3Row(row)" style="position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index:10;"><option value="SI">SI</option><option value="NO">NO</option></select>
                                     </div>
                                     <div v-else-if="h.includes('ARCHIVO') || h.includes('CLIP')"><a v-if="row[h]" :href="row[h]" target="_blank" class="btn btn-sm text-primary"><i class="fas fa-paperclip"></i></a></div>
-                                    <div v-else-if="String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES')" class="text-start">
+                                    <div v-else-if="String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES') || String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')" class="text-start">
                                         <textarea v-model="row[h]" class="excel-textarea" rows="2" spellcheck="false" style="text-align:left;"></textarea>
                                     </div>
-                                    <div v-else-if="String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')" class="px-1" style="white-space:normal; overflow:hidden; text-align:left; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;" :title="row[h]">{{ row[h] }}</div>
                                     <div v-else class="px-1" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;" :title="row[h]">{{ row[h] }}</div>
                                 </td>
                             </template>
@@ -5679,7 +5678,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (currentUsername.value === 'ANTONIA_VENTAS' && (up === 'ESTATUS' || up === 'STATUS')) { w = '350px'; }
 
 
-          else if (up.includes('COMENTARIO') || up.includes('PREVIOS') || up.includes('OBSERVACIONES')) { w = '200px'; }
+          else if (up.includes('COMENTARIO') || up.includes('PREVIOS') || up.includes('OBSERVACIONES')) { w = '200px'; } else if (up === 'CONCEPTO' || up.includes('DESCRIP')) { w = '350px'; }
           else if (isCol(h, ['ESPECIALIDAD', 'AREA', 'DEPTO', 'ALTA'])) { w = '40px'; fs = '11px'; align = 'center'; }
           else if (isCol(h, ['ID', 'FOLIO'])) { w = '85px'; fs = '10px'; align = 'center'; }
           else if (up.includes('CUMPLIMIENTO')) { w = '50px'; align = 'center'; fs = '11px'; }
