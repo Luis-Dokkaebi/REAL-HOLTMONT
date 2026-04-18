@@ -10,7 +10,7 @@ var DEMO_MODE = false; // HOTFIX: MODO DEMO
 const SS = SpreadsheetApp.getActiveSpreadsheet();
 
 // --- CONFIGURACIÓN ---
-const WEBHOOK_OUTLOOK_URL = "URL_DE_POWER_AUTOMATE_AQUI";
+const WEBHOOK_OUTLOOK_URL = "https://hook.us2.make.com/fepkg526j29043bkw5imd8r2fhzmv2wq";
 
 const APP_CONFIG = {
   folderIdUploads: "", 
