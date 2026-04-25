@@ -1844,12 +1844,12 @@
 
           <!-- HOT POTATO MODAL -->
           <div v-if="showHotPotatoModal" class="custom-modal-overlay" @click.self="closeHotPotatoModal">
-              <div class="custom-modal animate__animated animate__zoomIn" style="width: 600px; max-width: 90vw;">
+              <div class="custom-modal animate__animated animate__zoomIn" style="width: 600px; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column;">
                   <div class="custom-modal-header bg-danger text-white">
                       <span><i class="fas fa-fire me-2"></i>ESTATUS PAPA CALIENTE - {{ currentHotPotatoRow?.FOLIO || currentHotPotatoRow?.ID }}</span>
                       <button class="btn btn-sm btn-link text-white" @click="closeHotPotatoModal"><i class="fas fa-times"></i></button>
                   </div>
-                  <div class="custom-modal-body bg-dark text-light p-4" style="text-align: left;">
+                                    <div class="custom-modal-body bg-dark text-light p-4" style="text-align: left; overflow-y: auto; flex: 1;">
                       <div v-if="currentHotPotatoRow">
                           <div class="d-flex justify-content-between align-items-center mb-4">
                               <div>
@@ -1857,7 +1857,7 @@
                                   <span class="text-secondary small">Complejidad alta · Folio: {{ currentHotPotatoRow.FOLIO || currentHotPotatoRow.ID }}</span>
                               </div>
                           </div>
-
+                          
                           <div class="d-flex gap-3 mb-4">
                               <div class="bg-black border border-secondary rounded p-3 text-center" style="flex:1">
                                   <div class="small text-secondary mb-1">Etapas</div>
@@ -1870,7 +1870,7 @@
                                   <div class="small text-secondary">con palomita</div>
                               </div>
                           </div>
-
+                          
                           <div class="hp-detailed-timeline">
                               <div v-for="(step, sIdx) in getProcessTimelineDetailed(currentHotPotatoRow)" :key="sIdx" class="mb-4">
                                   <div class="small text-secondary fw-bold mb-2 text-uppercase">ETAPA {{ sIdx + 1 }} — {{ getFullProcessName(step.id) }}</div>
@@ -1881,15 +1881,15 @@
                                               {{ step.isDone ? 'Completado' : (step.isInProgress ? 'En proceso' : 'Pendiente') }}
                                           </div>
                                       </div>
-
+                                      
                                       <div class="progress mb-3 bg-dark" style="height: 4px;">
                                           <div class="progress-bar" :class="step.isDone ? 'bg-success' : (step.isInProgress ? 'bg-primary' : '')" :style="{ width: step.isDone ? '100%' : (step.isInProgress ? '50%' : '0%') }"></div>
                                       </div>
-
+                                      
                                       <div class="d-flex gap-3 align-items-center flex-wrap">
                                           <div v-for="(assignee, aIdx) in step.assignees" :key="aIdx" class="text-center" style="width: 60px;">
-                                              <div class="rounded-circle d-flex align-items-center justify-content-center text-white mb-1 position-relative mx-auto"
-                                                   :class="assignee.status === 'DONE' ? 'bg-success' : 'bg-primary'"
+                                              <div class="rounded-circle d-flex align-items-center justify-content-center text-white mb-1 position-relative mx-auto" 
+                                                   :class="assignee.status === 'DONE' ? 'bg-success' : 'bg-primary'" 
                                                    style="width: 45px; height: 45px; font-weight: bold; border: 2px solid #2c2c2c;">
                                                   {{ toInitials(assignee.name) }}
                                                   <div v-if="assignee.status === 'DONE'" class="position-absolute bg-success rounded-circle text-white d-flex align-items-center justify-content-center border border-dark" style="width:16px; height:16px; bottom:-2px; right:-2px; font-size: 10px;">
@@ -1899,7 +1899,7 @@
                                               <div class="small text-truncate text-secondary" style="font-size: 10px;" :title="assignee.name">{{ assignee.name.split(' ')[0] }}</div>
                                               <div class="text-secondary" style="font-size: 9px;">{{ assignee.timeLabel }}</div>
                                           </div>
-
+                                          
                                           <div v-if="step.isCurrent" class="text-center" style="width: 60px; cursor: pointer;" @click="advanceProcess(currentHotPotatoRow)">
                                               <div class="rounded-circle d-flex align-items-center justify-content-center text-secondary mb-1 border border-secondary mx-auto" style="width: 45px; height: 45px; border-style: dashed !important;">
                                                   <i class="fas fa-plus"></i>
@@ -1910,7 +1910,7 @@
                                   </div>
                               </div>
                           </div>
-
+                          
                       </div>
                   </div>
                   <div class="custom-modal-footer">
@@ -7776,7 +7776,7 @@ const filteredStaffTrackerData = computed(() => {
           try {
               if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG);
           } catch(e) {}
-
+          
           let startDate = new Date();
           const startDateRaw = row['F. INICIO'] || row['FECHA'] || row['ALTA'] || row['FECHA INICIO'] || row['FECHA_INICIO'];
           if (startDateRaw) {
@@ -7793,7 +7793,7 @@ const filteredStaffTrackerData = computed(() => {
           }
 
           let mapCotStr = row["MAP COT"] || row.PROCESO || "";
-
+          
           let etapasCompletadas = 0;
           let bolitasCompletadas = 0;
           let totalBolitas = 0;
@@ -7803,7 +7803,7 @@ const filteredStaffTrackerData = computed(() => {
               let isCurrent = getProcessStatus(row) === stepId;
               let isDone = false;
               let isInProgress = false;
-
+              
               if (stepEntries.length > 0) {
                   isDone = stepEntries.every(e => e.status === 'DONE');
                   isInProgress = stepEntries.some(e => e.status === 'IN_PROGRESS');
@@ -7814,13 +7814,13 @@ const filteredStaffTrackerData = computed(() => {
                   if (pMatch && pMatch.includes('🟡')) isInProgress = true;
                   if (pMatch && pMatch.includes('🔴')) isInProgress = true;
               }
-
+              
               if (isDone) etapasCompletadas++;
-
+              
               const assignees = stepEntries.map(entry => {
                   totalBolitas++;
                   if (entry.status === 'DONE') bolitasCompletadas++;
-
+                  
                   let tLabel = '';
                   if (entry.timestamp) {
                       const tDate = new Date(entry.timestamp);
@@ -7829,9 +7829,9 @@ const filteredStaffTrackerData = computed(() => {
                       let mins = tDate.getMinutes();
                       let ampm = hrs >= 12 ? 'pm' : 'am';
                       hrs = hrs % 12;
-                      hrs = hrs ? hrs : 12;
+                      hrs = hrs ? hrs : 12; 
                       mins = mins < 10 ? '0'+mins : mins;
-
+                      
                       if (isToday) {
                           tLabel = `Hoy ${hrs}:${mins}${ampm}`;
                       } else {
@@ -7845,7 +7845,7 @@ const filteredStaffTrackerData = computed(() => {
                   } else if (entry.dateStr) {
                       tLabel = entry.dateStr.split(',')[0];
                   }
-
+                  
                   return {
                       name: entry.assignee,
                       status: entry.status,
@@ -7861,13 +7861,13 @@ const filteredStaffTrackerData = computed(() => {
                   assignees: assignees
               };
           });
-
+          
           row._stats = {
               etapasCompletadas,
               bolitasCompletadas,
               totalBolitas
           };
-
+          
           return detailedSteps;
       };
 
