@@ -2062,7 +2062,7 @@
                              <span style="position:absolute; right:2px; top:50%; transform:translateY(-50%); color:#217346; font-size:10px; font-weight:bold; pointer-events:none;">%</span>
                          </div>
                          <div v-else-if="isCol(h, ['ESTATUS','STATUS'])" style="width:100%; height:100%;">
-                             <div v-if="currentUsername === 'ANTONIA_VENTAS'" class="d-flex flex-column h-100">
+                             <div v-if="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100">
                                   <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold; padding:4px; text-align:center; white-space:normal; line-height:1.1; min-height: 25px;"
                                        :style="getAntoniaStatusStyle(row[h])"
                                        @click="openStatusSelector(row, h)">
@@ -2130,7 +2130,7 @@
                                 {{ row[h] }}%
                             </div>
 
-                            <div v-else-if="isCol(h, ['ESTATUS','STATUS']) && currentUsername === 'ANTONIA_VENTAS'"
+                            <div v-else-if="isCol(h, ['ESTATUS','STATUS']) && (currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS')))"
                                  style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; padding:0 4px; text-align:center; white-space:normal; line-height:1.1;"
                                  :style="getAntoniaStatusStyle(row[h])">
                                  {{ row[h] }}
@@ -5642,7 +5642,7 @@ const filteredStaffTrackerData = computed(() => {
           const restrictedRoles = ['ANGEL_USER', 'TERESA_USER', 'EDUARDO_USER', 'MANZANARES_USER', 'RAMIRO_USER', 'SEBASTIAN_USER', 'EDGAR_USER'];
           if (restrictedRoles.includes(currentRole.value)) {
               const hUp = String(h).toUpperCase();
-              const allowed = ['AVANCE', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', 'CORREO', 'CARPETA', 'COMENTARIOS', 'CORREOS', 'CARPETAS'];
+              const allowed = ['ESTATUS', 'STATUS', 'MAP COT', 'PROCESO', 'AVANCE', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', 'CORREO', 'CARPETA', 'COMENTARIOS', 'CORREOS', 'CARPETAS'];
               return allowed.some(a => hUp.includes(a));
           }
 
