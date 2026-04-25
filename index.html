@@ -1838,6 +1838,39 @@
             </div>
           </div>
 
+
+          <!-- HOT POTATO MODAL -->
+          <div v-if="showHotPotatoModal" class="custom-modal-overlay" @click.self="closeHotPotatoModal">
+              <div class="custom-modal animate__animated animate__zoomIn" style="width: 600px; max-width: 90vw;">
+                  <div class="custom-modal-header bg-danger text-white">
+                      <span><i class="fas fa-fire me-2"></i>ESTATUS PAPA CALIENTE - {{ currentHotPotatoRow?.FOLIO || currentHotPotatoRow?.ID }}</span>
+                      <button class="btn btn-sm btn-link text-white" @click="closeHotPotatoModal"><i class="fas fa-times"></i></button>
+                  </div>
+                  <div class="custom-modal-body p-4 bg-light text-center">
+                      <div v-if="currentHotPotatoRow">
+                          <h6 class="fw-bold mb-3 text-secondary">{{ currentHotPotatoRow.CLIENTE || 'Sin Cliente' }}</h6>
+                          <div class="hp-timeline-container justify-content-center flex-wrap" style="min-height:80px;">
+                              <div v-for="(step, sIdx) in getProcessTimeline(currentHotPotatoRow)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(currentHotPotatoRow) : null">
+                                  <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
+                                      <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
+                                      <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
+                                          <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                      </div>
+                                  </div>
+                                  <div class="hp-text">
+                                      {{ step.isDone ? 'Hecho' : 'Pendiente' }} {{ step.id }}<br>
+                                      <span class="hp-time">{{ step.timeLabel }}</span>
+                                  </div>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+                  <div class="custom-modal-footer">
+                      <button class="btn btn-secondary btn-sm" @click="closeHotPotatoModal">Cerrar</button>
+                  </div>
+              </div>
+          </div>
+
           <!-- PROCESS FLOW MODAL -->
           <div v-if="showProcessFlow" class="custom-modal-overlay" @click.self="showProcessFlow = false">
               <div class="custom-modal flow-modal animate__animated animate__zoomIn">
@@ -2032,21 +2065,8 @@
                                        @click="openStatusSelector(row, h)">
                                       {{ row[h] }}
                                   </div>
-                                  <div style="flex: 1 1 auto; display:flex; align-items:center; background:#f8f9fa; border-top:1px solid #dee2e6;">
-                                      <div class="hp-timeline-container w-100 m-0 py-1" style="min-height:40px;">
-                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null">
-                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
-                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
-                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
-                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
-                                                  </div>
-                                              </div>
-                                              <div class="hp-text">
-                                                  {{ step.isDone ? 'Hecho' : 'Pendiente' }} {{ step.id }}<br>
-                                                  <span class="hp-time">{{ step.timeLabel }}</span>
-                                              </div>
-                                          </div>
-                                      </div>
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
+                                      <i class="fas fa-fire text-danger fa-lg py-1"></i>
                                   </div>
                              </div>
                              <input v-else
@@ -7540,6 +7560,17 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const showProcessFlow = ref(false);
+      const showHotPotatoModal = ref(false);
+      const currentHotPotatoRow = ref(null);
+
+      const openHotPotatoModal = (row) => {
+          currentHotPotatoRow.value = row;
+          showHotPotatoModal.value = true;
+      };
+      const closeHotPotatoModal = () => {
+          showHotPotatoModal.value = false;
+          currentHotPotatoRow.value = null;
+      };
       const openProcessFlow = () => {
           showProcessFlow.value = true;
           nextTick(() => {
@@ -7971,7 +8002,7 @@ const filteredStaffTrackerData = computed(() => {
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
-      getProcessTimeline, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName };
+      getProcessTimeline, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
