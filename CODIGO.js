@@ -1344,11 +1344,14 @@ function internalUpdateTask(personName, taskData, username) {
 
              if (taskData._assignToWorker && taskData._assignStep) {
                  try {
-                     const assignData = JSON.parse(JSON.stringify(distData));
-                     assignData['ESTATUS'] = 'PENDIENTE';
-                     assignData['AVANCE'] = '0%';
-                     const tRes = internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
-                     if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${taskData._assignToWorker}: ${tRes.message}`);
+                     const workers = Array.isArray(taskData._assignToWorker) ? taskData._assignToWorker : [taskData._assignToWorker];
+                     for (let worker of workers) {
+                         const assignData = JSON.parse(JSON.stringify(distData));
+                         assignData['ESTATUS'] = 'PENDIENTE';
+                         assignData['AVANCE'] = '0%';
+                         const tRes = internalBatchUpdateTasks(worker, [assignData]);
+                         if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${worker}: ${tRes.message}`);
+                     }
                  } catch(e) {
                      registrarLog("ANTONIA", "DIST_ERROR", e.toString());
                  }
@@ -1444,12 +1447,14 @@ function internalUpdateTask(personName, taskData, username) {
                              if (updated) {
                                  const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
                                  let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
-                                 let mapCotParts = stepsOrder.map(step => {
-                                     const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
-                                     if (stepEntry) {
-                                         if (stepEntry.status === 'DONE') return '🟢 ' + step;
-                                         if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
-                                         if (stepEntry.status === 'PENDING') return '🔴 ' + step;
+                                                                  let mapCotParts = stepsOrder.map(step => {
+                                     const stepEntries = updatedLog.filter(e => e.step === step || e.to === step);
+                                     if (stepEntries.length > 0) {
+                                         const allDone = stepEntries.every(e => e.status === 'DONE');
+                                         if (allDone) return '🟢 ' + step;
+                                         const anyInProgress = stepEntries.some(e => e.status === 'IN_PROGRESS');
+                                         if (anyInProgress) return '🟡 ' + step;
+                                         return '🔴 ' + step;
                                      }
                                      let oldPart = oldParts.find(p => p.includes(step));
                                      if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
@@ -2949,7 +2954,7 @@ function test_Flujo_Completo_Delegacion_y_Sincronizacion() {
 
         // Paso 1 (Delegar) -> Simulado desde Frontend a internalUpdateTask
         const taskRow = Object.assign({}, dbAntonia[0]);
-        taskRow._assignToWorker = "ANGEL SALINAS (VENTAS)";
+        taskRow._assignToWorker = ["ANGEL SALINAS (VENTAS)"];
         taskRow._assignStep = "CD";
         taskRow.PROCESO_LOG = JSON.stringify([{step: "CD", status: "IN_PROGRESS", assignee: "ANGEL SALINAS", timestamp: new Date().getTime()}]);
         taskRow["MAP COT"] = '⚪ L | 🔴 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC';
@@ -3867,19 +3872,21 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                            if (updated) {
                                const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
                                let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
-                               let mapCotParts = stepsOrder.map(step => {
-                                   const stepEntry = updatedLog.find(e => e.step === step || e.to === step);
-                                   if (stepEntry) {
-                                       if (stepEntry.status === 'DONE') return '🟢 ' + step;
-                                       if (stepEntry.status === 'IN_PROGRESS') return '🟡 ' + step;
-                                       if (stepEntry.status === 'PENDING') return '🔴 ' + step;
-                                   }
-                                   let oldPart = oldParts.find(p => p.includes(step));
-                                   if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
-                                   if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
-                                   if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
-                                   return '⚪ ' + step;
-                               });
+                                                                let mapCotParts = stepsOrder.map(step => {
+                                     const stepEntries = updatedLog.filter(e => e.step === step || e.to === step);
+                                     if (stepEntries.length > 0) {
+                                         const allDone = stepEntries.every(e => e.status === 'DONE');
+                                         if (allDone) return '🟢 ' + step;
+                                         const anyInProgress = stepEntries.some(e => e.status === 'IN_PROGRESS');
+                                         if (anyInProgress) return '🟡 ' + step;
+                                         return '🔴 ' + step;
+                                     }
+                                     let oldPart = oldParts.find(p => p.includes(step));
+                                     if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
+                                     if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
+                                     if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
+                                     return '⚪ ' + step;
+                                 });
                                
                                let syncToAntonia = {
                                    'FOLIO': targetRow['FOLIO'] || tFolio,
