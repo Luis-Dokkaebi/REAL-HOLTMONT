@@ -1539,6 +1539,9 @@
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
                 <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
                 <button class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
+                <button class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="toggleTrackerSort" title="Invertir Orden">
+                    <i class="fas" :class="staffTrackerSortAsc ? 'fa-sort-amount-down-alt' : 'fa-sort-amount-up'"></i> Invertir Orden
+                </button>
                 <button v-if="trackerSubView === 'HISTORY'" class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="openProcessFlow" title="Ver Flujo"><i class="fas fa-project-diagram me-1"></i> FLUJO PROCESO COTIZACION</button>
             </div>
             <div v-if="trackerSubView === 'HISTORY'">
@@ -4684,6 +4687,7 @@ async function toggleVoiceRecording(btnElement) {
           ]
       });
       const staffTrackerFilters = ref({});
+      const staffTrackerSortAsc = ref(false); // NUEVO: Estado para el orden de las cotizaciones
       const activeTrackerTab = ref('OPERATIVO');
       const trackerSubView = ref('TASKS');
       const currentStaffName = ref('');
@@ -5594,20 +5598,27 @@ async function toggleVoiceRecording(btnElement) {
           });
       });
 
+      const toggleTrackerSort = () => {
+          staffTrackerSortAsc.value = !staffTrackerSortAsc.value;
+      };
+
 const filteredStaffTrackerData = computed(() => {
           if (!staffTracker.value.data) return [];
-          return staffTracker.value.data.filter(row => {
+          let filtered = staffTracker.value.data.filter(row => {
               for (const key in staffTrackerFilters.value) {
                   const filterVal = staffTrackerFilters.value[key];
                   if (filterVal) {
                       const rowVal = String(row[key] || '').trim();
-                      // Simple equality check (case-sensitive as values come from set) or insensitive?
-                      // Let's use exact match since options come from data.
                       if (rowVal !== filterVal) return false;
                   }
               }
               return true;
           });
+
+          if (!staffTrackerSortAsc.value) {
+              return filtered.slice().reverse();
+          }
+          return filtered;
       });
 
       const filteredStaffTrackerHistory = computed(() => {
@@ -8000,7 +8011,7 @@ const filteredStaffTrackerData = computed(() => {
       showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
-      staffTrackerFilters, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
+      staffTrackerFilters, staffTrackerSortAsc, toggleTrackerSort, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
       getProcessTimeline, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal };
     }
