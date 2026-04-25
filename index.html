@@ -726,7 +726,7 @@
             </div>
         </div>
 
-        <div v-if="Object.keys(config.departments).length">
+        <div v-if="config && config.departments && Object.keys(config.departments).length">
             <div class="section-title">ÁREAS</div>
             <div class="nav-item" v-for="(d,k) in config.departments" @click="selectDept(k)" :class="{ active: currentDept === k }" :style="{ borderRight: currentDept === k ? '3px solid ' + d.color : '3px solid transparent' }">
                 <div class="nav-icon-col"><i class="fas" :class="d.icon" :style="{ color: d.color }"></i></div>
@@ -1849,23 +1849,68 @@
                       <span><i class="fas fa-fire me-2"></i>ESTATUS PAPA CALIENTE - {{ currentHotPotatoRow?.FOLIO || currentHotPotatoRow?.ID }}</span>
                       <button class="btn btn-sm btn-link text-white" @click="closeHotPotatoModal"><i class="fas fa-times"></i></button>
                   </div>
-                  <div class="custom-modal-body p-4 bg-light text-center">
+                  <div class="custom-modal-body bg-dark text-light p-4" style="text-align: left;">
                       <div v-if="currentHotPotatoRow">
-                          <h6 class="fw-bold mb-3 text-secondary">{{ currentHotPotatoRow.CLIENTE || 'Sin Cliente' }}</h6>
-                          <div class="hp-timeline-container justify-content-center flex-wrap" style="min-height:80px;">
-                              <div v-for="(step, sIdx) in getProcessTimeline(currentHotPotatoRow)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(currentHotPotatoRow) : null">
-                                  <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
-                                      <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
-                                      <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
-                                          <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                          <div class="d-flex justify-content-between align-items-center mb-4">
+                              <div>
+                                  <h5 class="fw-bold mb-1 text-white">{{ currentHotPotatoRow.CLIENTE || 'Sin Cliente' }}</h5>
+                                  <span class="text-secondary small">Complejidad alta · Folio: {{ currentHotPotatoRow.FOLIO || currentHotPotatoRow.ID }}</span>
+                              </div>
+                          </div>
+
+                          <div class="d-flex gap-3 mb-4">
+                              <div class="bg-black border border-secondary rounded p-3 text-center" style="flex:1">
+                                  <div class="small text-secondary mb-1">Etapas</div>
+                                  <div class="fs-4 fw-bold text-white">{{ currentHotPotatoRow._stats ? currentHotPotatoRow._stats.etapasCompletadas : 0 }}/7</div>
+                                  <div class="small text-secondary">completadas</div>
+                              </div>
+                              <div class="bg-black border border-secondary rounded p-3 text-center" style="flex:1">
+                                  <div class="small text-secondary mb-1">Bolitas</div>
+                                  <div class="fs-4 fw-bold text-white">{{ currentHotPotatoRow._stats ? currentHotPotatoRow._stats.bolitasCompletadas : 0 }}/{{ currentHotPotatoRow._stats ? currentHotPotatoRow._stats.totalBolitas : 0 }}</div>
+                                  <div class="small text-secondary">con palomita</div>
+                              </div>
+                          </div>
+
+                          <div class="hp-detailed-timeline">
+                              <div v-for="(step, sIdx) in getProcessTimelineDetailed(currentHotPotatoRow)" :key="sIdx" class="mb-4">
+                                  <div class="small text-secondary fw-bold mb-2 text-uppercase">ETAPA {{ sIdx + 1 }} — {{ getFullProcessName(step.id) }}</div>
+                                  <div class="border border-secondary rounded p-3 position-relative" style="background-color: #1a1a1a;">
+                                      <div class="d-flex justify-content-between align-items-center mb-3">
+                                          <div class="fw-bold text-white">{{ getFullProcessName(step.id) }}</div>
+                                          <div class="badge rounded-pill" :class="step.isDone ? 'bg-success text-white' : (step.isInProgress ? 'bg-warning text-dark' : 'bg-secondary text-white')">
+                                              {{ step.isDone ? 'Completado' : (step.isInProgress ? 'En proceso' : 'Pendiente') }}
+                                          </div>
                                       </div>
-                                  </div>
-                                  <div class="hp-text">
-                                      {{ step.isDone ? 'Hecho' : 'Pendiente' }} {{ step.id }}<br>
-                                      <span class="hp-time">{{ step.timeLabel }}</span>
+
+                                      <div class="progress mb-3 bg-dark" style="height: 4px;">
+                                          <div class="progress-bar" :class="step.isDone ? 'bg-success' : (step.isInProgress ? 'bg-primary' : '')" :style="{ width: step.isDone ? '100%' : (step.isInProgress ? '50%' : '0%') }"></div>
+                                      </div>
+
+                                      <div class="d-flex gap-3 align-items-center flex-wrap">
+                                          <div v-for="(assignee, aIdx) in step.assignees" :key="aIdx" class="text-center" style="width: 60px;">
+                                              <div class="rounded-circle d-flex align-items-center justify-content-center text-white mb-1 position-relative mx-auto"
+                                                   :class="assignee.status === 'DONE' ? 'bg-success' : 'bg-primary'"
+                                                   style="width: 45px; height: 45px; font-weight: bold; border: 2px solid #2c2c2c;">
+                                                  {{ toInitials(assignee.name) }}
+                                                  <div v-if="assignee.status === 'DONE'" class="position-absolute bg-success rounded-circle text-white d-flex align-items-center justify-content-center border border-dark" style="width:16px; height:16px; bottom:-2px; right:-2px; font-size: 10px;">
+                                                      <i class="fas fa-check"></i>
+                                                  </div>
+                                              </div>
+                                              <div class="small text-truncate text-secondary" style="font-size: 10px;" :title="assignee.name">{{ assignee.name.split(' ')[0] }}</div>
+                                              <div class="text-secondary" style="font-size: 9px;">{{ assignee.timeLabel }}</div>
+                                          </div>
+
+                                          <div v-if="step.isCurrent" class="text-center" style="width: 60px; cursor: pointer;" @click="advanceProcess(currentHotPotatoRow)">
+                                              <div class="rounded-circle d-flex align-items-center justify-content-center text-secondary mb-1 border border-secondary mx-auto" style="width: 45px; height: 45px; border-style: dashed !important;">
+                                                  <i class="fas fa-plus"></i>
+                                              </div>
+                                              <div class="small text-secondary" style="font-size: 10px;">Agregar</div>
+                                          </div>
+                                      </div>
                                   </div>
                               </div>
                           </div>
+
                       </div>
                   </div>
                   <div class="custom-modal-footer">
@@ -7726,6 +7771,106 @@ const filteredStaffTrackerData = computed(() => {
           return colors[idx] || 'btn-outline-primary';
       };
 
+      const getProcessTimelineDetailed = (row) => {
+          let log = [];
+          try {
+              if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG);
+          } catch(e) {}
+
+          let startDate = new Date();
+          const startDateRaw = row['F. INICIO'] || row['FECHA'] || row['ALTA'] || row['FECHA INICIO'] || row['FECHA_INICIO'];
+          if (startDateRaw) {
+              try {
+                  const parts = String(startDateRaw).split('/');
+                  if (parts.length === 3) {
+                      let yy = parseInt(parts[2]);
+                      if (yy < 100) yy += 2000;
+                      startDate = new Date(yy, parseInt(parts[1])-1, parseInt(parts[0]));
+                  } else {
+                      startDate = new Date(startDateRaw);
+                  }
+              } catch(e) {}
+          }
+
+          let mapCotStr = row["MAP COT"] || row.PROCESO || "";
+
+          let etapasCompletadas = 0;
+          let bolitasCompletadas = 0;
+          let totalBolitas = 0;
+
+          const detailedSteps = PROCESS_STEPS.map((stepId, idx) => {
+              let stepEntries = log.filter(l => l.step === stepId || l.to === stepId);
+              let isCurrent = getProcessStatus(row) === stepId;
+              let isDone = false;
+              let isInProgress = false;
+
+              if (stepEntries.length > 0) {
+                  isDone = stepEntries.every(e => e.status === 'DONE');
+                  isInProgress = stepEntries.some(e => e.status === 'IN_PROGRESS');
+                  if (isDone) isInProgress = false;
+              } else if (mapCotStr) {
+                  let pMatch = mapCotStr.split('|').find(p => p.trim().includes(stepId));
+                  if (pMatch && pMatch.includes('🟢')) isDone = true;
+                  if (pMatch && pMatch.includes('🟡')) isInProgress = true;
+                  if (pMatch && pMatch.includes('🔴')) isInProgress = true;
+              }
+
+              if (isDone) etapasCompletadas++;
+
+              const assignees = stepEntries.map(entry => {
+                  totalBolitas++;
+                  if (entry.status === 'DONE') bolitasCompletadas++;
+
+                  let tLabel = '';
+                  if (entry.timestamp) {
+                      const tDate = new Date(entry.timestamp);
+                      const isToday = new Date().toDateString() === tDate.toDateString();
+                      let hrs = tDate.getHours();
+                      let mins = tDate.getMinutes();
+                      let ampm = hrs >= 12 ? 'pm' : 'am';
+                      hrs = hrs % 12;
+                      hrs = hrs ? hrs : 12;
+                      mins = mins < 10 ? '0'+mins : mins;
+
+                      if (isToday) {
+                          tLabel = `Hoy ${hrs}:${mins}${ampm}`;
+                      } else {
+                          const isYesterday = new Date(new Date().setDate(new Date().getDate()-1)).toDateString() === tDate.toDateString();
+                          if (isYesterday) {
+                              tLabel = `Ayer ${hrs}:${mins}${ampm}`;
+                          } else {
+                              const _d = new Date(entry.timestamp); tLabel = `${_d.getDate()}/${_d.getMonth()+1}/${String(_d.getFullYear()).slice(-2)}`;
+                          }
+                      }
+                  } else if (entry.dateStr) {
+                      tLabel = entry.dateStr.split(',')[0];
+                  }
+
+                  return {
+                      name: entry.assignee,
+                      status: entry.status,
+                      timeLabel: tLabel
+                  };
+              });
+
+              return {
+                  id: stepId,
+                  isDone: isDone,
+                  isCurrent: isCurrent || isInProgress,
+                  isInProgress: isInProgress,
+                  assignees: assignees
+              };
+          });
+
+          row._stats = {
+              etapasCompletadas,
+              bolitasCompletadas,
+              totalBolitas
+          };
+
+          return detailedSteps;
+      };
+
       const getProcessTimeline = (row) => {
           let log = [];
           try {
@@ -7885,54 +8030,66 @@ const filteredStaffTrackerData = computed(() => {
               return;
           }
 
-          const staffOptions = {};
-          if (config.value && Array.isArray(config.value.directory)) {
-              config.value.directory.forEach(p => {
-                  if (p.name !== 'ANTONIA_VENTAS') {
-                      staffOptions[p.name] = p.name;
-                  }
-              });
-          }
+          const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory.filter(p => p.name !== 'ANTONIA_VENTAS').map(p => p.name) : [];
           
-          const { value: selectedWorker, isDismissed } = await Swal.fire({
-              title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
-              text: `¿A quién se le asignará esta tarea?`,
-              input: 'select',
-              inputOptions: staffOptions,
-              inputPlaceholder: 'Selecciona un responsable...',
-              showCancelButton: true,
-              confirmButtonText: 'Asignar',
-              cancelButtonText: 'Cancelar'
+          let optionsHtml = '';
+          staffList.forEach(name => {
+              optionsHtml += `<option value="${name}">${name}</option>`;
           });
 
-          if (isDismissed || !selectedWorker) return;
+          const { value: selectedWorkers, isDismissed } = await Swal.fire({
+              title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
+              html: `
+                  <div class="mb-2 text-start text-muted small">Selecciona una o varias personas para esta etapa (Ctrl/Cmd + Click para múltiples):</div>
+                  <select id="swal-multi-select" class="form-select" multiple size="8">
+                      ${optionsHtml}
+                  </select>
+              `,
+              showCancelButton: true,
+              confirmButtonText: 'Asignar',
+              cancelButtonText: 'Cancelar',
+              preConfirm: () => {
+                  const selectElement = document.getElementById('swal-multi-select');
+                  const selectedOptions = Array.from(selectElement.selectedOptions).map(option => option.value);
+                  if (selectedOptions.length === 0) {
+                      Swal.showValidationMessage('Debes seleccionar al menos una persona');
+                      return false;
+                  }
+                  return selectedOptions;
+              }
+          });
+
+          if (isDismissed || !selectedWorkers || selectedWorkers.length === 0) return;
 
           let log = [];
           try { if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG); } catch(e){}
           
-          let existing = log.find(e => e.step === currentStatus || e.to === currentStatus);
-          if (existing) {
-               existing.status = 'IN_PROGRESS';
-               existing.assignee = selectedWorker;
-               existing.timestamp = new Date().getTime();
-               existing.dateStr = new Date().toLocaleString();
-          } else {
-               log.push({
-                   step: currentStatus,
-                   status: 'IN_PROGRESS',
-                   assignee: selectedWorker,
-                   timestamp: new Date().getTime(),
-                   dateStr: new Date().toLocaleString()
-               });
-          }
+          // Only add entries for workers that are not already in progress or done for this step
+          selectedWorkers.forEach(worker => {
+               let existing = log.find(e => (e.step === currentStatus || e.to === currentStatus) && e.assignee === worker);
+               if (existing) {
+                    existing.status = 'IN_PROGRESS';
+                    existing.timestamp = new Date().getTime();
+                    existing.dateStr = new Date().toLocaleString();
+               } else {
+                    log.push({
+                        step: currentStatus,
+                        status: 'IN_PROGRESS',
+                        assignee: worker,
+                        timestamp: new Date().getTime(),
+                        dateStr: new Date().toLocaleString()
+                    });
+               }
+          });
           
           row.PROCESO_LOG = JSON.stringify(log);
           
           let newParts = PROCESS_STEPS.map(step => {
-              let entry = log.find(l => l.step === step || l.to === step);
-              if (entry) {
-                  if (entry.status === 'DONE') return '🟢 ' + step;
-                  if (entry.status === 'IN_PROGRESS') return '🟡 ' + step;
+              let sEntries = log.filter(l => l.step === step || l.to === step);
+              if (sEntries.length > 0) {
+                  const allDone = sEntries.every(e => e.status === 'DONE');
+                  if (allDone) return '🟢 ' + step;
+                  return '🟡 ' + step;
               }
               if (step === currentStatus) return '🔴 ' + step;
               let idx = PROCESS_STEPS.indexOf(step);
@@ -7942,7 +8099,7 @@ const filteredStaffTrackerData = computed(() => {
           });
           row["MAP COT"] = newParts.join(' | ');
 
-          row._assignToWorker = selectedWorker;
+          row._assignToWorker = selectedWorkers;
           row._assignStep = currentStatus;
 
           Swal.fire({
@@ -8012,10 +8169,10 @@ const filteredStaffTrackerData = computed(() => {
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, staffTrackerSortAsc, toggleTrackerSort, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
-      getProcessTimeline, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal };
+      getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal };
     }
   });
-  app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message }); };
+  app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message + ' ' + err.stack }); };
   const mountedApp = app.mount('#app');
   window.app = mountedApp; // Expose for Playwright verification
 
