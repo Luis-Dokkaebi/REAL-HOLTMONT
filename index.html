@@ -1844,12 +1844,12 @@
 
           <!-- HOT POTATO MODAL -->
           <div v-if="showHotPotatoModal" class="custom-modal-overlay" @click.self="closeHotPotatoModal">
-              <div class="custom-modal animate__animated animate__zoomIn" style="width: 600px; max-width: 90vw;">
+              <div class="custom-modal animate__animated animate__zoomIn" style="width: 600px; max-width: 90vw; max-height: 90vh; display: flex; flex-direction: column;">
                   <div class="custom-modal-header bg-danger text-white">
                       <span><i class="fas fa-fire me-2"></i>ESTATUS PAPA CALIENTE - {{ currentHotPotatoRow?.FOLIO || currentHotPotatoRow?.ID }}</span>
                       <button class="btn btn-sm btn-link text-white" @click="closeHotPotatoModal"><i class="fas fa-times"></i></button>
                   </div>
-                  <div class="custom-modal-body bg-dark text-light p-4" style="text-align: left;">
+                                    <div class="custom-modal-body bg-dark text-light p-4" style="text-align: left; overflow-y: auto; flex: 1;">
                       <div v-if="currentHotPotatoRow">
                           <div class="d-flex justify-content-between align-items-center mb-4">
                               <div>
