@@ -2113,8 +2113,15 @@
                                        @click="openStatusSelector(row, h)">
                                       {{ row[h] }}
                                   </div>
-                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
-                                      <i class="fas fa-fire text-danger fa-lg py-1"></i>
+                                  <div style="flex: 1 1 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer; padding: 4px 0; min-height: 36px; gap: 4px;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
+                                      <i class="fas fa-fire text-danger fa-lg"></i>
+                                      <div class="d-flex justify-content-center flex-wrap" style="max-width: 100%; padding: 0 2px; gap: 2px;">
+                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx"
+                                               style="width: 6px; height: 6px; border-radius: 50%;"
+                                               :style="{ backgroundColor: step.isDone ? '#28a745' : (step.isInProgress ? '#ffc107' : '#dc3545') }"
+                                               :title="step.id + (step.isDone ? ' (Hecho)' : (step.isInProgress ? ' (En progreso)' : ' (Pendiente)'))">
+                                          </div>
+                                      </div>
                                   </div>
                              </div>
                              <input v-else
