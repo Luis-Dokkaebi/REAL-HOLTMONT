@@ -2107,13 +2107,20 @@
                              <span style="position:absolute; right:2px; top:50%; transform:translateY(-50%); color:#217346; font-size:10px; font-weight:bold; pointer-events:none;">%</span>
                          </div>
                          <div v-else-if="isCol(h, ['ESTATUS','STATUS'])" style="width:100%; height:100%;">
-                             <div v-if="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100">
+                             <div v-if="['ADMIN', 'ADMIN_CONTROL', 'PPC_ADMIN'].includes(currentRole) || currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100">
                                   <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold; padding:4px; text-align:center; white-space:normal; line-height:1.1; min-height: 25px;"
                                        :style="getAntoniaStatusStyle(row[h])"
                                        @click="openStatusSelector(row, h)">
                                       {{ row[h] }}
                                   </div>
-                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
+                                  <div style="flex: 0 0 auto; display:flex; justify-content:center; gap:3px; padding:3px; background:#f8f9fa;">
+                                      <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx"
+                                           style="width:10px; height:10px; border-radius:50%;"
+                                           :style="{ backgroundColor: step.isDone ? '#28a745' : (step.isInProgress ? '#ffc107' : '#dc3545') }"
+                                           :title="getFullProcessName(step.id)">
+                                      </div>
+                                  </div>
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer; min-height: 20px;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
                                       <i class="fas fa-fire text-danger fa-lg py-1"></i>
                                   </div>
                              </div>
