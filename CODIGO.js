@@ -1436,8 +1436,9 @@ function internalUpdateTask(personName, taskData, username) {
                                  
                                  if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                      entry.status = 'DONE';
-                                     entry.timestamp = new Date().getTime();
-                                     entry.dateStr = new Date().toLocaleString();
+                                     entry.endTimestamp = new Date().getTime();
+                                     entry.endDateStr = new Date().toLocaleString();
+                                     // Se preserva entry.timestamp y entry.dateStr originales (Fecha de Inicio)
                                      updated = true;
                                      registrarLog("SYSTEM", "REVERSE_SYNC", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
                                  }
@@ -3860,8 +3861,9 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                    
                                    if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                        entry.status = 'DONE';
-                                       entry.timestamp = new Date().getTime();
-                                       entry.dateStr = new Date().toLocaleString();
+                                       entry.endTimestamp = new Date().getTime();
+                                       entry.endDateStr = new Date().toLocaleString();
+                                       // Se preserva entry.timestamp y entry.dateStr originales (Fecha de Inicio)
                                        updated = true;
                                        registrarLog("SYSTEM", "REVERSE_SYNC_BATCH", `${personName} completed step ${entry.step} for FOLIO ${tFolio}`);
                                    }
