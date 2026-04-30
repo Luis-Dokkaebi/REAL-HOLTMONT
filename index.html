@@ -2119,11 +2119,20 @@
                                        @click="openStatusSelector(row, h)">
                                       {{ row[h] }}
                                   </div>
-                                  <div style="flex: 0 0 auto; display:flex; justify-content:center; gap:3px; padding:3px; background:#f8f9fa;">
-                                      <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx"
-                                           style="width:10px; height:10px; border-radius:50%;"
-                                           :style="{ backgroundColor: step.isDone ? '#28a745' : (step.isInProgress ? '#ffc107' : '#dc3545') }"
-                                           :title="getFullProcessName(step.id)">
+                                  <div style="flex: 0 0 auto; display:flex; justify-content:center; gap:3px; padding:3px; background:#f8f9fa; overflow-x: auto;">
+                                      <div class="hp-timeline-container">
+                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step">
+                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
+                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
+                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
+                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                                  </div>
+                                              </div>
+                                              <div class="hp-text">
+                                                  {{ step.isDone ? 'HECHO' : 'PENDIENTE' }} {{ step.id }}<br>
+                                                  <span class="hp-time">{{ step.timeLabel === 'En tiempo' ? '-' : step.timeLabel }}</span>
+                                              </div>
+                                          </div>
                                       </div>
                                   </div>
                                   <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer; min-height: 20px;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
@@ -5782,7 +5791,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; }
           else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('AVANCE')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
-          else if (isCol(h, ['ESTATUS','STATUS'])) { w = '65px'; fs = '10px'; pad = '8px 1px'; }
+          else if (isCol(h, ['ESTATUS','STATUS'])) { w = 'auto'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; }
           else if (up === 'F2') { w = '35px'; fs = '10px'; align='center'; }
           else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; }
