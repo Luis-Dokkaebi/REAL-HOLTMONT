@@ -1886,8 +1886,8 @@
                                           <div class="progress-bar" :class="step.isDone ? 'bg-success' : (step.isInProgress ? 'bg-primary' : '')" :style="{ width: step.isDone ? '100%' : (step.isInProgress ? '50%' : '0%') }"></div>
                                       </div>
                                       
-                                      <div class="d-flex gap-3 align-items-center flex-wrap">
-                                          <div v-for="(assignee, aIdx) in step.assignees" :key="aIdx" class="text-center" style="width: 60px;">
+                                      <div class="d-flex gap-3 align-items-start flex-wrap">
+                                          <div v-for="(assignee, aIdx) in step.assignees" :key="aIdx" class="text-center" style="min-width: 60px; max-width: 100px;">
                                               <div class="rounded-circle d-flex align-items-center justify-content-center text-white mb-1 position-relative mx-auto" 
                                                    :class="assignee.status === 'DONE' ? 'bg-success' : 'bg-primary'" 
                                                    style="width: 45px; height: 45px; font-weight: bold; border: 2px solid #2c2c2c;">
@@ -1896,8 +1896,14 @@
                                                       <i class="fas fa-check"></i>
                                                   </div>
                                               </div>
-                                              <div class="small text-truncate text-secondary" style="font-size: 10px;" :title="assignee.name">{{ assignee.name.split(' ')[0] }}</div>
-                                              <div class="text-secondary" style="font-size: 9px;">{{ assignee.timeLabel }}</div>
+                                              <div class="small text-truncate text-secondary fw-bold" style="font-size: 10px;" :title="assignee.name">{{ assignee.name.split(' ')[0] }}</div>
+
+                                              <div v-if="assignee.startLabel" class="text-secondary mt-1" style="font-size: 9px; line-height: 1.1;">
+                                                  <div style="color: #adb5bd;"><i class="fas fa-play" style="font-size: 8px; margin-right:2px;"></i>{{ assignee.startLabel }}</div>
+                                                  <div v-if="assignee.endLabel" style="color: #adb5bd;"><i class="fas fa-stop" style="font-size: 8px; margin-right:2px;"></i>{{ assignee.endLabel }}</div>
+                                                  <div v-if="assignee.durationLabel" class="fw-bold mt-1" :class="assignee.status === 'DONE' ? 'text-success' : 'text-warning'"><i class="fas fa-clock" style="font-size: 8px; margin-right:2px;"></i>{{ assignee.durationLabel }}</div>
+                                              </div>
+                                              <div v-else class="text-secondary" style="font-size: 9px;">{{ assignee.timeLabel }}</div>
                                           </div>
                                           
                                           <div v-if="step.isCurrent" class="text-center" style="width: 60px; cursor: pointer;" @click="advanceProcess(currentHotPotatoRow)">
@@ -7828,9 +7834,9 @@ const filteredStaffTrackerData = computed(() => {
                   totalBolitas++;
                   if (entry.status === 'DONE') bolitasCompletadas++;
                   
-                  let tLabel = '';
-                  if (entry.timestamp) {
-                      const tDate = new Date(entry.timestamp);
+                  const formatDateLabel = (ts) => {
+                      if (!ts) return '';
+                      const tDate = new Date(ts);
                       const isToday = new Date().toDateString() === tDate.toDateString();
                       let hrs = tDate.getHours();
                       let mins = tDate.getMinutes();
@@ -7840,23 +7846,50 @@ const filteredStaffTrackerData = computed(() => {
                       mins = mins < 10 ? '0'+mins : mins;
                       
                       if (isToday) {
-                          tLabel = `Hoy ${hrs}:${mins}${ampm}`;
+                          return `Hoy ${hrs}:${mins}${ampm}`;
                       } else {
                           const isYesterday = new Date(new Date().setDate(new Date().getDate()-1)).toDateString() === tDate.toDateString();
                           if (isYesterday) {
-                              tLabel = `Ayer ${hrs}:${mins}${ampm}`;
+                              return `Ayer ${hrs}:${mins}${ampm}`;
                           } else {
-                              const _d = new Date(entry.timestamp); tLabel = `${_d.getDate()}/${_d.getMonth()+1}/${String(_d.getFullYear()).slice(-2)}`;
+                              return `${tDate.getDate()}/${tDate.getMonth()+1}/${String(tDate.getFullYear()).slice(-2)} ${hrs}:${mins}${ampm}`;
                           }
                       }
-                  } else if (entry.dateStr) {
-                      tLabel = entry.dateStr.split(',')[0];
-                  }
+                  };
                   
+                  let startLabel = formatDateLabel(entry.timestamp) || (entry.dateStr ? entry.dateStr.split(',')[0] : '');
+                  let endLabel = formatDateLabel(entry.endTimestamp) || (entry.endDateStr ? entry.endDateStr.split(',')[0] : '');
+
+                  let durationLabel = '';
+                  let startTime = entry.timestamp;
+                  let endTime = entry.endTimestamp;
+
+                  if (startTime) {
+                      let durationMs = 0;
+                      if (endTime) {
+                          durationMs = endTime - startTime;
+                      } else if (entry.status === 'IN_PROGRESS') {
+                          durationMs = new Date().getTime() - startTime;
+                      }
+
+                      if (durationMs > 0) {
+                          const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
+                          const hours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                          if (days > 0) durationLabel = `${days}d ${hours}h`;
+                          else if (hours > 0) durationLabel = `${hours}h`;
+                          else durationLabel = '< 1h';
+                      }
+                  }
+
                   return {
                       name: entry.assignee,
                       status: entry.status,
-                      timeLabel: tLabel
+                      timeLabel: startLabel,
+                      startLabel: startLabel,
+                      endLabel: endLabel,
+                      durationLabel: durationLabel,
+                      timestamp: entry.timestamp,
+                      endTimestamp: entry.endTimestamp
                   };
               });
 
@@ -8076,8 +8109,13 @@ const filteredStaffTrackerData = computed(() => {
                let existing = log.find(e => (e.step === currentStatus || e.to === currentStatus) && e.assignee === worker);
                if (existing) {
                     existing.status = 'IN_PROGRESS';
-                    existing.timestamp = new Date().getTime();
-                    existing.dateStr = new Date().toLocaleString();
+                    // Conservamos el inicio original si existe, sino lo creamos. Limpiamos campos de fin por si fue reasignado tras terminar
+                    if (!existing.timestamp) {
+                        existing.timestamp = new Date().getTime();
+                        existing.dateStr = new Date().toLocaleString();
+                    }
+                    if (existing.endTimestamp) delete existing.endTimestamp;
+                    if (existing.endDateStr) delete existing.endDateStr;
                } else {
                     log.push({
                         step: currentStatus,
