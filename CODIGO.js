@@ -2410,8 +2410,9 @@ function cmdRealizarAlta() {
     return;
   }
 
+  const currentSheetName = sheet.getName();
   if (!taskObj["FOLIO"] && !taskObj["ID"]) {
-    taskObj["FOLIO"] = "PPC-" + Math.floor(Math.random() * 100000);
+    let prefix = 'PPC-'; if (currentSheetName === 'JESUS_CANTU') prefix = 'JC-'; else if (currentSheetName === 'LUIS_CARLOS' || currentSheetName === 'ADMINISTRADOR') prefix = 'LC-'; else if (currentSheetName === 'JAIME_OLIVO') prefix = 'JO-'; else if (currentSheetName === 'ANTONIA_VENTAS') prefix = 'AV-'; taskObj["FOLIO"] = prefix + Math.floor(Math.random() * 100000);
     const folioCol = headers.indexOf("FOLIO") > -1 ? headers.indexOf("FOLIO") : headers.indexOf("ID");
     if (folioCol > -1) {
       sheet.getRange(row, folioCol + 1).setValue(taskObj["FOLIO"]);
@@ -2420,7 +2421,6 @@ function cmdRealizarAlta() {
 
   SS.toast("Guardando y distribuyendo tarea...", "Holtmont", 5);
   
-  const currentSheetName = sheet.getName();
   taskObj['ESTATUS'] = taskObj['ESTATUS'] || 'ASIGNADO';
   const involucrados = taskObj["INVOLUCRADOS"] || taskObj["RESPONSABLE"] || "";
   const listaInv = String(involucrados).split(",").map(s => s.trim()).filter(s => s);
