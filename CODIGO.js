@@ -3690,38 +3690,40 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                           delete distData['PROCESO'];
              if (taskData._assignToWorker && taskData._assignStep) {
                  try {
-                     const assignData = JSON.parse(JSON.stringify(distData));
-                     assignData['ESTATUS'] = 'PENDIENTE';
-                     assignData['AVANCE'] = '0%';
-                     internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
-
-                     // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado
+                     const workers = Array.isArray(taskData._assignToWorker) ? taskData._assignToWorker : [taskData._assignToWorker];
+                     const stepTitle = taskData._assignStep;
                      const folioStr = taskData["FOLIO"] || taskData["ID"] || "SIN-FOLIO";
                      const clienteStr = taskData["CLIENTE"] || "Desconocido";
-                     const newAssignee = taskData._assignToWorker;
-                     const stepTitle = taskData._assignStep;
 
-                     const userEmail = findUserEmailByLabel(newAssignee);
-                     if (userEmail) {
-                         const fInicio = new Date();
-                         const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
+                     for (let worker of workers) {
+                         const assignData = JSON.parse(JSON.stringify(distData));
+                         assignData['ESTATUS'] = 'PENDIENTE';
+                         assignData['AVANCE'] = '0%';
+                         internalBatchUpdateTasks(worker, [assignData]);
 
-                         const payloadOutlook = {
-                             folio: folioStr,
-                             titulo: `Asignación Tracker: ${stepTitle} - ${clienteStr}`,
-                             descripcion: `Se te ha asignado la etapa ${stepTitle} para el folio ${folioStr}. Revisa tu Tracker en Holtmont Workspace.`,
-                             fechaInicio: fInicio.toISOString(),
-                             fechaFin: fFin.toISOString(),
-                             correoDestino: userEmail,
-                             asignadoPor: username
-                         };
+                         // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado
+                         const userEmail = findUserEmailByLabel(worker);
+                         if (userEmail) {
+                             const fInicio = new Date();
+                             const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
 
-                         const resultOutlook = NotifierService.sendToOutlook(payloadOutlook);
-                         if (resultOutlook.success) {
-                             console.log(`Notificación Outlook enviada para Folio: ${folioStr}`);
+                             const payloadOutlook = {
+                                 folio: folioStr,
+                                 titulo: `Asignación Tracker: ${stepTitle} - ${clienteStr}`,
+                                 descripcion: `Se te ha asignado la etapa ${stepTitle} para el folio ${folioStr}. Revisa tu Tracker en Holtmont Workspace.`,
+                                 fechaInicio: fInicio.toISOString(),
+                                 fechaFin: fFin.toISOString(),
+                                 correoDestino: userEmail,
+                                 asignadoPor: username
+                             };
+
+                             const resultOutlook = NotifierService.sendToOutlook(payloadOutlook);
+                             if (resultOutlook.success) {
+                                 console.log(`Notificación Outlook enviada para Folio: ${folioStr}`);
+                             }
+                         } else {
+                             console.warn(`No se encontró email corporativo para delegado: ${worker}`);
                          }
-                     } else {
-                         console.warn(`No se encontró email corporativo para delegado: ${newAssignee}`);
                      }
                  } catch(e) {}
              }
