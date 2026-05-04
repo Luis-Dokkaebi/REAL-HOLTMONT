@@ -8088,7 +8088,8 @@ const filteredStaffTrackerData = computed(() => {
               optionsHtml += `<option value="${name}">${name}</option>`;
           });
 
-          const { value: selectedWorkers, isDismissed } = await Swal.fire({
+          const isAdminOrAntonia = currentUsername.value === 'ANTONIA_VENTAS' || ['ADMIN_CONTROL', 'ADMIN', 'PPC_ADMIN'].includes(currentRole.value);
+          const { value: result, isDismissed } = await Swal.fire({
               title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
               html: `
                   <div class="mb-2 text-start text-muted small">Selecciona una o varias personas para esta etapa (Ctrl/Cmd + Click para múltiples):</div>
@@ -8097,8 +8098,11 @@ const filteredStaffTrackerData = computed(() => {
                   </select>
               `,
               showCancelButton: true,
+              showDenyButton: isAdminOrAntonia,
               confirmButtonText: 'Asignar',
               cancelButtonText: 'Cancelar',
+              denyButtonText: 'Saltar/Forzar Avance',
+              denyButtonColor: '#ffc107',
               preConfirm: () => {
                   const selectElement = document.getElementById('swal-multi-select');
                   const selectedOptions = Array.from(selectElement.selectedOptions).map(option => option.value);
@@ -8106,37 +8110,51 @@ const filteredStaffTrackerData = computed(() => {
                       Swal.showValidationMessage('Debes seleccionar al menos una persona');
                       return false;
                   }
-                  return selectedOptions;
+                  return { action: 'assign', workers: selectedOptions };
               }
           });
 
-          if (isDismissed || !selectedWorkers || selectedWorkers.length === 0) return;
+          if (isDismissed && !result && !Swal.getDenyButton().matches(':active') && !document.activeElement.classList.contains('swal2-deny')) return;
 
           let log = [];
           try { if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG); } catch(e){}
-          
-          // Only add entries for workers that are not already in progress or done for this step
-          selectedWorkers.forEach(worker => {
-               let existing = log.find(e => (e.step === currentStatus || e.to === currentStatus) && e.assignee === worker);
-               if (existing) {
-                    existing.status = 'IN_PROGRESS';
-                    // Conservamos el inicio original si existe, sino lo creamos. Limpiamos campos de fin por si fue reasignado tras terminar
-                    if (!existing.timestamp) {
-                        existing.timestamp = new Date().getTime();
-                        existing.dateStr = new Date().toLocaleString();
-                    }
-                    if (existing.endTimestamp) delete existing.endTimestamp;
-                    if (existing.endDateStr) delete existing.endDateStr;
-               } else {
-                    log.push({
-                        step: currentStatus,
-                        status: 'IN_PROGRESS',
-                        assignee: worker,
-                        timestamp: new Date().getTime(),
-                        dateStr: new Date().toLocaleString()
-                    });
-               }
-          });
+
+          if (result && result.action === 'assign') {
+              const selectedWorkers = result.workers;
+              // Only add entries for workers that are not already in progress or done for this step
+              selectedWorkers.forEach(worker => {
+                   let existing = log.find(e => (e.step === currentStatus || e.to === currentStatus) && e.assignee === worker);
+                   if (existing) {
+                        existing.status = 'IN_PROGRESS';
+                        if (!existing.timestamp) {
+                            existing.timestamp = new Date().getTime();
+                            existing.dateStr = new Date().toLocaleString();
+                        }
+                        if (existing.endTimestamp) delete existing.endTimestamp;
+                        if (existing.endDateStr) delete existing.endDateStr;
+                   } else {
+                        log.push({
+                            step: currentStatus,
+                            status: 'IN_PROGRESS',
+                            assignee: worker,
+                            timestamp: new Date().getTime(),
+                            dateStr: new Date().toLocaleString()
+                        });
+                   }
+              });
+          } else {
+              // Forced Advance (Saltar Fase)
+              // Create a DONE entry immediately
+              log.push({
+                  step: currentStatus,
+                  status: 'DONE',
+                  assignee: "ANTONIA_VENTAS (AUTORIZO)",
+                  timestamp: new Date().getTime(),
+                  dateStr: new Date().toLocaleString(),
+                  endTimestamp: new Date().getTime(),
+                  endDateStr: new Date().toLocaleString()
+              });
+          }
           
           row.PROCESO_LOG = JSON.stringify(log);
           
