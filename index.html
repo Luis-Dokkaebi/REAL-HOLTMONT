@@ -7736,36 +7736,50 @@ const filteredStaffTrackerData = computed(() => {
           return parts.join(' | ');
       };
 
-      const getProcessStatus = (row) => {
+            const getProcessStatus = (row) => {
           let log = [];
           try {
               log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
           } catch(e) { log = []; }
           if (!Array.isArray(log)) log = [];
 
-          let val = null;
+          let mapCot = row["MAP COT"] || row.PROCESO || "";
+
+          // Legacy override if using 'to' parameter directly
           if (log.length > 0) {
               const lastLog = log[log.length - 1];
               if (lastLog.to) {
-                  val = lastLog.to;
-              }
-          }
-          if (!val) {
-              let mapCot = row["MAP COT"] || row.PROCESO;
-              if (mapCot) {
-                  if (mapCot.includes('🔴')) {
-                     const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                     if (match) val = match[1];
-                  } else {
-                     val = mapCot;
+                  let mappedTo = LEGACY_PROCESS_MAP[lastLog.to] || lastLog.to;
+                  if (PROCESS_STEPS.includes(mappedTo)) {
+                      return mappedTo;
                   }
               }
           }
-          if (!val) return PROCESS_STEPS[0];
-          if (LEGACY_PROCESS_MAP[val]) {
-              val = LEGACY_PROCESS_MAP[val];
+
+          // Iterate through process steps in order
+          for (let step of PROCESS_STEPS) {
+              let isDone = false;
+              let stepEntries = log.filter(l => l.step === step || l.to === step || l.to === getFullProcessName(step));
+
+              if (stepEntries.length > 0) {
+                  // A step is done if all its entries in PROCESO_LOG are DONE
+                  isDone = stepEntries.every(e => e.status === 'DONE');
+              } else if (mapCot) {
+                  // Fallback to reading MAP COT
+                  let match = mapCot.split('|').find(p => p.trim().includes(step));
+                  if (match && match.includes('🟢')) {
+                      isDone = true;
+                  }
+              }
+
+              // Return the first step that is NOT done
+              if (!isDone) {
+                  return step;
+              }
           }
-          return val;
+
+          // If all steps are done, return the last step
+          return PROCESS_STEPS[PROCESS_STEPS.length - 1];
       };
 
       const getProcessBtnClass = (row) => {
