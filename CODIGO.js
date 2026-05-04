@@ -1337,6 +1337,41 @@ function internalUpdateTask(personName, taskData, username) {
         // ---------------------------------------------
 
         if (isAntonia) {
+             // Remove worker logic (Reverse Sync)
+             if (taskData._removeWorker) {
+                 const workerToRemove = taskData._removeWorker;
+                 try {
+                     let targetSheet = workerToRemove;
+                     if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
+                         const potentialSheet = targetSheet + " (VENTAS)";
+                         if (findSheetSmart(potentialSheet)) targetSheet = potentialSheet;
+                     }
+                     const workerSheet = findSheetSmart(targetSheet);
+                     if (workerSheet) {
+                         const folioIdx = getColIdx('FOLIO');
+                         const idIdx = getColIdx('ID');
+                         const targetId = String(taskData['FOLIO'] || taskData['ID']).toUpperCase().trim();
+
+                         if (targetId) {
+                             const data = workerSheet.getDataRange().getValues();
+                             for (let i = 1; i < data.length; i++) {
+                                 let rowFolio = (folioIdx > -1 ? data[i][folioIdx] : "") || (idIdx > -1 ? data[i][idIdx] : "");
+                                 if (String(rowFolio).toUpperCase().trim() === targetId) {
+                                     workerSheet.deleteRow(i + 1);
+                                     registrarLog("ANTONIA", "REMOVED_WORKER", `Eliminada tarea ${targetId} de ${targetSheet}`);
+                                     break; // assuming only one row per ID
+                                 }
+                             }
+                         }
+                     }
+                 } catch(e) {
+                     registrarLog("ANTONIA", "REMOVE_ERROR", e.toString());
+                 }
+                 // Avoid re-distributing to this worker during save
+                 delete taskData._removeWorker;
+                 delete taskData._assignStep;
+             }
+
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex;
              delete distData['PROCESO_LOG'];
@@ -3683,6 +3718,41 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                      }
                  });
              }
+             // Remove worker logic (Reverse Sync)
+             if (taskData._removeWorker) {
+                 const workerToRemove = taskData._removeWorker;
+                 try {
+                     let targetSheet = workerToRemove;
+                     if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
+                         const potentialSheet = targetSheet + " (VENTAS)";
+                         if (findSheetSmart(potentialSheet)) targetSheet = potentialSheet;
+                     }
+                     const workerSheet = findSheetSmart(targetSheet);
+                     if (workerSheet) {
+                         const folioIdx = getColIdx('FOLIO');
+                         const idIdx = getColIdx('ID');
+                         const targetId = String(taskData['FOLIO'] || taskData['ID']).toUpperCase().trim();
+
+                         if (targetId) {
+                             const data = workerSheet.getDataRange().getValues();
+                             for (let i = 1; i < data.length; i++) {
+                                 let rowFolio = (folioIdx > -1 ? data[i][folioIdx] : "") || (idIdx > -1 ? data[i][idIdx] : "");
+                                 if (String(rowFolio).toUpperCase().trim() === targetId) {
+                                     workerSheet.deleteRow(i + 1);
+                                     registrarLog("ANTONIA", "REMOVED_WORKER", `Eliminada tarea ${targetId} de ${targetSheet}`);
+                                     break; // assuming only one row per ID
+                                 }
+                             }
+                         }
+                     }
+                 } catch(e) {
+                     registrarLog("ANTONIA", "REMOVE_ERROR", e.toString());
+                 }
+                 // Avoid re-distributing to this worker during save
+                 delete taskData._removeWorker;
+                 delete taskData._assignStep;
+             }
+
              // Prepare distribution data
              const distData = JSON.parse(JSON.stringify(taskData));
              delete distData._rowIndex;
@@ -3690,38 +3760,40 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                           delete distData['PROCESO'];
              if (taskData._assignToWorker && taskData._assignStep) {
                  try {
-                     const assignData = JSON.parse(JSON.stringify(distData));
-                     assignData['ESTATUS'] = 'PENDIENTE';
-                     assignData['AVANCE'] = '0%';
-                     internalBatchUpdateTasks(taskData._assignToWorker, [assignData]);
-
-                     // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado
+                     const workers = Array.isArray(taskData._assignToWorker) ? taskData._assignToWorker : [taskData._assignToWorker];
+                     const stepTitle = taskData._assignStep;
                      const folioStr = taskData["FOLIO"] || taskData["ID"] || "SIN-FOLIO";
                      const clienteStr = taskData["CLIENTE"] || "Desconocido";
-                     const newAssignee = taskData._assignToWorker;
-                     const stepTitle = taskData._assignStep;
 
-                     const userEmail = findUserEmailByLabel(newAssignee);
-                     if (userEmail) {
-                         const fInicio = new Date();
-                         const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
+                     for (let worker of workers) {
+                         const assignData = JSON.parse(JSON.stringify(distData));
+                         assignData['ESTATUS'] = 'PENDIENTE';
+                         assignData['AVANCE'] = '0%';
+                         internalBatchUpdateTasks(worker, [assignData]);
 
-                         const payloadOutlook = {
-                             folio: folioStr,
-                             titulo: `Asignación Tracker: ${stepTitle} - ${clienteStr}`,
-                             descripcion: `Se te ha asignado la etapa ${stepTitle} para el folio ${folioStr}. Revisa tu Tracker en Holtmont Workspace.`,
-                             fechaInicio: fInicio.toISOString(),
-                             fechaFin: fFin.toISOString(),
-                             correoDestino: userEmail,
-                             asignadoPor: username
-                         };
+                         // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado
+                         const userEmail = findUserEmailByLabel(worker);
+                         if (userEmail) {
+                             const fInicio = new Date();
+                             const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
 
-                         const resultOutlook = NotifierService.sendToOutlook(payloadOutlook);
-                         if (resultOutlook.success) {
-                             console.log(`Notificación Outlook enviada para Folio: ${folioStr}`);
+                             const payloadOutlook = {
+                                 folio: folioStr,
+                                 titulo: `Asignación Tracker: ${stepTitle} - ${clienteStr}`,
+                                 descripcion: `Se te ha asignado la etapa ${stepTitle} para el folio ${folioStr}. Revisa tu Tracker en Holtmont Workspace.`,
+                                 fechaInicio: fInicio.toISOString(),
+                                 fechaFin: fFin.toISOString(),
+                                 correoDestino: userEmail,
+                                 asignadoPor: username
+                             };
+
+                             const resultOutlook = NotifierService.sendToOutlook(payloadOutlook);
+                             if (resultOutlook.success) {
+                                 console.log(`Notificación Outlook enviada para Folio: ${folioStr}`);
+                             }
+                         } else {
+                             console.warn(`No se encontró email corporativo para delegado: ${worker}`);
                          }
-                     } else {
-                         console.warn(`No se encontró email corporativo para delegado: ${newAssignee}`);
                      }
                  } catch(e) {}
              }
