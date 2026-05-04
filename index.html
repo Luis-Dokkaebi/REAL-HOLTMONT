@@ -1895,6 +1895,13 @@
                                                   <div v-if="assignee.status === 'DONE'" class="position-absolute bg-success rounded-circle text-white d-flex align-items-center justify-content-center border border-dark" style="width:16px; height:16px; bottom:-2px; right:-2px; font-size: 10px;">
                                                       <i class="fas fa-check"></i>
                                                   </div>
+                                                  <div v-if="step.isCurrent && assignee.status !== 'DONE'"
+                                                       @click.stop="removeWorkerFromHotPotato(currentHotPotatoRow, step.id, assignee.name)"
+                                                       class="position-absolute bg-danger rounded-circle text-white d-flex align-items-center justify-content-center border border-dark"
+                                                       style="width:16px; height:16px; top:-2px; right:-2px; font-size: 10px; cursor:pointer;"
+                                                       title="Eliminar asignación">
+                                                      <i class="fas fa-times"></i>
+                                                  </div>
                                               </div>
                                               <div class="small text-truncate text-secondary fw-bold" style="font-size: 10px;" :title="assignee.name">{{ assignee.name.split(' ')[0] }}</div>
 
@@ -8163,6 +8170,74 @@ const filteredStaffTrackerData = computed(() => {
           }
       };
 
+      const removeWorkerFromHotPotato = async (row, stepId, workerName) => {
+          if (!row || !row.PROCESO_LOG) return;
+
+          const res = await Swal.fire({
+              title: '¿Eliminar asignación?',
+              html: `¿Estás seguro de eliminar a <b>${workerName}</b> de la etapa <b>${getFullProcessName(stepId)}</b>?<br><br><small class="text-danger">Esto borrará la tarea de su Tracker.</small>`,
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, eliminar',
+              cancelButtonText: 'Cancelar',
+              confirmButtonColor: '#dc3545'
+          });
+
+          if (!res.isConfirmed) return;
+
+          let log = JSON.parse(row.PROCESO_LOG);
+
+          // Filtrar log para remover al trabajador de la etapa especifica
+          log = log.filter(e => !( (e.step === stepId || e.to === stepId) && e.assignee === workerName ));
+
+          row.PROCESO_LOG = JSON.stringify(log);
+
+          // Update MAP COT based on new log
+          let newParts = PROCESS_STEPS.map(step => {
+              let sEntries = log.filter(l => l.step === step || l.to === step);
+              if (sEntries.length > 0) {
+                  const allDone = sEntries.every(e => e.status === 'DONE');
+                  if (allDone) return '🟢 ' + step;
+                  return '🟡 ' + step;
+              }
+              const currentStatus = getProcessStatus(row);
+              if (step === currentStatus) return '🔴 ' + step;
+              let idx = PROCESS_STEPS.indexOf(step);
+              let currIdx = PROCESS_STEPS.indexOf(currentStatus);
+              if (idx < currIdx) return '🟢 ' + step;
+              return '⚪ ' + step;
+          });
+          row["MAP COT"] = newParts.join(' | ');
+
+          row._removeWorker = workerName;
+          row._assignStep = stepId;
+
+          Swal.fire({
+              title: 'Eliminando...',
+              text: 'Borrando tarea y actualizando estado...',
+              allowOutsideClick: false,
+              didOpen: () => { Swal.showLoading(); }
+          });
+
+          try {
+              const resp = await new Promise((resolve) => {
+                  google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+              });
+
+              delete row._removeWorker;
+              delete row._assignStep;
+
+              if (resp && resp.success) {
+                  Swal.fire({ title: 'Éxito', text: 'La asignación se ha eliminado correctamente.', icon: 'success', timer: 1500 });
+                  if (resp.data) Object.assign(row, resp.data);
+              } else {
+                  throw new Error(resp?.message || 'Error desconocido');
+              }
+          } catch(err) {
+              Swal.fire('Error', 'No se pudo eliminar: ' + err.toString(), 'error');
+          }
+      };
+
       const getLastUpdate = (row) => {
           try {
               if (!row.PROCESO_LOG) return '';
@@ -8183,7 +8258,7 @@ const filteredStaffTrackerData = computed(() => {
           } catch(e) { return ''; }
       };
 
-      return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
+      return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation, removeWorkerFromHotPotato,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
