@@ -5890,44 +5890,6 @@ const filteredStaffTrackerData = computed(() => {
       const loadWeeklyPlan = () => { weeklyPlanData.value.isLoading = true; google.script.run.withSuccessHandler(res => { weeklyPlanData.value.isLoading = false; if(res.success){ weeklyPlanData.value.headers = res.headers; weeklyPlanData.value.data = res.data; selectedWeek.value = ''; } else Swal.fire('Error', res.message, 'error'); }).apiFetchWeeklyPlanData(currentUsername.value); };
       const savePPCV3Row = (row, event) => {
           if (row._isSaving) return;
-
-          // --- VALIDADOR DE FECHA DE FINALIZACIÓN ---
-          const fechaAliases = ['FECHA_RESPUESTA', 'FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA', 'FECHA_FIN', 'DEADLINE', 'FEC. EST. FIN'];
-          let missingDate = false;
-          let foundDateColName = "";
-
-          if (weeklyPlanData && weeklyPlanData.value && weeklyPlanData.value.headers) {
-              weeklyPlanData.value.headers.forEach(h => {
-                  const hUp = String(h).toUpperCase().trim();
-                  if (fechaAliases.includes(hUp)) {
-                      foundDateColName = h;
-                      if (!row[h] || String(row[h]).trim() === '') {
-                          missingDate = true;
-                      }
-                  }
-              });
-          } else {
-              Object.keys(row).forEach(k => {
-                  const kUp = String(k).toUpperCase().trim();
-                  if (fechaAliases.includes(kUp)) {
-                      foundDateColName = k;
-                      if (!row[k] || String(row[k]).trim() === '') {
-                          missingDate = true;
-                      }
-                  }
-              });
-          }
-
-          if (missingDate) {
-              Swal.fire({
-                  icon: 'warning',
-                  title: 'Campo Obligatorio',
-                  text: `Debes escribir la fecha en la columna "${foundDateColName}" para poder guardar la actividad.`
-              });
-              return;
-          }
-          // --- FIN VALIDADOR ---
-
           row._isSaving = true;
 
           if (event && event.clientX) {
@@ -6579,52 +6541,6 @@ const filteredStaffTrackerData = computed(() => {
       const saveAllTrackerRows = () => {
           if (staffTracker.value.data.length === 0) return;
 
-          // --- VALIDADOR DE FECHA DE FINALIZACIÓN EN LOTE ---
-          const fechaAliases = ['FECHA_RESPUESTA', 'FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA', 'FECHA_FIN', 'DEADLINE', 'FEC. EST. FIN'];
-          let missingDateInRowIndex = -1;
-          let foundDateColName = "";
-
-          // Check all rows for missing dates
-          for (let i = 0; i < staffTracker.value.data.length; i++) {
-              const row = staffTracker.value.data[i];
-              let isMissing = false;
-              if (staffTracker.value.headers) {
-                  staffTracker.value.headers.forEach(h => {
-                      const hUp = String(h).toUpperCase().trim();
-                      if (fechaAliases.includes(hUp)) {
-                          if (!row[h] || String(row[h]).trim() === '') {
-                              isMissing = true;
-                              foundDateColName = h;
-                          }
-                      }
-                  });
-              } else {
-                  Object.keys(row).forEach(k => {
-                      const kUp = String(k).toUpperCase().trim();
-                      if (fechaAliases.includes(kUp)) {
-                          if (!row[k] || String(row[k]).trim() === '') {
-                              isMissing = true;
-                              foundDateColName = k;
-                          }
-                      }
-                  });
-              }
-              if (isMissing) {
-                  missingDateInRowIndex = i + 1;
-                  break; // Stop at first missing
-              }
-          }
-
-          if (missingDateInRowIndex !== -1) {
-              Swal.fire({
-                  icon: 'warning',
-                  title: 'Campo Obligatorio Faltante',
-                  text: `La fila #${missingDateInRowIndex} no tiene fecha en la columna "${foundDateColName}". Debes escribirla para poder "Guardar Todo".`
-              });
-              return;
-          }
-          // --- FIN VALIDADOR ---
-
           Swal.fire({
               title: '¿Guardar Todo?',
               text: `Se guardarán ${staffTracker.value.data.length} filas.`,
@@ -6680,45 +6596,6 @@ const filteredStaffTrackerData = computed(() => {
       const saveRow = (row, event) => {
           if (row._isSaving) return;
           row._isSaving = true;
-
-          // --- VALIDADOR DE FECHA DE FINALIZACIÓN ---
-          const fechaAliases = ['FECHA_RESPUESTA', 'FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA', 'FECHA_FIN', 'DEADLINE', 'FEC. EST. FIN'];
-          let missingDate = false;
-          let foundDateColName = "";
-
-          if (staffTracker && staffTracker.value && staffTracker.value.headers) {
-              staffTracker.value.headers.forEach(h => {
-                  const hUp = String(h).toUpperCase().trim();
-                  if (fechaAliases.includes(hUp)) {
-                      foundDateColName = h;
-                      if (!row[h] || String(row[h]).trim() === '') {
-                          missingDate = true;
-                      }
-                  }
-              });
-          } else {
-             // Fallback to check keys in row if headers are not available
-             Object.keys(row).forEach(k => {
-                 const kUp = String(k).toUpperCase().trim();
-                 if (fechaAliases.includes(kUp)) {
-                      foundDateColName = k;
-                      if (!row[k] || String(row[k]).trim() === '') {
-                          missingDate = true;
-                      }
-                 }
-             });
-          }
-
-          if (missingDate) {
-              row._isSaving = false;
-              Swal.fire({
-                  icon: 'warning',
-                  title: 'Campo Obligatorio',
-                  text: `Debes escribir la fecha en la columna "${foundDateColName}" para poder guardar la actividad.`
-              });
-              return;
-          }
-          // --- FIN VALIDADOR ---
 
 
           const sheetName = String(staffTracker.value.name).toUpperCase();
@@ -6821,6 +6698,17 @@ const filteredStaffTrackerData = computed(() => {
       const triggerUpload = (type) => { currentUploadType.value = type; fileInput.value.click(); };
       const promptExtraData = () => { if(!ppcData.value.concepto || !selectedResponsables.value.length) return Swal.fire('Faltan datos básicos','','warning'); extraData.value = { restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' }; showExtraModal.value = true; };
       const confirmAddToQueue = () => {
+          // --- VALIDADOR FECHA OBLIGATORIA (PPC MAESTRO Y WORKORDER) ---
+          if (!extraData.value.fechaRespuesta) {
+              Swal.fire({
+                  icon: 'warning',
+                  title: 'Campo Obligatorio',
+                  text: 'Debe colocar la Fecha de Respuesta de manera obligatoria para poder avanzar.'
+              });
+              return;
+          }
+          // --- FIN VALIDADOR ---
+
           // WORKORDER FLOW
           if (currentView.value === 'WORKORDER_FORM') {
              if (!currentWorkorderId.value) return;
