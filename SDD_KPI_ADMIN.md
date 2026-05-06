@@ -37,7 +37,8 @@ Se implementará un endpoint dedicado en el backend (ej. `apiFetchAdminKPIs`) qu
 
 ### 3.1 Tarjetas Superiores (Resumen Ejecutivo)
 *   **Cotizaciones Totales:** Conteo total de operaciones registradas. Se acompaña de un subtítulo "X colaboradores" calculado a partir de los valores únicos encontrados en la columna `VENDEDOR`.
-*   **Ganadas:** Conteo de filas cuyo `ESTATUS` coincida con cierre exitoso. El porcentaje (Tasa de cierre) se formula dividiendo las Ganadas entre las Cotizaciones Totales.
+*   **Ganadas:** Conteo de filas cuyo `ESTATUS` coincida con un cierre exitoso.
+    *   **Cálculo de "% de Ganadas" (Subtítulo verde):** A diferencia de un ratio de volumen crudo, esta métrica se calculará tomando como universo base **exclusivamente** el historial de cotizaciones que alcanzaron el estatus de **"Enviadas"**. La fórmula será: `(Total Ganadas / Total de cotizaciones con estatus histórico "Enviadas") * 100`. Esto permite medir la efectividad real del cierre descartando aquellas solicitudes que nunca llegaron a presentarse al cliente.
 *   **Perdidas / Riesgo:** Conteo de filas con estatus de estancamiento severo o perdidas. El monto monetario inferior ("$XXXk en riesgo") será la sumatoria simple de la columna representativa de valor para esas filas.
 *   **Eficiencia Promedio:** Promedio aritmético de la columna temporal de `DÍAS` (o `RELOJ`) evaluada a nivel global.
 
@@ -58,7 +59,7 @@ El frontend iterará sobre el arreglo `collaboratorStats` renderizando una lista
 
 *   **Colaborador:** Aplicará la regla corporativa de UI existente utilizando la función `toInitials()` para renderizar un círculo de avatar a la izquierda del nombre del vendedor.
 *   **Vol. (Volumen) y Ganadas:** Numeralia extraída directamente de la agrupación del backend.
-*   **% Cierre:** Reflejará el ratio de eficiencia individual de ventas.
+*   **% Cierre (Individual):** Para reflejar el ratio de eficiencia individual de ventas de manera precisa, no se tomará el volumen total en crudo. La fórmula específica a implementar será la comparativa directa entre victorias y derrotas definitivas: **`Ganadas / (Ganadas + Canceladas)`**. Esto aísla el rendimiento de las cotizaciones que aún se encuentran en progreso o seguimiento ("en el aire"), brindando una métrica de cierre definitiva ("Win Rate" neto).
 *   **Efic. (D):** Reflejará el promedio de tiempo individual de cada vendedor.
 *   **Estado (Semaforización):** Se implementará una lógica similar a la de `getTrafficStyle` existente en la plataforma, pero enfocada a eficiencia:
     *   `Eficiente` (Píldora contorno verde): Si la eficiencia promedio es excelente (ej. < 1.5d).
