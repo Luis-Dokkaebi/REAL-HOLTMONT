@@ -55,18 +55,19 @@ Para mantener la armonía de la plataforma web moderna, se integrará una librer
 *   **Productividad Diaria del Equipo (Línea):** Analiza el histórico de la semana actual utilizando la columna `FECHA` (parseando de manera defensiva strings ISO o fechas DD/MM/YY locales), contando el volumen de actividad por cada día (Lunes a Viernes).
 
 ### 3.3 Tabla Inferior (Rendimiento Individual)
-El frontend iterará sobre el arreglo `collaboratorStats` renderizando una lista en formato de tabla de solo lectura:
+El frontend iterará sobre el arreglo `collaboratorStats` renderizando una lista en formato de tabla de solo lectura que replica de manera exacta la distribución de columnas solicitada en el diseño visual:
 
-*   **Colaborador:** Aplicará la regla corporativa de UI existente utilizando la función `toInitials()` para renderizar un círculo de avatar a la izquierda del nombre del vendedor.
-*   **Vol. (Volumen) y Ganadas:** Numeralia extraída directamente de la agrupación del backend.
-*   **% Cierre (Individual):** Para reflejar el ratio de eficiencia individual de ventas de manera precisa, no se tomará el volumen total en crudo. La fórmula específica a implementar será la comparativa directa entre victorias y derrotas definitivas: **`Ganadas / (Ganadas + Canceladas)`**. Esto aísla el rendimiento de las cotizaciones que aún se encuentran en progreso o seguimiento ("en el aire"), brindando una métrica de cierre definitiva ("Win Rate" neto).
-*   **Efic. (D):** Reflejará el promedio de tiempo individual de cada vendedor.
-*   **Estado (Semaforización):** Se implementará una lógica similar a la de `getTrafficStyle` existente en la plataforma, pero enfocada a eficiencia:
+*   **COLABORADOR:** Aplicará la regla corporativa de UI existente utilizando la función `toInitials()` para renderizar un círculo de avatar a la izquierda del nombre del vendedor.
+*   **VOL.:** Numeralia extraída directamente de la agrupación del backend, indicando el volumen total de operaciones del individuo.
+*   **GANADAS:** Conteo numérico de cotizaciones cerradas exitosamente por el vendedor.
+*   **% CIERRE:** Para reflejar el ratio de eficiencia individual de ventas de manera precisa, no se tomará el volumen total en crudo. La fórmula específica a implementar será la comparativa directa entre victorias y derrotas definitivas: **`Ganadas / (Ganadas + Canceladas)`**. Esto aísla el rendimiento de las cotizaciones que aún se encuentran en progreso o seguimiento ("en el aire"), brindando una métrica de cierre definitiva ("Win Rate" neto).
+*   **EFIC. (D):** Reflejará el promedio de tiempo individual de cada vendedor (ej. "1.2d").
+*   **ESTADO:** Se implementará una semaforización mediante píldoras visuales:
     *   `Eficiente` (Píldora contorno verde): Si la eficiencia promedio es excelente (ej. < 1.5d).
     *   `Riesgo` (Píldora contorno amarillo/naranja): Si la eficiencia está en un rango de alerta (ej. 1.5d - 2.0d).
     *   `Cuello botella` (Píldora contorno rojo): Si la eficiencia rebasa la tolerancia aceptable (ej. > 2.0d).
 
-*(Nota Arquitectónica: Al remover el botón "Llamar", la última columna en la vista será "ESTADO", la cual se ajustará hacia la derecha en la cuadrícula).*
+*(Nota Arquitectónica: Para cumplir de manera exacta con el diseño gráfico aportado y el requerimiento textual previo, la columna final con la acción "ACCIÓN" y el botón "Llamar ↗" ha sido completamente removida de esta especificación. La tabla concluirá visualmente en la columna "ESTADO").*
 
 ---
 
