@@ -621,6 +621,193 @@ function generarDashboard() {
 }
 
 /* KPI ANALYSIS ENGINE - NATIVE JS IMPLEMENTATION */
+
+/* KPI ANALYSIS ENGINE FOR ADMIN_CONTROL (JAIME OLIVO) */
+function apiFetchAdminKPIs() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Vendedores to analyze based on USER_DB (excluding ADMIN roles)
+  const sellers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "EDGAR_LOPEZ", "ANTONIA_VENTAS"];
+
+  let allData = [];
+
+  sellers.forEach(function(seller) {
+    const sheetName = seller === "ANTONIA_VENTAS" ? "ANTONIA_VENTAS" : seller.split("_")[0] + " (VENTAS)";
+    const sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return;
+
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return;
+
+    const headers = data[0].map(function(h) { return String(h).toUpperCase().trim(); });
+    const estatusIdx = headers.indexOf("ESTATUS");
+    const vendedorIdx = headers.indexOf("VENDEDOR") > -1 ? headers.indexOf("VENDEDOR") : headers.indexOf("RESPONSABLE");
+
+    // Find aliases for date, dias, and value
+    const fechaIdx = headers.findIndex(h => h === "FECHA" || h === "F. INICIO" || h === "FECHA INICIO" || h.includes("FECHA"));
+    const diasIdx = headers.findIndex(h => h === "DÍAS" || h === "DIAS" || h.includes("RELOJ") || h.includes("DIAS FINALIZ"));
+    const valorIdx = headers.findIndex(h => h === "VALOR" || h === "MONTO" || h.includes("IMPORTE"));
+    const motivoIdx = headers.findIndex(h => h.includes("MOTIVO") || h.includes("RAZON"));
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0] && !row[1]) continue; // Skip totally empty rows
+
+      allData.push({
+        vendedor: vendedorIdx > -1 ? String(row[vendedorIdx] || seller) : seller,
+        estatus: estatusIdx > -1 ? String(row[estatusIdx]).toUpperCase() : "",
+        fecha: fechaIdx > -1 ? row[fechaIdx] : null,
+        dias: diasIdx > -1 ? parseFloat(row[diasIdx]) || 0 : 0,
+        valor: valorIdx > -1 ? parseFloat(String(row[valorIdx]).replace(/[^0-9.-]+/g,"")) || 0 : 0,
+        motivo: motivoIdx > -1 ? String(row[motivoIdx]).toUpperCase() : ""
+      });
+    }
+  });
+
+  // Calculate globalMetrics
+  const globalMetrics = { totalQuotes: 0, ganadas: 0, ganadasPercentage: 0, perdidasRiesgo: 0, riskAmount: 0, averageEfficiency: 0, collaboratorsCount: 0 };
+
+  const uniqueSellers = new Set();
+  let enviadasCount = 0;
+  let totalDias = 0;
+  let validDiasCount = 0;
+
+  allData.forEach(function(row) {
+    globalMetrics.totalQuotes++;
+    uniqueSellers.add(row.vendedor);
+
+    if (row.dias > 0) {
+      totalDias += row.dias;
+      validDiasCount++;
+    }
+
+    if (row.estatus.includes("GANAD") || row.estatus === "CERRADO") {
+      globalMetrics.ganadas++;
+      enviadasCount++; // Si se ganó, asumimos que se envió
+    } else if (row.estatus.includes("ENVIAD") || row.estatus === "COTIZACION ENVIADA") {
+      enviadasCount++;
+    }
+
+    if (row.estatus.includes("PERDID") || row.estatus.includes("RIESGO") || row.estatus === "CANCELADA" || row.estatus.includes("RECHAZAD")) {
+      globalMetrics.perdidasRiesgo++;
+      globalMetrics.riskAmount += row.valor;
+    }
+  });
+
+  globalMetrics.collaboratorsCount = uniqueSellers.size;
+  if (enviadasCount > 0) {
+    globalMetrics.ganadasPercentage = Math.round((globalMetrics.ganadas / enviadasCount) * 100);
+  }
+  if (validDiasCount > 0) {
+    globalMetrics.averageEfficiency = (totalDias / validDiasCount).toFixed(1);
+  }
+
+  // Calculate collaboratorStats
+  const collabMap = {};
+  allData.forEach(function(row) {
+    const v = row.vendedor;
+    if (!collabMap[v]) {
+      collabMap[v] = { name: v, vol: 0, ganadas: 0, canceladas: 0, totalDias: 0, validDiasCount: 0 };
+    }
+    collabMap[v].vol++;
+    if (row.estatus.includes("GANAD") || row.estatus === "CERRADO") collabMap[v].ganadas++;
+    if (row.estatus.includes("PERDID") || row.estatus.includes("CANCELAD") || row.estatus.includes("RECHAZAD")) collabMap[v].canceladas++;
+
+    if (row.dias > 0) {
+      collabMap[v].totalDias += row.dias;
+      collabMap[v].validDiasCount++;
+    }
+  });
+
+  const collaboratorStats = Object.values(collabMap).map(function(c) {
+    let cierrePct = 0;
+    const resolved = c.ganadas + c.canceladas;
+    if (resolved > 0) {
+      cierrePct = Math.round((c.ganadas / resolved) * 100);
+    }
+
+    let avgEfic = 0;
+    if (c.validDiasCount > 0) {
+      avgEfic = parseFloat((c.totalDias / c.validDiasCount).toFixed(1));
+    }
+
+    let estado = "Eficiente"; // default
+    if (avgEfic > 2.0) estado = "Cuello botella";
+    else if (avgEfic >= 1.5) estado = "Riesgo";
+
+    return {
+      name: c.name,
+      vol: c.vol,
+      ganadas: c.ganadas,
+      cierrePercentage: cierrePct,
+      avgEfic: avgEfic,
+      estado: estado
+    };
+  });
+
+  // Sort collaborators by volume
+  collaboratorStats.sort(function(a, b) { return b.vol - a.vol; });
+
+  // Funnel Data
+  const funnelData = { recibidas: globalMetrics.totalQuotes, integradas: 0, aTiempo: 0, seguimiento: 0, ganadas: globalMetrics.ganadas };
+  allData.forEach(function(row) {
+      if (row.estatus !== 'NUEVO' && row.estatus !== '') funnelData.integradas++;
+      if (row.estatus.includes('ENVIAD') || row.estatus.includes('TIEMPO')) funnelData.aTiempo++;
+      if (row.estatus.includes('SEGUIMIENT') || row.estatus.includes('NEGOCIACION') || row.estatus.includes('REVISION')) funnelData.seguimiento++;
+  });
+
+  // Loss Distribution
+  const lossDistMap = {};
+  allData.forEach(function(row) {
+      if (row.estatus.includes("PERDID") || row.estatus.includes("CANCELAD") || row.estatus.includes("RECHAZAD")) {
+          const m = row.motivo || "OTRO";
+          lossDistMap[m] = (lossDistMap[m] || 0) + 1;
+      }
+  });
+  const lossDistribution = Object.keys(lossDistMap).map(function(k) { return { label: k, value: lossDistMap[k] }; });
+
+  // Weekly Productivity (Last 5 valid days approx)
+  // Parse dates defensively
+  const dayCounts = { "Lunes": 0, "Martes": 0, "Miércoles": 0, "Jueves": 0, "Viernes": 0 };
+  allData.forEach(function(row) {
+      if (row.fecha) {
+          let d = new Date(row.fecha);
+          if (isNaN(d.getTime()) && typeof row.fecha === 'string') {
+              const parts = row.fecha.split('/');
+              if (parts.length === 3) {
+                  d = new Date(parts[2].length === 2 ? "20"+parts[2] : parts[2], parts[1]-1, parts[0]);
+              }
+          }
+          if (!isNaN(d.getTime())) {
+              // Only count if it's within the last 7 days for the "current week" simulation,
+              // or just map by weekday for demo purposes if dates are sparse.
+              const now = new Date();
+              const diffDays = (now - d) / (1000 * 60 * 60 * 24);
+              if (diffDays <= 7) {
+                  const day = d.getDay(); // 0 = Sun, 1 = Mon ...
+                  if (day === 1) dayCounts["Lunes"]++;
+                  else if (day === 2) dayCounts["Martes"]++;
+                  else if (day === 3) dayCounts["Miércoles"]++;
+                  else if (day === 4) dayCounts["Jueves"]++;
+                  else if (day === 5) dayCounts["Viernes"]++;
+              }
+          }
+      }
+  });
+
+  // If data is empty for the last 7 days (mock data might be old), fill with some synthetic data based on total volume for the chart to look good, but we should use real data.
+  // Actually, we'll just return what we have.
+  const weeklyProductivity = Object.keys(dayCounts).map(function(k) { return { day: k, count: dayCounts[k] }; });
+
+  return {
+    success: true,
+    globalMetrics: globalMetrics,
+    collaboratorStats: collaboratorStats,
+    funnelData: funnelData,
+    lossDistribution: lossDistribution,
+    weeklyProductivity: weeklyProductivity
+  };
+}
+
 function apiFetchTeamKPIData(username) {
   // MOCK DATA INJECTION
   if (DEMO_MODE) {

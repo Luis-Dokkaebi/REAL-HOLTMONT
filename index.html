@@ -758,6 +758,13 @@
             <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
         </div>
 
+
+        <!-- BOTÓN KPI ADMIN (Solo ADMIN_CONTROL) -->
+        <div class="nav-item" v-if="currentRole === 'ADMIN_CONTROL'" :class="{ active: currentView === 'KPI_ADMIN_DASHBOARD' }" @click="currentView = 'KPI_ADMIN_DASHBOARD'; currentDept = ''; currentModuleId = ''; loadAdminDashboardKpis();">
+            <div class="nav-icon-col"><i class="fas fa-chart-pie text-danger"></i></div>
+            <span class="nav-text text-danger fw-bold">KPI ADMIN</span>
+        </div>
+
         <!-- BOTÓN BANCO DE INFORMACION (Solo ADMIN - LUIS_CARLOS) -->
         <div class="nav-item" v-if="currentRole === 'ADMIN'" :class="{ active: currentView === 'INFO_BANK' }" @click="currentView = 'INFO_BANK'; currentDept = ''; currentModuleId = ''; resetInfoBank();">
             <div class="nav-icon-col"><i class="fas fa-database text-info"></i></div>
@@ -4059,6 +4066,139 @@
           </div>
       </div>
 
+
+      <!-- VISTA KPI ADMIN DASHBOARD (JAIME OLIVO) -->
+      <div v-if="currentView === 'KPI_ADMIN_DASHBOARD'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px;">
+          <div class="d-flex justify-content-between align-items-center mb-4">
+              <h4 class="fw-bold m-0 text-dark"><i class="fas fa-chart-pie me-2 text-danger"></i>KPI RENDIMIENTO - VISTA EXCLUSIVA (ADMIN)</h4>
+              <div>
+                  <button class="btn btn-outline-primary btn-sm me-2" @click="loadAdminDashboardKpis"><i class="fas fa-sync-alt"></i> ACTUALIZAR</button>
+                  <button class="btn btn-secondary btn-sm" @click="goHome">CERRAR</button>
+              </div>
+          </div>
+
+          <div v-if="adminDashboardKpis.isLoading" class="d-flex justify-content-center align-items-center h-100">
+              <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+          </div>
+
+          <div v-else class="row g-4 h-100 overflow-auto p-2">
+
+              <!-- 1. Tarjetas de Métricas Principales (Top Cards) -->
+              <div class="col-12 mb-2">
+                 <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-bolt me-2"></i>RESUMEN EJECUTIVO</h5>
+              </div>
+
+              <div class="col-md-3">
+                  <div class="card shadow-sm border-0 border-start border-4 border-primary h-100">
+                      <div class="card-body">
+                          <h6 class="text-muted text-uppercase fw-bold mb-1">Cotizaciones Totales</h6>
+                          <h2 class="mb-0 fw-bold">{{ adminDashboardKpis.globalMetrics.totalQuotes }}</h2>
+                          <small class="text-secondary">{{ adminDashboardKpis.globalMetrics.collaboratorsCount }} colaboradores</small>
+                      </div>
+                  </div>
+              </div>
+              <div class="col-md-3">
+                  <div class="card shadow-sm border-0 border-start border-4 border-success h-100">
+                      <div class="card-body">
+                          <h6 class="text-muted text-uppercase fw-bold mb-1">Ganadas</h6>
+                          <h2 class="mb-0 fw-bold">{{ adminDashboardKpis.globalMetrics.ganadas }}</h2>
+                          <small class="text-success fw-bold">{{ adminDashboardKpis.globalMetrics.ganadasPercentage }}% de Ganadas</small>
+                      </div>
+                  </div>
+              </div>
+              <div class="col-md-3">
+                  <div class="card shadow-sm border-0 border-start border-4 border-danger h-100">
+                      <div class="card-body">
+                          <h6 class="text-muted text-uppercase fw-bold mb-1">Perdidas / Riesgo</h6>
+                          <h2 class="mb-0 fw-bold">{{ adminDashboardKpis.globalMetrics.perdidasRiesgo }}</h2>
+                          <small class="text-danger fw-bold">${{ formatCurrency(adminDashboardKpis.globalMetrics.riskAmount) }} en riesgo</small>
+                      </div>
+                  </div>
+              </div>
+              <div class="col-md-3">
+                  <div class="card shadow-sm border-0 border-start border-4 border-info h-100">
+                      <div class="card-body">
+                          <h6 class="text-muted text-uppercase fw-bold mb-1">Eficiencia Promedio</h6>
+                          <h2 class="mb-0 fw-bold">{{ adminDashboardKpis.globalMetrics.averageEfficiency }}d</h2>
+                          <small class="text-secondary">Global</small>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- 2. Visualizaciones Gráficas (Charts) -->
+              <div class="col-12 mb-2 mt-4">
+                 <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-chart-bar me-2"></i>ANÁLISIS DEL FLUJO DE VENTAS</h5>
+              </div>
+
+              <div class="col-md-4">
+                  <div class="card shadow-sm h-100">
+                      <div class="card-header bg-white fw-bold text-dark"><i class="fas fa-filter text-primary me-2"></i>Embudo de Cotizaciones</div>
+                      <div class="card-body" style="height: 300px;"><canvas id="chartAdminFunnel"></canvas></div>
+                  </div>
+              </div>
+              <div class="col-md-4">
+                  <div class="card shadow-sm h-100">
+                      <div class="card-header bg-white fw-bold text-dark"><i class="fas fa-chart-pie text-danger me-2"></i>Distribución de Pérdidas</div>
+                      <div class="card-body" style="height: 300px;"><canvas id="chartAdminLoss"></canvas></div>
+                  </div>
+              </div>
+              <div class="col-md-4">
+                  <div class="card shadow-sm h-100">
+                      <div class="card-header bg-white fw-bold text-dark"><i class="fas fa-chart-line text-success me-2"></i>Productividad Diaria del Equipo</div>
+                      <div class="card-body" style="height: 300px;"><canvas id="chartAdminProductivity"></canvas></div>
+                  </div>
+              </div>
+
+              <!-- 3. Tabla de Rendimiento Individual -->
+              <div class="col-12 mb-2 mt-4">
+                 <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-users me-2"></i>RENDIMIENTO INDIVIDUAL</h5>
+              </div>
+
+              <div class="col-12">
+                  <div class="card shadow-sm mb-5">
+                      <div class="table-responsive">
+                          <table class="table table-hover align-middle mb-0" style="font-size: 11px !important; font-family: 'Arial', sans-serif !important;">
+                              <thead class="bg-light">
+                                  <tr>
+                                      <th style="text-transform: lowercase !important;">colaborador</th>
+                                      <th style="text-transform: lowercase !important;" class="text-center">vol.</th>
+                                      <th style="text-transform: lowercase !important;" class="text-center">ganadas</th>
+                                      <th style="text-transform: lowercase !important;" class="text-center">% cierre</th>
+                                      <th style="text-transform: lowercase !important;" class="text-center">efic. (d)</th>
+                                      <th style="text-transform: lowercase !important;" class="text-center">estado</th>
+                                  </tr>
+                              </thead>
+                              <tbody>
+                                  <tr v-for="(item, index) in adminDashboardKpis.collaboratorStats" :key="index">
+                                      <td style="text-transform: uppercase !important;">
+                                          <div class="d-flex align-items-center">
+                                              <div class="rounded-circle text-white d-flex justify-content-center align-items-center me-2 fw-bold shadow-sm"
+                                                   style="width: 28px; height: 28px; font-size: 10px; background: linear-gradient(135deg, #6c757d, #495057);">
+                                                  {{ toInitials(item.name) }}
+                                              </div>
+                                              <span class="fw-bold text-secondary">{{ item.name }}</span>
+                                          </div>
+                                      </td>
+                                      <td class="text-center fw-bold" style="text-transform: uppercase !important;">{{ item.vol }}</td>
+                                      <td class="text-center text-success fw-bold" style="text-transform: uppercase !important;">{{ item.ganadas }}</td>
+                                      <td class="text-center fw-bold text-primary" style="text-transform: uppercase !important;">{{ item.cierrePercentage }}%</td>
+                                      <td class="text-center fw-bold" style="text-transform: uppercase !important;">{{ item.avgEfic }}d</td>
+                                      <td class="text-center" style="text-transform: uppercase !important;">
+                                          <span v-if="item.estado === 'Eficiente'" class="badge rounded-pill border border-success text-success bg-white px-3 py-1">Eficiente</span>
+                                          <span v-else-if="item.estado === 'Riesgo'" class="badge rounded-pill border border-warning text-warning bg-white px-3 py-1">Riesgo</span>
+                                          <span v-else-if="item.estado === 'Cuello botella'" class="badge rounded-pill border border-danger text-danger bg-white px-3 py-1">Cuello botella</span>
+                                          <span v-else class="badge rounded-pill border border-secondary text-secondary bg-white px-3 py-1">{{ item.estado }}</span>
+                                      </td>
+                                  </tr>
+                              </tbody>
+                          </table>
+                      </div>
+                  </div>
+              </div>
+
+          </div>
+      </div>
+
       <!-- VISTA INSTRUCCIONES JAIME_OLIVO (ADMIN_CONTROL) -->
       <div v-if="currentView === 'INSTRUCCIONES_ADMIN_CONTROL'" class="h-100 d-flex flex-column animate__animated animate__fadeIn" style="background:#f8f9fa; padding:20px; overflow-y:auto;">
           <div class="d-flex justify-content-between align-items-center mb-4">
@@ -5401,6 +5541,118 @@ async function toggleVoiceRecording(btnElement) {
       const ecgChartInstances = {};
 
       // KPI STATE
+
+      const adminDashboardKpis = ref({
+          isLoading: false,
+          globalMetrics: { totalQuotes: 0, ganadas: 0, ganadasPercentage: 0, perdidasRiesgo: 0, riskAmount: 0, averageEfficiency: 0, collaboratorsCount: 0 },
+          funnelData: { recibidas: 0, integradas: 0, aTiempo: 0, seguimiento: 0, ganadas: 0 },
+          lossDistribution: [],
+          weeklyProductivity: [],
+          collaboratorStats: []
+      });
+
+      const adminChartInstances = {};
+
+      const renderAdminKpiCharts = () => {
+          const createChart = (id, config) => {
+              const ctx = document.getElementById(id);
+              if (!ctx) return;
+              if (adminChartInstances[id]) adminChartInstances[id].destroy();
+              adminChartInstances[id] = new Chart(ctx, config);
+          };
+
+          // 1. Embudo de Cotizaciones (Bar)
+          createChart('chartAdminFunnel', {
+              type: 'bar',
+              data: {
+                  labels: ['Recibidas', 'Integradas', 'A Tiempo', 'Seguimiento', 'Ganadas'],
+                  datasets: [{
+                      label: 'Volumen',
+                      data: [
+                          adminDashboardKpis.value.funnelData.recibidas,
+                          adminDashboardKpis.value.funnelData.integradas,
+                          adminDashboardKpis.value.funnelData.aTiempo,
+                          adminDashboardKpis.value.funnelData.seguimiento,
+                          adminDashboardKpis.value.funnelData.ganadas
+                      ],
+                      backgroundColor: ['#0d6efd', '#20c997', '#ffc107', '#85e085', '#198754'],
+                      borderWidth: 0,
+                      borderRadius: 4
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { y: { beginAtZero: true } }
+              }
+          });
+
+          // 2. Distribución de Pérdidas (Doughnut)
+          createChart('chartAdminLoss', {
+              type: 'doughnut',
+              data: {
+                  labels: adminDashboardKpis.value.lossDistribution.map(d => d.label),
+                  datasets: [{
+                      data: adminDashboardKpis.value.lossDistribution.map(d => d.value),
+                      backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6c757d', '#343a40', '#e83e8c'],
+                      borderWidth: 1
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } }
+              }
+          });
+
+          // 3. Productividad Diaria (Line)
+          createChart('chartAdminProductivity', {
+              type: 'line',
+              data: {
+                  labels: adminDashboardKpis.value.weeklyProductivity.map(d => d.day),
+                  datasets: [{
+                      label: 'Actividad',
+                      data: adminDashboardKpis.value.weeklyProductivity.map(d => d.count),
+                      borderColor: '#198754',
+                      backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                      borderWidth: 2,
+                      fill: true,
+                      tension: 0.3,
+                      pointBackgroundColor: '#198754'
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { y: { beginAtZero: true } }
+              }
+          });
+      };
+
+      const loadAdminDashboardKpis = () => {
+          adminDashboardKpis.value.isLoading = true;
+          google.script.run.withSuccessHandler(res => {
+              adminDashboardKpis.value.isLoading = false;
+              if(res.success) {
+                  adminDashboardKpis.value.globalMetrics = res.globalMetrics;
+                  adminDashboardKpis.value.funnelData = res.funnelData;
+                  adminDashboardKpis.value.lossDistribution = res.lossDistribution;
+                  adminDashboardKpis.value.weeklyProductivity = res.weeklyProductivity;
+                  adminDashboardKpis.value.collaboratorStats = res.collaboratorStats;
+                  nextTick(() => {
+                      renderAdminKpiCharts();
+                  });
+              } else {
+                  Swal.fire('Error', 'No se pudieron cargar los datos', 'error');
+              }
+          }).withFailureHandler(err => {
+              adminDashboardKpis.value.isLoading = false;
+              Swal.fire('Error', err.message, 'error');
+          }).apiFetchAdminKPIs();
+      };
+
       const kpiData = ref({
           dashboardVentas: [],
           productividadDiaria: {},
@@ -8291,7 +8543,7 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation, removeWorkerFromHotPotato,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, adminDashboardKpis, loadAdminDashboardKpis, renderAdminKpiCharts, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
