@@ -196,14 +196,15 @@ const USER_DB = {
   "JESUS_CANTU":      { pass: "ppc2025",   role: "PPC_ADMIN", label: "PPC Manager", email: "jesuscantu@empresa.com" },
   "ANTONIA_VENTAS":   { pass: "tonita2025", role: "TONITA", label: "Ventas", email: "ventas@empresa.com" },
   "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo", email: "jaimeolivo@empresa.com" },
-  "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas", email: "angel.salinas@empresa.com" },
-  "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza", email: "teresa.garza@empresa.com" },
+  "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas", email: "Angel.Salinas@holtmont.com" },
+  "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza", email: "teresa.garza@holtmont.com" },
   "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran", email: "eduardo.teran@empresa.com" },
-  "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares", email: "eduardo.manzanares@empresa.com" },
-  "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez", email: "ramiro.rodriguez@empresa.com" },
-  "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla", email: "armandoag_1996@hotmail.com" },
+  "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares", email: "eduardo.manzanares@holtmont.com" },
+  "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez", email: "Ramiro.rodriguez@holtmont.com" },
+  "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla", email: "Sebastian.padilla@holtmont.com" },
   "EDGAR_LOPEZ":      { pass: "edgar2025", role: "EDGAR_USER", label: "Edgar Lopez", email: "edgar.lopez@empresa.com" },
-  "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder", email: "workorder@empresa.com" }
+  "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder", email: "workorder@empresa.com" },
+  "ANTONIO_SALAZAR":  { pass: "antonio2025", role: "ANTONIO_USER", label: "Antonio Salazar", email: "Antonio.Flores@holtmont.com" }
 };
 
 /* SERVICIO HTML */
