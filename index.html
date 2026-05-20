@@ -758,13 +758,6 @@
             <span class="nav-text text-warning fw-bold">INSTRUCCIONES</span>
         </div>
 
-
-        <!-- BOTÓN KPI ADMIN (Solo ADMIN_CONTROL) -->
-        <div class="nav-item" v-if="currentRole === 'ADMIN_CONTROL'" :class="{ active: currentView === 'KPI_ADMIN_DASHBOARD' }" @click="currentView = 'KPI_ADMIN_DASHBOARD'; currentDept = ''; currentModuleId = ''; loadAdminDashboardKpis();">
-            <div class="nav-icon-col"><i class="fas fa-chart-pie text-danger"></i></div>
-            <span class="nav-text text-danger fw-bold">KPI ADMIN</span>
-        </div>
-
         <!-- BOTÓN BANCO DE INFORMACION (Solo ADMIN - LUIS_CARLOS) -->
         <div class="nav-item" v-if="currentRole === 'ADMIN'" :class="{ active: currentView === 'INFO_BANK' }" @click="currentView = 'INFO_BANK'; currentDept = ''; currentModuleId = ''; resetInfoBank();">
             <div class="nav-icon-col"><i class="fas fa-database text-info"></i></div>
@@ -1864,7 +1857,7 @@
                                   <span class="text-secondary small">Complejidad alta · Folio: {{ currentHotPotatoRow.FOLIO || currentHotPotatoRow.ID }}</span>
                               </div>
                           </div>
-                          
+
                           <div class="d-flex gap-3 mb-4">
                               <div class="bg-black border border-secondary rounded p-3 text-center" style="flex:1">
                                   <div class="small text-secondary mb-1">Etapas</div>
@@ -1877,7 +1870,7 @@
                                   <div class="small text-secondary">con palomita</div>
                               </div>
                           </div>
-                          
+
                           <div class="hp-detailed-timeline">
                               <div v-for="(step, sIdx) in getProcessTimelineDetailed(currentHotPotatoRow)" :key="sIdx" class="mb-4">
                                   <div class="small text-secondary fw-bold mb-2 text-uppercase">ETAPA {{ sIdx + 1 }} — {{ getFullProcessName(step.id) }}</div>
@@ -1888,38 +1881,25 @@
                                               {{ step.isDone ? 'Completado' : (step.isInProgress ? 'En proceso' : 'Pendiente') }}
                                           </div>
                                       </div>
-                                      
+
                                       <div class="progress mb-3 bg-dark" style="height: 4px;">
                                           <div class="progress-bar" :class="step.isDone ? 'bg-success' : (step.isInProgress ? 'bg-primary' : '')" :style="{ width: step.isDone ? '100%' : (step.isInProgress ? '50%' : '0%') }"></div>
                                       </div>
-                                      
-                                      <div class="d-flex gap-3 align-items-start flex-wrap">
-                                          <div v-for="(assignee, aIdx) in step.assignees" :key="aIdx" class="text-center" style="min-width: 60px; max-width: 100px;">
-                                              <div class="rounded-circle d-flex align-items-center justify-content-center text-white mb-1 position-relative mx-auto" 
-                                                   :class="assignee.status === 'DONE' ? 'bg-success' : 'bg-primary'" 
+
+                                      <div class="d-flex gap-3 align-items-center flex-wrap">
+                                          <div v-for="(assignee, aIdx) in step.assignees" :key="aIdx" class="text-center" style="width: 60px;">
+                                              <div class="rounded-circle d-flex align-items-center justify-content-center text-white mb-1 position-relative mx-auto"
+                                                   :class="assignee.status === 'DONE' ? 'bg-success' : 'bg-primary'"
                                                    style="width: 45px; height: 45px; font-weight: bold; border: 2px solid #2c2c2c;">
                                                   {{ toInitials(assignee.name) }}
                                                   <div v-if="assignee.status === 'DONE'" class="position-absolute bg-success rounded-circle text-white d-flex align-items-center justify-content-center border border-dark" style="width:16px; height:16px; bottom:-2px; right:-2px; font-size: 10px;">
                                                       <i class="fas fa-check"></i>
                                                   </div>
-                                                  <div v-if="step.isCurrent && assignee.status !== 'DONE'"
-                                                       @click.stop="removeWorkerFromHotPotato(currentHotPotatoRow, step.id, assignee.name)"
-                                                       class="position-absolute bg-danger rounded-circle text-white d-flex align-items-center justify-content-center border border-dark"
-                                                       style="width:16px; height:16px; top:-2px; right:-2px; font-size: 10px; cursor:pointer;"
-                                                       title="Eliminar asignación">
-                                                      <i class="fas fa-times"></i>
-                                                  </div>
                                               </div>
-                                              <div class="small text-truncate text-secondary fw-bold" style="font-size: 10px;" :title="assignee.name">{{ assignee.name.split(' ')[0] }}</div>
-
-                                              <div v-if="assignee.startLabel" class="text-secondary mt-1" style="font-size: 9px; line-height: 1.1;">
-                                                  <div style="color: #adb5bd;"><i class="fas fa-play" style="font-size: 8px; margin-right:2px;"></i>{{ assignee.startLabel }}</div>
-                                                  <div v-if="assignee.endLabel" style="color: #adb5bd;"><i class="fas fa-stop" style="font-size: 8px; margin-right:2px;"></i>{{ assignee.endLabel }}</div>
-                                                  <div v-if="assignee.durationLabel" class="fw-bold mt-1" :class="assignee.status === 'DONE' ? 'text-success' : 'text-warning'"><i class="fas fa-clock" style="font-size: 8px; margin-right:2px;"></i>{{ assignee.durationLabel }}</div>
-                                              </div>
-                                              <div v-else class="text-secondary" style="font-size: 9px;">{{ assignee.timeLabel }}</div>
+                                              <div class="small text-truncate text-secondary" style="font-size: 10px;" :title="assignee.name">{{ assignee.name.split(' ')[0] }}</div>
+                                              <div class="text-secondary" style="font-size: 9px;">{{ assignee.timeLabel }}</div>
                                           </div>
-                                          
+
                                           <div v-if="step.isCurrent" class="text-center" style="width: 60px; cursor: pointer;" @click="advanceProcess(currentHotPotatoRow)">
                                               <div class="rounded-circle d-flex align-items-center justify-content-center text-secondary mb-1 border border-secondary mx-auto" style="width: 45px; height: 45px; border-style: dashed !important;">
                                                   <i class="fas fa-plus"></i>
@@ -1930,7 +1910,7 @@
                                   </div>
                               </div>
                           </div>
-                          
+
                       </div>
                   </div>
                   <div class="custom-modal-footer">
@@ -2127,29 +2107,13 @@
                              <span style="position:absolute; right:2px; top:50%; transform:translateY(-50%); color:#217346; font-size:10px; font-weight:bold; pointer-events:none;">%</span>
                          </div>
                          <div v-else-if="isCol(h, ['ESTATUS','STATUS'])" style="width:100%; height:100%;">
-                             <div v-if="['ADMIN', 'ADMIN_CONTROL', 'PPC_ADMIN'].includes(currentRole) || currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100">
+                             <div v-if="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100">
                                   <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold; padding:4px; text-align:center; white-space:normal; line-height:1.1; min-height: 25px;"
                                        :style="getAntoniaStatusStyle(row[h])"
                                        @click="openStatusSelector(row, h)">
                                       {{ row[h] }}
                                   </div>
-                                  <div style="flex: 0 0 auto; display:flex; justify-content:center; gap:3px; padding:3px; background:#f8f9fa; overflow-x: auto;">
-                                      <div class="hp-timeline-container">
-                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step">
-                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)">
-                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
-                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'">
-                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
-                                                  </div>
-                                              </div>
-                                              <div class="hp-text">
-                                                  {{ step.isDone ? 'HECHO' : 'PENDIENTE' }} {{ step.id }}<br>
-                                                  <span class="hp-time">{{ step.timeLabel === 'En tiempo' ? '-' : step.timeLabel }}</span>
-                                              </div>
-                                          </div>
-                                      </div>
-                                  </div>
-                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer; min-height: 20px;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
                                       <i class="fas fa-fire text-danger fa-lg py-1"></i>
                                   </div>
                              </div>
@@ -2162,8 +2126,8 @@
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
                          </div>
-                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; width:100%; height:100%; color: #000 !important;">
-                             <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none; color: #000 !important; background-color: transparent;">{{ formatDisplayDate(row[h]) }}</div>
+                         <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; width:100%; height:100%; color: #000 !important;" :style="Object.assign({color: '#000'}, isCol(h, ['F. ENTREGA']) ? getTrafficStyle(row) : (isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)))">
+                             <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none; color: #000 !important;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
                          <textarea v-else-if="(String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES')) || (currentUsername === 'ANTONIA_VENTAS' && (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')))" v-model="row[h]" class="excel-textarea" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
@@ -2216,7 +2180,7 @@
                                  :style="getAntoniaStatusStyle(row[h])">
                                  {{ row[h] }}
                             </div>
-                            <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; padding-left:4px; display:flex; align-items:center; color: #000 !important; background-color: transparent;">
+                            <div v-else-if="String(h).toUpperCase().includes('FECHA') || String(h).toUpperCase().includes('ALTA') || String(h).toUpperCase().includes('F. ENTREGA') || String(h).toUpperCase().includes('F. VISITA') || String(h).toUpperCase().includes('F. INICIO')" style="position:absolute; inset:0; padding-left:4px; display:flex; align-items:center; color: #000 !important;" :style="Object.assign({color: '#000'}, isCol(h, ['F. ENTREGA']) ? getTrafficStyle(row) : (isCol(h, ['FECHA RESPUESTA', 'FECHA DE RESPUESTA', 'FEC. EST. FIN', 'FECHA ESTIMADA DE FIN', 'FECHA DE ENTREGA']) ? getFechaRespuestaStyle(row) : getFechaInicioTrafficStyle(row)))">
                                  {{ formatDisplayDate(row[h]) }}
                             </div>
                             <div v-else-if="isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])" style="text-align:center; font-weight:bold; width:100%; height:100%; display:flex; align-items:center; justify-content:center;" :style="getTrafficStyle(row)">
@@ -3702,38 +3666,10 @@
             </div>
         </div>
 <div v-if="currentView === 'PPC_FORM'" class="h-100 d-flex flex-column" style="background:white; padding:20px;">
-
-           <div class="d-flex flex-column mb-3">
-               <div class="d-flex justify-content-between align-items-start mb-2">
-                   <div class="d-flex gap-3 align-items-start">
-                       <!-- Mock buttons group 1 -->
-                       <div class="d-flex flex-column gap-1">
-                           <button class="btn btn-sm text-white fw-bold" style="background-color: #104c7b; text-align: left; width: 180px; padding: 4px 8px; border-radius: 0;">Juntas</button>
-                       </div>
-                       <!-- Mock buttons group 2 -->
-                       <div class="d-flex flex-column gap-1">
-                           <button class="btn btn-sm text-white" style="background-color: #104c7b; text-align: left; width: 220px; padding: 4px 8px; border-radius: 0;">Interdiciplinaria Proyecto</button>
-                           <button class="btn btn-sm text-white" style="background-color: #104c7b; text-align: left; width: 220px; padding: 4px 8px; border-radius: 0;">Interdiciplinaria Interna</button>
-                           <button class="btn btn-sm text-white" style="background-color: #104c7b; text-align: left; width: 220px; padding: 4px 8px; border-radius: 0;">Interdiciplinaria Cliente</button>
-                       </div>
-                       <!-- Mock buttons group 3 -->
-                       <div class="d-flex flex-column gap-1">
-                           <button class="btn btn-sm text-white" style="background-color: #104c7b; text-align: left; width: 220px; padding: 4px 8px; border-radius: 0;">Preoperativa General</button>
-                           <button class="btn btn-sm text-white" style="background-color: #104c7b; text-align: left; width: 220px; padding: 4px 8px; border-radius: 0;">Preoperativa por proyecto</button>
-                       </div>
-                       <!-- Mock buttons group 4 -->
-                       <div class="d-flex flex-column gap-1">
-                           <button class="btn btn-sm text-white" style="background-color: #104c7b; text-align: left; width: 180px; padding: 4px 8px; border-radius: 0;">Banco de Juntas</button>
-                       </div>
-                   </div>
-               </div>
-
-               <div class="d-flex justify-content-between align-items-center mt-2">
-                   <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'INTERDICIPLINARIA' : 'PPC Maestro') }}</h5><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
-                   <div><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
-               </div>
+           <div class="d-flex justify-content-between align-items-center mb-3">
+               <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'INTERDICIPLINARIA' : 'PPC Maestro') }}</h5><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
+               <div><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
            </div>
-
            <div class="d-flex mb-3 align-items-end justify-content-center position-relative" style="min-height: 90px;">
                <div class="excel-container" style="height: auto; max-height: none; overflow: visible; flex:none; width: fit-content; z-index: 1; border:none; box-shadow:none; background: transparent;">
                    <table class="table-excel mini-table" style="background: white; border: 1px solid #999;"><thead><tr><th style="width:100px">ESPECIALIDAD</th><th style="width:40px">ACT</th><th style="width:40px">CUMP</th><th style="width:45px">PROM</th><th style="width:40px">ANT</th></tr></thead><tbody><tr v-for="stat in deptStats" :key="stat.key" :class="{'total-row': stat.key === 'TOTAL'}"><td style="font-weight:bold; text-align: left;">{{ stat.label }}</td><td class="text-center">{{ stat.actual }}</td><td class="text-center text-success fw-bold">{{ stat.cumplidas }}</td><td class="text-center">{{ stat.promedio }}</td><td class="text-center text-muted">{{ stat.anterior }}</td></tr></tbody></table>
@@ -3789,7 +3725,7 @@
                            <td>{{ item.concepto }}</td>
                            <td>{{ item.cuantReq }}</td>
                            <td>{{ item.cuantReal }}</td>
-                           <td>{{ toInitials(item.responsable) }}</td>
+                           <td>{{ item.responsable }}</td>
                            <td>{{ item.contratista }}</td>
                            <td class="text-center">{{ item.dias && item.dias.l ? 'X' : '' }}</td>
                            <td class="text-center">{{ item.dias && item.dias.m ? 'X' : '' }}</td>
@@ -3804,10 +3740,10 @@
 
                <!-- TABLA STANDAR PARA LOS DEMAS -->
                <table v-else class="table-excel">
-                   <thead><tr><th class="row-num">#</th><th v-if="currentUsername === 'PREWORK_ORDER'" style="width:60px">Cliente</th><th style="width:100px">Depto</th><th style="min-width:400px">Descripción Actividad</th><th style="width:80px">Clasificación</th><th style="width:80px">Prioridad</th><th style="width:80px">Riesgo</th><th style="width:100px">Restricciones</th><th style="width:150px">Responsable</th><th style="width:80px">Fecha</th><th style="width:50px">Cumpl.</th><th style="width:40px">Clip</th><th style="width:100px">Fecha Respuesta</th><th style="min-width:200px">Comentarios</th><th style="min-width:200px">Previos</th><th style="width:50px"></th></tr></thead>
+                   <thead><tr><th class="row-num">#</th><th v-if="currentUsername === 'PREWORK_ORDER'" style="width:60px">Cliente</th><th style="width:100px">Depto</th><th style="min-width:400px">Descripción Actividad</th><th style="width:150px">Responsable</th><th style="width:80px">Fecha</th><th style="width:50px">Cumpl.</th><th style="width:40px">Clip</th><th style="min-width:150px">Comentarios</th><th style="min-width:150px">Previos</th><th style="width:50px"></th></tr></thead>
                    <tbody>
-                       <tr class="input-row"><td class="row-num">></td><td v-if="currentUsername === 'PREWORK_ORDER'"><input v-model="ppcData.cliente" class="excel-input" placeholder="MB" style="background:#f0fdf4; text-align:center;"></td><td><select v-model="ppcData.especialidad" class="excel-input" style="background:#f0fdf4"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td><td><textarea v-model="ppcData.concepto" class="excel-textarea" rows="2" placeholder="Descripción..." style="background:#f0fdf4"></textarea></td><td><input class="excel-input" style="background:#f0fdf4" placeholder="Clasif..."></td><td><input class="excel-input" style="background:#f0fdf4" placeholder="Prioridad..."></td><td><input class="excel-input" style="background:#f0fdf4" placeholder="Riesgo..."></td><td><input class="excel-input" style="background:#f0fdf4" placeholder="Restricc..."></td><td style="background:#f0fdf4; position:relative;"><div class="chip-container" @click="$refs.chipIn.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}}<i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipIn" v-model="staffSearch" style="border:none;outline:none;min-width:40px;font-size:12px;background:transparent;" placeholder="+"></div><ul class="list-group position-absolute w-100 shadow" style="z-index:100;max-height:150px;overflow:auto;top:100%;left:0" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" @click="addResponsable(p.name)">{{p.name}}</li></ul></td><td class="text-center small text-muted">HOY</td><td><select v-model="ppcData.cumplimiento" class="excel-input" style="background:#f0fdf4"><option value="NO">NO</option><option value="SI">SI</option></select></td><td class="text-center" style="background:#f0fdf4"><button class="btn-attach" :class="{'has-file': uploadSuccess}" @click="openFileDialog"><i class="fas" :class="uploadSuccess ? 'fa-check' : 'fa-paperclip'"></i></button><input type="file" ref="fileInput" class="file-input-hidden" accept="*" @change="handleFileSelect"></td><td><input class="excel-input" style="background:#f0fdf4" placeholder="Fecha Resp..."></td><td><textarea v-model="ppcData.comentarios" class="excel-textarea" rows="2" placeholder="..." style="background:#f0fdf4"></textarea></td><td><textarea v-model="ppcData.comentariosPrevios" class="excel-textarea" rows="2" placeholder="..." style="background:#f0fdf4"></textarea></td><td class="text-center" style="background:#f0fdf4"><button class="btn btn-primary btn-sm py-0" @click="promptExtraData" title="Más Detalles">+</button></td></tr>
-                       <tr v-for="(item, idx) in activityQueue" :key="idx"><td class="row-num">{{ idx + 1 }}</td><td v-if="currentUsername === 'PREWORK_ORDER'"><input :value="item.cliente" readonly class="excel-input"></td><td><input :value="item.especialidad" readonly class="excel-input"></td><td><textarea :value="item.concepto" readonly class="excel-textarea" rows="2"></textarea></td><td><input readonly class="excel-input"></td><td><input readonly class="excel-input"></td><td><input readonly class="excel-input"></td><td><input readonly class="excel-input"></td><td><div style="padding:0 8px; overflow:hidden; white-space:nowrap; font-size:12px; font-weight:bold; text-align:center;">{{ toInitials(item.responsable) }}</div></td><td class="text-center small">{{ item.fechaAlta ? formatDisplayDate(item.fechaAlta) : new Date().toLocaleDateString() }}</td><td><input :value="item.cumplimiento" readonly class="excel-input"></td><td class="text-center"><i class="fas fa-file-pdf text-danger" v-if="item.archivoUrl"></i></td><td><input readonly class="excel-input"></td><td><textarea :value="item.comentarios" readonly class="excel-textarea" rows="2"></textarea></td><td><textarea :value="item.comentariosPrevios" readonly class="excel-textarea" rows="2"></textarea></td><td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer" @click="activityQueue.splice(idx,1); syncQueueToBackend();"></i></td></tr>
+                       <tr class="input-row"><td class="row-num">></td><td v-if="currentUsername === 'PREWORK_ORDER'"><input v-model="ppcData.cliente" class="excel-input" placeholder="MB" style="background:#f0fdf4; text-align:center;"></td><td><select v-model="ppcData.especialidad" class="excel-input" style="background:#f0fdf4"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td><td><input v-model="ppcData.concepto" class="excel-input" placeholder="Descripción..." style="background:#f0fdf4"></td><td style="background:#f0fdf4; position:relative;"><div class="chip-container" @click="$refs.chipIn.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}}<i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipIn" v-model="staffSearch" style="border:none;outline:none;min-width:40px;font-size:12px;background:transparent;" placeholder="+"></div><ul class="list-group position-absolute w-100 shadow" style="z-index:100;max-height:150px;overflow:auto;top:100%;left:0" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" @click="addResponsable(p.name)">{{p.name}}</li></ul></td><td class="text-center small text-muted">HOY</td><td><select v-model="ppcData.cumplimiento" class="excel-input" style="background:#f0fdf4"><option value="NO">NO</option><option value="SI">SI</option></select></td><td class="text-center" style="background:#f0fdf4"><button class="btn-attach" :class="{'has-file': uploadSuccess}" @click="openFileDialog"><i class="fas" :class="uploadSuccess ? 'fa-check' : 'fa-paperclip'"></i></button><input type="file" ref="fileInput" class="file-input-hidden" accept="*" @change="handleFileSelect"></td><td><input v-model="ppcData.comentarios" class="excel-input" placeholder="..." style="background:#f0fdf4"></td><td><input v-model="ppcData.comentariosPrevios" class="excel-input" placeholder="..." style="background:#f0fdf4"></td><td class="text-center"><button class="btn btn-primary btn-sm py-0" @click="promptExtraData" title="Más Detalles">+</button></td></tr>
+                       <tr v-for="(item, idx) in activityQueue" :key="idx"><td class="row-num">{{ idx + 1 }}</td><td v-if="currentUsername === 'PREWORK_ORDER'"><input :value="item.cliente" readonly class="excel-input"></td><td><input :value="item.especialidad" readonly class="excel-input"></td><td><input :value="item.concepto" readonly class="excel-input"></td><td><div style="padding:0 8px; overflow:hidden; white-space:nowrap; font-size:12px">{{ item.responsable }}</div></td><td class="text-center small">{{ item.fechaAlta ? formatDisplayDate(item.fechaAlta) : new Date().toLocaleDateString() }}</td><td><input :value="item.cumplimiento" readonly class="excel-input"></td><td class="text-center"><i class="fas fa-file-pdf text-danger" v-if="item.archivoUrl"></i></td><td><input :value="item.comentarios" readonly class="excel-input"></td><td><input :value="item.comentariosPrevios" readonly class="excel-input"></td><td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer" @click="activityQueue.splice(idx,1); syncQueueToBackend();"></i></td></tr>
                    </tbody>
                </table>
            </div>
@@ -4091,139 +4027,6 @@
                       </div>
                   </div>
               </div>
-          </div>
-      </div>
-
-
-      <!-- VISTA KPI ADMIN DASHBOARD (JAIME OLIVO) -->
-      <div v-if="currentView === 'KPI_ADMIN_DASHBOARD'" class="h-100 d-flex flex-column" style="background-color:#f8f9fa; padding:20px;">
-          <div class="d-flex justify-content-between align-items-center mb-4">
-              <h4 class="fw-bold m-0 text-dark"><i class="fas fa-chart-pie me-2 text-danger"></i>KPI RENDIMIENTO - VISTA EXCLUSIVA (ADMIN)</h4>
-              <div>
-                  <button class="btn btn-outline-primary btn-sm me-2" @click="loadAdminDashboardKpis"><i class="fas fa-sync-alt"></i> ACTUALIZAR</button>
-                  <button class="btn btn-secondary btn-sm" @click="goHome">CERRAR</button>
-              </div>
-          </div>
-
-          <div v-if="adminDashboardKpis.isLoading" class="d-flex justify-content-center align-items-center h-100">
-              <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
-          </div>
-
-          <div v-else class="row g-4 h-100 overflow-auto p-2">
-
-              <!-- 1. Tarjetas de Métricas Principales (Top Cards) -->
-              <div class="col-12 mb-2">
-                 <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-bolt me-2"></i>RESUMEN EJECUTIVO</h5>
-              </div>
-
-              <div class="col-md-3">
-                  <div class="card shadow-sm border-0 border-start border-4 border-primary h-100">
-                      <div class="card-body">
-                          <h6 class="text-muted text-uppercase fw-bold mb-1">Cotizaciones Totales</h6>
-                          <h2 class="mb-0 fw-bold">{{ adminDashboardKpis.globalMetrics.totalQuotes }}</h2>
-                          <small class="text-secondary">{{ adminDashboardKpis.globalMetrics.collaboratorsCount }} colaboradores</small>
-                      </div>
-                  </div>
-              </div>
-              <div class="col-md-3">
-                  <div class="card shadow-sm border-0 border-start border-4 border-success h-100">
-                      <div class="card-body">
-                          <h6 class="text-muted text-uppercase fw-bold mb-1">Ganadas</h6>
-                          <h2 class="mb-0 fw-bold">{{ adminDashboardKpis.globalMetrics.ganadas }}</h2>
-                          <small class="text-success fw-bold">{{ adminDashboardKpis.globalMetrics.ganadasPercentage }}% de Ganadas</small>
-                      </div>
-                  </div>
-              </div>
-              <div class="col-md-3">
-                  <div class="card shadow-sm border-0 border-start border-4 border-danger h-100">
-                      <div class="card-body">
-                          <h6 class="text-muted text-uppercase fw-bold mb-1">Perdidas / Riesgo</h6>
-                          <h2 class="mb-0 fw-bold">{{ adminDashboardKpis.globalMetrics.perdidasRiesgo }}</h2>
-                          <small class="text-danger fw-bold">${{ formatCurrency(adminDashboardKpis.globalMetrics.riskAmount) }} en riesgo</small>
-                      </div>
-                  </div>
-              </div>
-              <div class="col-md-3">
-                  <div class="card shadow-sm border-0 border-start border-4 border-info h-100">
-                      <div class="card-body">
-                          <h6 class="text-muted text-uppercase fw-bold mb-1">Eficiencia Promedio</h6>
-                          <h2 class="mb-0 fw-bold">{{ adminDashboardKpis.globalMetrics.averageEfficiency }}d</h2>
-                          <small class="text-secondary">Global</small>
-                      </div>
-                  </div>
-              </div>
-
-              <!-- 2. Visualizaciones Gráficas (Charts) -->
-              <div class="col-12 mb-2 mt-4">
-                 <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-chart-bar me-2"></i>ANÁLISIS DEL FLUJO DE VENTAS</h5>
-              </div>
-
-              <div class="col-md-4">
-                  <div class="card shadow-sm h-100">
-                      <div class="card-header bg-white fw-bold text-dark"><i class="fas fa-filter text-primary me-2"></i>Embudo de Cotizaciones</div>
-                      <div class="card-body" style="height: 300px;"><canvas id="chartAdminFunnel"></canvas></div>
-                  </div>
-              </div>
-              <div class="col-md-4">
-                  <div class="card shadow-sm h-100">
-                      <div class="card-header bg-white fw-bold text-dark"><i class="fas fa-chart-pie text-danger me-2"></i>Distribución de Pérdidas</div>
-                      <div class="card-body" style="height: 300px;"><canvas id="chartAdminLoss"></canvas></div>
-                  </div>
-              </div>
-              <div class="col-md-4">
-                  <div class="card shadow-sm h-100">
-                      <div class="card-header bg-white fw-bold text-dark"><i class="fas fa-chart-line text-success me-2"></i>Productividad Diaria del Equipo</div>
-                      <div class="card-body" style="height: 300px;"><canvas id="chartAdminProductivity"></canvas></div>
-                  </div>
-              </div>
-
-              <!-- 3. Tabla de Rendimiento Individual -->
-              <div class="col-12 mb-2 mt-4">
-                 <h5 class="fw-bold text-secondary border-bottom pb-2"><i class="fas fa-users me-2"></i>RENDIMIENTO INDIVIDUAL</h5>
-              </div>
-
-              <div class="col-12">
-                  <div class="card shadow-sm mb-5">
-                      <div class="table-responsive">
-                          <table class="table table-hover align-middle mb-0" style="font-size: 11px !important; font-family: 'Arial', sans-serif !important;">
-                              <thead class="bg-light">
-                                  <tr>
-                                      <th style="text-transform: lowercase !important;">colaborador</th>
-                                      <th style="text-transform: lowercase !important;" class="text-center">vol.</th>
-                                      <th style="text-transform: lowercase !important;" class="text-center">ganadas</th>
-                                      <th style="text-transform: lowercase !important;" class="text-center">% cierre</th>
-                                      <th style="text-transform: lowercase !important;" class="text-center">efic. (d)</th>
-                                      <th style="text-transform: lowercase !important;" class="text-center">estado</th>
-                                  </tr>
-                              </thead>
-                              <tbody>
-                                  <tr v-for="(item, index) in adminDashboardKpis.collaboratorStats" :key="index">
-                                      <td style="text-transform: uppercase !important;">
-                                          <div class="d-flex align-items-center">
-                                              <div class="rounded-circle text-white d-flex justify-content-center align-items-center me-2 fw-bold shadow-sm"
-                                                   style="width: 28px; height: 28px; font-size: 10px; background: linear-gradient(135deg, #6c757d, #495057);">
-                                                  {{ toInitials(item.name) }}
-                                              </div>
-                                              <span class="fw-bold text-secondary">{{ item.name }}</span>
-                                          </div>
-                                      </td>
-                                      <td class="text-center fw-bold" style="text-transform: uppercase !important;">{{ item.vol }}</td>
-                                      <td class="text-center text-success fw-bold" style="text-transform: uppercase !important;">{{ item.ganadas }}</td>
-                                      <td class="text-center fw-bold text-primary" style="text-transform: uppercase !important;">{{ item.cierrePercentage }}%</td>
-                                      <td class="text-center fw-bold" style="text-transform: uppercase !important;">{{ item.avgEfic }}d</td>
-                                      <td class="text-center" style="text-transform: uppercase !important;">
-                                          <span v-if="item.estado === 'Eficiente'" class="badge rounded-pill border border-success text-success bg-white px-3 py-1">Eficiente</span>
-                                          <span v-else-if="item.estado === 'Riesgo'" class="badge rounded-pill border border-warning text-warning bg-white px-3 py-1">Riesgo</span>
-                                          <span v-else-if="item.estado === 'Cuello botella'" class="badge rounded-pill border border-danger text-danger bg-white px-3 py-1">Cuello botella</span>
-                                          <span v-else class="badge rounded-pill border border-secondary text-secondary bg-white px-3 py-1">{{ item.estado }}</span>
-                                      </td>
-                                  </tr>
-                              </tbody>
-                          </table>
-                      </div>
-                  </div>
-              </div>
-
           </div>
       </div>
 
@@ -5569,118 +5372,6 @@ async function toggleVoiceRecording(btnElement) {
       const ecgChartInstances = {};
 
       // KPI STATE
-
-      const adminDashboardKpis = ref({
-          isLoading: false,
-          globalMetrics: { totalQuotes: 0, ganadas: 0, ganadasPercentage: 0, perdidasRiesgo: 0, riskAmount: 0, averageEfficiency: 0, collaboratorsCount: 0 },
-          funnelData: { recibidas: 0, integradas: 0, aTiempo: 0, seguimiento: 0, ganadas: 0 },
-          lossDistribution: [],
-          weeklyProductivity: [],
-          collaboratorStats: []
-      });
-
-      const adminChartInstances = {};
-
-      const renderAdminKpiCharts = () => {
-          const createChart = (id, config) => {
-              const ctx = document.getElementById(id);
-              if (!ctx) return;
-              if (adminChartInstances[id]) adminChartInstances[id].destroy();
-              adminChartInstances[id] = new Chart(ctx, config);
-          };
-
-          // 1. Embudo de Cotizaciones (Bar)
-          createChart('chartAdminFunnel', {
-              type: 'bar',
-              data: {
-                  labels: ['Recibidas', 'Integradas', 'A Tiempo', 'Seguimiento', 'Ganadas'],
-                  datasets: [{
-                      label: 'Volumen',
-                      data: [
-                          adminDashboardKpis.value.funnelData.recibidas,
-                          adminDashboardKpis.value.funnelData.integradas,
-                          adminDashboardKpis.value.funnelData.aTiempo,
-                          adminDashboardKpis.value.funnelData.seguimiento,
-                          adminDashboardKpis.value.funnelData.ganadas
-                      ],
-                      backgroundColor: ['#0d6efd', '#20c997', '#ffc107', '#85e085', '#198754'],
-                      borderWidth: 0,
-                      borderRadius: 4
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: { y: { beginAtZero: true } }
-              }
-          });
-
-          // 2. Distribución de Pérdidas (Doughnut)
-          createChart('chartAdminLoss', {
-              type: 'doughnut',
-              data: {
-                  labels: adminDashboardKpis.value.lossDistribution.map(d => d.label),
-                  datasets: [{
-                      data: adminDashboardKpis.value.lossDistribution.map(d => d.value),
-                      backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#6c757d', '#343a40', '#e83e8c'],
-                      borderWidth: 1
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } }
-              }
-          });
-
-          // 3. Productividad Diaria (Line)
-          createChart('chartAdminProductivity', {
-              type: 'line',
-              data: {
-                  labels: adminDashboardKpis.value.weeklyProductivity.map(d => d.day),
-                  datasets: [{
-                      label: 'Actividad',
-                      data: adminDashboardKpis.value.weeklyProductivity.map(d => d.count),
-                      borderColor: '#198754',
-                      backgroundColor: 'rgba(25, 135, 84, 0.1)',
-                      borderWidth: 2,
-                      fill: true,
-                      tension: 0.3,
-                      pointBackgroundColor: '#198754'
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: { legend: { display: false } },
-                  scales: { y: { beginAtZero: true } }
-              }
-          });
-      };
-
-      const loadAdminDashboardKpis = () => {
-          adminDashboardKpis.value.isLoading = true;
-          google.script.run.withSuccessHandler(res => {
-              adminDashboardKpis.value.isLoading = false;
-              if(res.success) {
-                  adminDashboardKpis.value.globalMetrics = res.globalMetrics;
-                  adminDashboardKpis.value.funnelData = res.funnelData;
-                  adminDashboardKpis.value.lossDistribution = res.lossDistribution;
-                  adminDashboardKpis.value.weeklyProductivity = res.weeklyProductivity;
-                  adminDashboardKpis.value.collaboratorStats = res.collaboratorStats;
-                  nextTick(() => {
-                      renderAdminKpiCharts();
-                  });
-              } else {
-                  Swal.fire('Error', 'No se pudieron cargar los datos', 'error');
-              }
-          }).withFailureHandler(err => {
-              adminDashboardKpis.value.isLoading = false;
-              Swal.fire('Error', err.message, 'error');
-          }).apiFetchAdminKPIs();
-      };
-
       const kpiData = ref({
           dashboardVentas: [],
           productividadDiaria: {},
@@ -6016,15 +5707,15 @@ const filteredStaffTrackerData = computed(() => {
           const sheetName = String(staffTracker.value.name).toUpperCase();
           // const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
           const isExcludedSheet = false; // Enabled for everyone now
-          
+
           // Removed if (isExcludedSheet) return; to allow dynamic days calculation for Antonia and Ventas
 
           const hDias = staffTracker.value.headers.find(h => isCol(h, ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ']));
           if (!hDias) return;
-          
+
           const hFecha = staffTracker.value.headers.find(h => isCol(h, ['FECHA','FECHA ALTA','FECHA DE ALTA','FECHA INICIO','FECHA DE INICIO','F. INICIO']));
           if (!hFecha || !row[hFecha]) return;
-          
+
           let dObj = null;
           const val = row[hFecha];
           if (val instanceof Date) dObj = val;
@@ -6078,7 +5769,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; }
           else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('AVANCE')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
-          else if (isCol(h, ['ESTATUS','STATUS'])) { w = 'auto'; fs = '10px'; pad = '8px 1px'; }
+          else if (isCol(h, ['ESTATUS','STATUS'])) { w = '65px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; }
           else if (up === 'F2') { w = '35px'; fs = '10px'; align='center'; }
           else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; }
@@ -6094,7 +5785,7 @@ const filteredStaffTrackerData = computed(() => {
               }
           }
 
-          return { width: w, fontSize: fs, padding: pad, textAlign: align, overflow: 'hidden', textOverflow: 'ellipsis', color: colColor, ...(up === 'FOLIO' || up === 'ID' ? {textTransform: 'none !important'} : {}) };
+          return { width: w, fontSize: fs, padding: pad, textAlign: align, overflow: 'hidden', textOverflow: 'ellipsis', color: colColor };
       };
 
       const getHeaderLabel = (h) => {
@@ -6103,19 +5794,18 @@ const filteredStaffTrackerData = computed(() => {
           if (up === 'CLASIFICACION') return 'CLASI';
           if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN';
           if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN';
-          if (up === 'FOLIO') return 'Folio';
           return h;
       };
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE','CORREO','CARPETA','CORREOS','CARPETAS'].includes(String(h).toUpperCase());
-      const getTrafficStyle = (row) => { 
+      const getTrafficStyle = (row) => {
           const clasiKey = Object.keys(row).find(k => ['CLASIFICACION', 'CLASI'].includes(String(k).toUpperCase().trim()));
           const t = clasiKey ? String(row[clasiKey]).trim().toUpperCase() : '';
 
           const diasKey = Object.keys(row).find(k => ['DIAS','RELOJ','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'].includes(String(k).toUpperCase().trim()));
           const d = diasKey ? parseInt(row[diasKey]||0) : 0;
 
-          if (isNaN(d)) return {}; 
-          
+          if (isNaN(d)) return {};
+
           let limit = 0, buffer = 0;
           if(t==='A') { limit=3; buffer=1; }
           else if(t==='AA') { limit=15; buffer=3; }
@@ -6127,6 +5817,39 @@ const filteredStaffTrackerData = computed(() => {
           return {backgroundColor:'#2ecc71', color:'white'}; // Verde
       };
 
+      const getFechaInicioTrafficStyle = (row) => {
+          const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','ALTA','F. INICIO','F. VISITA'].includes(String(k).toUpperCase().trim()));
+          if (!startKey) return {};
+          const val = row[startKey];
+          if (!val) return {};
+          let dObj = null;
+          if (val instanceof Date) dObj = val;
+          else if (typeof val === 'string') {
+              const p = val.split('/');
+              if (p.length === 3) dObj = new Date(p[2].length===2?'20'+p[2]:p[2], p[1]-1, p[0]);
+          }
+          if (!dObj || isNaN(dObj.getTime())) return {};
+
+          // Calculate elapsed days
+          const now = new Date();
+          now.setHours(0,0,0,0);
+          dObj.setHours(0,0,0,0);
+          const diff = now - dObj;
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+          const clasiKey = Object.keys(row).find(k => ['CLASIFICACION', 'CLASI'].includes(String(k).toUpperCase().trim()));
+          const t = clasiKey ? String(row[clasiKey]).trim().toUpperCase() : '';
+          let limit = 0, buffer = 0;
+          if(t==='A') { limit=3; buffer=1; }
+          else if(t==='AA') { limit=15; buffer=3; }
+          else if(t==='AAA') { limit=30; buffer=5; }
+          else return {};
+
+          if(days > limit) return {backgroundColor:'#e74c3c', color:'black'};
+          if(days >= (limit - buffer)) return {backgroundColor:'#ffff00', color:'black', fontWeight:'bold'};
+          return {backgroundColor:'#2ecc71', color:'black'};
+      };
+      const getFechaRespuestaStyle = (row) => { const startKey = Object.keys(row).find(k => ['FECHA','FECHA INICIO','FECHA DE INICIO','F. INICIO'].includes(String(k).toUpperCase().trim())); const startDateVal = startKey ? row[startKey] : null; const style = { backgroundColor: '#ffc107', color: 'black' }; if (!startDateVal) return style; let startDate = null; if (typeof startDateVal === 'string') { const parts = startDateVal.split('/'); if (parts.length === 3) { let y = parts[2].length === 2 ? '20' + parts[2] : parts[2]; startDate = new Date(`${y}-${parts[1]}-${parts[0]}`); } else { const parsed = new Date(startDateVal); if (!isNaN(parsed.getTime())) startDate = parsed; } } else if (startDateVal instanceof Date) { startDate = startDateVal; } if (startDate && !isNaN(startDate.getTime())) { const diff = new Date() - startDate; if (Math.floor(diff / (1000 * 60 * 60 * 24)) > 3) { style.backgroundColor = '#dc3545'; style.color = 'black'; } } return style; };
 
       const toInitials = (name) => {
         if (!name) return '';
@@ -6786,7 +6509,7 @@ const filteredStaffTrackerData = computed(() => {
 
       const loadTrackerData = () => {
           staffTrackerFilters.value = {};
-          
+
           let sheetName = currentStaffName.value;
           if (activeTrackerTab.value === 'VENTAS') {
               sheetName = sheetName + " VENTAS";
@@ -6827,7 +6550,6 @@ const filteredStaffTrackerData = computed(() => {
 
       const saveAllTrackerRows = () => {
           if (staffTracker.value.data.length === 0) return;
-
           Swal.fire({
               title: '¿Guardar Todo?',
               text: `Se guardarán ${staffTracker.value.data.length} filas.`,
@@ -6883,7 +6605,6 @@ const filteredStaffTrackerData = computed(() => {
       const saveRow = (row, event) => {
           if (row._isSaving) return;
           row._isSaving = true;
-
 
           const sheetName = String(staffTracker.value.name).toUpperCase();
           // const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
@@ -6985,8 +6706,13 @@ const filteredStaffTrackerData = computed(() => {
       const triggerUpload = (type) => { currentUploadType.value = type; fileInput.value.click(); };
       const promptExtraData = () => { if(!ppcData.value.concepto || !selectedResponsables.value.length) return Swal.fire('Faltan datos básicos','','warning'); extraData.value = { restricciones: '', prioridades: '', riesgos: '', fechaRespuesta: '', clasificacion: '' }; showExtraModal.value = true; };
       const confirmAddToQueue = () => {
+          // Validar datos básicos antes de verificar fecha (para dar un mejor mensaje si falta todo)
+          if (!ppcData.value.concepto || !selectedResponsables.value.length) {
+              return Swal.fire('Faltan datos básicos', 'Descripción de Actividad y Responsable son obligatorios.', 'warning');
+          }
+
           // --- VALIDADOR FECHA OBLIGATORIA (PPC MAESTRO Y WORKORDER) ---
-          if (!extraData.value.fechaRespuesta) {
+          if (!extraData.value.fechaRespuesta && !ppcData.value.fechaRespuesta) {
               Swal.fire({
                   icon: 'warning',
                   title: 'Campo Obligatorio',
@@ -7028,7 +6754,7 @@ const filteredStaffTrackerData = computed(() => {
              return;
           }
 
-          const item = JSON.parse(JSON.stringify(ppcData.value)); item.responsable = selectedResponsables.value.join(','); item.restricciones = extraData.value.restricciones; item.prioridades = extraData.value.prioridades; item.riesgos = extraData.value.riesgos; item.clasificacion = extraData.value.clasificacion; if(currentPpcProject.value) { const tag = `[PROY: ${currentPpcProject.value.name}]`; item.comentarios = (item.comentarios ? item.comentarios + ' ' : '') + tag; } let fResp = extraData.value.fechaRespuesta; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } item.fechaRespuesta = fResp; item.fechaAlta = new Date().toISOString(); let prefix = 'PPC-'; if (currentUsername.value === 'JESUS_CANTU') prefix = 'JC-'; else if (currentUsername.value === 'LUIS_CARLOS') prefix = 'LC-'; else if (currentUsername.value === 'JAIME_OLIVO') prefix = 'JO-'; else if (currentUsername.value === 'ANTONIA_VENTAS') prefix = 'AV-'; item.id = prefix + Math.floor(Math.random() * 1000000000); activityQueue.value.push(item); ppcData.value.concepto=''; ppcData.value.horas=''; ppcData.value.comentarios=''; ppcData.value.comentariosPrevios=''; selectedResponsables.value=[]; uploadSuccess.value=false; showExtraModal.value = false; syncQueueToBackend(); pulseNewRow('ppcDraftTable', 'last');
+          const item = JSON.parse(JSON.stringify(ppcData.value)); item.responsable = selectedResponsables.value.join(','); item.restricciones = ppcData.value.restricciones || extraData.value.restricciones; item.prioridades = ppcData.value.prioridades || extraData.value.prioridades; item.riesgos = ppcData.value.riesgos || extraData.value.riesgos; item.clasificacion = ppcData.value.clasificacion || extraData.value.clasificacion; if(currentPpcProject.value) { const tag = `[PROY: ${currentPpcProject.value.name}]`; item.comentarios = (item.comentarios ? item.comentarios + ' ' : '') + tag; } let fResp = ppcData.value.fechaRespuesta || extraData.value.fechaRespuesta; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } item.fechaRespuesta = fResp; item.fechaAlta = new Date().toISOString(); item.id = 'PPC-' + Math.floor(Math.random() * 1000000000); activityQueue.value.push(item); ppcData.value.concepto=''; ppcData.value.horas=''; ppcData.value.comentarios=''; ppcData.value.comentariosPrevios=''; ppcData.value.clasificacion=''; ppcData.value.prioridades=''; ppcData.value.riesgos=''; ppcData.value.restricciones=''; ppcData.value.fechaRespuesta=''; selectedResponsables.value=[]; uploadSuccess.value=false; showExtraModal.value = false; syncQueueToBackend(); pulseNewRow('ppcDraftTable', 'last');
       };
       const syncQueueToBackend = () => { google.script.run.apiSyncDrafts(JSON.parse(JSON.stringify(activityQueue.value))); };
 
@@ -8016,50 +7742,36 @@ const filteredStaffTrackerData = computed(() => {
           return parts.join(' | ');
       };
 
-            const getProcessStatus = (row) => {
+      const getProcessStatus = (row) => {
           let log = [];
           try {
               log = row.PROCESO_LOG ? JSON.parse(row.PROCESO_LOG) : [];
           } catch(e) { log = []; }
           if (!Array.isArray(log)) log = [];
 
-          let mapCot = row["MAP COT"] || row.PROCESO || "";
-
-          // Legacy override if using 'to' parameter directly
+          let val = null;
           if (log.length > 0) {
               const lastLog = log[log.length - 1];
               if (lastLog.to) {
-                  let mappedTo = LEGACY_PROCESS_MAP[lastLog.to] || lastLog.to;
-                  if (PROCESS_STEPS.includes(mappedTo)) {
-                      return mappedTo;
+                  val = lastLog.to;
+              }
+          }
+          if (!val) {
+              let mapCot = row["MAP COT"] || row.PROCESO;
+              if (mapCot) {
+                  if (mapCot.includes('🔴')) {
+                     const match = mapCot.match(/🔴\s*([A-Z]+)/);
+                     if (match) val = match[1];
+                  } else {
+                     val = mapCot;
                   }
               }
           }
-
-          // Iterate through process steps in order
-          for (let step of PROCESS_STEPS) {
-              let isDone = false;
-              let stepEntries = log.filter(l => l.step === step || l.to === step || l.to === getFullProcessName(step));
-
-              if (stepEntries.length > 0) {
-                  // A step is done if all its entries in PROCESO_LOG are DONE
-                  isDone = stepEntries.every(e => e.status === 'DONE');
-              } else if (mapCot) {
-                  // Fallback to reading MAP COT
-                  let match = mapCot.split('|').find(p => p.trim().includes(step));
-                  if (match && match.includes('🟢')) {
-                      isDone = true;
-                  }
-              }
-
-              // Return the first step that is NOT done
-              if (!isDone) {
-                  return step;
-              }
+          if (!val) return PROCESS_STEPS[0];
+          if (LEGACY_PROCESS_MAP[val]) {
+              val = LEGACY_PROCESS_MAP[val];
           }
-
-          // If all steps are done, return the last step
-          return PROCESS_STEPS[PROCESS_STEPS.length - 1];
+          return val;
       };
 
       const getProcessBtnClass = (row) => {
@@ -8080,7 +7792,7 @@ const filteredStaffTrackerData = computed(() => {
           try {
               if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG);
           } catch(e) {}
-          
+
           let startDate = new Date();
           const startDateRaw = row['F. INICIO'] || row['FECHA'] || row['ALTA'] || row['FECHA INICIO'] || row['FECHA_INICIO'];
           if (startDateRaw) {
@@ -8097,7 +7809,7 @@ const filteredStaffTrackerData = computed(() => {
           }
 
           let mapCotStr = row["MAP COT"] || row.PROCESO || "";
-          
+
           let etapasCompletadas = 0;
           let bolitasCompletadas = 0;
           let totalBolitas = 0;
@@ -8107,7 +7819,7 @@ const filteredStaffTrackerData = computed(() => {
               let isCurrent = getProcessStatus(row) === stepId;
               let isDone = false;
               let isInProgress = false;
-              
+
               if (stepEntries.length > 0) {
                   isDone = stepEntries.every(e => e.status === 'DONE');
                   isInProgress = stepEntries.some(e => e.status === 'IN_PROGRESS');
@@ -8118,69 +7830,42 @@ const filteredStaffTrackerData = computed(() => {
                   if (pMatch && pMatch.includes('🟡')) isInProgress = true;
                   if (pMatch && pMatch.includes('🔴')) isInProgress = true;
               }
-              
+
               if (isDone) etapasCompletadas++;
-              
+
               const assignees = stepEntries.map(entry => {
                   totalBolitas++;
                   if (entry.status === 'DONE') bolitasCompletadas++;
-                  
-                  const formatDateLabel = (ts) => {
-                      if (!ts) return '';
-                      const tDate = new Date(ts);
+
+                  let tLabel = '';
+                  if (entry.timestamp) {
+                      const tDate = new Date(entry.timestamp);
                       const isToday = new Date().toDateString() === tDate.toDateString();
                       let hrs = tDate.getHours();
                       let mins = tDate.getMinutes();
                       let ampm = hrs >= 12 ? 'pm' : 'am';
                       hrs = hrs % 12;
-                      hrs = hrs ? hrs : 12; 
+                      hrs = hrs ? hrs : 12;
                       mins = mins < 10 ? '0'+mins : mins;
-                      
+
                       if (isToday) {
-                          return `Hoy ${hrs}:${mins}${ampm}`;
+                          tLabel = `Hoy ${hrs}:${mins}${ampm}`;
                       } else {
                           const isYesterday = new Date(new Date().setDate(new Date().getDate()-1)).toDateString() === tDate.toDateString();
                           if (isYesterday) {
-                              return `Ayer ${hrs}:${mins}${ampm}`;
+                              tLabel = `Ayer ${hrs}:${mins}${ampm}`;
                           } else {
-                              return `${tDate.getDate()}/${tDate.getMonth()+1}/${String(tDate.getFullYear()).slice(-2)} ${hrs}:${mins}${ampm}`;
+                              const _d = new Date(entry.timestamp); tLabel = `${_d.getDate()}/${_d.getMonth()+1}/${String(_d.getFullYear()).slice(-2)}`;
                           }
                       }
-                  };
-                  
-                  let startLabel = formatDateLabel(entry.timestamp) || (entry.dateStr ? entry.dateStr.split(',')[0] : '');
-                  let endLabel = formatDateLabel(entry.endTimestamp) || (entry.endDateStr ? entry.endDateStr.split(',')[0] : '');
-
-                  let durationLabel = '';
-                  let startTime = entry.timestamp;
-                  let endTime = entry.endTimestamp;
-
-                  if (startTime) {
-                      let durationMs = 0;
-                      if (endTime) {
-                          durationMs = endTime - startTime;
-                      } else if (entry.status === 'IN_PROGRESS') {
-                          durationMs = new Date().getTime() - startTime;
-                      }
-
-                      if (durationMs > 0) {
-                          const days = Math.floor(durationMs / (1000 * 60 * 60 * 24));
-                          const hours = Math.floor((durationMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                          if (days > 0) durationLabel = `${days}d ${hours}h`;
-                          else if (hours > 0) durationLabel = `${hours}h`;
-                          else durationLabel = '< 1h';
-                      }
+                  } else if (entry.dateStr) {
+                      tLabel = entry.dateStr.split(',')[0];
                   }
 
                   return {
                       name: entry.assignee,
                       status: entry.status,
-                      timeLabel: startLabel,
-                      startLabel: startLabel,
-                      endLabel: endLabel,
-                      durationLabel: durationLabel,
-                      timestamp: entry.timestamp,
-                      endTimestamp: entry.endTimestamp
+                      timeLabel: tLabel
                   };
               });
 
@@ -8192,13 +7877,13 @@ const filteredStaffTrackerData = computed(() => {
                   assignees: assignees
               };
           });
-          
+
           row._stats = {
               etapasCompletadas,
               bolitasCompletadas,
               totalBolitas
           };
-          
+
           return detailedSteps;
       };
 
@@ -8207,10 +7892,10 @@ const filteredStaffTrackerData = computed(() => {
           try {
               if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG);
           } catch(e) {}
-          
+
           let mapCot = row["MAP COT"] || row.PROCESO || "";
           let parsedParts = mapCot.split(/\||>|\//).map(p => p.trim()).filter(p => p);
-          
+
           let startDate = new Date();
           const dateKeys = ['FECHA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA_ALTA', 'F. INICIO', 'F. VISITA'];
           for (const k of dateKeys) {
@@ -8239,7 +7924,7 @@ const filteredStaffTrackerData = computed(() => {
               if (hours > 0) return `${hours}h`;
               return '< 1h';
           };
-          
+
           return PROCESS_STEPS.map((stepId, idx) => {
               let statusChar = '⚪';
               let matchingPart = parsedParts.find(p => p.includes(stepId));
@@ -8253,14 +7938,14 @@ const filteredStaffTrackerData = computed(() => {
                   if (idx < currentIdx) statusChar = '🟢';
                   else if (idx === currentIdx) statusChar = '🔴';
               }
-              
+
               let isDone = statusChar === '🟢';
               let isCurrent = statusChar === '🔴';
               let isInProgress = statusChar === '🟡';
-              
+
               let stepEntry = log.find(l => l.step === stepId || l.to === stepId);
               let timeLabel = '';
-              
+
               const formatShortDate = (ts) => {
                   const d = new Date(ts);
                   const pad = (n) => n.toString().padStart(2, '0');
@@ -8287,7 +7972,7 @@ const filteredStaffTrackerData = computed(() => {
               } else {
                   timeLabel = '-';
               }
-              
+
               return {
                   id: stepId,
                   isDone: isDone,
@@ -8305,7 +7990,7 @@ const filteredStaffTrackerData = computed(() => {
           if (!currentStatus) return;
 
           let title = "Avanzar a " + currentStatus + "?";
-          
+
           if (currentStatus === 'Revision de Cotizacion Cliente' || currentStatus === 'RCC') {
               const termRes = await Swal.fire({
                   title: 'Finalizar Cotización',
@@ -8320,7 +8005,7 @@ const filteredStaffTrackerData = computed(() => {
                   cancelButtonText: 'Descuento',
                   cancelButtonColor: '#007bff'
               });
-              
+
               if (termRes.isConfirmed) {
                   row.ESTATUS = 'GANADA';
               } else if (termRes.isDenied) {
@@ -8330,7 +8015,7 @@ const filteredStaffTrackerData = computed(() => {
               } else {
                   return; // Escaped
               }
-              
+
               let mapCot = row["MAP COT"] || row.PROCESO || "";
               if (!mapCot.includes('🟢')) {
                    const parts = PROCESS_STEPS.map(p => '🟢 ' + p);
@@ -8338,7 +8023,7 @@ const filteredStaffTrackerData = computed(() => {
               }
               if (row._assignToWorker) delete row._assignToWorker;
               if (row._assignStep) delete row._assignStep;
-              
+
               Swal.fire({
                   title: 'Guardando...',
                   text: 'Finalizando cotización y actualizando estado...',
@@ -8362,14 +8047,13 @@ const filteredStaffTrackerData = computed(() => {
           }
 
           const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory.filter(p => p.name !== 'ANTONIA_VENTAS').map(p => p.name) : [];
-          
+
           let optionsHtml = '';
           staffList.forEach(name => {
               optionsHtml += `<option value="${name}">${name}</option>`;
           });
 
-          const isAdminOrAntonia = currentUsername.value === 'ANTONIA_VENTAS' || ['ADMIN_CONTROL', 'ADMIN', 'PPC_ADMIN'].includes(currentRole.value);
-          const { value: result, isDismissed } = await Swal.fire({
+          const { value: selectedWorkers, isDismissed } = await Swal.fire({
               title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
               html: `
                   <div class="mb-2 text-start text-muted small">Selecciona una o varias personas para esta etapa (Ctrl/Cmd + Click para múltiples):</div>
@@ -8378,11 +8062,8 @@ const filteredStaffTrackerData = computed(() => {
                   </select>
               `,
               showCancelButton: true,
-              showDenyButton: isAdminOrAntonia,
               confirmButtonText: 'Asignar',
               cancelButtonText: 'Cancelar',
-              denyButtonText: 'Saltar/Forzar Avance',
-              denyButtonColor: '#ffc107',
               preConfirm: () => {
                   const selectElement = document.getElementById('swal-multi-select');
                   const selectedOptions = Array.from(selectElement.selectedOptions).map(option => option.value);
@@ -8390,54 +8071,35 @@ const filteredStaffTrackerData = computed(() => {
                       Swal.showValidationMessage('Debes seleccionar al menos una persona');
                       return false;
                   }
-                  return { action: 'assign', workers: selectedOptions };
+                  return selectedOptions;
               }
           });
 
-          if (isDismissed && !result && !Swal.getDenyButton().matches(':active') && !document.activeElement.classList.contains('swal2-deny')) return;
+          if (isDismissed || !selectedWorkers || selectedWorkers.length === 0) return;
 
           let log = [];
           try { if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG); } catch(e){}
 
-          if (result && result.action === 'assign') {
-              const selectedWorkers = result.workers;
-              // Only add entries for workers that are not already in progress or done for this step
-              selectedWorkers.forEach(worker => {
-                   let existing = log.find(e => (e.step === currentStatus || e.to === currentStatus) && e.assignee === worker);
-                   if (existing) {
-                        existing.status = 'IN_PROGRESS';
-                        if (!existing.timestamp) {
-                            existing.timestamp = new Date().getTime();
-                            existing.dateStr = new Date().toLocaleString();
-                        }
-                        if (existing.endTimestamp) delete existing.endTimestamp;
-                        if (existing.endDateStr) delete existing.endDateStr;
-                   } else {
-                        log.push({
-                            step: currentStatus,
-                            status: 'IN_PROGRESS',
-                            assignee: worker,
-                            timestamp: new Date().getTime(),
-                            dateStr: new Date().toLocaleString()
-                        });
-                   }
-              });
-          } else {
-              // Forced Advance (Saltar Fase)
-              // Create a DONE entry immediately
-              log.push({
-                  step: currentStatus,
-                  status: 'DONE',
-                  assignee: "ANTONIA_VENTAS (AUTORIZO)",
-                  timestamp: new Date().getTime(),
-                  dateStr: new Date().toLocaleString(),
-                  endTimestamp: new Date().getTime(),
-                  endDateStr: new Date().toLocaleString()
-              });
-          }
-          
+          // Only add entries for workers that are not already in progress or done for this step
+          selectedWorkers.forEach(worker => {
+               let existing = log.find(e => (e.step === currentStatus || e.to === currentStatus) && e.assignee === worker);
+               if (existing) {
+                    existing.status = 'IN_PROGRESS';
+                    existing.timestamp = new Date().getTime();
+                    existing.dateStr = new Date().toLocaleString();
+               } else {
+                    log.push({
+                        step: currentStatus,
+                        status: 'IN_PROGRESS',
+                        assignee: worker,
+                        timestamp: new Date().getTime(),
+                        dateStr: new Date().toLocaleString()
+                    });
+               }
+          });
+
           row.PROCESO_LOG = JSON.stringify(log);
-          
+
           let newParts = PROCESS_STEPS.map(step => {
               let sEntries = log.filter(l => l.step === step || l.to === step);
               if (sEntries.length > 0) {
@@ -8462,15 +8124,15 @@ const filteredStaffTrackerData = computed(() => {
               allowOutsideClick: false,
               didOpen: () => { Swal.showLoading(); }
           });
-          
+
           try {
               const res = await new Promise((resolve) => {
                   google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
               });
-              
+
               delete row._assignToWorker;
               delete row._assignStep;
-              
+
               if (res && res.success) {
                   Swal.fire({ title: 'Éxito', text: 'La tarea se asignó y actualizó correctamente.', icon: 'success', timer: 1500 });
                   if (res.data) Object.assign(row, res.data);
@@ -8479,74 +8141,6 @@ const filteredStaffTrackerData = computed(() => {
               }
           } catch(err) {
               Swal.fire('Error', 'No se pudo guardar: ' + err.toString(), 'error');
-          }
-      };
-
-      const removeWorkerFromHotPotato = async (row, stepId, workerName) => {
-          if (!row || !row.PROCESO_LOG) return;
-
-          const res = await Swal.fire({
-              title: '¿Eliminar asignación?',
-              html: `¿Estás seguro de eliminar a <b>${workerName}</b> de la etapa <b>${getFullProcessName(stepId)}</b>?<br><br><small class="text-danger">Esto borrará la tarea de su Tracker.</small>`,
-              icon: 'warning',
-              showCancelButton: true,
-              confirmButtonText: 'Sí, eliminar',
-              cancelButtonText: 'Cancelar',
-              confirmButtonColor: '#dc3545'
-          });
-
-          if (!res.isConfirmed) return;
-
-          let log = JSON.parse(row.PROCESO_LOG);
-
-          // Filtrar log para remover al trabajador de la etapa especifica
-          log = log.filter(e => !( (e.step === stepId || e.to === stepId) && e.assignee === workerName ));
-
-          row.PROCESO_LOG = JSON.stringify(log);
-
-          // Update MAP COT based on new log
-          let newParts = PROCESS_STEPS.map(step => {
-              let sEntries = log.filter(l => l.step === step || l.to === step);
-              if (sEntries.length > 0) {
-                  const allDone = sEntries.every(e => e.status === 'DONE');
-                  if (allDone) return '🟢 ' + step;
-                  return '🟡 ' + step;
-              }
-              const currentStatus = getProcessStatus(row);
-              if (step === currentStatus) return '🔴 ' + step;
-              let idx = PROCESS_STEPS.indexOf(step);
-              let currIdx = PROCESS_STEPS.indexOf(currentStatus);
-              if (idx < currIdx) return '🟢 ' + step;
-              return '⚪ ' + step;
-          });
-          row["MAP COT"] = newParts.join(' | ');
-
-          row._removeWorker = workerName;
-          row._assignStep = stepId;
-
-          Swal.fire({
-              title: 'Eliminando...',
-              text: 'Borrando tarea y actualizando estado...',
-              allowOutsideClick: false,
-              didOpen: () => { Swal.showLoading(); }
-          });
-
-          try {
-              const resp = await new Promise((resolve) => {
-                  google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
-              });
-
-              delete row._removeWorker;
-              delete row._assignStep;
-
-              if (resp && resp.success) {
-                  Swal.fire({ title: 'Éxito', text: 'La asignación se ha eliminado correctamente.', icon: 'success', timer: 1500 });
-                  if (resp.data) Object.assign(row, resp.data);
-              } else {
-                  throw new Error(resp?.message || 'Error desconocido');
-              }
-          } catch(err) {
-              Swal.fire('Error', 'No se pudo eliminar: ' + err.toString(), 'error');
           }
       };
 
@@ -8570,8 +8164,8 @@ const filteredStaffTrackerData = computed(() => {
           } catch(e) { return ''; }
       };
 
-      return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation, removeWorkerFromHotPotato,
-      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, adminDashboardKpis, loadAdminDashboardKpis, renderAdminKpiCharts, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
+      return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
+      ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
@@ -8613,7 +8207,7 @@ function iniciarDictadoNativo(campoDestinoId) {
 
     // 2. Invocamos al espíritu del reconocimiento
     const recognition = new SpeechRecognition();
-    
+
     // Configuración del Jutsu
     recognition.lang = 'es-MX'; // Español de México (puedes cambiarlo a es-ES, etc.)
     recognition.continuous = false; // Se detiene cuando dejas de hablar
@@ -8623,11 +8217,11 @@ function iniciarDictadoNativo(campoDestinoId) {
     recognition.onstart = function() {
         // Aquí puedes cambiar el icono del micrófono a "Escuchando..." o ponerlo rojo
         // Ejemplo visual simple:
-        const btn = document.getElementById('btn-micro-' + campoDestinoId); 
-        if(btn) btn.style.color = 'red'; 
-        
+        const btn = document.getElementById('btn-micro-' + campoDestinoId);
+        if(btn) btn.style.color = 'red';
+
         // Usamos Toast de Google si está disponible, o un console.log
-        try { google.script.host.editor.focus(); } catch(e){} 
+        try { google.script.host.editor.focus(); } catch(e){}
         console.log("🎤 Escuchando... habla ahora.");
     };
 
@@ -8651,7 +8245,7 @@ function iniciarDictadoNativo(campoDestinoId) {
 
         // Obtenemos el texto sagrado
         const transcript = event.results[0][0].transcript;
-        
+
         // Capitalizamos la primera letra (estética ninja)
         const textoFinal = transcript.charAt(0).toUpperCase() + transcript.slice(1);
 
@@ -8672,7 +8266,7 @@ function iniciarDictadoNativo(campoDestinoId) {
 
     // ¡EJECUTAR!
     recognition.start();
-}  
+}
 </script>
 </body>
 </html>
