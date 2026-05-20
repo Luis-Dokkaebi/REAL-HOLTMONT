@@ -2066,6 +2066,33 @@ function apiSavePPCData(payload, activeUser) {
                       addTaskToSheet(personName, taskData);
                   }
               }
+
+            // INTEGRACIÓN OUTLOOK: Enviar evento al responsable asignado desde el formulario PPC
+            const emailRes = findUserEmailByLabel(personName);
+            if (emailRes) {
+                const fIni = new Date();
+                const fFi = new Date(fIni.getTime() + (2 * 60 * 60 * 1000));
+                
+                const conceptoPPC = taskData.CONCEPTO || "Nueva Tarea PPC";
+                const cl = item.cliente || taskData.CLIENTE || "Holtmont";
+                
+                const payloadOutlookPPC = {
+                    folio: id,
+                    titulo: `Asignación PPC: ${conceptoPPC} - ${cl}`,
+                    descripcion: `Se te ha asignado una tarea desde el módulo PPC. Concepto: ${conceptoPPC}.`,
+                    fechaInicio: fIni.toISOString(),
+                    fechaFin: fFi.toISOString(),
+                    correoDestino: emailRes,
+                    asignadoPor: activeUser || "SISTEMA"
+                };
+                
+                // Disparamos la notificación sin bloquear el flujo principal
+                try {
+                    NotifierService.sendToOutlook(payloadOutlookPPC);
+                } catch(e) {
+                    console.error("Error enviando Outlook desde PPC:", e);
+                }
+            }
           });
 
           // D. Preparar Log (En Memoria)
