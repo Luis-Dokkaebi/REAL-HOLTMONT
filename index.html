@@ -3670,7 +3670,7 @@
                <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'INTERDICIPLINARIA' : 'PPC Maestro') }}</h5><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
                <div><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
            </div>
-           <div class="d-flex mb-3 align-items-end justify-content-center position-relative" style="min-height: 90px;">
+           <div class="d-flex mb-3 align-items-end justify-content-end position-relative" style="min-height: 90px;">
                <div class="excel-container" style="height: auto; max-height: none; overflow: visible; flex:none; width: fit-content; z-index: 1; border:none; box-shadow:none; background: transparent;">
                    <table class="table-excel mini-table" style="background: white; border: 1px solid #999;"><thead><tr><th style="width:100px">ESPECIALIDAD</th><th style="width:40px">ACT</th><th style="width:40px">CUMP</th><th style="width:45px">PROM</th><th style="width:40px">ANT</th></tr></thead><tbody><tr v-for="stat in deptStats" :key="stat.key" :class="{'total-row': stat.key === 'TOTAL'}"><td style="font-weight:bold; text-align: left;">{{ stat.label }}</td><td class="text-center">{{ stat.actual }}</td><td class="text-center text-success fw-bold">{{ stat.cumplidas }}</td><td class="text-center">{{ stat.promedio }}</td><td class="text-center text-muted">{{ stat.anterior }}</td></tr></tbody></table>
                </div>
@@ -3740,12 +3740,50 @@
 
                <!-- TABLA STANDAR PARA LOS DEMAS -->
                <table v-else class="table-excel">
-                   <thead><tr><th class="row-num">#</th><th v-if="currentUsername === 'PREWORK_ORDER'" style="width:60px">Cliente</th><th style="width:100px">Depto</th><th style="min-width:400px">Descripción Actividad</th><th style="width:150px">Responsable</th><th style="width:80px">Fecha</th><th style="width:50px">Cumpl.</th><th style="width:40px">Clip</th><th style="min-width:150px">Comentarios</th><th style="min-width:150px">Previos</th><th style="width:50px"></th></tr></thead>
+                   <thead>
+                       <tr>
+                           <th class="row-num">#</th>
+                           <th v-if="currentUsername === 'PREWORK_ORDER'" style="width:60px">Cliente</th>
+                           <th style="width:100px">Depto</th>
+                           <th style="min-width:400px">Descripción Actividad</th>
+                           <th style="width:80px">Clasificación</th>
+                           <th style="width:80px">Prioridad</th>
+                           <th style="width:80px">Riesgo</th>
+                           <th style="width:120px">Restricciones</th>
+                           <th style="width:150px">Responsable</th>
+                           <th style="width:80px">Fecha</th>
+                           <th style="width:50px">Cumpl.</th>
+                           <th style="width:40px">Clip</th>
+                           <th style="width:90px">Fecha Respuesta</th>
+                           <th style="min-width:150px">Comentarios</th>
+                           <th style="min-width:150px">Previos</th>
+                           <th style="width:50px"></th>
+                       </tr>
+                   </thead>
                    <tbody>
-                       <tr class="input-row"><td class="row-num">></td><td v-if="currentUsername === 'PREWORK_ORDER'"><input v-model="ppcData.cliente" class="excel-input" placeholder="MB" style="background:#f0fdf4; text-align:center;"></td><td><select v-model="ppcData.especialidad" class="excel-input" style="background:#f0fdf4"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td><td><input v-model="ppcData.concepto" class="excel-input" placeholder="Descripción..." style="background:#f0fdf4"></td><td style="background:#f0fdf4; position:relative;"><div class="chip-container" @click="$refs.chipIn.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}}<i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipIn" v-model="staffSearch" style="border:none;outline:none;min-width:40px;font-size:12px;background:transparent;" placeholder="+"></div><ul class="list-group position-absolute w-100 shadow" style="z-index:100;max-height:150px;overflow:auto;top:100%;left:0" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" @click="addResponsable(p.name)">{{p.name}}</li></ul></td><td class="text-center small text-muted">HOY</td><td><select v-model="ppcData.cumplimiento" class="excel-input" style="background:#f0fdf4"><option value="NO">NO</option><option value="SI">SI</option></select></td><td class="text-center" style="background:#f0fdf4"><button class="btn-attach" :class="{'has-file': uploadSuccess}" @click="openFileDialog"><i class="fas" :class="uploadSuccess ? 'fa-check' : 'fa-paperclip'"></i></button><input type="file" ref="fileInput" class="file-input-hidden" accept="*" @change="handleFileSelect"></td><td><input v-model="ppcData.comentarios" class="excel-input" placeholder="..." style="background:#f0fdf4"></td><td><input v-model="ppcData.comentariosPrevios" class="excel-input" placeholder="..." style="background:#f0fdf4"></td><td class="text-center"><button class="btn btn-primary btn-sm py-0" @click="promptExtraData" title="Más Detalles">+</button></td></tr>
-                       <tr v-for="(item, idx) in activityQueue" :key="idx"><td class="row-num">{{ idx + 1 }}</td><td v-if="currentUsername === 'PREWORK_ORDER'"><input :value="item.cliente" readonly class="excel-input"></td><td><input :value="item.especialidad" readonly class="excel-input"></td><td><input :value="item.concepto" readonly class="excel-input"></td><td><div style="padding:0 8px; overflow:hidden; white-space:nowrap; font-size:12px">{{ item.responsable }}</div></td><td class="text-center small">{{ item.fechaAlta ? formatDisplayDate(item.fechaAlta) : new Date().toLocaleDateString() }}</td><td><input :value="item.cumplimiento" readonly class="excel-input"></td><td class="text-center"><i class="fas fa-file-pdf text-danger" v-if="item.archivoUrl"></i></td><td><input :value="item.comentarios" readonly class="excel-input"></td><td><input :value="item.comentariosPrevios" readonly class="excel-input"></td><td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer" @click="activityQueue.splice(idx,1); syncQueueToBackend();"></i></td></tr>
+                       <tr v-for="(item, idx) in activityQueue" :key="idx">
+                           <td class="row-num">{{ idx + 1 }}</td>
+                           <td v-if="currentUsername === 'PREWORK_ORDER'"><input v-model="item.cliente" class="excel-input" placeholder="MB"></td>
+                           <td><select v-model="item.especialidad" class="excel-input"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td>
+                           <td><input v-model="item.concepto" class="excel-input" placeholder="Descripción..."></td>
+                           <td><select v-model="item.clasificacion" class="excel-input"><option value=""></option><option value="A">A</option><option value="AA">AA</option><option value="AAA">AAA</option></select></td>
+                           <td><select v-model="item.prioridades" class="excel-input"><option value=""></option><option value="ALTA">ALTA</option><option value="MEDIA">MEDIA</option><option value="BAJA">BAJA</option></select></td>
+                           <td><select v-model="item.riesgos" class="excel-input"><option value=""></option><option value="ALTO">ALTO</option><option value="MEDIO">MEDIO</option><option value="BAJO">BAJO</option></select></td>
+                           <td><input v-model="item.restricciones" class="excel-input" placeholder="Restricciones..."></td>
+                           <td><input v-model="item.responsable" class="excel-input" placeholder="Responsable"></td>
+                           <td class="text-center small text-muted">HOY</td>
+                           <td><select v-model="item.cumplimiento" class="excel-input"><option value="NO">NO</option><option value="SI">SI</option></select></td>
+                           <td class="text-center"><i class="fas fa-file-pdf text-danger" v-if="item.archivoUrl"></i></td>
+                           <td><input type="date" v-model="item.fechaRespuesta" class="excel-input" style="font-size:10px"></td>
+                           <td><input v-model="item.comentarios" class="excel-input" placeholder="..."></td>
+                           <td><input v-model="item.comentariosPrevios" class="excel-input" placeholder="..."></td>
+                           <td class="text-center"><i class="fas fa-trash text-danger" style="cursor:pointer" @click="activityQueue[idx] = { concepto: '', responsable: '', especialidad: '', cumplimiento: 'NO', cliente: '', comentarios: '', comentariosPrevios: '', fechaAlta: '', clasificacion: '', prioridades: '', riesgos: '', restricciones: '', fechaRespuesta: '' };"></i></td>
+                       </tr>
                    </tbody>
                </table>
+           </div>
+           <div class="d-flex justify-content-center mb-3">
+               <button class="btn btn-outline-primary btn-sm rounded-circle shadow-sm" style="width: 32px; height: 32px;" @click="activityQueue.push({ concepto: '', responsable: '', especialidad: '', cumplimiento: 'NO', cliente: '', comentarios: '', comentariosPrevios: '', fechaAlta: '', clasificacion: '', prioridades: '', riesgos: '', restricciones: '', fechaRespuesta: '' })" title="Agregar fila vacía"><i class="fas fa-plus"></i></button>
            </div>
            <div class="d-flex justify-content-end mb-4 gap-2"><button class="btn btn-danger fw-bold" @click="clearQueue" :disabled="isSubmitting || !activityQueue.length">DEPURAR</button><button class="btn btn-success fw-bold" @click="submitBatch" :disabled="isSubmitting || !activityQueue.length">{{ isSubmitting ? 'Procesando...' : 'GUARDAR TODO' }}</button></div>
         </div>
@@ -4915,6 +4953,17 @@ async function toggleVoiceRecording(btnElement) {
 
       const isSubmitting = ref(false);
       const selectedResponsables = ref([]); const staffSearch = ref(''); const activityQueue = ref([]);
+      const fillEmptyQueueRows = () => {
+          const needed = 30 - activityQueue.value.length;
+          for(let i=0; i<needed; i++) {
+              activityQueue.value.push({
+                  concepto: '', responsable: '', especialidad: '', cumplimiento: 'NO',
+                  cliente: '', comentarios: '', comentariosPrevios: '', fechaAlta: '',
+                  clasificacion: '', prioridades: '', riesgos: '', restricciones: '', fechaRespuesta: ''
+              });
+          }
+      };
+      fillEmptyQueueRows();
       const ppcExistingData = ref([]);
 
       const historySearchQuery = ref('');
@@ -6903,7 +6952,51 @@ const filteredStaffTrackerData = computed(() => {
         }).apiSavePPCData([payload], currentUsername.value);
       };
       const saveDynamicPPC = () => { if(!dynamicPpc.value.especialidad || !dynamicPpc.value.concepto || !selectedResponsables.value.length) return Swal.fire('Faltan datos','','warning'); isSubmitting.value = true; let fResp = dynamicPpc.value.fechaFin; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } let finalComs = dynamicPpc.value.comentarios || ''; if(currentPpcProject.value) { finalComs = (finalComs ? finalComs + ' ' : '') + `[PROY: ${currentPpcProject.value.name}]`; } const payload = { especialidad: dynamicPpc.value.especialidad, concepto: dynamicPpc.value.concepto, responsable: selectedResponsables.value.join(','), clasificacion: dynamicPpc.value.clasificacion, riesgos: dynamicPpc.value.riesgos, prioridad: dynamicPpc.value.prioridad, fechaRespuesta: fResp, archivoUrl: dynamicPpc.value.archivoUrl, comentarios: finalComs, horas: '', cumplimiento: 'NO' }; google.script.run.withSuccessHandler(res => { isSubmitting.value = false; if(res.success){ Swal.fire('Registro Guardado','Enviado a PPC y Tracker','success'); dynamicPpc.value = { especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' }; selectedResponsables.value = []; uploadSuccess.value = false; } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiSavePPCData([payload], currentUsername.value); };
-      const submitBatch = () => { isSubmitting.value=true; google.script.run.withSuccessHandler(res => { isSubmitting.value=false; if(res.success){ Swal.fire('Guardado','','success'); activityQueue.value = []; google.script.run.apiClearDrafts(); google.script.run.withSuccessHandler(r => { if(r.success) ppcExistingData.value = r.data; }).apiFetchPPCData(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiSavePPCData(JSON.parse(JSON.stringify(activityQueue.value)), currentUsername.value); };
+      const submitBatch = () => {
+        const validItems = activityQueue.value.filter(item => item.concepto && item.responsable);
+        if (validItems.length === 0) {
+            Swal.fire('Advertencia', 'No hay actividades válidas para guardar. Asegúrese de llenar Descripción y Responsable.', 'warning');
+            return;
+        }
+
+        // Validate fechaRespuesta (or fechaFin if mapped)
+        const missingDate = validItems.some(item => !item.fechaRespuesta);
+        if (missingDate) {
+            Swal.fire('Campo Obligatorio', 'Debe colocar la Fecha de Respuesta en todas las actividades ingresadas para poder avanzar.', 'warning');
+            return;
+        }
+
+        isSubmitting.value = true;
+
+        // Formatear fechas antes de enviar
+        const payload = validItems.map(item => {
+            const copy = JSON.parse(JSON.stringify(item));
+            if (!copy.id) {
+                copy.id = 'PPC-' + Math.floor(Math.random() * 1000000000);
+            }
+            if (!copy.fechaAlta) {
+                copy.fechaAlta = new Date().toISOString();
+            }
+            if (copy.fechaRespuesta) {
+                const parts = copy.fechaRespuesta.split('-');
+                if(parts.length === 3) copy.fechaRespuesta = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+            }
+            return copy;
+        });
+
+        google.script.run.withSuccessHandler(res => {
+            isSubmitting.value = false;
+            if(res.success){
+                Swal.fire('Guardado','','success');
+                activityQueue.value = [];
+                fillEmptyQueueRows(); // Reset with empty rows
+                google.script.run.apiClearDrafts();
+                google.script.run.withSuccessHandler(r => {
+                    if(r.success) ppcExistingData.value = r.data;
+                }).apiFetchPPCData();
+            } else Swal.fire('Error',res.message,'error');
+        }).withFailureHandler(handleErr).apiSavePPCData(payload, currentUsername.value);
+      };
       const clearQueue = () => { Swal.fire({ title: '¿Limpiar tabla?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }).then((result) => { if (result.isConfirmed) { activityQueue.value = []; google.script.run.apiClearDrafts(); } }); };
       const toIsoDate = (val) => { if (!val) return ''; const strVal = String(val); if (strVal.includes('T')) return strVal.split('T')[0]; const parts = strVal.split('/'); if (parts.length === 3) { let y = parts[2]; if (y.length === 2) y = '20' + y; return `${y}-${parts[1]}-${parts[0]}`; } return ''; };
       const formatDisplayDate = (val) => { if(!val) return ''; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{2}$/)) return val; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return val.replace(/\/(\d{4})$/, (m, y) => "/" + y.slice(-2)); return val; };
