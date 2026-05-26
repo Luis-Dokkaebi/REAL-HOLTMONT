@@ -110,6 +110,22 @@ const STANDARD_PROJECT_STRUCTURE = [
   "REPORTES"          // PRESERVADO
 ];
 
+function formatDateForOutlook(dateString, defaultOffsetMillis = 0) {
+  if (!dateString) {
+    const d = new Date(new Date().getTime() + defaultOffsetMillis);
+    return d.toISOString().split('.')[0];
+  }
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) {
+      return new Date(new Date().getTime() + defaultOffsetMillis).toISOString().split('.')[0];
+    }
+    return d.toISOString().split('.')[0];
+  } catch (e) {
+    return new Date(new Date().getTime() + defaultOffsetMillis).toISOString().split('.')[0];
+  }
+}
+
 const NotifierService = {
   sendToOutlook: function(payloadData) {
     if (!WEBHOOK_OUTLOOK_URL || WEBHOOK_OUTLOOK_URL === "URL_DE_POWER_AUTOMATE_AQUI") {
@@ -120,8 +136,8 @@ const NotifierService = {
       folio: payloadData.folio || "Sin Folio",
       titulo: payloadData.titulo || "Asignación de Tarea",
       descripcion: payloadData.descripcion || "Tienes una nueva tarea asignada en Holtmont Workspace.",
-      fechaInicio: payloadData.fechaInicio || new Date().toISOString(),
-      fechaFin: payloadData.fechaFin || new Date(new Date().getTime() + (60 * 60 * 1000)).toISOString(),
+      fechaInicio: formatDateForOutlook(payloadData.fechaInicio, 0),
+      fechaFin: formatDateForOutlook(payloadData.fechaFin, 60 * 60 * 1000), // Default to 1 hour later if missing
       correoDestino: payloadData.correoDestino,
       asignadoPor: payloadData.asignadoPor || "SISTEMA"
     };
