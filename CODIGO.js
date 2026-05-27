@@ -1249,7 +1249,280 @@ function setupDailyQuoteMetricsTrigger() {
 function autoUpdateQuoteMetrics() {
   const now = new Date();
   apiWriteQuoteMetricsToSheet({ month: now.getMonth() + 1, year: now.getFullYear() });
-  registrarLog('SYSTEM', 'AUTO_KPI', 'KPI Cotizaciones actualizado automáticamente por trigger.');
+  // También ejecuta el agente completo (reglas + Gemini + email)
+  runQuoteMetricsAgent({ month: now.getMonth() + 1, year: now.getFullYear() });
+  registrarLog('SYSTEM', 'AUTO_KPI', 'KPI Cotizaciones + Agente ejecutados por trigger.');
+}
+
+/* ================================================================
+ * AGENTE IA DE COTIZACIONES — MOTOR COMPLETO
+ * Observa → Detecta por reglas → Llama Gemini → Envía email
+ * ================================================================ */
+
+/* Llama a Gemini 1.5 Flash con el prompt dado */
+function callGeminiAPI(prompt) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+  if (!apiKey) return { success: false, text: '', message: 'GEMINI_API_KEY no configurada.' };
+
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+  const payload = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.4, maxOutputTokens: 512 }
+  });
+
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    });
+    const code = response.getResponseCode();
+    if (code !== 200) {
+      return { success: false, text: '', message: 'Gemini HTTP ' + code + ': ' + response.getContentText() };
+    }
+    const json = JSON.parse(response.getContentText());
+    const text = (json.candidates && json.candidates[0] && json.candidates[0].content &&
+                  json.candidates[0].content.parts && json.candidates[0].content.parts[0].text) || '';
+    return { success: true, text: text.trim() };
+  } catch (e) {
+    return { success: false, text: '', message: e.toString() };
+  }
+}
+
+/* Guarda o lee la Gemini API key en Script Properties */
+function apiSaveGeminiKey(key) {
+  try {
+    if (!key || String(key).trim() === '') return { success: false, message: 'Llave vacía.' };
+    PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', String(key).trim());
+    return { success: true, message: 'API key guardada correctamente.' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function apiCheckGeminiKey() {
+  const key = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+  return { success: true, hasKey: key.length > 0, keyPreview: key ? key.substring(0,6) + '***' : '' };
+}
+
+/* Motor principal del agente — Observa → Reglas → Gemini → Email */
+function runQuoteMetricsAgent(params) {
+  try {
+    const p = params || {};
+    const now = new Date();
+    const month = (p.month !== undefined) ? parseInt(p.month) : (now.getMonth() + 1);
+    const year  = (p.year  !== undefined) ? parseInt(p.year)  : now.getFullYear();
+
+    // ── 1. OBTENER MÉTRICAS ────────────────────────────────────────
+    const mResult = apiFetchQuoteAgentMetrics({ month, year });
+    if (!mResult.success) return { success: false, message: 'No se pudieron obtener métricas: ' + mResult.message };
+    const m = mResult.metrics;
+
+    // ── 2. MOTOR DE REGLAS ─────────────────────────────────────────
+    const alerts = [];
+
+    // Regla 1: SLA por clasificación < 70% (con mínimo 3 casos)
+    ['A', 'AA', 'AAA'].forEach(k => {
+      const s = m.slaSummary[k];
+      if (s.count >= 3 && s.pctOk < 70) {
+        alerts.push({
+          type: 'SLA_BAJO',
+          severity: 'ALTA',
+          icon: '🔴',
+          mensaje: 'Clase ' + k + ': solo ' + s.pctOk + '% de cumplimiento SLA (' + s.ok + '/' + s.count + ' a tiempo, límite ' + s.slaLimit + ' días)'
+        });
+      }
+    });
+
+    // Regla 2: Cotizador con tasa de pérdida > 50% (con mínimo 3 cot.)
+    m.byCotizadorArr.forEach(c => {
+      if (c.total >= 3 && (c.perdidas / c.total) > 0.5) {
+        const pct = Math.round(c.perdidas / c.total * 100);
+        alerts.push({
+          type: 'ALTA_PERDIDA',
+          severity: 'MEDIA',
+          icon: '🟡',
+          mensaje: c.name + ': ' + pct + '% de cotizaciones perdidas este mes (' + c.perdidas + ' de ' + c.total + ')'
+        });
+      }
+    });
+
+    // Regla 3: Tasa de cierre global < 30% (con mínimo 5 cot.)
+    if (m.winLoss.total >= 5) {
+      const globalPct = Math.round(m.winLoss.ganada / m.winLoss.total * 100);
+      if (globalPct < 30) {
+        alerts.push({
+          type: 'CIERRE_BAJO',
+          severity: 'ALTA',
+          icon: '🔴',
+          mensaje: 'Tasa de cierre global muy baja: ' + globalPct + '% (' + m.winLoss.ganada + ' ganadas de ' + m.winLoss.total + ' terminadas)'
+        });
+      }
+    }
+
+    // Regla 4: AAA sin cierre definido (ni ganada ni perdida)
+    const aaaAbiertos = (m.byClasi && m.byClasi['AAA']) ? m.byClasi['AAA'].count - m.slaSummary.AAA.ok - m.slaSummary.AAA.fail + m.slaSummary.AAA.ok : 0;
+    m.aaaByClientArr.forEach(cl => {
+      const enProceso = cl.projects.filter(p => !p.isGanada && !p.isPerdida).length;
+      if (enProceso > 0) {
+        alerts.push({
+          type: 'AAA_SIN_RESULTADO',
+          severity: 'INFO',
+          icon: '🔵',
+          mensaje: 'Cliente ' + cl.cliente + ': ' + enProceso + ' proyecto(s) AAA terminados sin marcar GANADA/PERDIDA'
+        });
+      }
+    });
+
+    // ── 3. CONSTRUIR PROMPT PARA GEMINI ───────────────────────────
+    const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const monthName = MONTHS_ES[month - 1];
+    const top5 = m.byCotizadorArr.slice(0, 5);
+
+    const prompt = [
+      'Eres analista de ventas de Holtmont, empresa mexicana de construcción e ingeniería.',
+      'Redacta un reporte ejecutivo CONCISO (máx 180 palabras) en español profesional para el mes de ' + monthName + ' ' + year + '.',
+      '',
+      'DATOS DEL MES:',
+      '- Total cotizaciones terminadas: ' + m.totalCount,
+      '- Ganadas: ' + m.winLoss.ganada + ' | Perdidas: ' + m.winLoss.perdida + ' | % Cierre: ' + (m.winLoss.total > 0 ? Math.round(m.winLoss.ganada / m.winLoss.total * 100) : 0) + '%',
+      '',
+      'SLA por clasificación:',
+      '  Clase A  (límite 3d):  ' + m.slaSummary.A.count  + ' cot., ' + m.slaSummary.A.pctOk  + '% a tiempo, prom. ' + (m.slaSummary.A.avgDays  || 'N/D') + 'd',
+      '  Clase AA (límite 14d): ' + m.slaSummary.AA.count + ' cot., ' + m.slaSummary.AA.pctOk + '% a tiempo, prom. ' + (m.slaSummary.AA.avgDays || 'N/D') + 'd',
+      '  Clase AAA(límite 30d): ' + m.slaSummary.AAA.count+ ' cot., ' + m.slaSummary.AAA.pctOk+ '% a tiempo, prom. ' + (m.slaSummary.AAA.avgDays|| 'N/D') + 'd',
+      '',
+      'Top cotizadores:',
+      top5.map(c => '  ' + c.name + ': ' + c.total + ' cot., ' + c.ganadas + ' ganadas, ' + c.slaOk + ' SLA OK').join('\n'),
+      '',
+      alerts.length > 0
+        ? 'Alertas detectadas:\n' + alerts.map(a => '  ' + a.icon + ' ' + a.mensaje).join('\n')
+        : 'Sin alertas críticas este mes.',
+      '',
+      'Instrucciones: sé directo, sin saludos. Menciona lo más importante (desempeño general, mejor cotizador, punto débil) y termina con UNA recomendación concreta.'
+    ].join('\n');
+
+    // ── 4. LLAMAR A GEMINI ────────────────────────────────────────
+    const geminiResult = callGeminiAPI(prompt);
+    const geminiSummary = geminiResult.success ? geminiResult.text : '(Gemini no disponible: ' + geminiResult.message + ')';
+
+    // ── 5. ENVIAR EMAIL DE REPORTE ────────────────────────────────
+    const emailResult = _sendAgentEmail(m, alerts, geminiSummary, monthName, year);
+
+    // ── 6. GUARDAR ÚLTIMO REPORTE EN PROPIEDADES ──────────────────
+    const lastRun = {
+      timestamp  : now.getTime(),
+      timestampStr: Utilities.formatDate(now, 'America/Mexico_City', 'dd/MM/yyyy HH:mm'),
+      month, year,
+      alerts,
+      geminiSummary,
+      totalCount  : m.totalCount,
+      ganadas     : m.winLoss.ganada,
+      perdidas    : m.winLoss.perdida,
+      emailSent   : emailResult.success
+    };
+    PropertiesService.getScriptProperties().setProperty('LAST_AGENT_RUN', JSON.stringify(lastRun));
+    registrarLog('AGENT', 'RUN_COMPLETE', 'Agente ejecutado. Alertas: ' + alerts.length + '. Email: ' + (emailResult.success ? 'OK' : 'FALLO'));
+
+    return { success: true, lastRun };
+  } catch (e) {
+    console.error('runQuoteMetricsAgent Error: ' + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Devuelve el último reporte del agente (para mostrarlo en el panel) */
+function apiGetLastAgentReport() {
+  try {
+    const raw = PropertiesService.getScriptProperties().getProperty('LAST_AGENT_RUN') || '';
+    if (!raw) return { success: true, hasReport: false };
+    return { success: true, hasReport: true, lastRun: JSON.parse(raw) };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Genera y envía el email HTML del reporte */
+function _sendAgentEmail(m, alerts, geminiSummary, monthName, year) {
+  try {
+    // Destinatarios: ANTONIA_VENTAS + ADMIN
+    const recipients = [];
+    if (USER_DB['ANTONIA_VENTAS'] && USER_DB['ANTONIA_VENTAS'].email) recipients.push(USER_DB['ANTONIA_VENTAS'].email);
+    if (USER_DB['LUIS_CARLOS']    && USER_DB['LUIS_CARLOS'].email)    recipients.push(USER_DB['LUIS_CARLOS'].email);
+
+    if (recipients.length === 0) return { success: false, message: 'Sin destinatarios configurados.' };
+
+    const closePct = m.winLoss.total > 0 ? Math.round(m.winLoss.ganada / m.winLoss.total * 100) : 0;
+    const alertRows = alerts.length > 0
+      ? alerts.map(a => '<tr><td style="padding:6px 12px;">' + a.icon + '</td><td style="padding:6px 12px;color:#333;">' + a.mensaje + '</td><td style="padding:6px 12px;"><span style="background:' + (a.severity==='ALTA'?'#dc3545':a.severity==='MEDIA'?'#fd7e14':'#17a2b8') + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">' + a.severity + '</span></td></tr>').join('')
+      : '<tr><td colspan="3" style="padding:8px 12px;color:#28a745;">✅ Sin alertas críticas este mes</td></tr>';
+
+    const cotizRows = m.byCotizadorArr.slice(0, 8).map(c => {
+      const pct = c.total > 0 ? Math.round(c.ganadas / c.total * 100) : 0;
+      return '<tr style="border-bottom:1px solid #eee;"><td style="padding:5px 10px;">' + c.name + '</td><td style="text-align:center;padding:5px 10px;">' + c.total + '</td><td style="text-align:center;padding:5px 10px;color:#28a745;">' + c.ganadas + '</td><td style="text-align:center;padding:5px 10px;color:#dc3545;">' + c.perdidas + '</td><td style="text-align:center;padding:5px 10px;font-weight:bold;">' + pct + '%</td><td style="text-align:center;padding:5px 10px;">' + c.slaOk + ' / ' + c.slaFail + '</td></tr>';
+    }).join('');
+
+    const html = [
+      '<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;background:#fff;">',
+      '<div style="background:#1E3A5F;color:#fff;padding:24px;">',
+      '<h1 style="margin:0;font-size:22px;">📊 Reporte de Cotizaciones — ' + monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' ' + year + '</h1>',
+      '<p style="margin:4px 0 0;font-size:13px;opacity:0.8;">Generado automáticamente por el Agente de Métricas · Holtmont Workspace</p>',
+      '</div>',
+      '<div style="padding:24px;">',
+      // KPI cards
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #00d2ff;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#00d2ff;">' + m.totalCount + '</div><div style="font-size:12px;color:#666;">Terminadas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #28a745;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#28a745;">' + m.winLoss.ganada + '</div><div style="font-size:12px;color:#666;">✅ Ganadas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #dc3545;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#dc3545;">' + m.winLoss.perdida + '</div><div style="font-size:12px;color:#666;">❌ Perdidas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #ffc107;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#ffc107;">' + closePct + '%</div><div style="font-size:12px;color:#666;">🎯 % Cierre</div></div>',
+      '</div>',
+      // Gemini summary
+      '<div style="background:#f0f7ff;border-left:4px solid #00d2ff;padding:16px;border-radius:4px;margin-bottom:24px;">',
+      '<p style="font-size:12px;font-weight:bold;color:#00d2ff;margin:0 0 8px;">🤖 ANÁLISIS IA (Gemini)</p>',
+      '<p style="margin:0;color:#333;line-height:1.6;">' + geminiSummary.replace(/\n/g, '<br>') + '</p>',
+      '</div>',
+      // Alertas
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">⚠️ Alertas del Agente</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#f8f9fa;border-radius:8px;overflow:hidden;margin-bottom:24px;">',
+      alertRows,
+      '</table>',
+      // SLA
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">⏱️ SLA por Clasificación</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">',
+      '<thead><tr style="background:#1E3A5F;color:#fff;"><th style="padding:8px 12px;text-align:left;">Clase</th><th style="padding:8px 12px;text-align:center;">Total</th><th style="padding:8px 12px;text-align:center;">✅ A tiempo</th><th style="padding:8px 12px;text-align:center;">❌ Tarde</th><th style="padding:8px 12px;text-align:center;">% Cumpl.</th><th style="padding:8px 12px;text-align:center;">Prom. días</th></tr></thead>',
+      '<tbody>',
+      ['A','AA','AAA'].map(k => {
+        const s = m.slaSummary[k];
+        const color = s.pctOk >= 80 ? '#28a745' : s.pctOk >= 60 ? '#fd7e14' : '#dc3545';
+        return '<tr style="border-bottom:1px solid #eee;"><td style="padding:7px 12px;font-weight:bold;">' + k + ' (≤' + s.slaLimit + 'd)</td><td style="text-align:center;padding:7px 12px;">' + s.count + '</td><td style="text-align:center;padding:7px 12px;color:#28a745;">' + s.ok + '</td><td style="text-align:center;padding:7px 12px;color:#dc3545;">' + s.fail + '</td><td style="text-align:center;padding:7px 12px;font-weight:bold;color:' + color + ';">' + s.pctOk + '%</td><td style="text-align:center;padding:7px 12px;">' + (s.avgDays || 'N/D') + 'd</td></tr>';
+      }).join(''),
+      '</tbody></table>',
+      // Por cotizador
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">👤 Desempeño por Cotizador</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;">',
+      '<thead><tr style="background:#1E3A5F;color:#fff;"><th style="padding:8px 10px;text-align:left;">Cotizador</th><th style="padding:8px 10px;text-align:center;">Total</th><th style="padding:8px 10px;text-align:center;">Ganadas</th><th style="padding:8px 10px;text-align:center;">Perdidas</th><th style="padding:8px 10px;text-align:center;">% Cierre</th><th style="padding:8px 10px;text-align:center;">SLA OK/Fail</th></tr></thead>',
+      '<tbody>' + cotizRows + '</tbody>',
+      '</table>',
+      '</div>',
+      '<div style="background:#f8f9fa;padding:12px 24px;font-size:11px;color:#999;border-top:1px solid #eee;">',
+      'Holtmont Workspace — Agente Automático de Métricas · ' + Utilities.formatDate(new Date(), 'America/Mexico_City', 'dd/MM/yyyy HH:mm'),
+      '</div></div>'
+    ].join('');
+
+    recipients.forEach(email => {
+      MailApp.sendEmail({
+        to: email,
+        subject: '📊 Reporte Cotizaciones ' + monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' ' + year + (alerts.length > 0 ? ' — ⚠️ ' + alerts.length + ' alerta(s)' : ''),
+        htmlBody: html
+      });
+    });
+
+    return { success: true, sentTo: recipients };
+  } catch (e) {
+    console.error('_sendAgentEmail Error: ' + e.toString());
+    return { success: false, message: e.toString() };
+  }
 }
 
 /* 5. TEST DE VALIDACIÓN (LOGGER) */

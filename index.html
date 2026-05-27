@@ -1361,12 +1361,12 @@
         <div v-if="currentView === 'QUOTE_METRICS'" class="h-100 d-flex flex-column" style="background:#f0f4f8; padding:20px; overflow-y:auto;">
 
             <!-- ENCABEZADO -->
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <div class="d-flex align-items-center gap-2">
-                    <i class="fas fa-chart-bar fa-2x" style="color:#00d2ff;"></i>
+                    <i class="fas fa-robot fa-2x" style="color:#00d2ff;"></i>
                     <div>
-                        <h4 class="fw-bold m-0" style="color:#1E3A5F;">MÉTRICAS DE COTIZACIONES</h4>
-                        <small class="text-muted">Solo cotizaciones <strong>terminadas</strong> (Historial / TAREAS REALIZADAS)</small>
+                        <h4 class="fw-bold m-0" style="color:#1E3A5F;">AGENTE DE MÉTRICAS DE COTIZACIONES</h4>
+                        <small class="text-muted">Solo cotizaciones <strong>terminadas</strong> · Reglas + IA Gemini</small>
                     </div>
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -1378,14 +1378,82 @@
                     </select>
                     <button class="btn btn-sm btn-primary" @click="loadQuoteMetrics()" :disabled="quoteMetrics.isLoading">
                         <i class="fas fa-sync-alt me-1" :class="{'fa-spin': quoteMetrics.isLoading}"></i>
-                        {{ quoteMetrics.isLoading ? 'Cargando...' : 'ACTUALIZAR' }}
+                        {{ quoteMetrics.isLoading ? 'Cargando...' : 'VER DATOS' }}
                     </button>
-                    <button class="btn btn-sm btn-outline-success" @click="writeQuoteMetricsToSheet()" :disabled="quoteMetrics.isLoading || !quoteMetrics.loaded" title="Exportar a hoja KPI_COTIZACIONES">
-                        <i class="fas fa-file-excel me-1"></i>EXPORTAR SHEET
+                    <button class="btn btn-sm btn-success" @click="runAgent()" :disabled="agentState.running" title="Ejecutar agente: reglas + Gemini + email">
+                        <i class="fas fa-robot me-1" :class="{'fa-spin': agentState.running}"></i>
+                        {{ agentState.running ? 'Ejecutando...' : 'EJECUTAR AGENTE' }}
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" @click="writeQuoteMetricsToSheet()" :disabled="quoteMetrics.isLoading || !quoteMetrics.loaded" title="Exportar a hoja KPI_COTIZACIONES">
+                        <i class="fas fa-file-excel me-1"></i>SHEET
+                    </button>
+                    <button class="btn btn-sm btn-outline-warning" @click="showGeminiKeyModal = true" title="Configurar Gemini API Key">
+                        <i class="fas fa-key me-1"></i>API KEY
                     </button>
                     <button class="btn btn-sm btn-secondary" @click="goHome()">
                         <i class="fas fa-times"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- PANEL AGENTE: Último reporte -->
+            <div v-if="agentState.lastRun" class="row g-3 mb-3">
+                <!-- Resumen Gemini -->
+                <div class="col-md-8">
+                    <div class="card shadow-sm h-100" style="border-left:4px solid #00d2ff;">
+                        <div class="card-header py-2 d-flex justify-content-between align-items-center" style="background:#e8f7ff;">
+                            <span class="fw-bold small" style="color:#00d2ff;"><i class="fas fa-robot me-1"></i>ANÁLISIS IA — Gemini</span>
+                            <small class="text-muted">{{ agentState.lastRun.timestampStr }}</small>
+                        </div>
+                        <div class="card-body py-2">
+                            <p class="mb-0 small" style="line-height:1.7; white-space:pre-wrap;">{{ agentState.lastRun.geminiSummary || '(Sin resumen disponible)' }}</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Alertas del agente -->
+                <div class="col-md-4">
+                    <div class="card shadow-sm h-100" style="border-left:4px solid #ffc107;">
+                        <div class="card-header py-2" style="background:#fff8e1;">
+                            <span class="fw-bold small text-warning"><i class="fas fa-bell me-1"></i>ALERTAS DETECTADAS</span>
+                        </div>
+                        <div class="card-body p-0">
+                            <div v-if="!agentState.lastRun.alerts || agentState.lastRun.alerts.length === 0" class="p-3 small text-success">
+                                <i class="fas fa-check-circle me-1"></i>Sin alertas críticas
+                            </div>
+                            <ul v-else class="list-group list-group-flush">
+                                <li v-for="(al, idx) in agentState.lastRun.alerts" :key="idx" class="list-group-item py-2 px-3 small">
+                                    <span class="me-1">{{ al.icon }}</span>
+                                    <span :class="al.severity === 'ALTA' ? 'text-danger' : al.severity === 'MEDIA' ? 'text-warning' : 'text-info'">{{ al.mensaje }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Sin último reporte aún -->
+            <div v-else class="alert alert-secondary small py-2 mb-3">
+                <i class="fas fa-info-circle me-1"></i>
+                Aún no se ha ejecutado el agente. Presiona <strong>EJECUTAR AGENTE</strong> para que Gemini analice los datos y envíe el reporte por email.
+            </div>
+
+            <!-- MODAL: Configurar Gemini API Key -->
+            <div v-if="showGeminiKeyModal" class="custom-modal-overlay" @click.self="showGeminiKeyModal = false">
+                <div class="custom-modal" style="width:420px;">
+                    <div class="custom-modal-header d-flex justify-content-between align-items-center">
+                        <span class="fw-bold"><i class="fas fa-key me-2 text-warning"></i>Configurar Gemini API Key</span>
+                        <button class="btn btn-sm btn-secondary" @click="showGeminiKeyModal = false">✕</button>
+                    </div>
+                    <div class="custom-modal-body">
+                        <p class="small text-muted mb-2">Obtén tu key gratuita en <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a></p>
+                        <div v-if="geminiKeyState.preview" class="alert alert-success small py-1 mb-2">
+                            <i class="fas fa-check me-1"></i>Key configurada: <code>{{ geminiKeyState.preview }}</code>
+                        </div>
+                        <input type="password" class="form-control form-control-sm mb-2" v-model="geminiKeyInput" placeholder="AIza..." />
+                    </div>
+                    <div class="custom-modal-footer d-flex justify-content-end gap-2">
+                        <button class="btn btn-sm btn-secondary" @click="showGeminiKeyModal = false">Cancelar</button>
+                        <button class="btn btn-sm btn-primary" @click="saveGeminiKey()">Guardar</button>
+                    </div>
                 </div>
             </div>
 
@@ -5814,6 +5882,12 @@ async function toggleVoiceRecording(btnElement) {
           month: new Date().getMonth() + 1,
           year: qmCurrentYear
       });
+
+      // Estado del agente (motor IA)
+      const agentState = ref({ running: false, lastRun: null });
+      const showGeminiKeyModal = ref(false);
+      const geminiKeyInput = ref('');
+      const geminiKeyState = ref({ hasKey: false, preview: '' });
       // ──────────────────────────────────────────────────────────────
 
       // EXECUTIVE SUMMARY DATA
@@ -6563,10 +6637,7 @@ const filteredStaffTrackerData = computed(() => {
       const loadQuoteMetrics = () => {
           quoteMetrics.value.isLoading = true;
           quoteMetrics.value.error = null;
-          const params = {
-              month: qmFilters.value.month,
-              year:  qmFilters.value.year
-          };
+          const params = { month: qmFilters.value.month, year: qmFilters.value.year };
           google.script.run
               .withSuccessHandler(res => {
                   quoteMetrics.value.isLoading = false;
@@ -6580,10 +6651,73 @@ const filteredStaffTrackerData = computed(() => {
               })
               .withFailureHandler(err => {
                   quoteMetrics.value.isLoading = false;
-                  quoteMetrics.value.error  = 'Error de comunicación: ' + (err.message || err);
+                  quoteMetrics.value.error = 'Error de comunicación: ' + (err.message || err);
                   quoteMetrics.value.loaded = false;
               })
               .apiFetchQuoteAgentMetrics(params);
+
+          // Cargar también el último reporte del agente
+          google.script.run
+              .withSuccessHandler(r => {
+                  if (r && r.success && r.hasReport) agentState.value.lastRun = r.lastRun;
+              })
+              .apiGetLastAgentReport();
+
+          // Verificar si hay Gemini key configurada
+          google.script.run
+              .withSuccessHandler(r => {
+                  if (r && r.success) {
+                      geminiKeyState.value.hasKey  = r.hasKey;
+                      geminiKeyState.value.preview = r.keyPreview || '';
+                  }
+              })
+              .apiCheckGeminiKey();
+      };
+
+      // Ejecutar el agente completo (reglas + Gemini + email)
+      const runAgent = () => {
+          agentState.value.running = true;
+          const params = { month: qmFilters.value.month, year: qmFilters.value.year };
+          google.script.run
+              .withSuccessHandler(res => {
+                  agentState.value.running = false;
+                  if (res && res.success) {
+                      agentState.value.lastRun = res.lastRun;
+                      Swal.fire({
+                          icon: 'success',
+                          title: '✅ Agente ejecutado',
+                          html: '<b>' + (res.lastRun.alerts ? res.lastRun.alerts.length : 0) + ' alerta(s)</b> detectadas.<br>Reporte enviado por email.',
+                          timer: 4000,
+                          showConfirmButton: false
+                      });
+                  } else {
+                      Swal.fire({ icon: 'error', title: 'Error', text: (res && res.message) || 'Error al ejecutar el agente.' });
+                  }
+              })
+              .withFailureHandler(err => {
+                  agentState.value.running = false;
+                  Swal.fire({ icon: 'error', title: 'Error de red', text: err.message || String(err) });
+              })
+              .runQuoteMetricsAgent(params);
+      };
+
+      // Guardar Gemini API Key
+      const saveGeminiKey = () => {
+          if (!geminiKeyInput.value.trim()) return;
+          google.script.run
+              .withSuccessHandler(res => {
+                  if (res && res.success) {
+                      showGeminiKeyModal.value = false;
+                      geminiKeyState.value.hasKey  = true;
+                      geminiKeyState.value.preview = geminiKeyInput.value.substring(0, 6) + '***';
+                      geminiKeyInput.value = '';
+                      Swal.fire({ icon: 'success', title: 'Key guardada', text: 'Gemini API Key configurada.', timer: 2500, showConfirmButton: false });
+                  } else {
+                      Swal.fire({ icon: 'error', title: 'Error', text: (res && res.message) || 'No se pudo guardar.' });
+                  }
+              })
+              .withFailureHandler(err => Swal.fire({ icon: 'error', title: 'Error', text: err.message }))
+              .apiSaveGeminiKey(geminiKeyInput.value.trim());
       };
 
       const writeQuoteMetricsToSheet = () => {
@@ -8713,7 +8847,8 @@ const filteredStaffTrackerData = computed(() => {
       staffTrackerFilters, staffTrackerSortAsc, toggleTrackerSort, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
       getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal,
-      quoteMetrics, qmFilters, qmMonthNames, qmYears, loadQuoteMetrics, writeQuoteMetricsToSheet };
+      quoteMetrics, qmFilters, qmMonthNames, qmYears, loadQuoteMetrics, writeQuoteMetricsToSheet,
+      agentState, runAgent, showGeminiKeyModal, geminiKeyInput, geminiKeyState, saveGeminiKey };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message + ' ' + err.stack }); };
