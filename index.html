@@ -675,7 +675,7 @@
       <div class="mb-3">
           <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario">
           <div class="input-group">
-              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin">
+              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." >
               <button class="btn btn-outline-secondary" type="button" @click="showPassword = !showPassword" title="Mostrar/Ocultar">
                   <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
               </button>
@@ -762,6 +762,13 @@
         <div class="nav-item" v-if="currentRole === 'ADMIN'" :class="{ active: currentView === 'INFO_BANK' }" @click="currentView = 'INFO_BANK'; currentDept = ''; currentModuleId = ''; resetInfoBank();">
             <div class="nav-icon-col"><i class="fas fa-database text-info"></i></div>
             <span class="nav-text text-info fw-bold">BANCO DE INFORMACION</span>
+        </div>
+
+
+        <!-- BOTÓN IA AGENTE COTIZACIONES -->
+        <div class="nav-item" v-if="['ADMIN', 'ADMIN_CONTROL'].includes(currentRole)" :class="{ active: currentView === 'AI_QUOTES_REPORT' }" @click="currentView = 'AI_QUOTES_REPORT'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #20c997; background: rgba(32, 201, 151, 0.05);">
+            <div class="nav-icon-col"><i class="fas fa-robot" style="color: #20c997;"></i></div>
+            <span class="nav-text fw-bold" style="color: #20c997;">IA COTIZACIONES</span>
         </div>
 
         <!-- BOTÓN DIRECTORIO (Solo ADMIN y ADMIN_CONTROL) -->
@@ -8257,7 +8264,7 @@ const filteredStaffTrackerData = computed(() => {
           } catch(e) { return ''; }
       };
 
-      return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
+      return { isLoadingQuotesReport, quotesReportData, fetchQuotesReport, visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
