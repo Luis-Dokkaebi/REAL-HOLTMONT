@@ -770,6 +770,12 @@
             <span class="nav-text text-success fw-bold">DIRECTORIO</span>
         </div>
 
+        <!-- BOTÓN MÉTRICAS COTIZACIONES (ADMIN + TONITA) -->
+        <div class="nav-item" v-if="['ADMIN', 'TONITA'].includes(currentRole)" :class="{ active: currentView === 'QUOTE_METRICS' }" @click="currentView = 'QUOTE_METRICS'; currentDept = ''; currentModuleId = ''; loadQuoteMetrics();" style="border-left: 3px solid #00d2ff; background: rgba(0, 210, 255, 0.05);">
+            <div class="nav-icon-col"><i class="fas fa-chart-bar" style="color: #00d2ff;"></i></div>
+            <span class="nav-text fw-bold" style="color: #00d2ff;">MÉTRICAS COT.</span>
+        </div>
+
         <div class="mt-auto">
             <div class="p-3">
                 <button class="btn btn-outline-secondary w-100 btn-sm mb-2" @click="toggleTheme" :title="isCompact ? currentTheme : 'Cambiar Tema'">
@@ -1347,6 +1353,346 @@
                 </div>
             </div>
         </div>
+
+        <!-- ============================================================ -->
+        <!-- PANEL: MÉTRICAS DE COTIZACIONES (AGENTE IA)               -->
+        <!-- Visible para roles: ADMIN y TONITA                         -->
+        <!-- ============================================================ -->
+        <div v-if="currentView === 'QUOTE_METRICS'" class="h-100 d-flex flex-column" style="background:#f0f4f8; padding:20px; overflow-y:auto;">
+
+            <!-- ENCABEZADO -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-chart-bar fa-2x" style="color:#00d2ff;"></i>
+                    <div>
+                        <h4 class="fw-bold m-0" style="color:#1E3A5F;">MÉTRICAS DE COTIZACIONES</h4>
+                        <small class="text-muted">Solo cotizaciones <strong>terminadas</strong> (Historial / TAREAS REALIZADAS)</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <select class="form-select form-select-sm" v-model="qmFilters.month" style="width:120px;">
+                        <option v-for="(mn, idx) in qmMonthNames" :key="idx" :value="idx+1">{{ mn }}</option>
+                    </select>
+                    <select class="form-select form-select-sm" v-model="qmFilters.year" style="width:100px;">
+                        <option v-for="yr in qmYears" :key="yr" :value="yr">{{ yr }}</option>
+                    </select>
+                    <button class="btn btn-sm btn-primary" @click="loadQuoteMetrics()" :disabled="quoteMetrics.isLoading">
+                        <i class="fas fa-sync-alt me-1" :class="{'fa-spin': quoteMetrics.isLoading}"></i>
+                        {{ quoteMetrics.isLoading ? 'Cargando...' : 'ACTUALIZAR' }}
+                    </button>
+                    <button class="btn btn-sm btn-outline-success" @click="writeQuoteMetricsToSheet()" :disabled="quoteMetrics.isLoading || !quoteMetrics.loaded" title="Exportar a hoja KPI_COTIZACIONES">
+                        <i class="fas fa-file-excel me-1"></i>EXPORTAR SHEET
+                    </button>
+                    <button class="btn btn-sm btn-secondary" @click="goHome()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- ESTADO: CARGANDO / ERROR / SIN DATOS -->
+            <div v-if="quoteMetrics.isLoading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-3 text-muted">Procesando cotizaciones terminadas...</p>
+            </div>
+            <div v-else-if="quoteMetrics.error" class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>{{ quoteMetrics.error }}
+            </div>
+            <div v-else-if="quoteMetrics.loaded && quoteMetrics.data.totalCount === 0" class="alert alert-warning">
+                <i class="fas fa-info-circle me-2"></i>
+                No hay cotizaciones terminadas registradas para <strong>{{ qmMonthNames[qmFilters.month-1] }} {{ qmFilters.year }}</strong>.
+                <br><small>Verifica que existan filas en la sección "TAREAS REALIZADAS" de ANTONIA_VENTAS con FECHA en el mes seleccionado.</small>
+            </div>
+
+            <!-- CONTENIDO PRINCIPAL (cuando hay datos) -->
+            <div v-else-if="quoteMetrics.loaded && quoteMetrics.data.totalCount > 0">
+
+                <!-- PERIODO -->
+                <div class="mb-3">
+                    <span class="badge fs-6 px-3 py-2" style="background:#1E3A5F; color:#fff;">
+                        <i class="fas fa-calendar-alt me-1"></i>
+                        {{ qmMonthNames[qmFilters.month-1] }} {{ qmFilters.year }}
+                        — {{ quoteMetrics.data.totalCount }} cotizaciones terminadas
+                    </span>
+                </div>
+
+                <!-- FILA 1: KPI CARDS GENERALES -->
+                <div class="row g-3 mb-4">
+                    <!-- Total -->
+                    <div class="col-6 col-md-3">
+                        <div class="card shadow-sm h-100 text-center" style="border-top:4px solid #00d2ff;">
+                            <div class="card-body py-3">
+                                <div class="display-6 fw-bold" style="color:#00d2ff;">{{ quoteMetrics.data.totalCount }}</div>
+                                <div class="small text-muted mt-1">Total terminadas</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Ganadas -->
+                    <div class="col-6 col-md-3">
+                        <div class="card shadow-sm h-100 text-center" style="border-top:4px solid #28a745;">
+                            <div class="card-body py-3">
+                                <div class="display-6 fw-bold text-success">{{ quoteMetrics.data.winLoss.ganada }}</div>
+                                <div class="small text-muted mt-1">✅ Ganadas</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Perdidas -->
+                    <div class="col-6 col-md-3">
+                        <div class="card shadow-sm h-100 text-center" style="border-top:4px solid #dc3545;">
+                            <div class="card-body py-3">
+                                <div class="display-6 fw-bold text-danger">{{ quoteMetrics.data.winLoss.perdida }}</div>
+                                <div class="small text-muted mt-1">❌ Perdidas</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- % Cierre -->
+                    <div class="col-6 col-md-3">
+                        <div class="card shadow-sm h-100 text-center" style="border-top:4px solid #ffc107;">
+                            <div class="card-body py-3">
+                                <div class="display-6 fw-bold text-warning">
+                                    {{ quoteMetrics.data.winLoss.total > 0 ? Math.round(quoteMetrics.data.winLoss.ganada / quoteMetrics.data.winLoss.total * 100) : 0 }}%
+                                </div>
+                                <div class="small text-muted mt-1">🎯 % Cierre</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILA 2: SLA POR CLASIFICACIÓN -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header fw-bold" style="background:#1E3A5F; color:#fff;">
+                        <i class="fas fa-stopwatch me-2"></i>SLA POR CLASIFICACIÓN — ¿Cumplió o no cumplió?
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="row g-0">
+                            <!-- Clasificación A -->
+                            <div class="col-md-4 p-3 border-end">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge me-2 px-3 py-2 fs-6" style="background:#28a745;">A</span>
+                                    <div>
+                                        <div class="fw-bold">Cotización Clase A</div>
+                                        <small class="text-muted">Límite: 1 a 3 días</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between text-center mt-3">
+                                    <div>
+                                        <div class="fs-4 fw-bold text-success">{{ quoteMetrics.data.slaSummary.A.ok }}</div>
+                                        <small class="text-muted">✅ A tiempo</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold text-danger">{{ quoteMetrics.data.slaSummary.A.fail }}</div>
+                                        <small class="text-muted">❌ Tarde</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold text-secondary">{{ quoteMetrics.data.slaSummary.A.avgDays || 'N/D' }}</div>
+                                        <small class="text-muted">Prom. días</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold" :class="quoteMetrics.data.slaSummary.A.pctOk >= 80 ? 'text-success' : 'text-danger'">
+                                            {{ quoteMetrics.data.slaSummary.A.pctOk }}%
+                                        </div>
+                                        <small class="text-muted">Cumplimiento</small>
+                                    </div>
+                                </div>
+                                <div class="progress mt-2" style="height:8px;">
+                                    <div class="progress-bar bg-success" :style="'width:' + quoteMetrics.data.slaSummary.A.pctOk + '%'"></div>
+                                </div>
+                            </div>
+                            <!-- Clasificación AA -->
+                            <div class="col-md-4 p-3 border-end">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge me-2 px-3 py-2 fs-6" style="background:#fd7e14;">AA</span>
+                                    <div>
+                                        <div class="fw-bold">Cotización Clase AA</div>
+                                        <small class="text-muted">Límite: 2 semanas (14 días)</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between text-center mt-3">
+                                    <div>
+                                        <div class="fs-4 fw-bold text-success">{{ quoteMetrics.data.slaSummary.AA.ok }}</div>
+                                        <small class="text-muted">✅ A tiempo</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold text-danger">{{ quoteMetrics.data.slaSummary.AA.fail }}</div>
+                                        <small class="text-muted">❌ Tarde</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold text-secondary">{{ quoteMetrics.data.slaSummary.AA.avgDays || 'N/D' }}</div>
+                                        <small class="text-muted">Prom. días</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold" :class="quoteMetrics.data.slaSummary.AA.pctOk >= 80 ? 'text-success' : 'text-danger'">
+                                            {{ quoteMetrics.data.slaSummary.AA.pctOk }}%
+                                        </div>
+                                        <small class="text-muted">Cumplimiento</small>
+                                    </div>
+                                </div>
+                                <div class="progress mt-2" style="height:8px;">
+                                    <div class="progress-bar bg-warning" :style="'width:' + quoteMetrics.data.slaSummary.AA.pctOk + '%'"></div>
+                                </div>
+                            </div>
+                            <!-- Clasificación AAA -->
+                            <div class="col-md-4 p-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge me-2 px-3 py-2 fs-6" style="background:#dc3545;">AAA</span>
+                                    <div>
+                                        <div class="fw-bold">Cotización Clase AAA</div>
+                                        <small class="text-muted">Límite: 1 mes (30 días)</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-between text-center mt-3">
+                                    <div>
+                                        <div class="fs-4 fw-bold text-success">{{ quoteMetrics.data.slaSummary.AAA.ok }}</div>
+                                        <small class="text-muted">✅ A tiempo</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold text-danger">{{ quoteMetrics.data.slaSummary.AAA.fail }}</div>
+                                        <small class="text-muted">❌ Tarde</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold text-secondary">{{ quoteMetrics.data.slaSummary.AAA.avgDays || 'N/D' }}</div>
+                                        <small class="text-muted">Prom. días</small>
+                                    </div>
+                                    <div>
+                                        <div class="fs-4 fw-bold" :class="quoteMetrics.data.slaSummary.AAA.pctOk >= 80 ? 'text-success' : 'text-danger'">
+                                            {{ quoteMetrics.data.slaSummary.AAA.pctOk }}%
+                                        </div>
+                                        <small class="text-muted">Cumplimiento</small>
+                                    </div>
+                                </div>
+                                <div class="progress mt-2" style="height:8px;">
+                                    <div class="progress-bar bg-danger" :style="'width:' + quoteMetrics.data.slaSummary.AAA.pctOk + '%'"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FILA 3: TABLA POR COTIZADOR -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header fw-bold" style="background:#1E3A5F; color:#fff;">
+                        <i class="fas fa-users me-2"></i>DESEMPEÑO POR COTIZADOR
+                    </div>
+                    <div class="card-body p-0 overflow-auto">
+                        <table class="table table-hover table-sm mb-0 small align-middle">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Cotizador</th>
+                                    <th>Depto</th>
+                                    <th class="text-center">Total</th>
+                                    <th class="text-center">✅ Ganadas</th>
+                                    <th class="text-center">❌ Perdidas</th>
+                                    <th class="text-center">% Cierre</th>
+                                    <th class="text-center"><span class="badge bg-success">A</span></th>
+                                    <th class="text-center"><span class="badge bg-warning text-dark">AA</span></th>
+                                    <th class="text-center"><span class="badge bg-danger">AAA</span></th>
+                                    <th class="text-center">SLA ✅</th>
+                                    <th class="text-center">SLA ❌</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="c in quoteMetrics.data.byCotizadorArr" :key="c.name">
+                                    <td class="fw-bold">
+                                        <img :src="getAvatarUrl(c.name)" class="rounded-circle me-2 shadow-sm" style="width:28px;height:28px;object-fit:cover;">
+                                        {{ c.name }}
+                                    </td>
+                                    <td><span class="badge bg-secondary">{{ c.dept }}</span></td>
+                                    <td class="text-center fw-bold">{{ c.total }}</td>
+                                    <td class="text-center text-success fw-bold">{{ c.ganadas }}</td>
+                                    <td class="text-center text-danger fw-bold">{{ c.perdidas }}</td>
+                                    <td class="text-center">
+                                        <span class="badge" :class="c.total > 0 && Math.round(c.ganadas/c.total*100) >= 50 ? 'bg-success' : 'bg-danger'">
+                                            {{ c.total > 0 ? Math.round(c.ganadas / c.total * 100) : 0 }}%
+                                        </span>
+                                    </td>
+                                    <td class="text-center"><span class="badge bg-success">{{ c.clasA }}</span></td>
+                                    <td class="text-center"><span class="badge bg-warning text-dark">{{ c.clasAA }}</span></td>
+                                    <td class="text-center"><span class="badge bg-danger">{{ c.clasAAA }}</span></td>
+                                    <td class="text-center text-success fw-bold">{{ c.slaOk }}</td>
+                                    <td class="text-center text-danger fw-bold">{{ c.slaFail }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- FILA 4: POR DEPARTAMENTO + AAA POR CLIENTE -->
+                <div class="row g-3 mb-4">
+                    <!-- Por departamento -->
+                    <div class="col-md-5">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header fw-bold" style="background:#1E3A5F; color:#fff;">
+                                <i class="fas fa-building me-2"></i>POR DEPARTAMENTO
+                            </div>
+                            <div class="card-body p-0">
+                                <table class="table table-sm table-hover mb-0 small">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Departamento</th>
+                                            <th class="text-center">Total</th>
+                                            <th class="text-center">✅</th>
+                                            <th class="text-center">❌</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="d in quoteMetrics.data.byDepartmentArr" :key="d.dept">
+                                            <td class="fw-bold">{{ d.dept }}</td>
+                                            <td class="text-center">{{ d.total }}</td>
+                                            <td class="text-center text-success">{{ d.ganadas }}</td>
+                                            <td class="text-center text-danger">{{ d.perdidas }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AAA por cliente -->
+                    <div class="col-md-7">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header fw-bold" style="background:#6f2232; color:#fff;">
+                                <i class="fas fa-building me-2"></i>COTIZACIONES AAA — POR CLIENTE Y PROYECTO
+                                <small class="ms-2 opacity-75">(Proyectos de 1 mes)</small>
+                            </div>
+                            <div class="card-body p-0 overflow-auto" style="max-height:300px;">
+                                <div v-if="quoteMetrics.data.aaaByClientArr.length === 0" class="text-center text-muted p-3">
+                                    <i class="fas fa-info-circle me-1"></i>No hay cotizaciones AAA este mes
+                                </div>
+                                <div v-else>
+                                    <div v-for="cl in quoteMetrics.data.aaaByClientArr" :key="cl.cliente" class="border-bottom p-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <span class="fw-bold text-dark">🏗️ {{ cl.cliente }}</span>
+                                            <div class="d-flex gap-1">
+                                                <span class="badge bg-primary">{{ cl.count }} cot.</span>
+                                                <span class="badge bg-success">{{ cl.ganadas }}✅</span>
+                                                <span class="badge bg-danger">{{ cl.perdidas }}❌</span>
+                                            </div>
+                                        </div>
+                                        <div v-for="proj in cl.projects" :key="proj.folio" class="ms-3 small text-muted mb-1">
+                                            <span class="badge me-1" :class="proj.isGanada ? 'bg-success' : proj.isPerdida ? 'bg-danger' : 'bg-secondary'">
+                                                {{ proj.isGanada ? '✅' : proj.isPerdida ? '❌' : '⏳' }}
+                                            </span>
+                                            <span class="text-secondary">{{ proj.folio }}</span>
+                                            {{ proj.concepto }}
+                                            <span v-if="proj.durationDays" class="ms-1 text-info">({{ proj.durationDays }}d)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NOTA AL PIE -->
+                <div class="alert alert-info small py-2 mt-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>Nota:</strong> Solo se miden cotizaciones de la sección <em>TAREAS REALIZADAS</em> de ANTONIA_VENTAS.
+                    La duración se calcula desde <em>FECHA</em> hasta el <em>último paso completado en PROCESO_LOG</em>.
+                    Usa <strong>EXPORTAR SHEET</strong> para guardar los resultados en la hoja <em>KPI_COTIZACIONES</em>.
+                </div>
+
+            </div><!-- fin v-else-if loaded -->
+
+        </div><!-- fin QUOTE_METRICS -->
 
         <div v-if="currentView === 'ECG_VIEW'" class="h-100 d-flex flex-column" style="background-color:#000; margin:-20px; padding:20px;">
             <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
@@ -5439,6 +5785,37 @@ async function toggleVoiceRecording(btnElement) {
       });
       const kpiChartInstances = {};
 
+      // ── ESTADO: MÉTRICAS DE COTIZACIONES ──────────────────────────
+      const quoteMetrics = ref({
+          isLoading: false,
+          loaded: false,
+          error: null,
+          data: {
+              totalCount: 0,
+              month: new Date().getMonth() + 1,
+              year: new Date().getFullYear(),
+              winLoss: { ganada: 0, perdida: 0, enProceso: 0, total: 0 },
+              slaSummary: {
+                  A:   { slaLimit: 3,  count: 0, ok: 0, fail: 0, avgDays: 0, pctOk: 0 },
+                  AA:  { slaLimit: 14, count: 0, ok: 0, fail: 0, avgDays: 0, pctOk: 0 },
+                  AAA: { slaLimit: 30, count: 0, ok: 0, fail: 0, avgDays: 0, pctOk: 0 }
+              },
+              byCotizadorArr: [],
+              byDepartmentArr: [],
+              aaaByClientArr: []
+          }
+      });
+
+      const qmMonthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                             'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+      const qmCurrentYear = new Date().getFullYear();
+      const qmYears = [qmCurrentYear, qmCurrentYear - 1, qmCurrentYear - 2];
+      const qmFilters = ref({
+          month: new Date().getMonth() + 1,
+          year: qmCurrentYear
+      });
+      // ──────────────────────────────────────────────────────────────
+
       // EXECUTIVE SUMMARY DATA
       const executiveSummaryData = ref({
           clients: [],
@@ -6180,6 +6557,63 @@ const filteredStaffTrackerData = computed(() => {
               });
           }, 800);
       };
+
+      // ── FUNCIONES: MÉTRICAS DE COTIZACIONES ───────────────────────
+
+      const loadQuoteMetrics = () => {
+          quoteMetrics.value.isLoading = true;
+          quoteMetrics.value.error = null;
+          const params = {
+              month: qmFilters.value.month,
+              year:  qmFilters.value.year
+          };
+          google.script.run
+              .withSuccessHandler(res => {
+                  quoteMetrics.value.isLoading = false;
+                  if (res && res.success) {
+                      quoteMetrics.value.data   = res.metrics;
+                      quoteMetrics.value.loaded = true;
+                  } else {
+                      quoteMetrics.value.error  = (res && res.message) || 'Error desconocido al cargar métricas.';
+                      quoteMetrics.value.loaded = false;
+                  }
+              })
+              .withFailureHandler(err => {
+                  quoteMetrics.value.isLoading = false;
+                  quoteMetrics.value.error  = 'Error de comunicación: ' + (err.message || err);
+                  quoteMetrics.value.loaded = false;
+              })
+              .apiFetchQuoteAgentMetrics(params);
+      };
+
+      const writeQuoteMetricsToSheet = () => {
+          const params = {
+              month: qmFilters.value.month,
+              year:  qmFilters.value.year
+          };
+          Swal.fire({
+              title: 'Exportando a Sheet...',
+              text: 'Escribiendo KPI_COTIZACIONES en el Spreadsheet',
+              allowOutsideClick: false,
+              didOpen: () => Swal.showLoading()
+          });
+          google.script.run
+              .withSuccessHandler(res => {
+                  Swal.close();
+                  if (res && res.success) {
+                      Swal.fire({ icon: 'success', title: '¡Listo!', text: res.message, timer: 3000, showConfirmButton: false });
+                  } else {
+                      Swal.fire({ icon: 'error', title: 'Error', text: (res && res.message) || 'No se pudo exportar.' });
+                  }
+              })
+              .withFailureHandler(err => {
+                  Swal.close();
+                  Swal.fire({ icon: 'error', title: 'Error de red', text: err.message || String(err) });
+              })
+              .apiWriteQuoteMetricsToSheet(params);
+      };
+
+      // ──────────────────────────────────────────────────────────────
 
       const renderKPICharts = () => {
           const createChart = (id, config) => {
@@ -8278,7 +8712,8 @@ const filteredStaffTrackerData = computed(() => {
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, staffTrackerSortAsc, toggleTrackerSort, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
-      getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal };
+      getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal,
+      quoteMetrics, qmFilters, qmMonthNames, qmYears, loadQuoteMetrics, writeQuoteMetricsToSheet };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message + ' ' + err.stack }); };

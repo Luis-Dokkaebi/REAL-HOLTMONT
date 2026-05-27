@@ -945,6 +945,313 @@ function apiFetchTeamKPIData(username) {
   };
 }
 
+/* ================================================================
+ * AGENTE DE MÉTRICAS DE COTIZACIONES V1.0
+ * Mide KPIs de cotizaciones TERMINADAS (sección TAREAS REALIZADAS).
+ * Métricas: total mes, por depto, por cotizador, tiempo por CLASI
+ *           (A≤3d / AA≤14d / AAA≤30d), SLA cumplido/no cumplido,
+ *           ganadas vs perdidas, y AAA por cliente y proyecto.
+ * ================================================================ */
+
+function apiFetchQuoteAgentMetrics(params) {
+  try {
+    const p = params || {};
+    const now = new Date();
+    const targetMonth = (p.month !== undefined && p.month !== null) ? parseInt(p.month) : (now.getMonth() + 1);
+    const targetYear  = (p.year  !== undefined && p.year  !== null) ? parseInt(p.year)  : now.getFullYear();
+
+    // Solo leer historial terminado (TAREAS REALIZADAS)
+    const result = internalFetchSheetData("ANTONIA_VENTAS");
+    if (!result.success) {
+      return { success: false, message: "Error leyendo ANTONIA_VENTAS: " + (result.message || '') };
+    }
+    const history = result.history || [];
+
+    // Mapa nombre → departamento desde directorio interno
+    const deptMap = {};
+    INITIAL_DIRECTORY.forEach(emp => {
+      const key = emp.name ? emp.name.toUpperCase().trim() : '';
+      if (key && !deptMap[key]) deptMap[key] = emp.dept;
+    });
+
+    const SLA_LIMITS = { 'A': 3, 'AA': 14, 'AAA': 30 };
+
+    // Parse date flexible (DD/MM/YYYY, Date object, timestamp)
+    const parseDate = (d) => {
+      if (!d) return null;
+      if (d instanceof Date) return isNaN(d.getTime()) ? null : d;
+      if (typeof d === 'number') return new Date(d);
+      const s = String(d).trim();
+      if (!s) return null;
+      if (s.includes('/')) {
+        const pts = s.split('/');
+        if (pts.length === 3) {
+          const yr = pts[2].length === 2 ? '20' + pts[2] : pts[2];
+          const dt = new Date(parseInt(yr), parseInt(pts[1]) - 1, parseInt(pts[0]));
+          return isNaN(dt.getTime()) ? null : dt;
+        }
+      }
+      const parsed = new Date(s);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    // Duración real: inicio = FECHA, fin = último endTimestamp en PROCESO_LOG o F.ENTREGA
+    const getDurationDays = (row, startDate) => {
+      if (!startDate) return null;
+      let endDate = null;
+      try {
+        const logStr = String(row['PROCESO_LOG'] || row['proceso_log'] || '').trim();
+        if (logStr && logStr.startsWith('[')) {
+          const log = JSON.parse(logStr);
+          if (Array.isArray(log)) {
+            let lastEnd = null;
+            log.forEach(step => {
+              if (step.endTimestamp && step.status === 'DONE') {
+                if (!lastEnd || step.endTimestamp > lastEnd) lastEnd = step.endTimestamp;
+              }
+            });
+            if (lastEnd) endDate = new Date(lastEnd);
+          }
+        }
+      } catch (e) { /* ignorar errores JSON */ }
+      if (!endDate) {
+        endDate = parseDate(row['F. ENTREGA'] || row['F_ENTREGA'] || row['FECHA_RESPUESTA']);
+      }
+      if (!endDate) return null;
+      const diff = endDate.getTime() - startDate.getTime();
+      return diff < 0 ? null : Math.ceil(diff / (1000 * 60 * 60 * 24));
+    };
+
+    // Filtrar solo cotizaciones del mes/año seleccionado
+    const filtered = history.filter(row => {
+      const d = parseDate(row['FECHA']);
+      if (!d) return false;
+      return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
+    });
+
+    // Estructuras de acumulación
+    const clasis = ['A', 'AA', 'AAA', 'SIN_CLASI'];
+    const byClasi = {};
+    clasis.forEach(k => {
+      byClasi[k] = { count: 0, slaOk: 0, slaFail: 0, totalDays: 0, avgDays: 0 };
+    });
+    const byCotizador  = {};
+    const byDepartment = {};
+    const winLoss = { ganada: 0, perdida: 0, enProceso: 0, total: filtered.length };
+    const aaaByClient  = {};
+
+    filtered.forEach(row => {
+      const vendedor  = String(row['VENDEDOR'] || row['RESPONSABLE'] || row['ENCARGADO'] || 'SIN ASIGNAR').trim().toUpperCase();
+      const rawClasi  = String(row['CLASIFICACION'] || row['CLASI'] || '').trim().toUpperCase();
+      const clasiKey  = ['A', 'AA', 'AAA'].includes(rawClasi) ? rawClasi : 'SIN_CLASI';
+      const estatus   = String(row['ESTATUS'] || row['STATUS'] || '').trim().toUpperCase();
+      const cliente   = String(row['CLIENTE'] || '').trim().toUpperCase();
+      const concepto  = String(row['CONCEPTO'] || '').trim();
+      const folio     = String(row['FOLIO'] || '').trim();
+      const fechaDate = parseDate(row['FECHA']);
+      const dept      = deptMap[vendedor] || 'SIN DEPT';
+
+      // Clasificar resultado
+      const isGanada  = estatus.includes('GANAD') || estatus === 'VENDIDA' || estatus === 'APROBADA' || estatus === 'CERRADO';
+      const isPerdida = estatus.includes('PERDID') || estatus === 'CANCELADA' || estatus.includes('RECHAZAD');
+      if      (isGanada)  winLoss.ganada++;
+      else if (isPerdida) winLoss.perdida++;
+      else                winLoss.enProceso++;
+
+      // Por cotizador
+      if (!byCotizador[vendedor]) {
+        byCotizador[vendedor] = { name: vendedor, dept, total: 0, ganadas: 0, perdidas: 0,
+                                   clasA: 0, clasAA: 0, clasAAA: 0, slaOk: 0, slaFail: 0 };
+      }
+      byCotizador[vendedor].total++;
+      if (isGanada)  byCotizador[vendedor].ganadas++;
+      if (isPerdida) byCotizador[vendedor].perdidas++;
+      if (clasiKey === 'A')   byCotizador[vendedor].clasA++;
+      if (clasiKey === 'AA')  byCotizador[vendedor].clasAA++;
+      if (clasiKey === 'AAA') byCotizador[vendedor].clasAAA++;
+
+      // Por departamento
+      if (!byDepartment[dept]) byDepartment[dept] = { dept, total: 0, ganadas: 0, perdidas: 0 };
+      byDepartment[dept].total++;
+      if (isGanada)  byDepartment[dept].ganadas++;
+      if (isPerdida) byDepartment[dept].perdidas++;
+
+      // Clasificación + SLA
+      const durationDays = getDurationDays(row, fechaDate);
+      byClasi[clasiKey].count++;
+      if (durationDays !== null) {
+        byClasi[clasiKey].totalDays += durationDays;
+        if (clasiKey !== 'SIN_CLASI') {
+          const limit = SLA_LIMITS[clasiKey];
+          if (durationDays <= limit) {
+            byClasi[clasiKey].slaOk++;
+            byCotizador[vendedor].slaOk++;
+          } else {
+            byClasi[clasiKey].slaFail++;
+            byCotizador[vendedor].slaFail++;
+          }
+        }
+      }
+
+      // AAA: por cliente y proyecto
+      if (clasiKey === 'AAA') {
+        if (!aaaByClient[cliente]) {
+          aaaByClient[cliente] = { cliente, count: 0, ganadas: 0, perdidas: 0, projects: [] };
+        }
+        aaaByClient[cliente].count++;
+        if (isGanada)  aaaByClient[cliente].ganadas++;
+        if (isPerdida) aaaByClient[cliente].perdidas++;
+        if (concepto) {
+          aaaByClient[cliente].projects.push({ folio, concepto, estatus, isGanada, isPerdida, durationDays });
+        }
+      }
+    });
+
+    // Calcular promedios de días
+    clasis.forEach(k => {
+      const c = byClasi[k];
+      if (c.count > 0 && c.totalDays > 0) c.avgDays = parseFloat((c.totalDays / c.count).toFixed(1));
+    });
+
+    // Resumen SLA por clasificación
+    const slaSummary = {};
+    ['A', 'AA', 'AAA'].forEach(k => {
+      const c = byClasi[k];
+      slaSummary[k] = {
+        slaLimit : SLA_LIMITS[k],
+        count    : c.count,
+        ok       : c.slaOk,
+        fail     : c.slaFail,
+        avgDays  : c.avgDays,
+        pctOk    : c.count > 0 ? Math.round((c.slaOk / c.count) * 100) : 0
+      };
+    });
+
+    return {
+      success: true,
+      metrics: {
+        totalCount     : filtered.length,
+        month          : targetMonth,
+        year           : targetYear,
+        winLoss,
+        slaSummary,
+        byClasi,
+        byCotizadorArr : Object.values(byCotizador).sort((a, b) => b.total - a.total),
+        byDepartmentArr: Object.values(byDepartment).sort((a, b) => b.total - a.total),
+        aaaByClientArr : Object.values(aaaByClient).sort((a, b) => b.count - a.count)
+      }
+    };
+  } catch (e) {
+    console.error("apiFetchQuoteAgentMetrics Error: " + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Escribe los KPIs calculados en la hoja KPI_COTIZACIONES */
+function apiWriteQuoteMetricsToSheet(params) {
+  try {
+    const res = apiFetchQuoteAgentMetrics(params);
+    if (!res.success) return res;
+    const m  = res.metrics;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('KPI_COTIZACIONES');
+    if (!sheet) sheet = ss.insertSheet('KPI_COTIZACIONES');
+    sheet.clearContents();
+
+    const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const now    = new Date();
+    let r = 1;
+
+    const w = (row, col, val, bold) => {
+      const cell = sheet.getRange(row, col);
+      cell.setValue(val);
+      if (bold) cell.setFontWeight('bold');
+    };
+
+    // Título principal
+    sheet.getRange(r, 1, 1, 11).merge();
+    w(r, 1, '📊 KPI COTIZACIONES — ' + MONTHS[m.month - 1] + ' ' + m.year, true);
+    sheet.getRange(r, 1).setFontSize(13).setBackground('#1E3A5F').setFontColor('#FFFFFF');
+    r += 2;
+    w(r, 1, 'Actualizado:'); w(r, 2, Utilities.formatDate(now, 'America/Mexico_City', 'dd/MM/yyyy HH:mm'));
+    r += 2;
+
+    // Resumen general
+    w(r, 1, '📋 RESUMEN GENERAL', true); r++;
+    w(r, 1, 'Total terminadas:');  w(r, 2, m.totalCount); r++;
+    w(r, 1, 'Ganadas:');          w(r, 2, m.winLoss.ganada); r++;
+    w(r, 1, 'Perdidas:');         w(r, 2, m.winLoss.perdida); r++;
+    w(r, 1, 'En proceso:');       w(r, 2, m.winLoss.enProceso); r++;
+    const pct = m.winLoss.total > 0 ? Math.round(m.winLoss.ganada / m.winLoss.total * 100) : 0;
+    w(r, 1, '% Cierre:');         w(r, 2, pct + '%'); r += 2;
+
+    // Por departamento
+    w(r, 1, '🏢 POR DEPARTAMENTO', true); r++;
+    ['Departamento','Total','Ganadas','Perdidas'].forEach((h, i) => w(r, i + 1, h, true)); r++;
+    m.byDepartmentArr.forEach(d => {
+      w(r,1,d.dept); w(r,2,d.total); w(r,3,d.ganadas); w(r,4,d.perdidas); r++;
+    }); r++;
+
+    // Por cotizador
+    w(r, 1, '👤 POR COTIZADOR', true); r++;
+    ['Cotizador','Dept','Total','Ganadas','Perdidas','% Cierre','A','AA','AAA','SLA OK','SLA FAIL']
+      .forEach((h, i) => w(r, i + 1, h, true)); r++;
+    m.byCotizadorArr.forEach(c => {
+      const cp = c.total > 0 ? Math.round(c.ganadas / c.total * 100) : 0;
+      w(r,1,c.name); w(r,2,c.dept); w(r,3,c.total); w(r,4,c.ganadas); w(r,5,c.perdidas);
+      w(r,6,cp + '%'); w(r,7,c.clasA); w(r,8,c.clasAA); w(r,9,c.clasAAA);
+      w(r,10,c.slaOk); w(r,11,c.slaFail); r++;
+    }); r++;
+
+    // SLA por clasificación
+    w(r, 1, '⏱️ SLA POR CLASIFICACIÓN (solo terminadas)', true); r++;
+    ['Clasif.','Límite (días)','Total','✅ A Tiempo','❌ Tarde','Prom. Días','% Cumplimiento']
+      .forEach((h, i) => w(r, i + 1, h, true)); r++;
+    ['A','AA','AAA'].forEach(k => {
+      const s = m.slaSummary[k];
+      w(r,1,k); w(r,2,s.slaLimit + 'd'); w(r,3,s.count); w(r,4,s.ok);
+      w(r,5,s.fail); w(r,6,s.avgDays || 'N/D'); w(r,7,s.pctOk + '%'); r++;
+    }); r++;
+
+    // AAA por cliente y proyecto
+    if (m.aaaByClientArr && m.aaaByClientArr.length > 0) {
+      w(r, 1, '🏗️ COTIZACIONES AAA — POR CLIENTE Y PROYECTO', true); r++;
+      ['Cliente','Total','Ganadas','Perdidas','Proyectos']
+        .forEach((h, i) => w(r, i + 1, h, true)); r++;
+      m.aaaByClientArr.forEach(c => {
+        w(r,1,c.cliente); w(r,2,c.count); w(r,3,c.ganadas); w(r,4,c.perdidas);
+        w(r,5, c.projects.map(p => (p.folio ? p.folio + ' — ' : '') + p.concepto).join('; ')); r++;
+      });
+    }
+
+    sheet.autoResizeColumns(1, 11);
+    registrarLog('SYSTEM', 'KPI_COTIZACIONES', 'Sheet actualizado — ' + m.totalCount + ' cotizaciones procesadas.');
+    return { success: true, message: 'KPI_COTIZACIONES actualizado: ' + m.totalCount + ' cotizaciones procesadas.' };
+  } catch (e) {
+    console.error("apiWriteQuoteMetricsToSheet Error: " + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Configura un trigger diario a las 7AM para actualizar KPI_COTIZACIONES */
+function setupDailyQuoteMetricsTrigger() {
+  try {
+    ScriptApp.getProjectTriggers().forEach(t => {
+      if (t.getHandlerFunction() === 'autoUpdateQuoteMetrics') ScriptApp.deleteTrigger(t);
+    });
+    ScriptApp.newTrigger('autoUpdateQuoteMetrics').timeBased().everyDays(1).atHour(7).create();
+    return { success: true, message: 'Trigger diario a las 7AM configurado correctamente.' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function autoUpdateQuoteMetrics() {
+  const now = new Date();
+  apiWriteQuoteMetricsToSheet({ month: now.getMonth() + 1, year: now.getFullYear() });
+  registrarLog('SYSTEM', 'AUTO_KPI', 'KPI Cotizaciones actualizado automáticamente por trigger.');
+}
+
 /* 5. TEST DE VALIDACIÓN (LOGGER) */
 function test_DataIntegrity() {
   Logger.log("=== INICIO TEST DE INTEGRIDAD ===");
