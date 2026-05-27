@@ -675,7 +675,7 @@
       <div class="mb-3">
           <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario">
           <div class="input-group">
-              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin" >
+              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..."  >
               <button class="btn btn-outline-secondary" type="button" @click="showPassword = !showPassword" title="Mostrar/Ocultar">
                   <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
               </button>
