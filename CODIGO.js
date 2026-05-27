@@ -467,9 +467,10 @@ function getSystemConfig(role, username) {
       ppcModuleMaster.label = "INTERDICIPLINARIA";
   }
 
-  const ppcModuleWeekly = { id: "WEEKLY_PLAN", label: "Planeación Semanal", icon: "fa-calendar-alt", color: "#6f42c1", type: "weekly_plan_view" };
+    const ppcModuleWeekly = { id: "WEEKLY_PLAN", label: "Planeación Semanal", icon: "fa-calendar-alt", color: "#6f42c1", type: "weekly_plan_view" };
   // const ecgModule = { id: "ECG_SALES", label: "Monitor Vivos", icon: "fa-heartbeat", color: "#d63384", type: "ecg_dashboard" };
   const kpiModule = { id: "KPI_DASHBOARD", label: "KPI Performance", icon: "fa-chart-line", color: "#d63384", type: "kpi_dashboard_view" };
+  const aiQuotesModule = { id: "AI_QUOTES_REPORT", label: "Agente IA Cotizaciones", icon: "fa-robot", color: "#20c997", type: "ai_quotes_view" };
 
   if (role === 'TONITA') return { 
       departments: { "VENTAS": allDepts["VENTAS"] }, 
@@ -601,13 +602,15 @@ function getSystemConfig(role, username) {
       accessProjects: true 
   };
   
-  if (role === 'ADMIN_CONTROL') {
+    if (role === 'ADMIN_CONTROL') {
     return {
       departments: allDepts, allDepartments: allDepts, staff: fullDirectory, directory: fullDirectory,
       specialModules: [
         ...ppcModules,
         { id: "MIRROR_TONITA", label: "Monitor Toñita", icon: "fa-eye", color: "#0dcaf0", type: "mirror_staff", target: "ANTONIA_VENTAS" },
-        { id: "ADMIN_TRACKER", label: "Control", icon: "fa-clipboard-list", color: "#6f42c1", type: "mirror_staff", target: "ADMINISTRADOR" }
+        { id: "ADMIN_TRACKER", label: "Control", icon: "fa-clipboard-list", color: "#6f42c1", type: "mirror_staff", target: "ADMINISTRADOR" },
+        kpiModule,
+        aiQuotesModule
       ],
       accessProjects: true 
     };
@@ -615,8 +618,9 @@ function getSystemConfig(role, username) {
 
   // Default ADMIN (LUIS_CARLOS falls here with role 'ADMIN')
   const defaultModules = [ ...ppcModules, { id: "MIRROR_TONITA", label: "Monitor Toñita", icon: "fa-eye", color: "#0dcaf0", type: "mirror_staff", target: "ANTONIA_VENTAS" } ];
-  if (role === 'ADMIN') {
+    if (role === 'ADMIN') {
       defaultModules.push(kpiModule);
+      defaultModules.push(aiQuotesModule);
   }
 
   return {
@@ -4650,4 +4654,123 @@ function runFullArchivingBatch() {
     } else {
         ui.alert("❌ Error: " + res.message);
     }
+}
+
+
+/* AGENTE IA COTIZACIONES - REPORT ENGINE */
+function apiFetchQuotesReport() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  const salesSheets = [];
+  sheets.forEach(sheet => {
+      const name = sheet.getName();
+      if (name.includes('(VENTAS)') && !name.includes('ANTONIA')) {
+          salesSheets.push(sheet);
+      }
+  });
+
+  let totalQuotes = 0;
+  let wonQuotes = 0;
+  let lostQuotes = 0;
+  const deptStats = {};
+  const quoterStats = {};
+  const classificationStats = {
+    'A': { total: 0, metSLA: 0, missedSLA: 0, limit: 3 },
+    'AA': { total: 0, metSLA: 0, missedSLA: 0, limit: 14 },
+    'AAA': { total: 0, metSLA: 0, missedSLA: 0, limit: 30 }
+  };
+
+  const aaaDetails = [];
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+
+  salesSheets.forEach(sheet => {
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return;
+
+    const sheetName = sheet.getName();
+    const baseSeller = sheetName.replace('(VENTAS)', '').trim();
+
+    const headers = data[0].map(h => h.toString().toUpperCase().trim());
+    const areaIdx = headers.indexOf('ÁREA') !== -1 ? headers.indexOf('ÁREA') : headers.indexOf('AREA');
+    const quoterIdx = headers.indexOf('VENDEDOR');
+    const actualQuoterIdx = quoterIdx !== -1 ? quoterIdx : headers.indexOf('RESPONSABLE');
+    const dateIdx = headers.findIndex(h => h.includes('FECHA'));
+    const daysIdx = headers.findIndex(h => h.includes('DÍAS') || h.includes('DIAS'));
+    const statusIdx = headers.indexOf('ESTATUS') !== -1 ? headers.indexOf('ESTATUS') : headers.indexOf('STATUS');
+    const classIdx = headers.findIndex(h => h === 'CLASIFICACIÓN' || h === 'CLASIFICACION' || h === 'CLASI');
+    const clientIdx = headers.indexOf('CLIENTE');
+    const projectIdx = headers.indexOf('PROYECTO');
+
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      if (!row[0]) continue;
+
+      if (dateIdx !== -1 && row[dateIdx]) {
+        let rowDate = new Date(row[dateIdx]);
+        if (typeof row[dateIdx] === 'string' && row[dateIdx].includes('/')) {
+           const parts = row[dateIdx].split('/');
+           if (parts.length === 3) {
+             rowDate = new Date(2000 + parseInt(parts[2].substring(0,2)), parseInt(parts[1]) - 1, parseInt(parts[0]));
+           }
+        }
+        if (isNaN(rowDate.getTime()) || rowDate.getMonth() !== currentMonth || rowDate.getFullYear() !== currentYear) {
+          continue;
+        }
+      }
+
+      totalQuotes++;
+
+      if (areaIdx !== -1 && row[areaIdx]) {
+        const dept = row[areaIdx].toString().trim();
+        deptStats[dept] = (deptStats[dept] || 0) + 1;
+      }
+
+      const quoter = (actualQuoterIdx !== -1 && row[actualQuoterIdx]) ? row[actualQuoterIdx].toString().trim() : baseSeller;
+      quoterStats[quoter] = (quoterStats[quoter] || 0) + 1;
+
+      let statusStr = '';
+      if (statusIdx !== -1 && row[statusIdx]) {
+        statusStr = row[statusIdx].toString().toUpperCase().trim();
+        if (statusStr === 'GANADA' || statusStr === 'GANADO') wonQuotes++;
+        else if (statusStr === 'PERDIDA' || statusStr === 'PERDIDO' || statusStr === 'CANCELADA' || statusStr === 'CANCELADO') lostQuotes++;
+      }
+
+      if (classIdx !== -1 && row[classIdx]) {
+        const cl = row[classIdx].toString().toUpperCase().trim();
+        let days = -1;
+        if (daysIdx !== -1 && row[daysIdx] !== '') {
+           days = parseFloat(row[daysIdx]);
+        }
+
+        if (cl === 'A' || cl === 'AA' || cl === 'AAA') {
+             classificationStats[cl].total++;
+             if (!isNaN(days) && days !== -1) {
+                 if (days <= classificationStats[cl].limit) {
+                   classificationStats[cl].metSLA++;
+                 } else {
+                   classificationStats[cl].missedSLA++;
+                 }
+             }
+
+             if (cl === 'AAA') {
+                 const client = (clientIdx !== -1 && row[clientIdx]) ? row[clientIdx] : 'N/A';
+                 const project = (projectIdx !== -1 && row[projectIdx]) ? row[projectIdx] : 'N/A';
+                 aaaDetails.push({
+                     vendedor: quoter,
+                     cliente: client,
+                     proyecto: project,
+                     dias: days,
+                     estatus: statusStr
+                 });
+             }
+        }
+      }
+    }
+  });
+
+  return {
+    totalQuotes, wonQuotes, lostQuotes,
+    deptStats, quoterStats, classificationStats, aaaDetails
+  };
 }
