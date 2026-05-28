@@ -662,6 +662,27 @@
         font-weight: bold;
         font-size: 11px;
     }
+
+    /* === KANBAN VIEW === */
+    .kanban-board { display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; height: 100%; padding: 8px; background: #f0f2f5; box-sizing: border-box; }
+    .kanban-col { flex: 0 0 260px; display: flex; flex-direction: column; border-radius: 8px; max-height: 100%; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+    .kanban-col-header { padding: 8px 12px; font-weight: bold; font-size: 11px; text-transform: uppercase; display: flex; align-items: center; justify-content: space-between; min-height: 38px; letter-spacing: 0.5px; }
+    .kanban-col-body { flex: 1; overflow-y: auto; padding: 6px; background: #f4f5f7; display: flex; flex-direction: column; gap: 6px; }
+    .kanban-card { background: white; border-radius: 4px; padding: 8px 10px; font-size: 11px; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border-left: 4px solid #ccc; transition: box-shadow 0.15s, transform 0.1s; }
+    .kanban-card:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.18); transform: translateY(-1px); }
+    .kanban-card-folio { font-size: 9px; color: #888; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
+    .kanban-card-cliente { font-weight: bold; font-size: 12px; text-transform: uppercase; color: #1a1a1a; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kanban-card-concepto { color: #444; font-size: 10px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 4px; line-height: 1.3; }
+    .kanban-card-meta { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 4px; gap: 4px; flex-wrap: wrap; }
+    .kanban-empty { text-align: center; color: #bbb; font-size: 11px; padding: 20px 0; }
+    .kanban-count-badge { background: rgba(255,255,255,0.35); color: inherit; font-size: 10px; min-width: 20px; padding: 1px 6px; border-radius: 10px; font-weight: bold; }
+    body.theme-dark .kanban-board { background: #1a1a2e; }
+    body.theme-dark .kanban-col-body { background: #16213e; }
+    body.theme-dark .kanban-card { background: #0f3460; color: #eee; border-left-color: #555; }
+    body.theme-dark .kanban-card-cliente { color: #fff; }
+    body.theme-dark .kanban-card-concepto { color: #ccc; }
+    body.theme-dark .kanban-card-meta { color: #aaa; }
+    body.theme-dark .kanban-empty { color: #555; }
   </style>
 </head>
 <body>
@@ -1956,6 +1977,10 @@
                 <button class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="toggleTrackerSort" title="Invertir Orden">
                     <i class="fas" :class="staffTrackerSortAsc ? 'fa-sort-amount-down-alt' : 'fa-sort-amount-up'"></i> Invertir Orden
                 </button>
+                <button v-if="trackerSubView === 'TASKS'" class="btn btn-sm py-0 px-2 ms-1 fw-bold" :class="trackerViewMode === 'KANBAN' ? 'btn-dark' : 'btn-outline-dark'" @click="trackerViewMode = trackerViewMode === 'KANBAN' ? 'TABLE' : 'KANBAN'" title="Cambiar Vista">
+                    <i class="fas" :class="trackerViewMode === 'KANBAN' ? 'fa-table' : 'fa-columns'"></i>
+                    {{ trackerViewMode === 'KANBAN' ? 'Tabla' : 'Kanban' }}
+                </button>
                 <button v-if="trackerSubView === 'HISTORY'" class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="openProcessFlow" title="Ver Flujo"><i class="fas fa-project-diagram me-1"></i> FLUJO PROCESO COTIZACION</button>
             </div>
             <div v-if="trackerSubView === 'HISTORY'">
@@ -2470,6 +2495,32 @@
 
           <div class="excel-container flex-fill mb-2" ref="trackerTable" v-if="trackerSubView === 'TASKS'">
              <div v-if="staffTracker.isLoading" class="text-center p-5 text-muted">Cargando datos...</div>
+             <div v-else-if="trackerViewMode === 'KANBAN'" class="kanban-board">
+                 <div class="kanban-col" v-for="col in kanbanColumns" :key="col.label">
+                     <div class="kanban-col-header" :style="getKanbanColStyle(col.label)">
+                         <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:195px;">{{ col.label || 'SIN ESTATUS' }}</span>
+                         <span class="kanban-count-badge">{{ col.items.length }}</span>
+                     </div>
+                     <div class="kanban-col-body">
+                         <div class="kanban-empty" v-if="col.items.length === 0">Sin items</div>
+                         <div class="kanban-card" v-for="(item, idx) in col.items" :key="idx"
+                              :style="{borderLeftColor: getTaskColor(item)}"
+                              @click="currentUsername === 'ANTONIA_VENTAS' ? openHotPotatoModal(item) : null">
+                             <div class="kanban-card-folio" v-if="kanbanKeyMap.folio">{{ item[kanbanKeyMap.folio] }}</div>
+                             <div class="kanban-card-cliente" v-if="kanbanKeyMap.cliente">{{ item[kanbanKeyMap.cliente] }}</div>
+                             <div class="kanban-card-concepto" v-if="kanbanKeyMap.concepto">{{ item[kanbanKeyMap.concepto] }}</div>
+                             <div class="kanban-card-meta">
+                                 <span v-if="kanbanKeyMap.vendedor && item[kanbanKeyMap.vendedor]"><i class="fas fa-user" style="font-size:9px; margin-right:3px;"></i>{{ toInitials(item[kanbanKeyMap.vendedor]) }}</span>
+                                 <span v-if="kanbanKeyMap.entrega && item[kanbanKeyMap.entrega]"><i class="fas fa-calendar-alt" style="font-size:9px; margin-right:2px;"></i>{{ formatDisplayDate(item[kanbanKeyMap.entrega]) }}</span>
+                                 <span v-if="kanbanKeyMap.monto && item[kanbanKeyMap.monto]" style="font-weight:bold; color:#217346;">{{ formatCurrency(item[kanbanKeyMap.monto]) }}</span>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+                 <div v-if="kanbanColumns.length === 0" class="d-flex align-items-center justify-content-center w-100 text-muted">
+                     <span><i class="fas fa-columns me-2"></i>Sin datos para mostrar en Kanban</span>
+                 </div>
+             </div>
              <table v-else class="table-excel">
                 <thead>
                   <tr>
@@ -5187,6 +5238,7 @@ async function toggleVoiceRecording(btnElement) {
       const staffTrackerSortAsc = ref(false); // NUEVO: Estado para el orden de las cotizaciones
       const activeTrackerTab = ref('OPERATIVO');
       const trackerSubView = ref('TASKS');
+      const trackerViewMode = ref('TABLE'); // 'TABLE' | 'KANBAN'
       const currentStaffName = ref('');
       const weeklyPlanData = ref({ headers: [], data: [], isLoading: false });
 
@@ -6181,6 +6233,39 @@ const filteredStaffTrackerData = computed(() => {
              }
              return false;
           });
+      });
+
+      const kanbanKeyMap = computed(() => {
+          const headers = staffTracker.value.headers || [];
+          return {
+              folio: headers.find(h => isCol(h, ['FOLIO', 'ID'])) || null,
+              cliente: headers.find(h => isCol(h, ['CLIENTE'])) || null,
+              concepto: headers.find(h => isCol(h, ['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'OBRA', 'PROYECTO'])) || null,
+              vendedor: headers.find(h => String(h).toUpperCase().includes('VENDEDOR') || String(h).toUpperCase() === 'RESPONSABLE') || null,
+              monto: headers.find(h => isCol(h, ['MONTO', 'TOTAL', 'IMPORTE', 'PRECIO'])) || null,
+              entrega: headers.find(h => ['F. ENTREGA','ENTREGA','F.ENTREGA','FECHA ENTREGA','F ENTREGA'].includes(String(h).toUpperCase().trim())) || null,
+              estatus: headers.find(h => isCol(h, ['ESTATUS', 'STATUS'])) || null,
+          };
+      });
+
+      const kanbanColumns = computed(() => {
+          const km = kanbanKeyMap.value;
+          if (!km.estatus) return [];
+          const data = filteredStaffTrackerData.value;
+          const statusSet = new Set(data.map(r => String(r[km.estatus] || '')));
+          let statuses;
+          if (currentUsername.value === 'ANTONIA_VENTAS') {
+              const antoniaLabels = ANTONIA_STATUS_OPTIONS.map(o => o.label);
+              const ordered = antoniaLabels.filter(l => statusSet.has(l));
+              const others = Array.from(statusSet).filter(s => s && !antoniaLabels.includes(s));
+              statuses = [...ordered, ...others];
+          } else {
+              statuses = Array.from(statusSet).filter(s => s).sort();
+          }
+          return statuses.map(st => ({
+              label: st,
+              items: data.filter(r => String(r[km.estatus] || '') === st)
+          }));
       });
 
       const isFieldEditable = (h, row) => {
@@ -8256,6 +8341,15 @@ const filteredStaffTrackerData = computed(() => {
           return { backgroundColor: opt.bg, color: opt.color, border: opt.border || 'none', fontWeight: 'bold' };
       };
 
+      const getKanbanColStyle = (statusLabel) => {
+          if (currentUsername.value === 'ANTONIA_VENTAS') {
+              const s = getAntoniaStatusStyle(statusLabel);
+              return { backgroundColor: s.backgroundColor, color: s.color };
+          }
+          const col = getTaskColor({ ESTATUS: statusLabel });
+          return { backgroundColor: col, color: '#fff' };
+      };
+
       const openStatusSelector = (row, field) => {
           if (!isFieldEditable(field, row)) return;
 
@@ -8845,6 +8939,7 @@ const filteredStaffTrackerData = computed(() => {
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, staffTrackerSortAsc, toggleTrackerSort, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
+      trackerViewMode, kanbanKeyMap, kanbanColumns, getKanbanColStyle,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
       getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal,
       quoteMetrics, qmFilters, qmMonthNames, qmYears, loadQuoteMetrics, writeQuoteMetricsToSheet,
