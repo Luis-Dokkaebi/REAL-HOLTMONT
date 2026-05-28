@@ -1022,9 +1022,14 @@ function apiFetchQuoteAgentMetrics(params) {
       return diff < 0 ? null : Math.ceil(diff / (1000 * 60 * 60 * 24));
     };
 
-    // Filtrar solo cotizaciones del mes/año seleccionado
+    // Resuelve el valor de F.INICIO (el encabezado puede venir con variantes de espaciado)
+    const getDateVal = (row) =>
+      row['F. INICIO'] || row['F.INICIO'] || row['F.  INICIO'] ||
+      row['F INICIO']  || row['FECHA']    || row['FECHA INICIO'] || row['FECHA_INICIO'] || null;
+
+    // Filtrar solo cotizaciones del mes/año seleccionado usando F.INICIO
     const filtered = history.filter(row => {
-      const d = parseDate(row['FECHA']);
+      const d = parseDate(getDateVal(row));
       if (!d) return false;
       return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
     });
@@ -1048,7 +1053,7 @@ function apiFetchQuoteAgentMetrics(params) {
       const cliente   = String(row['CLIENTE'] || '').trim().toUpperCase();
       const concepto  = String(row['CONCEPTO'] || '').trim();
       const folio     = String(row['FOLIO'] || '').trim();
-      const fechaDate = parseDate(row['FECHA']);
+      const fechaDate = parseDate(getDateVal(row));
       const dept      = deptMap[vendedor] || 'SIN DEPT';
 
       // Clasificar resultado
@@ -1264,7 +1269,7 @@ function callGeminiAPI(prompt) {
   const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
   if (!apiKey) return { success: false, text: '', message: 'GEMINI_API_KEY no configurada.' };
 
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
   const payload = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: { temperature: 0.4, maxOutputTokens: 512 }
