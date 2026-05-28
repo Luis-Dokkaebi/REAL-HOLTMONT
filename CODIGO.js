@@ -945,6 +945,586 @@ function apiFetchTeamKPIData(username) {
   };
 }
 
+/* ================================================================
+ * AGENTE DE MÉTRICAS DE COTIZACIONES V1.0
+ * Mide KPIs de cotizaciones TERMINADAS (sección TAREAS REALIZADAS).
+ * Métricas: total mes, por depto, por cotizador, tiempo por CLASI
+ *           (A≤3d / AA≤14d / AAA≤30d), SLA cumplido/no cumplido,
+ *           ganadas vs perdidas, y AAA por cliente y proyecto.
+ * ================================================================ */
+
+function apiFetchQuoteAgentMetrics(params) {
+  try {
+    const p = params || {};
+    const now = new Date();
+    const targetMonth = (p.month !== undefined && p.month !== null) ? parseInt(p.month) : (now.getMonth() + 1);
+    const targetYear  = (p.year  !== undefined && p.year  !== null) ? parseInt(p.year)  : now.getFullYear();
+
+    // Solo leer historial terminado (TAREAS REALIZADAS)
+    const result = internalFetchSheetData("ANTONIA_VENTAS");
+    if (!result.success) {
+      return { success: false, message: "Error leyendo ANTONIA_VENTAS: " + (result.message || '') };
+    }
+    const history = result.history || [];
+
+    // Mapa nombre → departamento desde directorio interno
+    const deptMap = {};
+    INITIAL_DIRECTORY.forEach(emp => {
+      const key = emp.name ? emp.name.toUpperCase().trim() : '';
+      if (key && !deptMap[key]) deptMap[key] = emp.dept;
+    });
+
+    const SLA_LIMITS = { 'A': 3, 'AA': 14, 'AAA': 30 };
+
+    // Parse date flexible (DD/MM/YYYY, Date object, timestamp)
+    const parseDate = (d) => {
+      if (!d) return null;
+      if (d instanceof Date) return isNaN(d.getTime()) ? null : d;
+      if (typeof d === 'number') return new Date(d);
+      const s = String(d).trim();
+      if (!s) return null;
+      if (s.includes('/')) {
+        const pts = s.split('/');
+        if (pts.length === 3) {
+          const yr = pts[2].length === 2 ? '20' + pts[2] : pts[2];
+          const dt = new Date(parseInt(yr), parseInt(pts[1]) - 1, parseInt(pts[0]));
+          return isNaN(dt.getTime()) ? null : dt;
+        }
+      }
+      const parsed = new Date(s);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    // Duración real: inicio = FECHA, fin = último endTimestamp en PROCESO_LOG o F.ENTREGA
+    const getDurationDays = (row, startDate) => {
+      if (!startDate) return null;
+      let endDate = null;
+      try {
+        const logStr = String(row['PROCESO_LOG'] || row['proceso_log'] || '').trim();
+        if (logStr && logStr.startsWith('[')) {
+          const log = JSON.parse(logStr);
+          if (Array.isArray(log)) {
+            let lastEnd = null;
+            log.forEach(step => {
+              if (step.endTimestamp && step.status === 'DONE') {
+                if (!lastEnd || step.endTimestamp > lastEnd) lastEnd = step.endTimestamp;
+              }
+            });
+            if (lastEnd) endDate = new Date(lastEnd);
+          }
+        }
+      } catch (e) { /* ignorar errores JSON */ }
+      if (!endDate) {
+        endDate = parseDate(row['F. ENTREGA'] || row['F_ENTREGA'] || row['FECHA_RESPUESTA']);
+      }
+      if (!endDate) return null;
+      const diff = endDate.getTime() - startDate.getTime();
+      return diff < 0 ? null : Math.ceil(diff / (1000 * 60 * 60 * 24));
+    };
+
+    // Filtrar solo cotizaciones del mes/año seleccionado
+    const filtered = history.filter(row => {
+      const d = parseDate(row['FECHA']);
+      if (!d) return false;
+      return (d.getMonth() + 1) === targetMonth && d.getFullYear() === targetYear;
+    });
+
+    // Estructuras de acumulación
+    const clasis = ['A', 'AA', 'AAA', 'SIN_CLASI'];
+    const byClasi = {};
+    clasis.forEach(k => {
+      byClasi[k] = { count: 0, slaOk: 0, slaFail: 0, totalDays: 0, avgDays: 0 };
+    });
+    const byCotizador  = {};
+    const byDepartment = {};
+    const winLoss = { ganada: 0, perdida: 0, enProceso: 0, total: filtered.length };
+    const aaaByClient  = {};
+
+    filtered.forEach(row => {
+      const vendedor  = String(row['VENDEDOR'] || row['RESPONSABLE'] || row['ENCARGADO'] || 'SIN ASIGNAR').trim().toUpperCase();
+      const rawClasi  = String(row['CLASIFICACION'] || row['CLASI'] || '').trim().toUpperCase();
+      const clasiKey  = ['A', 'AA', 'AAA'].includes(rawClasi) ? rawClasi : 'SIN_CLASI';
+      const estatus   = String(row['ESTATUS'] || row['STATUS'] || '').trim().toUpperCase();
+      const cliente   = String(row['CLIENTE'] || '').trim().toUpperCase();
+      const concepto  = String(row['CONCEPTO'] || '').trim();
+      const folio     = String(row['FOLIO'] || '').trim();
+      const fechaDate = parseDate(row['FECHA']);
+      const dept      = deptMap[vendedor] || 'SIN DEPT';
+
+      // Clasificar resultado
+      const isGanada  = estatus.includes('GANAD') || estatus === 'VENDIDA' || estatus === 'APROBADA' || estatus === 'CERRADO';
+      const isPerdida = estatus.includes('PERDID') || estatus === 'CANCELADA' || estatus.includes('RECHAZAD');
+      if      (isGanada)  winLoss.ganada++;
+      else if (isPerdida) winLoss.perdida++;
+      else                winLoss.enProceso++;
+
+      // Por cotizador
+      if (!byCotizador[vendedor]) {
+        byCotizador[vendedor] = { name: vendedor, dept, total: 0, ganadas: 0, perdidas: 0,
+                                   clasA: 0, clasAA: 0, clasAAA: 0, slaOk: 0, slaFail: 0 };
+      }
+      byCotizador[vendedor].total++;
+      if (isGanada)  byCotizador[vendedor].ganadas++;
+      if (isPerdida) byCotizador[vendedor].perdidas++;
+      if (clasiKey === 'A')   byCotizador[vendedor].clasA++;
+      if (clasiKey === 'AA')  byCotizador[vendedor].clasAA++;
+      if (clasiKey === 'AAA') byCotizador[vendedor].clasAAA++;
+
+      // Por departamento
+      if (!byDepartment[dept]) byDepartment[dept] = { dept, total: 0, ganadas: 0, perdidas: 0 };
+      byDepartment[dept].total++;
+      if (isGanada)  byDepartment[dept].ganadas++;
+      if (isPerdida) byDepartment[dept].perdidas++;
+
+      // Clasificación + SLA
+      const durationDays = getDurationDays(row, fechaDate);
+      byClasi[clasiKey].count++;
+      if (durationDays !== null) {
+        byClasi[clasiKey].totalDays += durationDays;
+        if (clasiKey !== 'SIN_CLASI') {
+          const limit = SLA_LIMITS[clasiKey];
+          if (durationDays <= limit) {
+            byClasi[clasiKey].slaOk++;
+            byCotizador[vendedor].slaOk++;
+          } else {
+            byClasi[clasiKey].slaFail++;
+            byCotizador[vendedor].slaFail++;
+          }
+        }
+      }
+
+      // AAA: por cliente y proyecto
+      if (clasiKey === 'AAA') {
+        if (!aaaByClient[cliente]) {
+          aaaByClient[cliente] = { cliente, count: 0, ganadas: 0, perdidas: 0, projects: [] };
+        }
+        aaaByClient[cliente].count++;
+        if (isGanada)  aaaByClient[cliente].ganadas++;
+        if (isPerdida) aaaByClient[cliente].perdidas++;
+        if (concepto) {
+          aaaByClient[cliente].projects.push({ folio, concepto, estatus, isGanada, isPerdida, durationDays });
+        }
+      }
+    });
+
+    // Calcular promedios de días
+    clasis.forEach(k => {
+      const c = byClasi[k];
+      if (c.count > 0 && c.totalDays > 0) c.avgDays = parseFloat((c.totalDays / c.count).toFixed(1));
+    });
+
+    // Resumen SLA por clasificación
+    const slaSummary = {};
+    ['A', 'AA', 'AAA'].forEach(k => {
+      const c = byClasi[k];
+      slaSummary[k] = {
+        slaLimit : SLA_LIMITS[k],
+        count    : c.count,
+        ok       : c.slaOk,
+        fail     : c.slaFail,
+        avgDays  : c.avgDays,
+        pctOk    : c.count > 0 ? Math.round((c.slaOk / c.count) * 100) : 0
+      };
+    });
+
+    return {
+      success: true,
+      metrics: {
+        totalCount     : filtered.length,
+        month          : targetMonth,
+        year           : targetYear,
+        winLoss,
+        slaSummary,
+        byClasi,
+        byCotizadorArr : Object.values(byCotizador).sort((a, b) => b.total - a.total),
+        byDepartmentArr: Object.values(byDepartment).sort((a, b) => b.total - a.total),
+        aaaByClientArr : Object.values(aaaByClient).sort((a, b) => b.count - a.count)
+      }
+    };
+  } catch (e) {
+    console.error("apiFetchQuoteAgentMetrics Error: " + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Escribe los KPIs calculados en la hoja KPI_COTIZACIONES */
+function apiWriteQuoteMetricsToSheet(params) {
+  try {
+    const res = apiFetchQuoteAgentMetrics(params);
+    if (!res.success) return res;
+    const m  = res.metrics;
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('KPI_COTIZACIONES');
+    if (!sheet) sheet = ss.insertSheet('KPI_COTIZACIONES');
+    sheet.clearContents();
+
+    const MONTHS = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    const now    = new Date();
+    let r = 1;
+
+    const w = (row, col, val, bold) => {
+      const cell = sheet.getRange(row, col);
+      cell.setValue(val);
+      if (bold) cell.setFontWeight('bold');
+    };
+
+    // Título principal
+    sheet.getRange(r, 1, 1, 11).merge();
+    w(r, 1, '📊 KPI COTIZACIONES — ' + MONTHS[m.month - 1] + ' ' + m.year, true);
+    sheet.getRange(r, 1).setFontSize(13).setBackground('#1E3A5F').setFontColor('#FFFFFF');
+    r += 2;
+    w(r, 1, 'Actualizado:'); w(r, 2, Utilities.formatDate(now, 'America/Mexico_City', 'dd/MM/yyyy HH:mm'));
+    r += 2;
+
+    // Resumen general
+    w(r, 1, '📋 RESUMEN GENERAL', true); r++;
+    w(r, 1, 'Total terminadas:');  w(r, 2, m.totalCount); r++;
+    w(r, 1, 'Ganadas:');          w(r, 2, m.winLoss.ganada); r++;
+    w(r, 1, 'Perdidas:');         w(r, 2, m.winLoss.perdida); r++;
+    w(r, 1, 'En proceso:');       w(r, 2, m.winLoss.enProceso); r++;
+    const pct = m.winLoss.total > 0 ? Math.round(m.winLoss.ganada / m.winLoss.total * 100) : 0;
+    w(r, 1, '% Cierre:');         w(r, 2, pct + '%'); r += 2;
+
+    // Por departamento
+    w(r, 1, '🏢 POR DEPARTAMENTO', true); r++;
+    ['Departamento','Total','Ganadas','Perdidas'].forEach((h, i) => w(r, i + 1, h, true)); r++;
+    m.byDepartmentArr.forEach(d => {
+      w(r,1,d.dept); w(r,2,d.total); w(r,3,d.ganadas); w(r,4,d.perdidas); r++;
+    }); r++;
+
+    // Por cotizador
+    w(r, 1, '👤 POR COTIZADOR', true); r++;
+    ['Cotizador','Dept','Total','Ganadas','Perdidas','% Cierre','A','AA','AAA','SLA OK','SLA FAIL']
+      .forEach((h, i) => w(r, i + 1, h, true)); r++;
+    m.byCotizadorArr.forEach(c => {
+      const cp = c.total > 0 ? Math.round(c.ganadas / c.total * 100) : 0;
+      w(r,1,c.name); w(r,2,c.dept); w(r,3,c.total); w(r,4,c.ganadas); w(r,5,c.perdidas);
+      w(r,6,cp + '%'); w(r,7,c.clasA); w(r,8,c.clasAA); w(r,9,c.clasAAA);
+      w(r,10,c.slaOk); w(r,11,c.slaFail); r++;
+    }); r++;
+
+    // SLA por clasificación
+    w(r, 1, '⏱️ SLA POR CLASIFICACIÓN (solo terminadas)', true); r++;
+    ['Clasif.','Límite (días)','Total','✅ A Tiempo','❌ Tarde','Prom. Días','% Cumplimiento']
+      .forEach((h, i) => w(r, i + 1, h, true)); r++;
+    ['A','AA','AAA'].forEach(k => {
+      const s = m.slaSummary[k];
+      w(r,1,k); w(r,2,s.slaLimit + 'd'); w(r,3,s.count); w(r,4,s.ok);
+      w(r,5,s.fail); w(r,6,s.avgDays || 'N/D'); w(r,7,s.pctOk + '%'); r++;
+    }); r++;
+
+    // AAA por cliente y proyecto
+    if (m.aaaByClientArr && m.aaaByClientArr.length > 0) {
+      w(r, 1, '🏗️ COTIZACIONES AAA — POR CLIENTE Y PROYECTO', true); r++;
+      ['Cliente','Total','Ganadas','Perdidas','Proyectos']
+        .forEach((h, i) => w(r, i + 1, h, true)); r++;
+      m.aaaByClientArr.forEach(c => {
+        w(r,1,c.cliente); w(r,2,c.count); w(r,3,c.ganadas); w(r,4,c.perdidas);
+        w(r,5, c.projects.map(p => (p.folio ? p.folio + ' — ' : '') + p.concepto).join('; ')); r++;
+      });
+    }
+
+    sheet.autoResizeColumns(1, 11);
+    registrarLog('SYSTEM', 'KPI_COTIZACIONES', 'Sheet actualizado — ' + m.totalCount + ' cotizaciones procesadas.');
+    return { success: true, message: 'KPI_COTIZACIONES actualizado: ' + m.totalCount + ' cotizaciones procesadas.' };
+  } catch (e) {
+    console.error("apiWriteQuoteMetricsToSheet Error: " + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Configura un trigger diario a las 7AM para actualizar KPI_COTIZACIONES */
+function setupDailyQuoteMetricsTrigger() {
+  try {
+    ScriptApp.getProjectTriggers().forEach(t => {
+      if (t.getHandlerFunction() === 'autoUpdateQuoteMetrics') ScriptApp.deleteTrigger(t);
+    });
+    ScriptApp.newTrigger('autoUpdateQuoteMetrics').timeBased().everyDays(1).atHour(7).create();
+    return { success: true, message: 'Trigger diario a las 7AM configurado correctamente.' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function autoUpdateQuoteMetrics() {
+  const now = new Date();
+  apiWriteQuoteMetricsToSheet({ month: now.getMonth() + 1, year: now.getFullYear() });
+  // También ejecuta el agente completo (reglas + Gemini + email)
+  runQuoteMetricsAgent({ month: now.getMonth() + 1, year: now.getFullYear() });
+  registrarLog('SYSTEM', 'AUTO_KPI', 'KPI Cotizaciones + Agente ejecutados por trigger.');
+}
+
+/* ================================================================
+ * AGENTE IA DE COTIZACIONES — MOTOR COMPLETO
+ * Observa → Detecta por reglas → Llama Gemini → Envía email
+ * ================================================================ */
+
+/* Llama a Gemini 1.5 Flash con el prompt dado */
+function callGeminiAPI(prompt) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+  if (!apiKey) return { success: false, text: '', message: 'GEMINI_API_KEY no configurada.' };
+
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+  const payload = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.4, maxOutputTokens: 512 }
+  });
+
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    });
+    const code = response.getResponseCode();
+    if (code !== 200) {
+      return { success: false, text: '', message: 'Gemini HTTP ' + code + ': ' + response.getContentText() };
+    }
+    const json = JSON.parse(response.getContentText());
+    const text = (json.candidates && json.candidates[0] && json.candidates[0].content &&
+                  json.candidates[0].content.parts && json.candidates[0].content.parts[0].text) || '';
+    return { success: true, text: text.trim() };
+  } catch (e) {
+    return { success: false, text: '', message: e.toString() };
+  }
+}
+
+/* Guarda o lee la Gemini API key en Script Properties */
+function apiSaveGeminiKey(key) {
+  try {
+    if (!key || String(key).trim() === '') return { success: false, message: 'Llave vacía.' };
+    PropertiesService.getScriptProperties().setProperty('GEMINI_API_KEY', String(key).trim());
+    return { success: true, message: 'API key guardada correctamente.' };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function apiCheckGeminiKey() {
+  const key = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+  return { success: true, hasKey: key.length > 0, keyPreview: key ? key.substring(0,6) + '***' : '' };
+}
+
+/* Motor principal del agente — Observa → Reglas → Gemini → Email */
+function runQuoteMetricsAgent(params) {
+  try {
+    const p = params || {};
+    const now = new Date();
+    const month = (p.month !== undefined) ? parseInt(p.month) : (now.getMonth() + 1);
+    const year  = (p.year  !== undefined) ? parseInt(p.year)  : now.getFullYear();
+
+    // ── 1. OBTENER MÉTRICAS ────────────────────────────────────────
+    const mResult = apiFetchQuoteAgentMetrics({ month, year });
+    if (!mResult.success) return { success: false, message: 'No se pudieron obtener métricas: ' + mResult.message };
+    const m = mResult.metrics;
+
+    // ── 2. MOTOR DE REGLAS ─────────────────────────────────────────
+    const alerts = [];
+
+    // Regla 1: SLA por clasificación < 70% (con mínimo 3 casos)
+    ['A', 'AA', 'AAA'].forEach(k => {
+      const s = m.slaSummary[k];
+      if (s.count >= 3 && s.pctOk < 70) {
+        alerts.push({
+          type: 'SLA_BAJO',
+          severity: 'ALTA',
+          icon: '🔴',
+          mensaje: 'Clase ' + k + ': solo ' + s.pctOk + '% de cumplimiento SLA (' + s.ok + '/' + s.count + ' a tiempo, límite ' + s.slaLimit + ' días)'
+        });
+      }
+    });
+
+    // Regla 2: Cotizador con tasa de pérdida > 50% (con mínimo 3 cot.)
+    m.byCotizadorArr.forEach(c => {
+      if (c.total >= 3 && (c.perdidas / c.total) > 0.5) {
+        const pct = Math.round(c.perdidas / c.total * 100);
+        alerts.push({
+          type: 'ALTA_PERDIDA',
+          severity: 'MEDIA',
+          icon: '🟡',
+          mensaje: c.name + ': ' + pct + '% de cotizaciones perdidas este mes (' + c.perdidas + ' de ' + c.total + ')'
+        });
+      }
+    });
+
+    // Regla 3: Tasa de cierre global < 30% (con mínimo 5 cot.)
+    if (m.winLoss.total >= 5) {
+      const globalPct = Math.round(m.winLoss.ganada / m.winLoss.total * 100);
+      if (globalPct < 30) {
+        alerts.push({
+          type: 'CIERRE_BAJO',
+          severity: 'ALTA',
+          icon: '🔴',
+          mensaje: 'Tasa de cierre global muy baja: ' + globalPct + '% (' + m.winLoss.ganada + ' ganadas de ' + m.winLoss.total + ' terminadas)'
+        });
+      }
+    }
+
+    // Regla 4: AAA sin cierre definido (ni ganada ni perdida)
+    const aaaAbiertos = (m.byClasi && m.byClasi['AAA']) ? m.byClasi['AAA'].count - m.slaSummary.AAA.ok - m.slaSummary.AAA.fail + m.slaSummary.AAA.ok : 0;
+    m.aaaByClientArr.forEach(cl => {
+      const enProceso = cl.projects.filter(p => !p.isGanada && !p.isPerdida).length;
+      if (enProceso > 0) {
+        alerts.push({
+          type: 'AAA_SIN_RESULTADO',
+          severity: 'INFO',
+          icon: '🔵',
+          mensaje: 'Cliente ' + cl.cliente + ': ' + enProceso + ' proyecto(s) AAA terminados sin marcar GANADA/PERDIDA'
+        });
+      }
+    });
+
+    // ── 3. CONSTRUIR PROMPT PARA GEMINI ───────────────────────────
+    const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const monthName = MONTHS_ES[month - 1];
+    const top5 = m.byCotizadorArr.slice(0, 5);
+
+    const prompt = [
+      'Eres analista de ventas de Holtmont, empresa mexicana de construcción e ingeniería.',
+      'Redacta un reporte ejecutivo CONCISO (máx 180 palabras) en español profesional para el mes de ' + monthName + ' ' + year + '.',
+      '',
+      'DATOS DEL MES:',
+      '- Total cotizaciones terminadas: ' + m.totalCount,
+      '- Ganadas: ' + m.winLoss.ganada + ' | Perdidas: ' + m.winLoss.perdida + ' | % Cierre: ' + (m.winLoss.total > 0 ? Math.round(m.winLoss.ganada / m.winLoss.total * 100) : 0) + '%',
+      '',
+      'SLA por clasificación:',
+      '  Clase A  (límite 3d):  ' + m.slaSummary.A.count  + ' cot., ' + m.slaSummary.A.pctOk  + '% a tiempo, prom. ' + (m.slaSummary.A.avgDays  || 'N/D') + 'd',
+      '  Clase AA (límite 14d): ' + m.slaSummary.AA.count + ' cot., ' + m.slaSummary.AA.pctOk + '% a tiempo, prom. ' + (m.slaSummary.AA.avgDays || 'N/D') + 'd',
+      '  Clase AAA(límite 30d): ' + m.slaSummary.AAA.count+ ' cot., ' + m.slaSummary.AAA.pctOk+ '% a tiempo, prom. ' + (m.slaSummary.AAA.avgDays|| 'N/D') + 'd',
+      '',
+      'Top cotizadores:',
+      top5.map(c => '  ' + c.name + ': ' + c.total + ' cot., ' + c.ganadas + ' ganadas, ' + c.slaOk + ' SLA OK').join('\n'),
+      '',
+      alerts.length > 0
+        ? 'Alertas detectadas:\n' + alerts.map(a => '  ' + a.icon + ' ' + a.mensaje).join('\n')
+        : 'Sin alertas críticas este mes.',
+      '',
+      'Instrucciones: sé directo, sin saludos. Menciona lo más importante (desempeño general, mejor cotizador, punto débil) y termina con UNA recomendación concreta.'
+    ].join('\n');
+
+    // ── 4. LLAMAR A GEMINI ────────────────────────────────────────
+    const geminiResult = callGeminiAPI(prompt);
+    const geminiSummary = geminiResult.success ? geminiResult.text : '(Gemini no disponible: ' + geminiResult.message + ')';
+
+    // ── 5. ENVIAR EMAIL DE REPORTE ────────────────────────────────
+    const emailResult = _sendAgentEmail(m, alerts, geminiSummary, monthName, year);
+
+    // ── 6. GUARDAR ÚLTIMO REPORTE EN PROPIEDADES ──────────────────
+    const lastRun = {
+      timestamp  : now.getTime(),
+      timestampStr: Utilities.formatDate(now, 'America/Mexico_City', 'dd/MM/yyyy HH:mm'),
+      month, year,
+      alerts,
+      geminiSummary,
+      totalCount  : m.totalCount,
+      ganadas     : m.winLoss.ganada,
+      perdidas    : m.winLoss.perdida,
+      emailSent   : emailResult.success
+    };
+    PropertiesService.getScriptProperties().setProperty('LAST_AGENT_RUN', JSON.stringify(lastRun));
+    registrarLog('AGENT', 'RUN_COMPLETE', 'Agente ejecutado. Alertas: ' + alerts.length + '. Email: ' + (emailResult.success ? 'OK' : 'FALLO'));
+
+    return { success: true, lastRun };
+  } catch (e) {
+    console.error('runQuoteMetricsAgent Error: ' + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Devuelve el último reporte del agente (para mostrarlo en el panel) */
+function apiGetLastAgentReport() {
+  try {
+    const raw = PropertiesService.getScriptProperties().getProperty('LAST_AGENT_RUN') || '';
+    if (!raw) return { success: true, hasReport: false };
+    return { success: true, hasReport: true, lastRun: JSON.parse(raw) };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Genera y envía el email HTML del reporte */
+function _sendAgentEmail(m, alerts, geminiSummary, monthName, year) {
+  try {
+    // Destinatarios: ANTONIA_VENTAS + ADMIN
+    const recipients = [];
+    if (USER_DB['ANTONIA_VENTAS'] && USER_DB['ANTONIA_VENTAS'].email) recipients.push(USER_DB['ANTONIA_VENTAS'].email);
+    if (USER_DB['LUIS_CARLOS']    && USER_DB['LUIS_CARLOS'].email)    recipients.push(USER_DB['LUIS_CARLOS'].email);
+
+    if (recipients.length === 0) return { success: false, message: 'Sin destinatarios configurados.' };
+
+    const closePct = m.winLoss.total > 0 ? Math.round(m.winLoss.ganada / m.winLoss.total * 100) : 0;
+    const alertRows = alerts.length > 0
+      ? alerts.map(a => '<tr><td style="padding:6px 12px;">' + a.icon + '</td><td style="padding:6px 12px;color:#333;">' + a.mensaje + '</td><td style="padding:6px 12px;"><span style="background:' + (a.severity==='ALTA'?'#dc3545':a.severity==='MEDIA'?'#fd7e14':'#17a2b8') + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">' + a.severity + '</span></td></tr>').join('')
+      : '<tr><td colspan="3" style="padding:8px 12px;color:#28a745;">✅ Sin alertas críticas este mes</td></tr>';
+
+    const cotizRows = m.byCotizadorArr.slice(0, 8).map(c => {
+      const pct = c.total > 0 ? Math.round(c.ganadas / c.total * 100) : 0;
+      return '<tr style="border-bottom:1px solid #eee;"><td style="padding:5px 10px;">' + c.name + '</td><td style="text-align:center;padding:5px 10px;">' + c.total + '</td><td style="text-align:center;padding:5px 10px;color:#28a745;">' + c.ganadas + '</td><td style="text-align:center;padding:5px 10px;color:#dc3545;">' + c.perdidas + '</td><td style="text-align:center;padding:5px 10px;font-weight:bold;">' + pct + '%</td><td style="text-align:center;padding:5px 10px;">' + c.slaOk + ' / ' + c.slaFail + '</td></tr>';
+    }).join('');
+
+    const html = [
+      '<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;background:#fff;">',
+      '<div style="background:#1E3A5F;color:#fff;padding:24px;">',
+      '<h1 style="margin:0;font-size:22px;">📊 Reporte de Cotizaciones — ' + monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' ' + year + '</h1>',
+      '<p style="margin:4px 0 0;font-size:13px;opacity:0.8;">Generado automáticamente por el Agente de Métricas · Holtmont Workspace</p>',
+      '</div>',
+      '<div style="padding:24px;">',
+      // KPI cards
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #00d2ff;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#00d2ff;">' + m.totalCount + '</div><div style="font-size:12px;color:#666;">Terminadas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #28a745;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#28a745;">' + m.winLoss.ganada + '</div><div style="font-size:12px;color:#666;">✅ Ganadas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #dc3545;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#dc3545;">' + m.winLoss.perdida + '</div><div style="font-size:12px;color:#666;">❌ Perdidas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #ffc107;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#ffc107;">' + closePct + '%</div><div style="font-size:12px;color:#666;">🎯 % Cierre</div></div>',
+      '</div>',
+      // Gemini summary
+      '<div style="background:#f0f7ff;border-left:4px solid #00d2ff;padding:16px;border-radius:4px;margin-bottom:24px;">',
+      '<p style="font-size:12px;font-weight:bold;color:#00d2ff;margin:0 0 8px;">🤖 ANÁLISIS IA (Gemini)</p>',
+      '<p style="margin:0;color:#333;line-height:1.6;">' + geminiSummary.replace(/\n/g, '<br>') + '</p>',
+      '</div>',
+      // Alertas
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">⚠️ Alertas del Agente</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#f8f9fa;border-radius:8px;overflow:hidden;margin-bottom:24px;">',
+      alertRows,
+      '</table>',
+      // SLA
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">⏱️ SLA por Clasificación</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">',
+      '<thead><tr style="background:#1E3A5F;color:#fff;"><th style="padding:8px 12px;text-align:left;">Clase</th><th style="padding:8px 12px;text-align:center;">Total</th><th style="padding:8px 12px;text-align:center;">✅ A tiempo</th><th style="padding:8px 12px;text-align:center;">❌ Tarde</th><th style="padding:8px 12px;text-align:center;">% Cumpl.</th><th style="padding:8px 12px;text-align:center;">Prom. días</th></tr></thead>',
+      '<tbody>',
+      ['A','AA','AAA'].map(k => {
+        const s = m.slaSummary[k];
+        const color = s.pctOk >= 80 ? '#28a745' : s.pctOk >= 60 ? '#fd7e14' : '#dc3545';
+        return '<tr style="border-bottom:1px solid #eee;"><td style="padding:7px 12px;font-weight:bold;">' + k + ' (≤' + s.slaLimit + 'd)</td><td style="text-align:center;padding:7px 12px;">' + s.count + '</td><td style="text-align:center;padding:7px 12px;color:#28a745;">' + s.ok + '</td><td style="text-align:center;padding:7px 12px;color:#dc3545;">' + s.fail + '</td><td style="text-align:center;padding:7px 12px;font-weight:bold;color:' + color + ';">' + s.pctOk + '%</td><td style="text-align:center;padding:7px 12px;">' + (s.avgDays || 'N/D') + 'd</td></tr>';
+      }).join(''),
+      '</tbody></table>',
+      // Por cotizador
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">👤 Desempeño por Cotizador</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;">',
+      '<thead><tr style="background:#1E3A5F;color:#fff;"><th style="padding:8px 10px;text-align:left;">Cotizador</th><th style="padding:8px 10px;text-align:center;">Total</th><th style="padding:8px 10px;text-align:center;">Ganadas</th><th style="padding:8px 10px;text-align:center;">Perdidas</th><th style="padding:8px 10px;text-align:center;">% Cierre</th><th style="padding:8px 10px;text-align:center;">SLA OK/Fail</th></tr></thead>',
+      '<tbody>' + cotizRows + '</tbody>',
+      '</table>',
+      '</div>',
+      '<div style="background:#f8f9fa;padding:12px 24px;font-size:11px;color:#999;border-top:1px solid #eee;">',
+      'Holtmont Workspace — Agente Automático de Métricas · ' + Utilities.formatDate(new Date(), 'America/Mexico_City', 'dd/MM/yyyy HH:mm'),
+      '</div></div>'
+    ].join('');
+
+    recipients.forEach(email => {
+      MailApp.sendEmail({
+        to: email,
+        subject: '📊 Reporte Cotizaciones ' + monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' ' + year + (alerts.length > 0 ? ' — ⚠️ ' + alerts.length + ' alerta(s)' : ''),
+        htmlBody: html
+      });
+    });
+
+    return { success: true, sentTo: recipients };
+  } catch (e) {
+    console.error('_sendAgentEmail Error: ' + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
 /* 5. TEST DE VALIDACIÓN (LOGGER) */
 function test_DataIntegrity() {
   Logger.log("=== INICIO TEST DE INTEGRIDAD ===");
