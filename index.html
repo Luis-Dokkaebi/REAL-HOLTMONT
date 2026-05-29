@@ -676,6 +676,10 @@
     .kanban-card-meta { display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-top: 4px; gap: 4px; flex-wrap: wrap; }
     .kanban-empty { text-align: center; color: #bbb; font-size: 11px; padding: 20px 0; }
     .kanban-count-badge { background: rgba(255,255,255,0.35); color: inherit; font-size: 10px; min-width: 20px; padding: 1px 6px; border-radius: 10px; font-weight: bold; }
+    .kanban-col-body.drag-over { background: #dbeafe !important; outline: 2px dashed #3b82f6; outline-offset: -3px; }
+    .kanban-card.dragging { opacity: 0.35; transform: rotate(1.5deg) scale(0.97); }
+    .dirty-row-highlight td { background-color: #eff6ff !important; }
+    .dirty-row-highlight td:first-child { border-left: 3px solid #3b82f6 !important; }
     body.theme-dark .kanban-board { background: #1a1a2e; }
     body.theme-dark .kanban-col-body { background: #16213e; }
     body.theme-dark .kanban-card { background: #0f3460; color: #eee; border-left-color: #555; }
@@ -1986,6 +1990,11 @@
             <div v-if="trackerSubView === 'HISTORY'">
                 <input v-model="historySearchQuery" class="form-control form-control-sm w-auto" placeholder="Buscar por concepto...">
             </div>
+            <div v-else-if="trackerSubView === 'TASKS'" class="input-group input-group-sm" style="width:210px;">
+                <span class="input-group-text py-0 px-2"><i class="fas fa-search" style="font-size:10px;"></i></span>
+                <input v-model="staffTrackerGlobalSearch" class="form-control py-0" placeholder="Buscar en todo..." style="font-size:11px;">
+                <button v-if="staffTrackerGlobalSearch" class="btn btn-outline-secondary py-0 px-2" @click="staffTrackerGlobalSearch = ''" title="Limpiar"><i class="fas fa-times" style="font-size:10px;"></i></button>
+            </div>
             <div v-else></div>
           </div>
           <div class="flex-fill d-flex flex-column" v-if="trackerSubView === 'EXECUTIVE_SUMMARY'" style="background-color:#fff; padding:20px; overflow-y:auto;">
@@ -2501,10 +2510,18 @@
                          <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:195px;">{{ col.label || 'SIN ESTATUS' }}</span>
                          <span class="kanban-count-badge">{{ col.items.length }}</span>
                      </div>
-                     <div class="kanban-col-body">
-                         <div class="kanban-empty" v-if="col.items.length === 0">Sin items</div>
+                     <div class="kanban-col-body"
+                          :class="{'drag-over': kanbanDragOverCol === col.label && kanbanDragItem !== null}"
+                          @dragover.prevent="onKanbanDragOver(col.label)"
+                          @dragleave="onKanbanDragLeave"
+                          @drop.prevent="onKanbanDrop(col.label)">
+                         <div class="kanban-empty" v-if="col.items.length === 0">Soltar aquí</div>
                          <div class="kanban-card" v-for="(item, idx) in col.items" :key="idx"
                               :style="{borderLeftColor: getTaskColor(item)}"
+                              :class="{dragging: kanbanDragItem === item}"
+                              draggable="true"
+                              @dragstart="onKanbanDragStart(item)"
+                              @dragend="onKanbanDragEnd"
                               @click="currentUsername === 'ANTONIA_VENTAS' ? openHotPotatoModal(item) : null">
                              <div class="kanban-card-folio" v-if="kanbanKeyMap.folio">{{ item[kanbanKeyMap.folio] }}</div>
                              <div class="kanban-card-cliente" v-if="kanbanKeyMap.cliente">{{ item[kanbanKeyMap.cliente] }}</div>
@@ -2538,7 +2555,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
+                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'dirty-row-highlight': row._isDirty && !row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in visibleTrackerHeaders" :key="idx">
                          <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
@@ -5239,6 +5256,10 @@ async function toggleVoiceRecording(btnElement) {
       const activeTrackerTab = ref('OPERATIVO');
       const trackerSubView = ref('TASKS');
       const trackerViewMode = ref('TABLE'); // 'TABLE' | 'KANBAN'
+      const staffTrackerGlobalSearch = ref('');
+      const staffTrackerOriginals = ref({});
+      const kanbanDragItem = ref(null);
+      const kanbanDragOverCol = ref('');
       const currentStaffName = ref('');
       const weeklyPlanData = ref({ headers: [], data: [], isLoading: false });
 
@@ -6211,6 +6232,13 @@ const filteredStaffTrackerData = computed(() => {
               }
               return true;
           });
+
+          const q = staffTrackerGlobalSearch.value.trim().toLowerCase();
+          if (q) {
+              filtered = filtered.filter(row =>
+                  Object.entries(row).some(([k, v]) => !k.startsWith('_') && v && String(v).toLowerCase().includes(q))
+              );
+          }
 
           if (!staffTrackerSortAsc.value) {
               return filtered.slice().reverse();
@@ -7226,6 +7254,7 @@ const filteredStaffTrackerData = computed(() => {
           staffTracker.value.name = sheetName;
           staffTracker.value.isLoading = true;
 
+          staffTrackerGlobalSearch.value = '';
           google.script.run.withSuccessHandler(res => {
               staffTracker.value.isLoading = false;
               if (res.success) {
@@ -7235,6 +7264,14 @@ const filteredStaffTrackerData = computed(() => {
                   // Recalcular Días (Contador) para todas las hojas (si tienen las columnas)
                   // Se ejecuta siempre, la función calculateDiasCounter valida si existen las columnas
                   staffTracker.value.data.forEach(row => calculateDiasCounter(row));
+                  // Snapshot para dirty-tracking
+                  const snap = {};
+                  res.data.forEach((row, idx) => {
+                      const c = Object.assign({}, row);
+                      delete c._isNew; delete c._isDirty; delete c._isSaving;
+                      snap[idx] = JSON.stringify(c);
+                  });
+                  staffTrackerOriginals.value = snap;
               } else {
                   if (res.message && res.message.includes("Falta hoja")) {
                       staffTracker.value.data = [];
@@ -7341,9 +7378,17 @@ const filteredStaffTrackerData = computed(() => {
               Swal.close();
               if(res.success){
                   row._isNew=false;
+                  row._isDirty = false;
                   if (res.data && (res.data.FOLIO || res.data.ID)) {
                       row.FOLIO = res.data.FOLIO || res.data.ID;
                       if (row.ID === undefined) row.ID = row.FOLIO;
+                  }
+                  // Update snapshot so row is no longer marked dirty
+                  const idx = staffTracker.value.data.indexOf(row);
+                  if (idx !== -1) {
+                      const c = Object.assign({}, row);
+                      delete c._isNew; delete c._isDirty; delete c._isSaving;
+                      staffTrackerOriginals.value[idx] = JSON.stringify(c);
                   }
                   if(res.moved){
                       reloadStaffTracker();
@@ -8350,6 +8395,34 @@ const filteredStaffTrackerData = computed(() => {
           return { backgroundColor: col, color: '#fff' };
       };
 
+      // Dirty row watcher
+      watch(() => staffTracker.value.data, (data) => {
+          if (!data) return;
+          data.forEach((row, idx) => {
+              if (row._isNew) { row._isDirty = false; return; }
+              const orig = staffTrackerOriginals.value[idx];
+              if (orig === undefined) return;
+              const c = Object.assign({}, row);
+              delete c._isNew; delete c._isDirty; delete c._isSaving;
+              row._isDirty = JSON.stringify(c) !== orig;
+          });
+      }, { deep: true });
+
+      // Kanban drag & drop
+      const onKanbanDragStart = (item) => { kanbanDragItem.value = item; };
+      const onKanbanDragEnd = () => { kanbanDragItem.value = null; kanbanDragOverCol.value = ''; };
+      const onKanbanDragOver = (colLabel) => { kanbanDragOverCol.value = colLabel; };
+      const onKanbanDragLeave = () => { kanbanDragOverCol.value = ''; };
+      const onKanbanDrop = (colLabel) => {
+          const item = kanbanDragItem.value;
+          const km = kanbanKeyMap.value;
+          kanbanDragItem.value = null;
+          kanbanDragOverCol.value = '';
+          if (!item || !km.estatus || item[km.estatus] === colLabel) return;
+          item[km.estatus] = colLabel;
+          saveRow(item, null);
+      };
+
       const openStatusSelector = (row, field) => {
           if (!isFieldEditable(field, row)) return;
 
@@ -8940,6 +9013,7 @@ const filteredStaffTrackerData = computed(() => {
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, staffTrackerSortAsc, toggleTrackerSort, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
       trackerViewMode, kanbanKeyMap, kanbanColumns, getKanbanColStyle,
+      staffTrackerGlobalSearch, kanbanDragItem, kanbanDragOverCol, onKanbanDragStart, onKanbanDragEnd, onKanbanDragOver, onKanbanDragLeave, onKanbanDrop,
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
       getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal,
       quoteMetrics, qmFilters, qmMonthNames, qmYears, loadQuoteMetrics, writeQuoteMetricsToSheet,
