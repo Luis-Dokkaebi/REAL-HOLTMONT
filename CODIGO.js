@@ -212,6 +212,7 @@ const USER_DB = {
   "JESUS_CANTU":      { pass: "ppc2025",   role: "PPC_ADMIN", label: "PPC Manager", email: "jesuscantu@empresa.com" },
   "ANTONIA_VENTAS":   { pass: "tonita2025", role: "TONITA", label: "Ventas", email: "ventas@empresa.com" },
   "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo", email: "jaimeolivo@empresa.com" },
+  "DIMAS_RAMOS":      { pass: "dimas2025", role: "ADMIN_CONTROL", label: "Dimas Ramos", email: "dimas.ramos@holtmont.com" },
   "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas", email: "Angel.Salinas@holtmont.com" },
   "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza", email: "teresa.garza@holtmont.com" },
   "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran", email: "eduardo.teran@empresa.com" },
