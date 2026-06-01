@@ -232,7 +232,6 @@ const USER_DB = {
   "DANIELA_CASTRO": { pass: "daniela8367", role: "STAFF_USER", label: "Daniela Castro", email: "", staffName: "DANIELA CASTRO", dept: "ADMINISTRACION", seller: false },
   "EDUARDO_BENITEZ": { pass: "eduardo1188", role: "STAFF_USER", label: "Eduardo Benitez", email: "", staffName: "EDUARDO BENITEZ", dept: "ADMINISTRACION", seller: false },
   "ANTONIO_CABRERA": { pass: "antonio9032", role: "STAFF_USER", label: "Antonio Cabrera", email: "", staffName: "ANTONIO CABRERA", dept: "ADMINISTRACION", seller: false },
-  "ADMINISTRADOR": { pass: "administrador6148", role: "STAFF_USER", label: "Administrador", email: "", staffName: "ADMINISTRADOR", dept: "ADMINISTRACION", seller: false },
   "SELENE_BALDONADO": { pass: "selene4444", role: "STAFF_USER", label: "Selene Baldonado", email: "", staffName: "SELENE BALDONADO", dept: "HVAC", seller: false },
   "ROLANDO_MORENO": { pass: "rolando7508", role: "STAFF_USER", label: "Rolando Moreno", email: "", staffName: "ROLANDO MORENO", dept: "HVAC", seller: false },
   "MIGUEL_GALLARDO": { pass: "miguel5120", role: "STAFF_USER", label: "Miguel Gallardo", email: "", staffName: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", seller: false },
