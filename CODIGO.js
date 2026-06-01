@@ -47,8 +47,6 @@ const INITIAL_DIRECTORY = [
     { name: "LUIS CARLOS", dept: "ADMINISTRACION", type: "ESTANDAR" },
     { name: "ANTONIO SALAZAR", dept: "ADMINISTRACION", type: "ESTANDAR" },
     { name: "ROCIO CASTRO", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "DANIA GONZALEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "JUANY RODRIGUEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
     { name: "LAURA HUERTA", dept: "ADMINISTRACION", type: "ESTANDAR" },
     { name: "LILIANA MARTINEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
     { name: "DANIELA CASTRO", dept: "ADMINISTRACION", type: "ESTANDAR" },
@@ -59,6 +57,7 @@ const INITIAL_DIRECTORY = [
     { name: "JUAN JOSE SANCHEZ", dept: "HVAC", type: "ESTANDAR" },
     { name: "SELENE BALDONADO", dept: "HVAC", type: "ESTANDAR" },
     { name: "ROLANDO MORENO", dept: "HVAC", type: "ESTANDAR" },
+    { name: "EMILIANO AREDON", dept: "HVAC", type: "ESTANDAR" },
     { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
     { name: "SEBASTIAN PADILLA", dept: "ELECTROMECANICA", type: "ESTANDAR" },
     { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
@@ -67,7 +66,7 @@ const INITIAL_DIRECTORY = [
     { name: "RICARDO MENDO", dept: "CONSTRUCCION", type: "ESTANDAR" },
     { name: "CARLOS MENDEZ", dept: "CONSTRUCCION", type: "ESTANDAR" },
     { name: "REYNALDO GARCIA", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "INGE OLIVO", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "JAIME OLIVO", dept: "CONSTRUCCION", type: "ESTANDAR" },
     { name: "EDUARDO TERAN", dept: "CONSTRUCCION", type: "HIBRIDO" },
     { name: "EDGAR HOLT", dept: "CONSTRUCCION", type: "ESTANDAR" },
     { name: "ALEXIS TORRES", dept: "CONSTRUCCION", type: "ESTANDAR" },
@@ -80,14 +79,21 @@ const INITIAL_DIRECTORY = [
     { name: "VANESSA DE LARA", dept: "COMPRAS", type: "ESTANDAR" },
     { name: "NELSON MALDONADO", dept: "COMPRAS", type: "ESTANDAR" },
     { name: "VICTOR ALMACEN", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "SONIA GARCIA", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "DANIA GONZALEZ", dept: "COMPRAS", type: "ESTANDAR" },
     { name: "DIMAS RAMOS", dept: "EHS", type: "ESTANDAR" },
     { name: "CITLALI GOMEZ", dept: "EHS", type: "ESTANDAR" },
     { name: "AIMEE RAMIREZ", dept: "EHS", type: "ESTANDAR" },
     { name: "EDGAR HOLT", dept: "MAQUINARIA", type: "ESTANDAR" },
     { name: "ALEXIS TORRES", dept: "MAQUINARIA", type: "ESTANDAR" },
+    { name: "SONIA GARCIA", dept: "MAQUINARIA", type: "ESTANDAR" },
     { name: "ANGEL SALINAS", dept: "DISEÑO", type: "HIBRIDO" },
     { name: "EDGAR HOLT", dept: "DISEÑO", type: "ESTANDAR" },
-    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "HIBRIDO" }
+    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "HIBRIDO" },
+    { name: "JUANY RODRIGUEZ", dept: "FINANZAS", type: "ESTANDAR" },
+    { name: "JUANY RODRIGUEZ", dept: "FACTURACION", type: "ESTANDAR" },
+    { name: "DANIA GONZALEZ", dept: "FACTURACION", type: "ESTANDAR" },
+    { name: "SAIRA", dept: "FACTURACION", type: "ESTANDAR" }
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
@@ -225,8 +231,8 @@ const USER_DB = {
   "LUIS_CARLOS": { pass: "admin2025", role: "ADMIN", label: "Administrador", email: "luiscarlos@empresa.com", staffName: "LUIS CARLOS", dept: "ADMINISTRACION", seller: false },
   "ANTONIO_SALAZAR": { pass: "antonio4931", role: "STAFF_USER", label: "Antonio Salazar", email: "", staffName: "ANTONIO SALAZAR", dept: "ADMINISTRACION", seller: false },
   "ROCIO_CASTRO": { pass: "rocio1041", role: "STAFF_USER", label: "Rocio Castro", email: "", staffName: "ROCIO CASTRO", dept: "ADMINISTRACION", seller: false },
-  "DANIA_GONZALEZ": { pass: "dania2322", role: "STAFF_USER", label: "Dania Gonzalez", email: "", staffName: "DANIA GONZALEZ", dept: "ADMINISTRACION", seller: false },
-  "JUANY_RODRIGUEZ": { pass: "juany2814", role: "STAFF_USER", label: "Juany Rodriguez", email: "", staffName: "JUANY RODRIGUEZ", dept: "ADMINISTRACION", seller: false },
+  "DANIA_GONZALEZ": { pass: "dania2322", role: "STAFF_USER", label: "Dania Gonzalez", email: "", staffName: "DANIA GONZALEZ", dept: "FACTURACION", seller: false },
+  "JUANY_RODRIGUEZ": { pass: "juany2814", role: "STAFF_USER", label: "Juany Rodriguez", email: "", staffName: "JUANY RODRIGUEZ", dept: "FINANZAS", seller: false },
   "LAURA_HUERTA": { pass: "laura5706", role: "STAFF_USER", label: "Laura Huerta", email: "", staffName: "LAURA HUERTA", dept: "ADMINISTRACION", seller: false },
   "LILIANA_MARTINEZ": { pass: "liliana2606", role: "STAFF_USER", label: "Liliana Martinez", email: "", staffName: "LILIANA MARTINEZ", dept: "ADMINISTRACION", seller: false },
   "DANIELA_CASTRO": { pass: "daniela8367", role: "STAFF_USER", label: "Daniela Castro", email: "", staffName: "DANIELA CASTRO", dept: "ADMINISTRACION", seller: false },
@@ -241,7 +247,7 @@ const USER_DB = {
   "RICARDO_MENDO": { pass: "ricardo9414", role: "STAFF_USER", label: "Ricardo Mendo", email: "", staffName: "RICARDO MENDO", dept: "CONSTRUCCION", seller: false },
   "CARLOS_MENDEZ": { pass: "carlos2250", role: "STAFF_USER", label: "Carlos Mendez", email: "", staffName: "CARLOS MENDEZ", dept: "CONSTRUCCION", seller: false },
   "REYNALDO_GARCIA": { pass: "reynaldo6577", role: "STAFF_USER", label: "Reynaldo Garcia", email: "", staffName: "REYNALDO GARCIA", dept: "CONSTRUCCION", seller: false },
-  "INGE_OLIVO": { pass: "inge2469", role: "STAFF_USER", label: "Inge Olivo", email: "", staffName: "INGE OLIVO", dept: "CONSTRUCCION", seller: false },
+  "INGE_OLIVO": { pass: "inge2469", role: "STAFF_USER", label: "Jaime Olivo", email: "", staffName: "JAIME OLIVO", dept: "CONSTRUCCION", seller: false },
   "EDUARDO_TERAN": { pass: "eduardo9815", role: "STAFF_USER", label: "Eduardo Teran", email: "", staffName: "EDUARDO TERAN", dept: "CONSTRUCCION", seller: true },
   "EDGAR_HOLT": { pass: "edgar5786", role: "STAFF_USER", label: "Edgar Holt", email: "", staffName: "EDGAR HOLT", dept: "CONSTRUCCION", seller: false },
   "ALEXIS_TORRES": { pass: "alexis5712", role: "STAFF_USER", label: "Alexis Torres", email: "", staffName: "ALEXIS TORRES", dept: "CONSTRUCCION", seller: false },
@@ -253,7 +259,10 @@ const USER_DB = {
   "DIMAS_RAMOS": { pass: "dimas2025", role: "ADMIN_CONTROL", label: "Dimas Ramos", email: "dimas.ramos@holtmont.com", staffName: "DIMAS RAMOS", dept: "EHS", seller: false },
   "CITLALI_GOMEZ": { pass: "citlali6956", role: "STAFF_USER", label: "Citlali Gomez", email: "", staffName: "CITLALI GOMEZ", dept: "EHS", seller: false },
   "AIMEE_RAMIREZ": { pass: "aimee8554", role: "STAFF_USER", label: "Aimee Ramirez", email: "", staffName: "AIMEE RAMIREZ", dept: "EHS", seller: false },
-  "EDGAR_LOPEZ": { pass: "edgar7917", role: "STAFF_USER", label: "Edgar Lopez", email: "", staffName: "EDGAR LOPEZ", dept: "DISEÑO", seller: true }
+  "EDGAR_LOPEZ": { pass: "edgar7917", role: "STAFF_USER", label: "Edgar Lopez", email: "", staffName: "EDGAR LOPEZ", dept: "DISEÑO", seller: true },
+  "SAIRA": { pass: "saira3725", role: "STAFF_USER", label: "Saira", email: "", staffName: "SAIRA", dept: "FACTURACION", seller: false },
+  "EMILIANO_AREDON": { pass: "emiliano4187", role: "STAFF_USER", label: "Emiliano Aredon", email: "", staffName: "EMILIANO AREDON", dept: "HVAC", seller: false },
+  "SONIA_GARCIA": { pass: "sonia2960", role: "STAFF_USER", label: "Sonia Garcia", email: "", staffName: "SONIA GARCIA", dept: "COMPRAS", seller: false }
 };
 
 /* SERVICIO HTML */
@@ -491,7 +500,9 @@ function getSystemConfig(role, username) {
       "HVAC": { label: "HVAC", icon: "fa-fan", color: "#fd7e14" },
       "ADMINISTRACION": { label: "Administración", icon: "fa-briefcase", color: "#6f42c1" },
       "VENTAS": { label: "Ventas", icon: "fa-handshake", color: "#0dcaf0" },
-      "MAQUINARIA": { label: "Maquinaria", icon: "fa-truck", color: "#20c997" }
+      "MAQUINARIA": { label: "Maquinaria", icon: "fa-truck", color: "#20c997" },
+      "FINANZAS": { label: "Finanzas", icon: "fa-coins", color: "#198754" },
+      "FACTURACION": { label: "Facturación", icon: "fa-file-invoice-dollar", color: "#0d6efd" }
   };
 
   const ppcModuleMaster = { id: "PPC_MASTER", label: "PPC Maestro", icon: "fa-tasks", color: "#fd7e14", type: "ppc_native" };
@@ -3385,6 +3396,9 @@ function generateWorkOrderFolio(clientName, deptName) {
           "COMPRAS": "Compras",
           "VENTAS": "Ventas",
           "HVAC": "HVAC",
+          "FINANZAS": "Finanzas",
+          "FACTURACION": "Factura",
+          "FACTURACIÓN": "Factura",
           "SEGURIDAD": "EHS",
           "EHS": "EHS"
       };
