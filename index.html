@@ -4079,10 +4079,47 @@
                 </div>
             </div>
         </div>
+<div v-if="currentView === 'PPC_MENU'" class="h-100 d-flex flex-column" style="background:#f8f9fa; padding:20px; overflow:auto;">
+           <div class="d-flex justify-content-between align-items-center mb-4">
+               <h5 class="m-0 text-primary"><i class="fas fa-tasks me-2" style="color:#fd7e14;"></i>PPC Maestro</h5>
+               <button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button>
+           </div>
+           <div class="row g-4 justify-content-center">
+               <!-- JUNTAS -->
+               <div class="col-12 col-lg-7">
+                   <div class="card shadow-sm border-0 h-100">
+                       <div class="card-header fw-bold text-white" style="background:#0d6efd;"><i class="fas fa-users me-2"></i>Juntas</div>
+                       <div class="card-body">
+                           <div class="text-uppercase small text-muted fw-bold mb-2">Interdisciplinaria</div>
+                           <div class="row g-2 mb-3">
+                               <div class="col-12 col-md-4"><button class="btn btn-outline-primary w-100 fw-bold py-3" @click="openPpcForm('Interdisciplinaria Proyecto')"><i class="fas fa-project-diagram d-block mb-1"></i>Proyecto</button></div>
+                               <div class="col-12 col-md-4"><button class="btn btn-outline-primary w-100 fw-bold py-3" @click="openPpcForm('Interdisciplinaria Interna')"><i class="fas fa-building d-block mb-1"></i>Interna</button></div>
+                               <div class="col-12 col-md-4"><button class="btn btn-outline-primary w-100 fw-bold py-3" @click="openPpcForm('Interdisciplinaria Cliente')"><i class="fas fa-handshake d-block mb-1"></i>Cliente</button></div>
+                           </div>
+                           <div class="text-uppercase small text-muted fw-bold mb-2">Preoperativa</div>
+                           <div class="row g-2">
+                               <div class="col-12 col-md-6"><button class="btn btn-outline-secondary w-100 py-3" @click="ppcMenuPendiente('Preoperativa General')"><i class="fas fa-clipboard-list d-block mb-1"></i>General</button></div>
+                               <div class="col-12 col-md-6"><button class="btn btn-outline-secondary w-100 py-3" @click="ppcMenuPendiente('Preoperativa por Proyecto')"><i class="fas fa-clipboard-check d-block mb-1"></i>Por Proyecto</button></div>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+               <!-- BANCO DE JUNTAS -->
+               <div class="col-12 col-lg-4">
+                   <div class="card shadow-sm border-0 h-100" style="cursor:pointer;" @click="ppcMenuPendiente('Banco de Juntas')">
+                       <div class="card-header fw-bold text-white" style="background:#6c757d;"><i class="fas fa-archive me-2"></i>Banco de Juntas</div>
+                       <div class="card-body d-flex flex-column align-items-center justify-content-center text-muted">
+                           <i class="fas fa-database fa-3x mb-3" style="color:#6c757d;"></i>
+                           <span class="small">Por definir con Olivo</span>
+                       </div>
+                   </div>
+               </div>
+           </div>
+        </div>
 <div v-if="currentView === 'PPC_FORM'" class="h-100 d-flex flex-column" style="background:white; padding:20px;">
            <div class="d-flex justify-content-between align-items-center mb-3">
-               <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'INTERDICIPLINARIA' : 'PPC Maestro') }}</h5><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
-               <div><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
+               <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'INTERDICIPLINARIA' : 'PPC Maestro') }}</h5><span v-if="ppcMenuTipo" class="badge bg-primary p-2 me-2">{{ ppcMenuTipo }}</span><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
+               <div><button class="btn btn-outline-secondary btn-sm me-2" @click="currentView='PPC_MENU'"><i class="fas fa-arrow-left me-1"></i> Menú</button><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
            </div>
            <div class="d-flex mb-3 align-items-end justify-content-end position-relative" style="min-height: 90px;">
                <div class="excel-container" style="height: auto; max-height: none; overflow: visible; flex:none; width: fit-content; z-index: 1; border:none; box-shadow:none; background: transparent;">
@@ -5911,6 +5948,7 @@ async function toggleVoiceRecording(btnElement) {
       const showPpcSelectorModal = ref(false);
       const ppcMode = ref('SELECT');
       const currentPpcProject = ref(null);
+      const ppcMenuTipo = ref('');
       const newProject = ref({ name: '', client: '', type: 'OBRA CIVIL', creationMode: 'SUB', parentId: '', createdBy: '' });
       watch(() => newProject.value.creationMode, (newVal) => {
           if (newVal === 'SITE') { newProject.value.type = 'CLIENTE'; } else { newProject.value.type = 'OBRA CIVIL'; }
@@ -6040,7 +6078,7 @@ async function toggleVoiceRecording(btnElement) {
       };
 
       const openPpcProjectSelector = () => { showPpcSelectorModal.value = true; ppcMode.value = 'SELECT'; newProject.value = { name: '', client: '', type: 'OBRA CIVIL', creationMode: 'SUB', parentId: '', createdBy: '' }; };
-      const selectPpcProject = (proj) => { currentPpcProject.value = proj; showPpcSelectorModal.value = false; if (currentView.value === 'PROJECTS') { openModule({ id: 'PPC_MASTER', type: 'ppc_native' }); } };
+      const selectPpcProject = (proj) => { currentPpcProject.value = proj; showPpcSelectorModal.value = false; if (currentView.value === 'PROJECTS') { openPpcForm(ppcMenuTipo.value); } };
       const createNewProject = () => {
           if (!newProject.value.name || !newProject.value.createdBy) return;
           isSubmitting.value = true;
@@ -6516,8 +6554,7 @@ const filteredStaffTrackerData = computed(() => {
                           cotTrabajo: []
                       };
               } else {
-                  currentView.value='PPC_FORM';
-                  google.script.run.withSuccessHandler(res => { if(res.success) ppcExistingData.value = res.data; }).apiFetchPPCData();
+                  currentView.value='PPC_MENU';
               }
           }
           else if(m.type==='ppc_dynamic_view') { currentView.value='PPC_DINAMICO'; dynamicPpc.value = { especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' }; selectedResponsables.value = []; uploadSuccess.value = false; }
@@ -6532,6 +6569,16 @@ const filteredStaffTrackerData = computed(() => {
               currentView.value = 'KPI_DASHBOARD';
               loadKPIData();
           }
+      };
+
+      const openPpcForm = (tipo) => {
+          ppcMenuTipo.value = tipo || '';
+          currentView.value = 'PPC_FORM';
+          google.script.run.withSuccessHandler(res => { if(res.success) ppcExistingData.value = res.data; }).apiFetchPPCData();
+      };
+
+      const ppcMenuPendiente = (label) => {
+          Swal.fire({ icon: 'info', title: label, text: 'Opción por definir con Olivo.', confirmButtonColor: '#fd7e14' });
       };
 
       const animateKPICards = () => {
@@ -8848,7 +8895,8 @@ const filteredStaffTrackerData = computed(() => {
       currentActivityContext, showResourceModal, currentResourceTab, openResourcePopup, addResourceToActivity, getActivityTotal, reqCotizacionTotal, cotPreconstruccionTotal, setCheckStatus, openVendorSelector, getAntoniaStatusStyle, openStatusSelector, hotPotatoData, openHotPotatoView, showProcessFlow, openProcessFlow,
       getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal,
       quoteMetrics, qmFilters, qmMonthNames, qmYears, loadQuoteMetrics, writeQuoteMetricsToSheet,
-      agentState, runAgent, showGeminiKeyModal, geminiKeyInput, geminiKeyState, saveGeminiKey };
+      agentState, runAgent, showGeminiKeyModal, geminiKeyInput, geminiKeyState, saveGeminiKey,
+      openPpcForm, ppcMenuPendiente, ppcMenuTipo };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message + ' ' + err.stack }); };
