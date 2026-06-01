@@ -4098,8 +4098,8 @@
                            </div>
                            <div class="text-uppercase small text-muted fw-bold mb-2">Preoperativa</div>
                            <div class="row g-2">
-                               <div class="col-12 col-md-6"><button class="btn btn-outline-secondary w-100 py-3" @click="ppcMenuPendiente('Preoperativa General')"><i class="fas fa-clipboard-list d-block mb-1"></i>General</button></div>
-                               <div class="col-12 col-md-6"><button class="btn btn-outline-secondary w-100 py-3" @click="ppcMenuPendiente('Preoperativa por Proyecto')"><i class="fas fa-clipboard-check d-block mb-1"></i>Por Proyecto</button></div>
+                               <div class="col-12 col-md-6"><button class="btn btn-outline-secondary w-100 py-3" @click="openPpcForm('Preoperativa General')"><i class="fas fa-clipboard-list d-block mb-1"></i>General</button></div>
+                               <div class="col-12 col-md-6"><button class="btn btn-outline-secondary w-100 py-3" @click="openPpcForm('Preoperativa por Proyecto')"><i class="fas fa-clipboard-check d-block mb-1"></i>Por Proyecto</button></div>
                            </div>
                        </div>
                    </div>
@@ -6577,10 +6577,6 @@ const filteredStaffTrackerData = computed(() => {
           google.script.run.withSuccessHandler(res => { if(res.success) ppcExistingData.value = res.data; }).apiFetchPPCData();
       };
 
-      const ppcMenuPendiente = (label) => {
-          Swal.fire({ icon: 'info', title: label, text: 'Opción por definir con Olivo.', confirmButtonColor: '#fd7e14' });
-      };
-
       const animateKPICards = () => {
           anime({
               targets: '.kpi-card-anim',
@@ -8896,7 +8892,7 @@ const filteredStaffTrackerData = computed(() => {
       getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal,
       quoteMetrics, qmFilters, qmMonthNames, qmYears, loadQuoteMetrics, writeQuoteMetricsToSheet,
       agentState, runAgent, showGeminiKeyModal, geminiKeyInput, geminiKeyState, saveGeminiKey,
-      openPpcForm, ppcMenuPendiente, ppcMenuTipo };
+      openPpcForm, ppcMenuTipo };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message + ' ' + err.stack }); };
