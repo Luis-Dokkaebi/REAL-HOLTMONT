@@ -208,20 +208,53 @@ function testIntegracionOutlook() {
 
 // USUARIOS
 const USER_DB = {
-  "LUIS_CARLOS":      { pass: "admin2025", role: "ADMIN", label: "Administrador", email: "luiscarlos@empresa.com" },
   "JESUS_CANTU":      { pass: "ppc2025",   role: "PPC_ADMIN", label: "PPC Manager", email: "jesuscantu@empresa.com" },
-  "ANTONIA_VENTAS":   { pass: "tonita2025", role: "TONITA", label: "Ventas", email: "ventas@empresa.com" },
   "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo", email: "jaimeolivo@empresa.com" },
-  "DIMAS_RAMOS":      { pass: "dimas2025", role: "ADMIN_CONTROL", label: "Dimas Ramos", email: "dimas.ramos@holtmont.com" },
-  "ANGEL_SALINAS":    { pass: "angel2025", role: "ANGEL_USER", label: "Angel Salinas", email: "Angel.Salinas@holtmont.com" },
-  "TERESA_GARZA":     { pass: "tere2025",  role: "TERESA_USER", label: "Teresa Garza", email: "teresa.garza@holtmont.com" },
-  "EDUARDO_TERAN":    { pass: "lalo2025",  role: "EDUARDO_USER", label: "Eduardo Teran", email: "eduardo.teran@empresa.com" },
-  "EDUARDO_MANZANARES":{ pass: "manzanares2025", role: "MANZANARES_USER", label: "Eduardo Manzanares", email: "eduardo.manzanares@holtmont.com" },
-  "RAMIRO_RODRIGUEZ": { pass: "ramiro2025", role: "RAMIRO_USER", label: "Ramiro Rodriguez", email: "Ramiro.rodriguez@holtmont.com" },
-  "SEBASTIAN_PADILLA":{ pass: "sebastian2025", role: "SEBASTIAN_USER", label: "Sebastian Padilla", email: "Sebastian.padilla@holtmont.com" },
-  "EDGAR_LOPEZ":      { pass: "edgar2025", role: "EDGAR_USER", label: "Edgar Lopez", email: "edgar.lopez@empresa.com" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder", email: "workorder@empresa.com" },
-  "ANTONIO_SALAZAR":  { pass: "antonio2025", role: "ANTONIO_USER", label: "Antonio Salazar", email: "Antonio.Flores@holtmont.com" }
+  "ANTONIA_VENTAS": { pass: "tonita2025", role: "TONITA", label: "Ventas", email: "ventas@empresa.com", staffName: "ANTONIA_VENTAS", dept: "VENTAS", seller: true },
+  "JUDITH_ECHAVARRIA": { pass: "judith2951", role: "STAFF_USER", label: "Judith Echavarria", email: "", staffName: "JUDITH ECHAVARRIA", dept: "VENTAS", seller: true },
+  "EDUARDO_MANZANARES": { pass: "eduardo6234", role: "STAFF_USER", label: "Eduardo Manzanares", email: "", staffName: "EDUARDO MANZANARES", dept: "VENTAS", seller: true },
+  "RAMIRO_RODRIGUEZ": { pass: "ramiro9233", role: "STAFF_USER", label: "Ramiro Rodriguez", email: "", staffName: "RAMIRO RODRIGUEZ", dept: "VENTAS", seller: true },
+  "SEBASTIAN_PADILLA": { pass: "sebastian9385", role: "STAFF_USER", label: "Sebastian Padilla", email: "", staffName: "SEBASTIAN PADILLA", dept: "VENTAS", seller: true },
+  "CESAR_GOMEZ": { pass: "cesar2681", role: "STAFF_USER", label: "Cesar Gomez", email: "", staffName: "CESAR GOMEZ", dept: "VENTAS", seller: true },
+  "ALFONSO_CORREA": { pass: "alfonso4658", role: "STAFF_USER", label: "Alfonso Correa", email: "", staffName: "ALFONSO CORREA", dept: "VENTAS", seller: true },
+  "TERESA_GARZA": { pass: "teresa7891", role: "STAFF_USER", label: "Teresa Garza", email: "", staffName: "TERESA GARZA", dept: "VENTAS", seller: true },
+  "GUILLERMO_DAMICO": { pass: "guillermo9975", role: "STAFF_USER", label: "Guillermo Damico", email: "", staffName: "GUILLERMO DAMICO", dept: "VENTAS", seller: true },
+  "ANGEL_SALINAS": { pass: "angel9042", role: "STAFF_USER", label: "Angel Salinas", email: "", staffName: "ANGEL SALINAS", dept: "VENTAS", seller: true },
+  "JUAN_JOSE_SANCHEZ": { pass: "juan8226", role: "STAFF_USER", label: "Juan Jose Sanchez", email: "", staffName: "JUAN JOSE SANCHEZ", dept: "VENTAS", seller: true },
+  "LUIS_CARLOS": { pass: "admin2025", role: "ADMIN", label: "Administrador", email: "luiscarlos@empresa.com", staffName: "LUIS CARLOS", dept: "ADMINISTRACION", seller: false },
+  "ANTONIO_SALAZAR": { pass: "antonio4931", role: "STAFF_USER", label: "Antonio Salazar", email: "", staffName: "ANTONIO SALAZAR", dept: "ADMINISTRACION", seller: false },
+  "ROCIO_CASTRO": { pass: "rocio1041", role: "STAFF_USER", label: "Rocio Castro", email: "", staffName: "ROCIO CASTRO", dept: "ADMINISTRACION", seller: false },
+  "DANIA_GONZALEZ": { pass: "dania2322", role: "STAFF_USER", label: "Dania Gonzalez", email: "", staffName: "DANIA GONZALEZ", dept: "ADMINISTRACION", seller: false },
+  "JUANY_RODRIGUEZ": { pass: "juany2814", role: "STAFF_USER", label: "Juany Rodriguez", email: "", staffName: "JUANY RODRIGUEZ", dept: "ADMINISTRACION", seller: false },
+  "LAURA_HUERTA": { pass: "laura5706", role: "STAFF_USER", label: "Laura Huerta", email: "", staffName: "LAURA HUERTA", dept: "ADMINISTRACION", seller: false },
+  "LILIANA_MARTINEZ": { pass: "liliana2606", role: "STAFF_USER", label: "Liliana Martinez", email: "", staffName: "LILIANA MARTINEZ", dept: "ADMINISTRACION", seller: false },
+  "DANIELA_CASTRO": { pass: "daniela8367", role: "STAFF_USER", label: "Daniela Castro", email: "", staffName: "DANIELA CASTRO", dept: "ADMINISTRACION", seller: false },
+  "EDUARDO_BENITEZ": { pass: "eduardo1188", role: "STAFF_USER", label: "Eduardo Benitez", email: "", staffName: "EDUARDO BENITEZ", dept: "ADMINISTRACION", seller: false },
+  "ANTONIO_CABRERA": { pass: "antonio9032", role: "STAFF_USER", label: "Antonio Cabrera", email: "", staffName: "ANTONIO CABRERA", dept: "ADMINISTRACION", seller: false },
+  "ADMINISTRADOR": { pass: "administrador6148", role: "STAFF_USER", label: "Administrador", email: "", staffName: "ADMINISTRADOR", dept: "ADMINISTRACION", seller: false },
+  "SELENE_BALDONADO": { pass: "selene4444", role: "STAFF_USER", label: "Selene Baldonado", email: "", staffName: "SELENE BALDONADO", dept: "HVAC", seller: false },
+  "ROLANDO_MORENO": { pass: "rolando7508", role: "STAFF_USER", label: "Rolando Moreno", email: "", staffName: "ROLANDO MORENO", dept: "HVAC", seller: false },
+  "MIGUEL_GALLARDO": { pass: "miguel5120", role: "STAFF_USER", label: "Miguel Gallardo", email: "", staffName: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", seller: false },
+  "JEHU_MARTINEZ": { pass: "jehu6696", role: "STAFF_USER", label: "Jehu Martinez", email: "", staffName: "JEHU MARTINEZ", dept: "ELECTROMECANICA", seller: false },
+  "MIGUEL_GONZALEZ": { pass: "miguel6843", role: "STAFF_USER", label: "Miguel Gonzalez", email: "", staffName: "MIGUEL GONZALEZ", dept: "ELECTROMECANICA", seller: false },
+  "ALICIA_RIVERA": { pass: "alicia7166", role: "STAFF_USER", label: "Alicia Rivera", email: "", staffName: "ALICIA RIVERA", dept: "ELECTROMECANICA", seller: false },
+  "RICARDO_MENDO": { pass: "ricardo9414", role: "STAFF_USER", label: "Ricardo Mendo", email: "", staffName: "RICARDO MENDO", dept: "CONSTRUCCION", seller: false },
+  "CARLOS_MENDEZ": { pass: "carlos2250", role: "STAFF_USER", label: "Carlos Mendez", email: "", staffName: "CARLOS MENDEZ", dept: "CONSTRUCCION", seller: false },
+  "REYNALDO_GARCIA": { pass: "reynaldo6577", role: "STAFF_USER", label: "Reynaldo Garcia", email: "", staffName: "REYNALDO GARCIA", dept: "CONSTRUCCION", seller: false },
+  "INGE_OLIVO": { pass: "inge2469", role: "STAFF_USER", label: "Inge Olivo", email: "", staffName: "INGE OLIVO", dept: "CONSTRUCCION", seller: false },
+  "EDUARDO_TERAN": { pass: "eduardo9815", role: "STAFF_USER", label: "Eduardo Teran", email: "", staffName: "EDUARDO TERAN", dept: "CONSTRUCCION", seller: true },
+  "EDGAR_HOLT": { pass: "edgar5786", role: "STAFF_USER", label: "Edgar Holt", email: "", staffName: "EDGAR HOLT", dept: "CONSTRUCCION", seller: false },
+  "ALEXIS_TORRES": { pass: "alexis5712", role: "STAFF_USER", label: "Alexis Torres", email: "", staffName: "ALEXIS TORRES", dept: "CONSTRUCCION", seller: false },
+  "RUBEN_PESQUEDA": { pass: "ruben8494", role: "STAFF_USER", label: "Ruben Pesqueda", email: "", staffName: "RUBEN PESQUEDA", dept: "CONSTRUCCION", seller: false },
+  "GISELA_DOMINGUEZ": { pass: "gisela3308", role: "STAFF_USER", label: "Gisela Dominguez", email: "", staffName: "GISELA DOMINGUEZ", dept: "COMPRAS", seller: false },
+  "VANESSA_DE_LARA": { pass: "vanessa6062", role: "STAFF_USER", label: "Vanessa De Lara", email: "", staffName: "VANESSA DE LARA", dept: "COMPRAS", seller: false },
+  "NELSON_MALDONADO": { pass: "nelson1405", role: "STAFF_USER", label: "Nelson Maldonado", email: "", staffName: "NELSON MALDONADO", dept: "COMPRAS", seller: false },
+  "VICTOR_ALMACEN": { pass: "victor7043", role: "STAFF_USER", label: "Victor Almacen", email: "", staffName: "VICTOR ALMACEN", dept: "COMPRAS", seller: false },
+  "DIMAS_RAMOS": { pass: "dimas2025", role: "ADMIN_CONTROL", label: "Dimas Ramos", email: "dimas.ramos@holtmont.com", staffName: "DIMAS RAMOS", dept: "EHS", seller: false },
+  "CITLALI_GOMEZ": { pass: "citlali6956", role: "STAFF_USER", label: "Citlali Gomez", email: "", staffName: "CITLALI GOMEZ", dept: "EHS", seller: false },
+  "AIMEE_RAMIREZ": { pass: "aimee8554", role: "STAFF_USER", label: "Aimee Ramirez", email: "", staffName: "AIMEE RAMIREZ", dept: "EHS", seller: false },
+  "EDGAR_LOPEZ": { pass: "edgar7917", role: "STAFF_USER", label: "Edgar Lopez", email: "", staffName: "EDGAR LOPEZ", dept: "DISEÑO", seller: true }
 };
 
 /* SERVICIO HTML */
@@ -481,103 +514,26 @@ function getSystemConfig(role, username) {
       accessProjects: false 
   };
   
-  if (role === 'ANGEL_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts, 
-      staff: [ { name: "ANGEL SALINAS", dept: "DISEÑO" } ], 
-      directory: fullDirectory, 
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "ANGEL SALINAS" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "ANGEL SALINAS (VENTAS)" }
-      ],
-      accessProjects: false 
-    };
-  }
-
-  if (role === 'TERESA_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts, 
-      staff: [ { name: "TERESA GARZA", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#e83e8c", type: "mirror_staff", target: "TERESA GARZA" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "TERESA GARZA (VENTAS)" }
-      ],
-      accessProjects: false 
-    };
-  }
-
-  if (role === 'EDUARDO_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts, 
-      staff: [ { name: "EDUARDO TERAN", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO TERAN" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO TERAN (VENTAS)" }
-      ],
-      accessProjects: false 
-    };
-  }
-
-  if (role === 'MANZANARES_USER') {
+  if (role === 'STAFF_USER') {
+    const u = USER_DB[String(username).toUpperCase().trim()] || {};
+    const staffName = u.staffName || u.label;
+    const deptColor = (allDepts[u.dept] && allDepts[u.dept].color) || "#0d6efd";
+    const modules = [
+        { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: deptColor, type: "mirror_staff", target: staffName }
+    ];
+    if (u.seller) {
+        modules.push({ id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: staffName + " (VENTAS)" });
+    }
     return {
       departments: {},
       allDepartments: allDepts,
-      staff: [ { name: "EDUARDO MANZANARES", dept: "HVAC" } ],
+      staff: [ { name: staffName, dept: u.dept } ],
       directory: fullDirectory,
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#fd7e14", type: "mirror_staff", target: "EDUARDO MANZANARES" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDUARDO MANZANARES (VENTAS)" }
-      ],
+      specialModules: modules,
       accessProjects: false
     };
   }
 
-  if (role === 'RAMIRO_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts, 
-      staff: [ { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION" } ], 
-      directory: fullDirectory, 
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#20c997", type: "mirror_staff", target: "RAMIRO RODRIGUEZ" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "RAMIRO RODRIGUEZ (VENTAS)" }
-      ],
-      accessProjects: false 
-    };
-  }
-
-  if (role === 'SEBASTIAN_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts,
-      staff: [ { name: "SEBASTIAN PADILLA", dept: "ELECTROMECANICA" } ],
-      directory: fullDirectory,
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#ffc107", type: "mirror_staff", target: "SEBASTIAN PADILLA" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "SEBASTIAN PADILLA (VENTAS)" }
-      ],
-      accessProjects: false
-    };
-  }
-
-  if (role === 'EDGAR_USER') {
-    return {
-      departments: {},
-      allDepartments: allDepts,
-      staff: [ { name: "EDGAR LOPEZ", dept: "DISEÑO" } ],
-      directory: fullDirectory,
-      specialModules: [
-          { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: "#0d6efd", type: "mirror_staff", target: "EDGAR LOPEZ" },
-          { id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: "EDGAR LOPEZ (VENTAS)" }
-      ],
-      accessProjects: false
-    };
-  }
 
   if (role === 'WORKORDER_USER') {
     const woModule = { ...ppcModuleMaster, label: "Pre Work Order" };
