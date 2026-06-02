@@ -4221,7 +4221,7 @@
                            <td><select v-model="item.prioridades" class="excel-input"><option value=""></option><option value="ALTA">ALTA</option><option value="MEDIA">MEDIA</option><option value="BAJA">BAJA</option></select></td>
                            <td><select v-model="item.riesgos" class="excel-input"><option value=""></option><option value="ALTO">ALTO</option><option value="MEDIO">MEDIO</option><option value="BAJO">BAJO</option></select></td>
                            <td><input v-model="item.restricciones" class="excel-input" placeholder="Restricciones..."></td>
-                           <td><input v-model="item.responsable" class="excel-input" placeholder="Responsable"></td>
+                           <td style="background:#f0fdf4; cursor:pointer;" @click="openInvolucradosSelector(item)"><div style="padding:0 6px; font-size:11px; font-weight:bold; min-height:22px; display:flex; align-items:center; flex-wrap:wrap; gap:2px;">{{ item.responsable || '+' }}</div></td>
                            <td class="text-center small text-muted">HOY</td>
                            <td><select v-model="item.cumplimiento" class="excel-input"><option value="NO">NO</option><option value="SI">SI</option></select></td>
                            <td class="text-center"><i class="fas fa-file-pdf text-danger" v-if="item.archivoUrl"></i></td>
@@ -8282,6 +8282,35 @@ const filteredStaffTrackerData = computed(() => {
           });
       };
 
+      const openInvolucradosSelector = (item) => {
+          const allStaff = (config.value.directory || config.value.staff || []).map(p => p.name).filter((n, i, a) => a.indexOf(n) === i);
+          const currentVals = item.responsable ? String(item.responsable).split(',').map(s => s.trim()).filter(s => s) : [];
+          let htmlContent = '<div style="text-align:left; max-height:300px; overflow-y:auto;">';
+          allStaff.forEach(staff => {
+              const checked = currentVals.includes(staff) ? 'checked' : '';
+              const id = 'inv_' + staff.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+              htmlContent += `<div class="form-check"><input class="form-check-input" type="checkbox" value="${staff}" id="${id}" ${checked}><label class="form-check-label" for="${id}">${staff}</label></div>`;
+          });
+          htmlContent += '</div>';
+          Swal.fire({
+              title: 'Asignar Involucrados',
+              html: htmlContent,
+              showCancelButton: true,
+              confirmButtonText: 'Aplicar',
+              preConfirm: () => {
+                  const selected = [];
+                  allStaff.forEach(staff => {
+                      const id = 'inv_' + staff.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+                      const el = document.getElementById(id);
+                      if (el && el.checked) selected.push(staff);
+                  });
+                  return selected.join(', ');
+              }
+          }).then((result) => {
+              if (result.isConfirmed) { item.responsable = result.value; }
+          });
+      };
+
       const ANTONIA_STATUS_OPTIONS = [
           { label: 'Pendiente', bg: '#ffffff', color: '#000000', border: '1px solid #ccc' },
           { label: 'En Revisión', bg: '#FFCDD2', color: '#B71C1C' },
@@ -8873,6 +8902,7 @@ const filteredStaffTrackerData = computed(() => {
 
       return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
+      openInvolucradosSelector,
       saveAllTrackerRows,
       showTimePopup, timePopupValue, openTimePopup, saveTimePopup,
       projectProgram, addProjectItem, removeProjectItem, updateProjectRowTotal,
