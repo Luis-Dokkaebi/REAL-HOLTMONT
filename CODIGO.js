@@ -2316,6 +2316,22 @@ function apiUpdateTask(personName, taskData, username) {
   return internalUpdateTask(personName, taskData, username);
 }
 
+function apiLogDateChange(payload, username) {
+  try {
+    const details = JSON.stringify({
+      folio: payload.folio,
+      campo: payload.campo,
+      anterior: payload.anterior,
+      nuevo: payload.nuevo,
+      hoja: payload.hoja
+    });
+    registrarLog(username || 'ANTONIA_VENTAS', 'CAMBIO_FECHA', details);
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: String(e) };
+  }
+}
+
 function apiFetchDrafts() {
   try {
     const sheet = findSheetSmart(APP_CONFIG.draftSheetName);

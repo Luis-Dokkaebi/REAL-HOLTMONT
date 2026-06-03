@@ -7626,8 +7626,10 @@ const filteredStaffTrackerData = computed(() => {
       const updateDateFromPicker = (e, row, h) => {
           const val = e.target.value;
           if (!val) { row[h] = ''; return; }
+          const oldVal = row[h] || '';
           const parts = val.split('-');
-          if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+          const newVal = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}` : val;
+          row[h] = newVal;
           if (currentUsername.value === 'ANTONIA_VENTAS') {
               row._dateEdited = true;
               const lsKey = 'dateEdited_' + (staffTracker.value.name || 'ANTONIA_VENTAS');
@@ -7636,6 +7638,13 @@ const filteredStaffTrackerData = computed(() => {
                   const edited = JSON.parse(localStorage.getItem(lsKey) || '[]');
                   if (!edited.includes(folio)) { edited.push(folio); localStorage.setItem(lsKey, JSON.stringify(edited)); }
               }
+              google.script.run.apiLogDateChange({
+                  folio: folio || '(sin folio)',
+                  campo: String(h),
+                  anterior: oldVal,
+                  nuevo: newVal,
+                  hoja: staffTracker.value.name || 'ANTONIA_VENTAS'
+              }, currentUsername.value);
           }
           calculateDiasCounter(row);
       };
