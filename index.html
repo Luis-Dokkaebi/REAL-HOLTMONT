@@ -481,6 +481,7 @@
     .task-meta { font-size: 11px; color: #888; display: flex; gap: 8px; align-items: center; }
 
     /* ANTONIA CUSTOM STYLES */
+    .date-edited-row td { box-shadow: inset 0 0 0 2px #0d6efd; }
     .antonia-font td {
         font-family: 'Arial', sans-serif !important;
         font-size: 11px !important;
@@ -2487,7 +2488,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
+                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS', 'date-edited-row': row._dateEdited}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in visibleTrackerHeaders" :key="idx">
                          <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
@@ -7619,6 +7620,7 @@ const filteredStaffTrackerData = computed(() => {
           if (!val) { row[h] = ''; return; }
           const parts = val.split('-');
           if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+          if (currentUsername.value === 'ANTONIA_VENTAS') row._dateEdited = true;
           calculateDiasCounter(row);
       };
 
