@@ -481,6 +481,7 @@
     .task-meta { font-size: 11px; color: #888; display: flex; gap: 8px; align-items: center; }
 
     /* ANTONIA CUSTOM STYLES */
+    .date-edited-row td { box-shadow: inset 0 0 0 2px #0d6efd; }
     .antonia-font td {
         font-family: 'Arial', sans-serif !important;
         font-size: 11px !important;
@@ -673,9 +674,9 @@
       <h3 class="fw-bold mb-4">BIENVENIDO</h3>
       <p class="text-muted mb-4">Acceso Seguro</p>
       <div class="mb-3">
-          <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario">
+          <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false">
           <div class="input-group">
-              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin">
+              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin" autocomplete="current-password" autocorrect="off" autocapitalize="off" spellcheck="false">
               <button class="btn btn-outline-secondary" type="button" @click="showPassword = !showPassword" title="Mostrar/Ocultar">
                   <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
               </button>
@@ -2487,7 +2488,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS'}">
+                   <tr v-for="(row, i) in filteredStaffTrackerData" :key="i" :class="{'new-row-highlight': row._isNew, 'antonia-font': currentUsername === 'ANTONIA_VENTAS', 'date-edited-row': row._dateEdited}">
                       <td class="row-num">{{i+1}}</td>
                       <td v-for="(h, idx) in visibleTrackerHeaders" :key="idx">
                          <div v-if="isCol(h, ['AREA','ALTA','ESPECIALIDAD'])" style="position:relative; width:100%; height:100%;">
@@ -6403,7 +6404,7 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const handleErr = (e) => { loggingIn.value=false; isSubmitting.value=false; Swal.fire('Error',e.message,'error'); };
-      const doLogin = () => { if(!loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role, res.username); loadCascadeTree(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiLogin(loginUser.value, loginPass.value); };
+      const doLogin = () => { if(loggingIn.value || !loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role, res.username); loadCascadeTree(); } else { if(!isLoggedIn.value) Swal.fire('Error',res.message,'error'); } }).withFailureHandler(err => { loggingIn.value=false; handleErr(err); }).apiLogin(loginUser.value, loginPass.value); };
       const loadConfig = (r, u) => { google.script.run.withSuccessHandler(d => { config.value=d; loadDashboardCalendar(); if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r, u); };
       const toggleSidebar = () => { isCompact.value = !isCompact.value; };
       const animateCyberpunkLogo = () => {
@@ -7196,6 +7197,14 @@ const filteredStaffTrackerData = computed(() => {
                   // Recalcular Días (Contador) para todas las hojas (si tienen las columnas)
                   // Se ejecuta siempre, la función calculateDiasCounter valida si existen las columnas
                   staffTracker.value.data.forEach(row => calculateDiasCounter(row));
+                  const lsKey = 'dateEdited_' + sheetName;
+                  const editedFolios = JSON.parse(localStorage.getItem(lsKey) || '[]');
+                  if (editedFolios.length) {
+                      staffTracker.value.data.forEach(row => {
+                          const folio = String(row.FOLIO || row.ID || '');
+                          if (folio && editedFolios.includes(folio)) row._dateEdited = true;
+                      });
+                  }
               } else {
                   if (res.message && res.message.includes("Falta hoja")) {
                       staffTracker.value.data = [];
@@ -7617,8 +7626,26 @@ const filteredStaffTrackerData = computed(() => {
       const updateDateFromPicker = (e, row, h) => {
           const val = e.target.value;
           if (!val) { row[h] = ''; return; }
+          const oldVal = row[h] || '';
           const parts = val.split('-');
-          if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+          const newVal = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}` : val;
+          row[h] = newVal;
+          if (currentUsername.value === 'ANTONIA_VENTAS') {
+              row._dateEdited = true;
+              const lsKey = 'dateEdited_' + (staffTracker.value.name || 'ANTONIA_VENTAS');
+              const folio = String(row.FOLIO || row.ID || '');
+              if (folio) {
+                  const edited = JSON.parse(localStorage.getItem(lsKey) || '[]');
+                  if (!edited.includes(folio)) { edited.push(folio); localStorage.setItem(lsKey, JSON.stringify(edited)); }
+              }
+              google.script.run.apiLogDateChange({
+                  folio: folio || '(sin folio)',
+                  campo: String(h),
+                  anterior: oldVal,
+                  nuevo: newVal,
+                  hoja: staffTracker.value.name || 'ANTONIA_VENTAS'
+              }, currentUsername.value);
+          }
           calculateDiasCounter(row);
       };
 

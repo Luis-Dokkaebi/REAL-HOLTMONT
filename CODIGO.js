@@ -321,8 +321,9 @@ function registrarLog(user, action, details) {
 /* LOGIN */
 function apiLogin(username, password) {
   const userKey = String(username).trim().toUpperCase();
+  const passTrimmed = String(password).trim();
   const user = USER_DB[userKey];
-  if (user && user.pass === password) {
+  if (user && user.pass === passTrimmed) {
     registrarLog(userKey, "LOGIN", `Acceso exitoso (${user.role})`);
     return { success: true, role: user.role, name: user.label, username: userKey };
   }
@@ -2314,6 +2315,22 @@ function internalUpdateTask(personName, taskData, username) {
 
 function apiUpdateTask(personName, taskData, username) {
   return internalUpdateTask(personName, taskData, username);
+}
+
+function apiLogDateChange(payload, username) {
+  try {
+    const details = JSON.stringify({
+      folio: payload.folio,
+      campo: payload.campo,
+      anterior: payload.anterior,
+      nuevo: payload.nuevo,
+      hoja: payload.hoja
+    });
+    registrarLog(username || 'ANTONIA_VENTAS', 'CAMBIO_FECHA', details);
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: String(e) };
+  }
 }
 
 function apiFetchDrafts() {
