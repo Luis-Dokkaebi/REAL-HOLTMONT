@@ -6404,7 +6404,7 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const handleErr = (e) => { loggingIn.value=false; isSubmitting.value=false; Swal.fire('Error',e.message,'error'); };
-      const doLogin = () => { if(!loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role, res.username); loadCascadeTree(); } else Swal.fire('Error',res.message,'error'); }).withFailureHandler(handleErr).apiLogin(loginUser.value, loginPass.value); };
+      const doLogin = () => { if(loggingIn.value || !loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role, res.username); loadCascadeTree(); } else { if(!isLoggedIn.value) Swal.fire('Error',res.message,'error'); } }).withFailureHandler(err => { loggingIn.value=false; handleErr(err); }).apiLogin(loginUser.value, loginPass.value); };
       const loadConfig = (r, u) => { google.script.run.withSuccessHandler(d => { config.value=d; loadDashboardCalendar(); if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r, u); };
       const toggleSidebar = () => { isCompact.value = !isCompact.value; };
       const animateCyberpunkLogo = () => {
