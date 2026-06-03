@@ -674,9 +674,9 @@
       <h3 class="fw-bold mb-4">BIENVENIDO</h3>
       <p class="text-muted mb-4">Acceso Seguro</p>
       <div class="mb-3">
-          <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario">
+          <input type="text" v-model="loginUser" class="form-control text-center mb-2" placeholder="Usuario" autocomplete="username" autocorrect="off" autocapitalize="off" spellcheck="false">
           <div class="input-group">
-              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin">
+              <input :type="showPassword ? 'text' : 'password'" v-model="loginPass" class="form-control text-center" placeholder="Contraseña..." @keyup.enter="doLogin" autocomplete="current-password" autocorrect="off" autocapitalize="off" spellcheck="false">
               <button class="btn btn-outline-secondary" type="button" @click="showPassword = !showPassword" title="Mostrar/Ocultar">
                   <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
               </button>

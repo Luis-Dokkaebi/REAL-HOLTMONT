@@ -321,8 +321,9 @@ function registrarLog(user, action, details) {
 /* LOGIN */
 function apiLogin(username, password) {
   const userKey = String(username).trim().toUpperCase();
+  const passTrimmed = String(password).trim();
   const user = USER_DB[userKey];
-  if (user && user.pass === password) {
+  if (user && user.pass === passTrimmed) {
     registrarLog(userKey, "LOGIN", `Acceso exitoso (${user.role})`);
     return { success: true, role: user.role, name: user.label, username: userKey };
   }
