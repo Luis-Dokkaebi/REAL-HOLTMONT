@@ -7197,6 +7197,14 @@ const filteredStaffTrackerData = computed(() => {
                   // Recalcular Días (Contador) para todas las hojas (si tienen las columnas)
                   // Se ejecuta siempre, la función calculateDiasCounter valida si existen las columnas
                   staffTracker.value.data.forEach(row => calculateDiasCounter(row));
+                  const lsKey = 'dateEdited_' + sheetName;
+                  const editedFolios = JSON.parse(localStorage.getItem(lsKey) || '[]');
+                  if (editedFolios.length) {
+                      staffTracker.value.data.forEach(row => {
+                          const folio = String(row.FOLIO || row.ID || '');
+                          if (folio && editedFolios.includes(folio)) row._dateEdited = true;
+                      });
+                  }
               } else {
                   if (res.message && res.message.includes("Falta hoja")) {
                       staffTracker.value.data = [];
@@ -7620,7 +7628,15 @@ const filteredStaffTrackerData = computed(() => {
           if (!val) { row[h] = ''; return; }
           const parts = val.split('-');
           if (parts.length === 3) row[h] = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
-          if (currentUsername.value === 'ANTONIA_VENTAS') row._dateEdited = true;
+          if (currentUsername.value === 'ANTONIA_VENTAS') {
+              row._dateEdited = true;
+              const lsKey = 'dateEdited_' + (staffTracker.value.name || 'ANTONIA_VENTAS');
+              const folio = String(row.FOLIO || row.ID || '');
+              if (folio) {
+                  const edited = JSON.parse(localStorage.getItem(lsKey) || '[]');
+                  if (!edited.includes(folio)) { edited.push(folio); localStorage.setItem(lsKey, JSON.stringify(edited)); }
+              }
+          }
           calculateDiasCounter(row);
       };
 
