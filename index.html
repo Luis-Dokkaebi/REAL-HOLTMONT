@@ -663,6 +663,65 @@
         font-weight: bold;
         font-size: 11px;
     }
+
+    /* CERTIFICADO HOLTZAR */
+    .cert-video-wrapper {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+        border-radius: 0 0 10px 10px;
+        background: #000;
+    }
+    .cert-video-wrapper iframe {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        border: none;
+    }
+    .cert-activity-row {
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 10px;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+        transition: all 0.3s;
+    }
+    .cert-activity-row.done {
+        border-color: #28a745;
+        background: linear-gradient(135deg, #f0fff4, #e8f8ee);
+    }
+    .cert-modal-backdrop {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    .cert-certificate {
+        background: #fdf8ee;
+        border: 2px solid #d4af37;
+        border-radius: 16px;
+        padding: 40px 35px;
+        max-width: 620px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 8px rgba(212,175,55,0.15);
+        position: relative;
+        font-family: Georgia, serif;
+    }
+    .cert-certificate::before {
+        content: '';
+        position: absolute;
+        top: 10px; left: 10px; right: 10px; bottom: 10px;
+        border: 1px solid rgba(212,175,55,0.4);
+        border-radius: 10px;
+        pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -775,6 +834,13 @@
         <div class="nav-item" v-if="['ADMIN', 'TONITA'].includes(currentRole)" :class="{ active: currentView === 'QUOTE_METRICS' }" @click="currentView = 'QUOTE_METRICS'; currentDept = ''; currentModuleId = ''; loadQuoteMetrics();" style="border-left: 3px solid #00d2ff; background: rgba(0, 210, 255, 0.05);">
             <div class="nav-icon-col"><i class="fas fa-chart-bar" style="color: #00d2ff;"></i></div>
             <span class="nav-text fw-bold" style="color: #00d2ff;">MÉTRICAS COT.</span>
+        </div>
+
+        <!-- CERTIFICADO HOLTZAR -->
+        <div class="section-title" style="color: #d4af37; border-color: rgba(212,175,55,0.3);">CERTIFICACIÓN</div>
+        <div class="nav-item" :class="{ active: currentView === 'CERTIFICADO_HOLTZAR' }" @click="currentView = 'CERTIFICADO_HOLTZAR'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #d4af37; background: rgba(212, 175, 55, 0.08);">
+            <div class="nav-icon-col"><i class="fas fa-certificate" style="color: #d4af37;"></i></div>
+            <span class="nav-text fw-bold" style="color: #d4af37;">CERTIFICADO HOLTZAR</span>
         </div>
 
         <div class="mt-auto">
@@ -4664,6 +4730,238 @@
               </div>
           </div>
       </div>
+
+      <!-- VISTA CERTIFICADO HOLTZAR -->
+      <div v-if="currentView === 'CERTIFICADO_HOLTZAR'" class="animate__animated animate__fadeIn" style="min-height: 100%; background: linear-gradient(160deg, #f8f9fa 0%, #fffdf0 100%); overflow-y: auto;">
+
+        <!-- Hero Header -->
+        <div style="background: linear-gradient(135deg, #0f0f1f 0%, #1a1a3e 100%); padding: 35px 30px; text-align: center; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -30px; right: -30px; width: 160px; height: 160px; border-radius: 50%; background: rgba(212,175,55,0.08);"></div>
+          <div style="position: absolute; bottom: -20px; left: -20px; width: 100px; height: 100px; border-radius: 50%; background: rgba(212,175,55,0.06);"></div>
+          <i class="fas fa-certificate" style="font-size: 52px; color: #d4af37; margin-bottom: 12px; display: block; filter: drop-shadow(0 0 12px rgba(212,175,55,0.5));"></i>
+          <h2 style="color: #d4af37; font-family: Georgia, serif; font-weight: bold; margin: 0 0 6px; font-size: 1.7rem; letter-spacing: 1px;">CERTIFICADO HOLTZAR AI</h2>
+          <p style="color: #bbb; margin: 0; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;">Primera Generación Certificada</p>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="d-flex border-bottom" style="background: white; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+          <div class="py-3 px-4 fw-bold text-center flex-fill" style="cursor: pointer; transition: 0.2s;"
+               :style="{ color: certStep===1 ? '#d4af37' : '#999', borderBottom: certStep===1 ? '3px solid #d4af37' : '3px solid transparent', background: certStep===1 ? '#fffdf4' : 'white' }"
+               @click="certStep = 1">
+            <i class="fas fa-play-circle me-2"></i>Videos de Entrenamiento
+          </div>
+          <div class="py-3 px-4 fw-bold text-center flex-fill" style="cursor: pointer; transition: 0.2s;"
+               :style="{ color: certStep===2 ? '#d4af37' : '#999', borderBottom: certStep===2 ? '3px solid #d4af37' : '3px solid transparent', background: certStep===2 ? '#fffdf4' : 'white' }"
+               @click="certStep = 2">
+            <i class="fas fa-tasks me-2"></i>Práctica de Actividades
+          </div>
+        </div>
+
+        <!-- STEP 1: VIDEOS -->
+        <div v-if="certStep === 1" class="p-4">
+          <div class="alert border-0 mb-4 py-3" style="background: linear-gradient(135deg, #1a1a3e, #0f0f1f); color: white; border-radius: 12px;">
+            <div class="d-flex align-items-center gap-3">
+              <i class="fas fa-graduation-cap" style="font-size: 26px; color: #d4af37; flex-shrink: 0;"></i>
+              <div>
+                <div class="fw-bold mb-1" style="color: #d4af37; font-size: 0.95rem;">MATERIAL DE ENTRENAMIENTO</div>
+                <div class="small" style="color: #ccc;">Mira los siguientes videos para familiarizarte con el sistema Holtzar AI antes de proceder a la práctica.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row g-4">
+            <!-- Video 1 -->
+            <div class="col-lg-6">
+              <div class="card shadow border-0 h-100" style="border-radius: 12px; overflow: hidden;">
+                <div class="d-flex align-items-center gap-3 px-4 py-3" style="background: linear-gradient(135deg, #0f0f1f, #1a1a3e);">
+                  <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(212,175,55,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span style="color: #d4af37; font-weight: bold; font-size: 15px;">1</span>
+                  </div>
+                  <div>
+                    <div style="color: white; font-weight: bold; font-size: 14px;">Introducción a Holtzar AI</div>
+                    <div style="color: #aaa; font-size: 12px;">Conoce la plataforma y sus módulos principales</div>
+                  </div>
+                </div>
+                <div class="cert-video-wrapper">
+                  <iframe src="https://drive.google.com/file/d/19gMY9rCHgARSTUGoYzfrhJH_Bn-6s-aJ/preview"
+                          title="Introducción a Holtzar AI"
+                          allow="autoplay; encrypted-media"
+                          allowfullscreen></iframe>
+                </div>
+              </div>
+            </div>
+
+            <!-- Video 2 -->
+            <div class="col-lg-6">
+              <div class="card shadow border-0 h-100" style="border-radius: 12px; overflow: hidden;">
+                <div class="d-flex align-items-center gap-3 px-4 py-3" style="background: linear-gradient(135deg, #0f0f1f, #1a1a3e);">
+                  <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(212,175,55,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span style="color: #d4af37; font-weight: bold; font-size: 15px;">2</span>
+                  </div>
+                  <div>
+                    <div style="color: white; font-weight: bold; font-size: 14px;">Gestión de Actividades</div>
+                    <div style="color: #aaa; font-size: 12px;">Aprende a agregar y completar actividades en el sistema</div>
+                  </div>
+                </div>
+                <div class="cert-video-wrapper">
+                  <iframe src="https://drive.google.com/file/d/1CtFggKlYLboRkE2--O5K_A419coey4zm/preview"
+                          title="Gestión de Actividades en Holtzar AI"
+                          allow="autoplay; encrypted-media"
+                          allowfullscreen></iframe>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Go to practice -->
+          <div class="text-center mt-5">
+            <button class="btn btn-lg px-5 py-3 fw-bold shadow" style="background: linear-gradient(135deg, #d4af37, #f0c040); color: white; border: none; border-radius: 30px; font-size: 1rem; letter-spacing: 0.5px;" @click="certStep = 2">
+              <i class="fas fa-arrow-right me-2"></i>Ir a la Práctica
+            </button>
+            <p class="text-muted small mt-3">¿Ya viste los videos? Demuestra que sabes usar el sistema.</p>
+          </div>
+        </div>
+
+        <!-- STEP 2: PRACTICE -->
+        <div v-if="certStep === 2" class="p-4">
+
+          <!-- Instruction banner -->
+          <div class="alert border-0 mb-4" style="background: linear-gradient(135deg, #0f0f1f, #1a1a3e); border-radius: 12px; border-left: 4px solid #d4af37 !important;">
+            <div class="d-flex align-items-start gap-3">
+              <i class="fas fa-info-circle mt-1" style="font-size: 22px; color: #d4af37; flex-shrink: 0;"></i>
+              <div>
+                <div class="fw-bold mb-1" style="color: #d4af37;">INSTRUCCIÓN DE PRÁCTICA</div>
+                <div class="small" style="color: #ddd; line-height: 1.6;">
+                  Aquí puedes practicar el flujo de trabajo de Holtzar AI sin afectar datos reales.
+                  <strong style="color: #f0c040;">Agrega una actividad</strong> usando el formulario de abajo y después
+                  <strong style="color: #f0c040;">complétala al 100%</strong>. Cuando lo hagas, recibirás tu certificado de reconocimiento.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add activity form -->
+          <div class="card shadow-sm border-0 mb-4" style="border-radius: 14px; border-top: 3px solid #d4af37 !important;">
+            <div class="card-body p-4">
+              <h6 class="fw-bold mb-3" style="color: #333;"><i class="fas fa-plus-circle me-2" style="color: #d4af37;"></i>Agregar Nueva Actividad (Práctica)</h6>
+              <div class="row g-3 align-items-end">
+                <div class="col-md-7">
+                  <label class="form-label small fw-bold text-muted">Concepto / Nombre de Actividad <span class="text-danger">*</span></label>
+                  <input v-model="certNewActivity.concepto" @keyup.enter="addCertActivity" class="form-control" placeholder="Ej: Revisión de presupuesto Q3, Actualizar agenda..." maxlength="120" style="border-radius: 8px;">
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label small fw-bold text-muted">Descripción (opcional)</label>
+                  <input v-model="certNewActivity.descripcion" class="form-control" placeholder="Nota breve..." style="border-radius: 8px;">
+                </div>
+                <div class="col-md-2">
+                  <button class="btn w-100 fw-bold py-2" style="background: linear-gradient(135deg, #d4af37, #f0c040); color: white; border: none; border-radius: 8px;" @click="addCertActivity">
+                    <i class="fas fa-plus me-1"></i>Agregar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Activity list -->
+          <div v-if="certActivities.length > 0">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-bold m-0" style="color: #333;">
+                <i class="fas fa-list-check me-2 text-primary"></i>
+                Actividades en Práctica
+                <span class="badge ms-2" style="background: #d4af37; color: white; font-size: 12px;">{{ certActivities.length }}</span>
+              </h6>
+              <button class="btn btn-outline-secondary btn-sm" @click="resetCertPractice" style="border-radius: 20px;">
+                <i class="fas fa-redo me-1"></i>Reiniciar
+              </button>
+            </div>
+
+            <div v-for="act in certActivities" :key="act.id" class="cert-activity-row" :class="{ done: act.completada }">
+              <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                <div class="flex-grow-1" style="min-width: 0;">
+                  <div class="fw-bold" :style="{ color: act.completada ? '#198754' : '#212529' }">
+                    <i class="fas fa-check-circle me-2 text-success" v-if="act.completada"></i>
+                    <i class="fas fa-clock me-2 text-secondary" v-else></i>
+                    {{ act.concepto }}
+                  </div>
+                  <div v-if="act.descripcion" class="small text-muted mt-1 ms-4">{{ act.descripcion }}</div>
+                  <div class="d-flex align-items-center gap-2 mt-2">
+                    <div class="flex-grow-1" style="height: 7px; background: #e9ecef; border-radius: 10px; overflow: hidden;">
+                      <div :style="{ width: act.progreso + '%', height: '100%', borderRadius: '10px', transition: 'width 0.6s ease', background: act.completada ? 'linear-gradient(90deg, #198754, #20c997)' : '#adb5bd' }"></div>
+                    </div>
+                    <span class="fw-bold small" :style="{ color: act.completada ? '#198754' : '#6c757d', minWidth: '36px' }">{{ act.progreso }}%</span>
+                  </div>
+                </div>
+                <div class="flex-shrink-0">
+                  <button v-if="!act.completada"
+                          class="btn btn-sm fw-bold px-3 py-2"
+                          style="background: linear-gradient(135deg, #d4af37, #f0c040); color: white; border: none; border-radius: 20px; white-space: nowrap;"
+                          @click="completeCertActivity(act)">
+                    <i class="fas fa-check me-1"></i>Completar al 100%
+                  </button>
+                  <span v-else class="badge py-2 px-3" style="background: linear-gradient(135deg, #198754, #20c997); font-size: 12px;">
+                    <i class="fas fa-trophy me-1"></i>COMPLETADA
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div v-else class="text-center py-5">
+            <i class="fas fa-clipboard-list" style="font-size: 56px; color: #dee2e6;"></i>
+            <p class="text-muted mt-3 mb-1 fw-bold">Ninguna actividad agregada aún</p>
+            <p class="text-muted small">Usa el formulario de arriba para agregar tu primera actividad de práctica.</p>
+          </div>
+
+          <!-- Back to videos link -->
+          <div class="text-center mt-4 pt-2 border-top">
+            <button class="btn btn-link text-muted small" @click="certStep = 1">
+              <i class="fas fa-arrow-left me-1"></i>Volver a los Videos
+            </button>
+          </div>
+        </div>
+
+        <!-- Certificate Modal -->
+        <div v-if="showCertModal" class="cert-modal-backdrop" @click.self="closeCertModal">
+          <div class="cert-certificate animate__animated animate__zoomIn">
+            <button @click="closeCertModal" style="position: absolute; top: 18px; right: 18px; background: none; border: none; font-size: 18px; color: #999; cursor: pointer; z-index: 1;"><i class="fas fa-times"></i></button>
+
+            <!-- Icon -->
+            <div style="margin-bottom: 15px;">
+              <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #d4af37, #f0c040); display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 6px 20px rgba(212,175,55,0.4);">
+                <i class="fas fa-brain" style="font-size: 36px; color: white;"></i>
+              </div>
+            </div>
+
+            <h2 style="color: #1a3a8a; font-family: Georgia, serif; font-weight: bold; margin: 0 0 4px; font-size: 1.65rem;">Certificado de Reconocimiento</h2>
+            <p style="color: #d4af37; font-weight: bold; font-size: 0.95rem; margin: 0 0 20px; font-family: Georgia, serif;">Primera Generación Certificada Holtzar AI</p>
+
+            <div style="border-top: 1px solid rgba(212,175,55,0.3); border-bottom: 1px solid rgba(212,175,55,0.3); padding: 16px 0; margin-bottom: 18px;">
+              <p style="color: #666; margin: 0 0 8px; font-size: 0.88rem;">Se otorga el presente certificado a:</p>
+              <h3 style="color: #1a1a1a; font-weight: bold; font-size: 1.5rem; margin: 0; font-family: Georgia, serif;">{{ currentUser }}</h3>
+              <p style="color: #666; margin: 8px 0 0; font-size: 0.82rem; font-style: italic;">Por su destacada participación y conclusión exitosa en la plataforma Holtzar AI</p>
+            </div>
+
+            <p style="color: #555; font-size: 0.82rem; line-height: 1.75; max-width: 460px; margin: 0 auto 14px; text-align: justify;">
+              Este reconocimiento valida su posición como pionero en la adopción de Holtzar AI, una plataforma diseñada para transformar la industria de la construcción mediante inteligencia artificial, automatización y sistemas de gestión empresarial. Usted forma parte de la primera generación de profesionales que domina tecnologías que redefinirán la eficiencia operativa y la toma de decisiones estratégicas.
+            </p>
+
+            <p style="color: #555; font-size: 0.82rem; line-height: 1.75; max-width: 460px; margin: 0 auto 22px; text-align: justify;">
+              La integración de la experiencia humana con la inteligencia artificial de Holtzar AI permite construir más rápido, con mayor calidad y con márgenes de rentabilidad optimizados. Su habilidad para potenciar la IA en el análisis de proyectos, la generación de presupuestos precisos, la identificación proactiva de riesgos y la automatización de procesos, le confiere una ventaja competitiva invaluable en la industria.
+            </p>
+
+            <div style="margin-bottom: 20px;">
+              <p style="color: #333; font-weight: bold; margin: 0; font-family: Georgia, serif; font-size: 0.95rem;">Atentamente,</p>
+              <p style="color: #d4af37; font-weight: bold; font-size: 1.15rem; margin: 4px 0 0; font-family: Georgia, serif;">Holtzar AI</p>
+            </div>
+
+            <button class="btn fw-bold px-5 py-2" style="background: linear-gradient(135deg, #d4af37, #f0c040); color: white; border: none; border-radius: 25px; font-size: 0.9rem;" @click="closeCertModal">
+              <i class="fas fa-check me-2"></i>Cerrar
+            </button>
+          </div>
+        </div>
+
+      </div>
     </main>
   </div>
 
@@ -5343,6 +5641,53 @@ async function toggleVoiceRecording(btnElement) {
           else if (infoBankState.value.view === 'FILES') { infoBankState.value.view = 'FOLDERS'; infoBankState.value.selectedFolder = ''; infoBankState.value.files = []; }
       };
       const resetInfoBank = () => { infoBankState.value = { view: 'YEARS', selectedYear: '', selectedMonth: '', selectedCompany: '', selectedFolder: '', files: [], isLoading: false }; };
+
+      // CERTIFICADO HOLTZAR - MÓDULO MOCK (sin persistencia)
+      const certActivities = ref([]);
+      const certNewActivity = ref({ concepto: '', descripcion: '' });
+      const showCertModal = ref(false);
+      const certStep = ref(1);
+
+      const addCertActivity = () => {
+          if (!certNewActivity.value.concepto.trim()) {
+              Swal.fire({ icon: 'warning', title: 'Campo requerido', text: 'Escribe el nombre de la actividad antes de agregar.', timer: 2000, showConfirmButton: false });
+              return;
+          }
+          certActivities.value.push({
+              id: Date.now(),
+              concepto: certNewActivity.value.concepto.trim(),
+              descripcion: certNewActivity.value.descripcion.trim(),
+              progreso: 0,
+              completada: false
+          });
+          certNewActivity.value = { concepto: '', descripcion: '' };
+      };
+
+      const completeCertActivity = (act) => {
+          act.progreso = 100;
+          act.completada = true;
+          setTimeout(() => { showCertModal.value = true; }, 500);
+      };
+
+      const closeCertModal = () => { showCertModal.value = false; };
+
+      const resetCertPractice = () => {
+          Swal.fire({
+              title: '¿Reiniciar práctica?',
+              text: 'Se eliminarán todas las actividades de práctica.',
+              icon: 'question',
+              showCancelButton: true,
+              confirmButtonText: 'Sí, reiniciar',
+              cancelButtonText: 'Cancelar',
+              confirmButtonColor: '#d4af37'
+          }).then(r => {
+              if (r.isConfirmed) {
+                  certActivities.value = [];
+                  certNewActivity.value = { concepto: '', descripcion: '' };
+                  showCertModal.value = false;
+              }
+          });
+      };
 
       // REFS FOR TABLES (Pulse Effect)
       const trackerTable = ref(null);
@@ -8952,7 +9297,9 @@ const filteredStaffTrackerData = computed(() => {
       getProcessTimeline, getProcessTimelineDetailed, getProcessStatus, getProcessBtnClass, advanceProcess, getLastUpdate, getFullProcessName, showHotPotatoModal, currentHotPotatoRow, openHotPotatoModal, closeHotPotatoModal,
       quoteMetrics, qmFilters, qmMonthNames, qmYears, loadQuoteMetrics, writeQuoteMetricsToSheet,
       agentState, runAgent, showGeminiKeyModal, geminiKeyInput, geminiKeyState, saveGeminiKey,
-      openPpcForm, ppcMenuTipo };
+      openPpcForm, ppcMenuTipo,
+      certActivities, certNewActivity, showCertModal, certStep,
+      addCertActivity, completeCertActivity, closeCertModal, resetCertPractice };
     }
   });
   app.config.errorHandler = (err) => { console.error(err); Swal.fire({ icon: 'error', title: 'Error de Renderizado', text: 'Ocurrió un error visual: ' + err.message + ' ' + err.stack }); };
