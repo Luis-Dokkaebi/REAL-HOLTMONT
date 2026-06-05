@@ -530,7 +530,8 @@ function getSystemConfig(role, username) {
     const staffName = u.staffName || u.label;
     const deptColor = (allDepts[u.dept] && allDepts[u.dept].color) || "#0d6efd";
     const modules = [
-        { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: deptColor, type: "mirror_staff", target: staffName }
+        { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: deptColor, type: "mirror_staff", target: staffName },
+        { id: "PPC_MASTER", label: "Agregar Actividad", icon: "fa-tasks", color: "#fd7e14", type: "ppc_native" }
     ];
     if (u.seller) {
         modules.push({ id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: staffName + " (VENTAS)" });
@@ -2031,24 +2032,28 @@ function internalUpdateTask(personName, taskData, username) {
 
         const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
 
-        // --- NEW RESTRICTION BLOCK (ANGEL, TERESA, EDUARDO, MANZANARES, RAMIRO, SEBASTIAN, EDGAR) ---
+        // --- RESTRICTION BLOCK: limit editable fields for vendor users on sheets they don't own ---
         const restrictedUsers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "EDGAR_LOPEZ"];
-        if (restrictedUsers.includes(String(username).toUpperCase().trim())) {
-             const allowed = ['ESTATUS', 'STATUS', 'MAP COT', 'PROCESO', 'FOLIO', 'ID', 'AVANCE', 'AVANCE %', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', 'COMENTARIOS', '_rowIndex', 'CORREO', 'CARPETA', 'CORREOS', 'CARPETAS'];
-             // Helper to check if key matches allowed
-             const isAllowed = (k) => {
-                 const kUp = k.toUpperCase();
-                 if (k.startsWith('_')) return true;
-                 return allowed.some(a => kUp.includes(a));
-             };
-
-             Object.keys(taskData).forEach(key => {
-                 if (!isAllowed(key)) {
-                     delete taskData[key];
-                 }
-             });
+        const cleanUN = String(username).toUpperCase().trim();
+        if (restrictedUsers.includes(cleanUN)) {
+             // Allow full access when editing their own tracker sheet
+             const ownSheetName = (USER_DB[cleanUN] && USER_DB[cleanUN].staffName) ? USER_DB[cleanUN].staffName.toUpperCase() : '';
+             const editingOwnTracker = ownSheetName && String(personName).toUpperCase().trim() === ownSheetName;
+             if (!editingOwnTracker) {
+                 const allowed = ['ESTATUS', 'STATUS', 'MAP COT', 'PROCESO', 'FOLIO', 'ID', 'AVANCE', 'AVANCE %', 'REQUISITOR', 'INFO CLIENTE', 'F2', 'COTIZACION', 'COT', 'TIMELINE', 'LAYOUT', 'COMENTARIOS', '_rowIndex', 'CORREO', 'CARPETA', 'CORREOS', 'CARPETAS'];
+                 const isAllowed = (k) => {
+                     const kUp = k.toUpperCase();
+                     if (k.startsWith('_')) return true;
+                     return allowed.some(a => kUp.includes(a));
+                 };
+                 Object.keys(taskData).forEach(key => {
+                     if (!isAllowed(key)) {
+                         delete taskData[key];
+                     }
+                 });
+             }
         }
-        // --- END NEW RESTRICTION BLOCK ---
+        // --- END RESTRICTION BLOCK ---
 
         if (isAntonia) {
              // 1. AUTO-INCREMENT FOLIO (Before Saving)
