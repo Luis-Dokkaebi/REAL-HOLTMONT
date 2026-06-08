@@ -42,7 +42,9 @@
 | `DIMAS_RAMOS` | `dimas2025` | ADMIN_CONTROL | TRACKER | RH | Dimas Eliel Ramos Garcia |
 | `CITLALI_GOMEZ` | `citlali6956` | STAFF_USER | TRACKER | EHS |
 | `AIMEE_RAMIREZ` | `aimee8554` | STAFF_USER | TRACKER | EHS |
+| `RUBI_MORENO` | `rubi3641` | STAFF_USER | TRACKER | EHS | Rubi Moreno Rodriguez |
 | `EDGAR_LOPEZ` | `edgar7917` | STAFF_USER | DOBLE | DISEÑO |
+| `URIMAR_LOPEZ` | `urimar7294` | STAFF_USER | TRACKER | DISEÑO | Edgar Urimar Lopez Maldonado |
 | `CESAR_EDUARDO_GARCIA` | `cesar7052` | STAFF_USER | TRACKER | DISEÑO |
 | `SAIRA` | `saira3725` | STAFF_USER | TRACKER | FACTURACION | (legacy — usar ZAIRA_AGUILAR) |
 | `ZAIRA_AGUILAR` | `zaira5892` | STAFF_USER | TRACKER | FACTURACION | Zaira Yazmin Aguilar Aguilon |
