@@ -2176,18 +2176,20 @@ function internalUpdateTask(personName, taskData, username) {
                      }
                      const workerSheet = findSheetSmart(targetSheet);
                      if (workerSheet) {
-                         const folioIdx = getColIdx('FOLIO');
-                         const idIdx = getColIdx('ID');
                          const targetId = String(taskData['FOLIO'] || taskData['ID']).toUpperCase().trim();
-
                          if (targetId) {
                              const data = workerSheet.getDataRange().getValues();
-                             for (let i = 1; i < data.length; i++) {
-                                 let rowFolio = (folioIdx > -1 ? data[i][folioIdx] : "") || (idIdx > -1 ? data[i][idIdx] : "");
-                                 if (String(rowFolio).toUpperCase().trim() === targetId) {
-                                     workerSheet.deleteRow(i + 1);
-                                     registrarLog("ANTONIA", "REMOVED_WORKER", `Eliminada tarea ${targetId} de ${targetSheet}`);
-                                     break; // assuming only one row per ID
+                             if (data.length > 0) {
+                                 const sheetHeaders = data[0].map(h => String(h).toUpperCase().trim());
+                                 const folioIdx = sheetHeaders.indexOf('FOLIO');
+                                 const idIdx = sheetHeaders.indexOf('ID');
+                                 for (let i = 1; i < data.length; i++) {
+                                     let rowFolio = (folioIdx > -1 ? data[i][folioIdx] : "") || (idIdx > -1 ? data[i][idIdx] : "");
+                                     if (String(rowFolio).toUpperCase().trim() === targetId) {
+                                         workerSheet.deleteRow(i + 1);
+                                         registrarLog("ANTONIA", "REMOVED_WORKER", `Eliminada tarea ${targetId} de ${targetSheet}`);
+                                         break;
+                                     }
                                  }
                              }
                          }
@@ -2311,7 +2313,8 @@ function internalUpdateTask(personName, taskData, username) {
                              if (updated) {
                                  const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
                                  let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
-                                                                  let mapCotParts = stepsOrder.map(step => {
+                                 let mapCotParts = stepsOrder.map(step => {
+                                     // Valid entries: step is a known PROCESS_STEPS ID
                                      const stepEntries = updatedLog.filter(e => e.step === step || e.to === step);
                                      if (stepEntries.length > 0) {
                                          const allDone = stepEntries.every(e => e.status === 'DONE');
@@ -2320,13 +2323,25 @@ function internalUpdateTask(personName, taskData, username) {
                                          if (anyInProgress) return '🟡 ' + step;
                                          return '🔴 ' + step;
                                      }
-                                     let oldPart = oldParts.find(p => p.includes(step));
+                                     // Garbage entries: step field contains the old MAP COT string.
+                                     // If it shows 🟡 STEP or 🔴 STEP, this entry was for that step.
+                                     const garbageForStep = updatedLog.filter(e =>
+                                         !stepsOrder.includes(e.step) &&
+                                         (e.step.includes('🟡 ' + step) || e.step.includes('🔴 ' + step))
+                                     );
+                                     if (garbageForStep.length > 0) {
+                                         const allDone = garbageForStep.every(e => e.status === 'DONE');
+                                         if (allDone) return '🟢 ' + step;
+                                         const anyInProgress = garbageForStep.some(e => e.status === 'IN_PROGRESS');
+                                         if (anyInProgress) return '🟡 ' + step;
+                                     }
+                                     let oldPart = oldParts.find(p => p === '🟢 ' + step || p === '🟡 ' + step || p === '🔴 ' + step || p === '⚪ ' + step || p.includes(' ' + step));
                                      if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
                                      if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
                                      if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
                                      return '⚪ ' + step;
                                  });
-                                 
+
                                  let syncToAntonia = {
                                      'FOLIO': targetRow['FOLIO'] || tFolio,
                                      'PROCESO_LOG': JSON.stringify(updatedLog),
@@ -4603,18 +4618,20 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                      }
                      const workerSheet = findSheetSmart(targetSheet);
                      if (workerSheet) {
-                         const folioIdx = getColIdx('FOLIO');
-                         const idIdx = getColIdx('ID');
                          const targetId = String(taskData['FOLIO'] || taskData['ID']).toUpperCase().trim();
-
                          if (targetId) {
                              const data = workerSheet.getDataRange().getValues();
-                             for (let i = 1; i < data.length; i++) {
-                                 let rowFolio = (folioIdx > -1 ? data[i][folioIdx] : "") || (idIdx > -1 ? data[i][idIdx] : "");
-                                 if (String(rowFolio).toUpperCase().trim() === targetId) {
-                                     workerSheet.deleteRow(i + 1);
-                                     registrarLog("ANTONIA", "REMOVED_WORKER", `Eliminada tarea ${targetId} de ${targetSheet}`);
-                                     break; // assuming only one row per ID
+                             if (data.length > 0) {
+                                 const sheetHeaders = data[0].map(h => String(h).toUpperCase().trim());
+                                 const folioIdx = sheetHeaders.indexOf('FOLIO');
+                                 const idIdx = sheetHeaders.indexOf('ID');
+                                 for (let i = 1; i < data.length; i++) {
+                                     let rowFolio = (folioIdx > -1 ? data[i][folioIdx] : "") || (idIdx > -1 ? data[i][idIdx] : "");
+                                     if (String(rowFolio).toUpperCase().trim() === targetId) {
+                                         workerSheet.deleteRow(i + 1);
+                                         registrarLog("ANTONIA", "REMOVED_WORKER", `Eliminada tarea ${targetId} de ${targetSheet}`);
+                                         break;
+                                     }
                                  }
                              }
                          }
@@ -4820,22 +4837,35 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                            if (updated) {
                                const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
                                let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
-                                                                let mapCotParts = stepsOrder.map(step => {
-                                     const stepEntries = updatedLog.filter(e => e.step === step || e.to === step);
-                                     if (stepEntries.length > 0) {
-                                         const allDone = stepEntries.every(e => e.status === 'DONE');
-                                         if (allDone) return '🟢 ' + step;
-                                         const anyInProgress = stepEntries.some(e => e.status === 'IN_PROGRESS');
-                                         if (anyInProgress) return '🟡 ' + step;
-                                         return '🔴 ' + step;
-                                     }
-                                     let oldPart = oldParts.find(p => p.includes(step));
-                                     if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
-                                     if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
-                                     if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
-                                     return '⚪ ' + step;
-                                 });
-                               
+                               let mapCotParts = stepsOrder.map(step => {
+                                   // Valid entries: step is a known PROCESS_STEPS ID
+                                   const stepEntries = updatedLog.filter(e => e.step === step || e.to === step);
+                                   if (stepEntries.length > 0) {
+                                       const allDone = stepEntries.every(e => e.status === 'DONE');
+                                       if (allDone) return '🟢 ' + step;
+                                       const anyInProgress = stepEntries.some(e => e.status === 'IN_PROGRESS');
+                                       if (anyInProgress) return '🟡 ' + step;
+                                       return '🔴 ' + step;
+                                   }
+                                   // Garbage entries: step field contains the old MAP COT string.
+                                   // If it shows 🟡 STEP or 🔴 STEP, this entry was for that step.
+                                   const garbageForStep = updatedLog.filter(e =>
+                                       !stepsOrder.includes(e.step) &&
+                                       (e.step.includes('🟡 ' + step) || e.step.includes('🔴 ' + step))
+                                   );
+                                   if (garbageForStep.length > 0) {
+                                       const allDone = garbageForStep.every(e => e.status === 'DONE');
+                                       if (allDone) return '🟢 ' + step;
+                                       const anyInProgress = garbageForStep.some(e => e.status === 'IN_PROGRESS');
+                                       if (anyInProgress) return '🟡 ' + step;
+                                   }
+                                   let oldPart = oldParts.find(p => p === '🟢 ' + step || p === '🟡 ' + step || p === '🔴 ' + step || p === '⚪ ' + step || p.includes(' ' + step));
+                                   if (oldPart && oldPart.includes('🟢')) return '🟢 ' + step;
+                                   if (oldPart && oldPart.includes('🟡')) return '🟡 ' + step;
+                                   if (oldPart && oldPart.includes('🔴')) return '🔴 ' + step;
+                                   return '⚪ ' + step;
+                               });
+
                                let syncToAntonia = {
                                    'FOLIO': targetRow['FOLIO'] || tFolio,
                                    'PROCESO_LOG': JSON.stringify(updatedLog),
