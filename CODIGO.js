@@ -71,7 +71,7 @@ const INITIAL_DIRECTORY = [
     { name: "VANESSA DE LARA", dept: "COMPRAS", type: "ESTANDAR" },
     { name: "SONIA GARCIA PEREZ", dept: "COMPRAS", type: "ESTANDAR" },
     { name: "DANIA GONZALEZ", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "DIMAS RAMOS", dept: "EHS", type: "ESTANDAR" },
+    { name: "DIMAS RAMOS", dept: "RH", type: "ESTANDAR" },
     { name: "CITLALI GOMEZ", dept: "EHS", type: "ESTANDAR" },
     { name: "AIMEE RAMIREZ", dept: "EHS", type: "ESTANDAR" },
     { name: "EDGAR HOLT", dept: "MAQUINARIA", type: "ESTANDAR" },
@@ -84,7 +84,10 @@ const INITIAL_DIRECTORY = [
     { name: "JUANY RODRIGUEZ", dept: "FACTURACION", type: "ESTANDAR" },
     { name: "DANIA GONZALEZ", dept: "FACTURACION", type: "ESTANDAR" },
     { name: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FACTURACION", type: "ESTANDAR" },
-    { name: "FRANCISCO SANCHEZ SERNA", dept: "RH", type: "ESTANDAR" }
+    { name: "FRANCISCO SANCHEZ SERNA", dept: "RH", type: "ESTANDAR" },
+    { name: "LILIANA AYLIN MARTINEZ IBARRA", dept: "RH", type: "ESTANDAR" },
+    { name: "LAURA EDITH HUERTA ROCHA", dept: "RH", type: "ESTANDAR" },
+    { name: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", type: "ESTANDAR" }
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
@@ -236,7 +239,7 @@ const USER_DB = {
   "RUBEN_PESQUEDA": { pass: "ruben8494", role: "STAFF_USER", label: "Ruben Pesqueda", email: "", staffName: "RUBEN PESQUEDA", dept: "CONSTRUCCION", seller: false },
   "GISELA_DOMINGUEZ": { pass: "gisela3308", role: "STAFF_USER", label: "Gisela Dominguez", email: "", staffName: "GISELA DOMINGUEZ", dept: "COMPRAS", seller: false },
   "VANESSA_DE_LARA": { pass: "vanessa6062", role: "STAFF_USER", label: "Vanessa De Lara", email: "", staffName: "VANESSA DE LARA", dept: "COMPRAS", seller: false },
-  "DIMAS_RAMOS": { pass: "dimas2025", role: "ADMIN_CONTROL", label: "Dimas Ramos", email: "dimas.ramos@holtmont.com", staffName: "DIMAS RAMOS", dept: "EHS", seller: false },
+  "DIMAS_RAMOS": { pass: "dimas2025", role: "ADMIN_CONTROL", label: "Dimas Ramos", email: "dimas.ramos@holtmont.com", staffName: "DIMAS RAMOS", dept: "RH", seller: false },
   "CITLALI_GOMEZ": { pass: "citlali6956", role: "STAFF_USER", label: "Citlali Gomez", email: "", staffName: "CITLALI GOMEZ", dept: "EHS", seller: false },
   "AIMEE_RAMIREZ": { pass: "aimee8554", role: "STAFF_USER", label: "Aimee Ramirez", email: "", staffName: "AIMEE RAMIREZ", dept: "EHS", seller: false },
   "EDGAR_LOPEZ": { pass: "edgar7917", role: "STAFF_USER", label: "Edgar Lopez", email: "", staffName: "EDGAR LOPEZ", dept: "DISEÑO", seller: true },
@@ -244,6 +247,9 @@ const USER_DB = {
   "EMILIANO_AREDON": { pass: "emiliano4187", role: "STAFF_USER", label: "Emiliano Arredondo Gomez", email: "", staffName: "EMILIANO ARREDONDO GOMEZ", dept: "HVAC", seller: false },
   "SONIA_GARCIA": { pass: "sonia2960", role: "STAFF_USER", label: "Sonia Garcia Perez", email: "", staffName: "SONIA GARCIA PEREZ", dept: "COMPRAS", seller: false },
   "FRANCISCO_SANCHEZ_SERNA": { pass: "francisco3814", role: "STAFF_USER", label: "Francisco Sanchez Serna", email: "", staffName: "FRANCISCO SANCHEZ SERNA", dept: "RH", seller: false },
+  "LILIANA_MARTINEZ": { pass: "liliana4731", role: "STAFF_USER", label: "Liliana Martinez Ibarra", email: "", staffName: "LILIANA AYLIN MARTINEZ IBARRA", dept: "RH", seller: false },
+  "LAURA_HUERTA": { pass: "laura8256", role: "STAFF_USER", label: "Laura Huerta Rocha", email: "", staffName: "LAURA EDITH HUERTA ROCHA", dept: "RH", seller: false },
+  "ROCIO_CASTRO": { pass: "rocio3947", role: "STAFF_USER", label: "Rocio Castro Covarrubias", email: "", staffName: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", seller: false },
   "GERALDINE_MARTINEZ": { pass: "geraldine5279", role: "STAFF_USER", label: "Geraldine Martinez Hernandez", email: "", staffName: "GERALDINE MARTINEZ HERNANDEZ", dept: "ADMINISTRACION", seller: false },
   "JUAN_ENRIQUE_PEREZ": { pass: "juan6431", role: "STAFF_USER", label: "Juan Enrique Perez Mendez", email: "", staffName: "JUAN ENRIQUE PEREZ MENDEZ", dept: "HVAC", seller: false },
   "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "DISEÑO", seller: false }
