@@ -8844,23 +8844,39 @@ const filteredStaffTrackerData = computed(() => {
           } catch(e) { log = []; }
           if (!Array.isArray(log)) log = [];
 
-          let currentStepId = PROCESS_STEPS[0];
-          if (log.length > 0) {
-              const lastLog = log[log.length - 1];
-              if (lastLog.to) {
+          const validLog = log.filter(e => PROCESS_STEPS.includes(e.step) || (e.to && PROCESS_STEPS.includes(e.to)));
+
+          let currentStepId = null;
+          if (validLog.length > 0) {
+              const lastLog = validLog[validLog.length - 1];
+              if (lastLog.to && PROCESS_STEPS.includes(lastLog.to)) {
                   currentStepId = lastLog.to;
-              }
-          } else {
-              let mapCot = row["MAP COT"] || row.PROCESO;
-              if (mapCot) {
-                  if (mapCot.includes('🔴')) {
-                     const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                     if (match) currentStepId = match[1];
+              } else {
+                  const inProgressEntries = validLog.filter(e => e.status === 'IN_PROGRESS' && PROCESS_STEPS.includes(e.step));
+                  if (inProgressEntries.length > 0) {
+                      currentStepId = inProgressEntries[inProgressEntries.length - 1].step;
                   } else {
-                     currentStepId = mapCot;
+                      const doneSteps = new Set(validLog.map(e => e.step || e.to).filter(s => PROCESS_STEPS.includes(s)));
+                      currentStepId = PROCESS_STEPS.find(s => !doneSteps.has(s)) || PROCESS_STEPS[PROCESS_STEPS.length - 1];
                   }
               }
           }
+
+          if (!currentStepId) {
+              let mapCot = row["MAP COT"] || row.PROCESO;
+              if (mapCot) {
+                  if (mapCot.includes('🔴')) {
+                      const match = mapCot.match(/🔴\s*([A-Z]+)/);
+                      if (match && PROCESS_STEPS.includes(match[1])) currentStepId = match[1];
+                  }
+                  if (!currentStepId && mapCot.includes('🟡')) {
+                      const match = mapCot.match(/🟡\s*([A-Z]+)/);
+                      if (match && PROCESS_STEPS.includes(match[1])) currentStepId = match[1];
+                  }
+              }
+          }
+
+          if (!currentStepId) currentStepId = PROCESS_STEPS[0];
           if (LEGACY_PROCESS_MAP[currentStepId]) {
               currentStepId = LEGACY_PROCESS_MAP[currentStepId];
           }
@@ -8889,24 +8905,42 @@ const filteredStaffTrackerData = computed(() => {
           } catch(e) { log = []; }
           if (!Array.isArray(log)) log = [];
 
+          // Only consider entries with a valid step ID to avoid garbage data
+          const validLog = log.filter(e => PROCESS_STEPS.includes(e.step) || (e.to && PROCESS_STEPS.includes(e.to)));
+
           let val = null;
-          if (log.length > 0) {
-              const lastLog = log[log.length - 1];
-              if (lastLog.to) {
+          if (validLog.length > 0) {
+              // Legacy format: entry has a "to" field indicating the next step
+              const lastLog = validLog[validLog.length - 1];
+              if (lastLog.to && PROCESS_STEPS.includes(lastLog.to)) {
                   val = lastLog.to;
+              } else {
+                  // Current format: find the last IN_PROGRESS step
+                  const inProgressEntries = validLog.filter(e => e.status === 'IN_PROGRESS' && PROCESS_STEPS.includes(e.step));
+                  if (inProgressEntries.length > 0) {
+                      val = inProgressEntries[inProgressEntries.length - 1].step;
+                  } else {
+                      // All assigned steps are DONE — find next unassigned step
+                      const doneSteps = new Set(validLog.map(e => e.step || e.to).filter(s => PROCESS_STEPS.includes(s)));
+                      val = PROCESS_STEPS.find(s => !doneSteps.has(s)) || PROCESS_STEPS[PROCESS_STEPS.length - 1];
+                  }
               }
           }
+
           if (!val) {
               let mapCot = row["MAP COT"] || row.PROCESO;
               if (mapCot) {
                   if (mapCot.includes('🔴')) {
-                     const match = mapCot.match(/🔴\s*([A-Z]+)/);
-                     if (match) val = match[1];
-                  } else {
-                     val = mapCot;
+                      const match = mapCot.match(/🔴\s*([A-Z]+)/);
+                      if (match && PROCESS_STEPS.includes(match[1])) val = match[1];
+                  }
+                  if (!val && mapCot.includes('🟡')) {
+                      const match = mapCot.match(/🟡\s*([A-Z]+)/);
+                      if (match && PROCESS_STEPS.includes(match[1])) val = match[1];
                   }
               }
           }
+
           if (!val) return PROCESS_STEPS[0];
           if (LEGACY_PROCESS_MAP[val]) {
               val = LEGACY_PROCESS_MAP[val];
@@ -9219,6 +9253,8 @@ const filteredStaffTrackerData = computed(() => {
 
           let log = [];
           try { if (row.PROCESO_LOG) log = JSON.parse(row.PROCESO_LOG); } catch(e){}
+          // Remove garbage entries (step not a valid PROCESS_STEPS ID) to heal corrupted data
+          log = log.filter(e => PROCESS_STEPS.includes(e.step) || (e.to && PROCESS_STEPS.includes(e.to)));
 
           // Only add entries for workers that are not already in progress or done for this step
           selectedWorkers.forEach(worker => {
