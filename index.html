@@ -2795,7 +2795,7 @@
 
         <div v-if="currentView === 'PPC_DINAMICO'" class="h-100 dynamic-tracker" style="padding:20px !important;">
           <div class="d-flex justify-content-between align-items-center mb-4">
-            <div class="d-flex align-items-center"><h4 class="fw-bold m-0 me-3" style="color:#2c3e50"><i class="fas fa-layer-group me-2" style="color:#e83e8c"></i>Tracker</h4><div v-if="currentPpcProject" class="badge bg-white text-dark border p-2 d-flex align-items-center shadow-sm"><i class="fas fa-folder-open text-primary me-2"></i><span>{{ currentPpcProject.name }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div><button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
+            <div class="d-flex align-items-center"><h4 class="fw-bold m-0 me-3" style="color:#2c3e50"><i class="fas fa-layer-group me-2" style="color:#e83e8c"></i>Tracker</h4><div v-if="currentPpcProject" class="badge bg-white text-dark border p-2 d-flex align-items-center shadow-sm"><i class="fas fa-folder-open text-primary me-2"></i><span>{{ currentPpcProject.name }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div><div class="d-flex align-items-center"><button class="btn btn-outline-secondary btn-sm me-2" @click="currentView='PPC_MENU'"><i class="fas fa-arrow-left me-1"></i> Atrás</button><button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button></div>
           </div>
           <div class="dynamic-form-card">
              <div class="row g-3">
@@ -2958,6 +2958,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h4 class="fw-bold m-0 text-dark"><i class="fas fa-address-book me-2 text-success"></i>DIRECTORIO DE EMPLEADOS</h4>
                 <div>
+                    <button class="btn btn-warning btn-sm me-2 shadow-sm" v-if="currentRole==='ADMIN'" @click="resyncDirectory"><i class="fas fa-sync-alt me-1"></i> Re-sincronizar Directorio</button>
                     <button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openNewEmployeeModal"><i class="fas fa-user-plus me-1"></i> NUEVO EMPLEADO</button>
                     <button class="btn btn-outline-secondary btn-sm" @click="goHome">Cerrar</button>
                 </div>
@@ -4172,7 +4173,7 @@
                    </div>
                </div>
                <!-- BANCO DE JUNTAS -->
-               <div class="col-12 col-lg-4">
+               <div class="col-12 col-lg-4" v-if="config.canSeeBancoJuntas">
                    <div class="card shadow-sm border-0 h-100" style="cursor:pointer;" @click="openStaffTracker({ name: 'ADMINISTRADOR' })">
                        <div class="card-header fw-bold text-white" style="background:#6c757d;"><i class="fas fa-archive me-2"></i>Banco de Juntas</div>
                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-muted">
@@ -4279,8 +4280,8 @@
                        </tr>
                    </thead>
                    <tbody>
-                       <tr v-for="(item, idx) in activityQueue" :key="idx">
-                           <td class="row-num">{{ idx + 1 }}</td>
+                       <tr v-for="(item, idx) in activityQueue" :key="idx" :style="item.saved ? 'background-color:#e8f7ee;' : ''">
+                           <td class="row-num">{{ idx + 1 }}<i v-if="item.saved" class="fas fa-check-circle text-success ms-1" title="Guardada"></i></td>
                            <td v-if="currentUsername === 'PREWORK_ORDER'"><input v-model="item.cliente" class="excel-input" placeholder="MB"></td>
                            <td><select v-model="item.especialidad" class="excel-input"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td>
                            <td><input v-model="item.concepto" class="excel-input" placeholder="Descripción..."></td>
@@ -6472,6 +6473,14 @@ async function toggleVoiceRecording(btnElement) {
       const deptStats = computed(() => {
           const stats = []; let totalActual=0; let totalCumplidas=0; let totalGlobalDB=0;
           const deptsToIterate = config.value.allDepartments || config.value.departments;
+          // Semana ISO actual y anterior (misma fórmula que el backend getWeekNumber)
+          const d = new Date();
+          const ws = new Date(d.getFullYear(), 0, 1);
+          const semanaActual = Math.ceil(((d - ws) / 86400000 + 1) / 7);
+          const semanaAnterior = semanaActual - 1;
+          const norm = s => String(s||'').toUpperCase().trim();
+          const prevData = (weeklyPlanData.value.data || []).filter(r => String(r.SEMANA) == String(semanaAnterior));
+          let totalPrevSi = 0; let totalPrevTotal = 0;
           for (const key in deptsToIterate) {
               const deptLabel = deptsToIterate[key].label;
               const actual = activityQueue.value.filter(i => i.especialidad === key).length;
@@ -6479,10 +6488,19 @@ async function toggleVoiceRecording(btnElement) {
               const cumplidas = totalDB.filter(i => String(i.cumplimiento).toUpperCase() === 'SI').length;
               let prom = 0; if (totalDB.length > 0) prom = Math.round((cumplidas / totalDB.length) * 100);
               totalActual += actual; totalCumplidas += cumplidas; totalGlobalDB += totalDB.length;
-              stats.push({ key: key, label: deptLabel.toUpperCase(), actual: actual, cumplidas: cumplidas, promedio: prom + '%', anterior: '0%' });
+              // ANT: % cumplimiento de la semana anterior para este depto
+              let anterior = '0%';
+              if (semanaAnterior >= 1) {
+                  const prevItems = prevData.filter(r => { const s = norm(r['ESPECIALIDAD'] || r['AREA']); return s === norm(key) || s === norm(deptLabel); });
+                  const prevSi = prevItems.filter(r => norm(r['CUMPLIMIENTO']) === 'SI').length;
+                  totalPrevSi += prevSi; totalPrevTotal += prevItems.length;
+                  if (prevItems.length > 0) anterior = Math.round((prevSi / prevItems.length) * 100) + '%';
+              }
+              stats.push({ key: key, label: deptLabel.toUpperCase(), actual: actual, cumplidas: cumplidas, promedio: prom + '%', anterior: anterior });
           }
           let totalProm = 0; if (totalGlobalDB > 0) totalProm = Math.round((totalCumplidas / totalGlobalDB) * 100);
-          stats.push({ key: 'TOTAL', label: 'TOTAL', actual: totalActual, cumplidas: totalCumplidas, promedio: totalProm + '%', anterior: '0%' });
+          let totalAnterior = '0%'; if (semanaAnterior >= 1 && totalPrevTotal > 0) totalAnterior = Math.round((totalPrevSi / totalPrevTotal) * 100) + '%';
+          stats.push({ key: 'TOTAL', label: 'TOTAL', actual: totalActual, cumplidas: totalCumplidas, promedio: totalProm + '%', anterior: totalAnterior });
           return stats;
       });
 
@@ -6749,6 +6767,13 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const handleErr = (e) => { loggingIn.value=false; isSubmitting.value=false; Swal.fire('Error',e.message,'error'); };
+      const resyncDirectory = () => {
+          Swal.fire({ title: '¿Re-sincronizar Directorio?', text: 'Se actualizará el directorio de empleados desde la fuente.', icon: 'question', showCancelButton: true, confirmButtonText: 'Sí, re-sincronizar' }).then(result => {
+              if (!result.isConfirmed) return;
+              Swal.fire({ title: 'Sincronizando...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+              google.script.run.withSuccessHandler(r => { Swal.fire(r.success ? 'Listo' : 'Error', r.message || '', r.success ? 'success' : 'error'); }).withFailureHandler(handleErr).apiResyncDirectory();
+          });
+      };
       const doLogin = () => { if(loggingIn.value || !loginPass.value || !loginUser.value) return; loggingIn.value=true; google.script.run.withSuccessHandler(res => { loggingIn.value=false; if(res.success){ isLoggedIn.value=true; currentUser.value=res.name; currentUsername.value = res.username; currentRole.value = res.role; loadConfig(res.role, res.username); loadCascadeTree(); } else { if(!isLoggedIn.value) Swal.fire('Error',res.message,'error'); } }).withFailureHandler(err => { loggingIn.value=false; handleErr(err); }).apiLogin(loginUser.value, loginPass.value); };
       const loadConfig = (r, u) => { google.script.run.withSuccessHandler(d => { config.value=d; loadDashboardCalendar(); if(r === 'PPC_ADMIN' || r === 'ADMIN_CONTROL' || r === 'ADMIN') { google.script.run.withSuccessHandler(res => { if(res.success && res.data.length > 0) { activityQueue.value = res.data; } }).apiFetchDrafts(); } }).getSystemConfig(r, u); };
       const toggleSidebar = () => { isCompact.value = !isCompact.value; };
@@ -6924,6 +6949,8 @@ const filteredStaffTrackerData = computed(() => {
           ppcMenuTipo.value = tipo || '';
           currentView.value = 'PPC_FORM';
           google.script.run.withSuccessHandler(res => { if(res.success) ppcExistingData.value = res.data; }).apiFetchPPCData();
+          // Cargar datos semanales para la columna ANT (semana anterior) si aún no están
+          if (!weeklyPlanData.value.data || weeklyPlanData.value.data.length === 0) { loadWeeklyPlan(); }
       };
 
       const animateKPICards = () => {
@@ -7921,9 +7948,9 @@ const filteredStaffTrackerData = computed(() => {
       };
       const saveDynamicPPC = () => { if(!dynamicPpc.value.especialidad || !dynamicPpc.value.concepto || !selectedResponsables.value.length) return Swal.fire('Faltan datos','','warning'); isSubmitting.value = true; let fResp = dynamicPpc.value.fechaFin; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } let finalComs = dynamicPpc.value.comentarios || ''; if(currentPpcProject.value) { finalComs = (finalComs ? finalComs + ' ' : '') + `[PROY: ${currentPpcProject.value.name}]`; } const payload = { especialidad: dynamicPpc.value.especialidad, concepto: dynamicPpc.value.concepto, responsable: selectedResponsables.value.join(','), clasificacion: dynamicPpc.value.clasificacion, riesgos: dynamicPpc.value.riesgos, prioridad: dynamicPpc.value.prioridad, fechaRespuesta: fResp, archivoUrl: dynamicPpc.value.archivoUrl, comentarios: finalComs, horas: '', cumplimiento: 'NO' }; google.script.run.withSuccessHandler(res => { isSubmitting.value = false; if(res.success){ Swal.fire('Registro Guardado','Enviado a PPC y Tracker','success'); dynamicPpc.value = { especialidad: '', clasificacion: 'A', concepto: '', riesgos: 'BAJO', prioridad: 'MEDIA', fechaFin: '', comentarios: '', archivoUrl: '' }; selectedResponsables.value = []; uploadSuccess.value = false; } else { Swal.fire('Error', res.message, 'error'); } }).withFailureHandler(handleErr).apiSavePPCData([payload], currentUsername.value); };
       const submitBatch = () => {
-        const validItems = activityQueue.value.filter(item => item.concepto && item.responsable);
+        const validItems = activityQueue.value.filter(item => item.concepto && item.responsable && !item.saved);
         if (validItems.length === 0) {
-            Swal.fire('Advertencia', 'No hay actividades válidas para guardar. Asegúrese de llenar Descripción y Responsable.', 'warning');
+            Swal.fire('Advertencia', 'No hay actividades nuevas para guardar. Asegúrese de llenar Descripción y Responsable.', 'warning');
             return;
         }
 
@@ -7956,9 +7983,14 @@ const filteredStaffTrackerData = computed(() => {
             isSubmitting.value = false;
             if(res.success){
                 Swal.fire('Guardado','','success');
-                activityQueue.value = [];
-                fillEmptyQueueRows(); // Reset with empty rows
-                google.script.run.apiClearDrafts();
+                // PERMANENCIA: marcar como guardadas las actividades enviadas (sin borrarlas de la tabla)
+                activityQueue.value.forEach(item => {
+                    if (item.concepto && item.responsable && !item.saved) item.saved = true;
+                });
+                // Reponer filas vacías hasta el layout de 30 (aditivo, no borra existentes)
+                fillEmptyQueueRows();
+                // NO se limpia el draft: mantener persistencia entre sesiones
+                syncQueueToBackend();
                 google.script.run.withSuccessHandler(r => {
                     if(r.success) ppcExistingData.value = r.data;
                 }).apiFetchPPCData();
@@ -9289,7 +9321,7 @@ const filteredStaffTrackerData = computed(() => {
       showLogic, sectionVisibility, showInstr, projectRespDropdownOpen, toggleProjectResponsable, openRespDropdown,
       cotizadorSearch, filteredCotizadores, addCotizador, removeCotizador, cotizadorSearchTop, filteredCotizadoresTop, addCotizadorTop,
       trackerTable, projectTable, ppcDraftTable,
-      showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee,
+      showEmployeeModal, newEmployee, openNewEmployeeModal, saveNewEmployee, deleteEmployee, resyncDirectory,
       infoBankState, ibYears, ibMonths, ibCompanies, ibFolders, filteredIbCompanies, selectIbYear, selectIbMonth, selectIbCompany, goBackInfoBank, resetInfoBank, openIbFolder, fetchInfoBankFiles, getBadgeClass,
       dashboardCalendar, calendarLoading, calendarUserFilter, weekDays, currentMonthYearLabel, navigateCalendar, loadDashboardCalendar, getTasksForDay, getTaskColor, isTaskDone, animTaskHover, animTaskLeave, getResponsible,
       staffTrackerFilters, staffTrackerSortAsc, toggleTrackerSort, filteredStaffTrackerData, getUniqueValues, historySearchQuery, filteredStaffTrackerHistory,
