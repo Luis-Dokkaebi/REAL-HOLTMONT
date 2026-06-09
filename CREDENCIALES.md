@@ -1,65 +1,77 @@
 # Credenciales Holtmont Workspace
 
-> Generadas automáticamente. **DOBLE** = vendedor (Tracker + hoja `NOMBRE (VENTAS)`). **TRACKER** = solo su tabla.
+> **DOBLE** = vendedor (Tracker + hoja `NOMBRE (VENTAS)`). **TRACKER** = solo su tabla.
+> Organigrama alineado al organigrama oficial por departamento (última actualización: 2026-06-09).
 
-| Usuario | Contraseña | Rol | Tabla | Departamento |
-|---|---|---|---|---|
-| `JESUS_CANTU` | `ppc2025` | PPC_ADMIN | TRACKER | - |
-| `JAIME_OLIVO` | `admin2025` | ADMIN_CONTROL | TRACKER | - |
-| `PREWORK_ORDER` | `workorder2026` | WORKORDER_USER | TRACKER | - |
-| `ANTONIA_VENTAS` | `tonita2025` | TONITA | DOBLE | VENTAS |
-| `JUDITH_ECHAVARRIA` | `judith2951` | STAFF_USER | DOBLE | VENTAS |
-| `EDUARDO_MANZANARES` | `eduardo6234` | STAFF_USER | DOBLE | VENTAS |
-| `RAMIRO_RODRIGUEZ` | `ramiro9233` | STAFF_USER | DOBLE | VENTAS |
-| `SEBASTIAN_PADILLA` | `sebastian9385` | STAFF_USER | DOBLE | VENTAS |
-| `CESAR_GOMEZ` | `cesar2681` | STAFF_USER | DOBLE | VENTAS |
-| `ALFONSO_CORREA` | `alfonso4658` | STAFF_USER | DOBLE | VENTAS |
-| `TERESA_GARZA` | `teresa7891` | STAFF_USER | DOBLE | VENTAS |
-| `GUILLERMO_DAMICO` | `guillermo9975` | STAFF_USER | DOBLE | VENTAS |
-| `ANGEL_SALINAS` | `angel9042` | STAFF_USER | DOBLE | VENTAS |
-| `JUAN_JOSE_SANCHEZ` | `juan8226` | STAFF_USER | DOBLE | VENTAS |
-| `LUIS_CARLOS` | `admin2025` | ADMIN | TRACKER | ADMINISTRACION |
-| `DANIA_GONZALEZ` | `dania2322` | STAFF_USER | TRACKER | FACTURACION | Dania Lizbeth Gonzalez Lores |
-| `JUANY_RODRIGUEZ` | `juany2814` | STAFF_USER | TRACKER | FINANZAS | Juana Maria Rodriguez Juarez |
-| `EDUARDO_BENITEZ` | `eduardo1188` | STAFF_USER | TRACKER | ADMINISTRACION |
-| `GERALDINE_MARTINEZ` | `geraldine5279` | STAFF_USER | TRACKER | ADMINISTRACION |
-| `ROLANDO_MORENO` | `rolando7508` | STAFF_USER | TRACKER | HVAC |
-| `EMILIANO_AREDON` | `emiliano4187` | STAFF_USER | TRACKER | HVAC |
-| `JUAN_ENRIQUE_PEREZ` | `juan6431` | STAFF_USER | TRACKER | HVAC |
-| `MIGUEL_GALLARDO` | `miguel5120` | STAFF_USER | TRACKER | ELECTROMECANICA |
-| `JEHU_MARTINEZ` | `jehu6696` | STAFF_USER | TRACKER | ELECTROMECANICA |
-| `RICARDO_MENDO` | `ricardo9414` | STAFF_USER | TRACKER | CONSTRUCCION |
-| `CARLOS_MENDEZ` | `carlos2250` | STAFF_USER | TRACKER | CALIDAD |
-| `REYNALDO_GARCIA` | `reynaldo6577` | STAFF_USER | TRACKER | CONSTRUCCION |
-| `INGE_OLIVO` | `inge2469` | STAFF_USER | TRACKER | CONSTRUCCION |
-| `EDUARDO_TERAN` | `eduardo9815` | STAFF_USER | DOBLE | CONSTRUCCION |
-| `EDGAR_HOLT` | `edgar5786` | STAFF_USER | TRACKER | CONSTRUCCION |
-| `ALEXIS_TORRES` | `alexis5712` | STAFF_USER | TRACKER | CONSTRUCCION |
-| `RUBEN_PESQUEDA` | `ruben8494` | STAFF_USER | TRACKER | CONSTRUCCION |
-| `GISELA_DOMINGUEZ` | `gisela3308` | STAFF_USER | TRACKER | COMPRAS |
-| `VANESSA_DE_LARA` | `vanessa6062` | STAFF_USER | TRACKER | COMPRAS |
-| `SONIA_GARCIA` | `sonia2960` | STAFF_USER | TRACKER | COMPRAS |
+## Cuentas de sistema (sin departamento)
+
+| Usuario | Contraseña | Rol | Tabla |
+|---|---|---|---|
+| `JESUS_CANTU` | `ppc2025` | PPC_ADMIN | TRACKER |
+| `JAIME_OLIVO` | `admin2025` | ADMIN_CONTROL | TRACKER |
+| `PREWORK_ORDER` | `workorder2026` | WORKORDER_USER | TRACKER |
+| `ANTONIA_VENTAS` | `tonita2025` | TONITA | DOBLE (VENTAS) |
+
+## Personal por departamento
+
+| Usuario | Contraseña | Rol | Tabla | Departamento | Nombre legal |
+|---|---|---|---|---|---|
+| `LUIS_CARLOS` | `admin2025` | ADMIN | TRACKER | **CEO** | Luis Carlos Holt Montero |
+| `JUAN_JOSE_SANCHEZ` | `juan8226` | STAFF_USER | DOBLE | **CEO** | Juan Jose Sanchez Muñiz |
 | `DIMAS_RAMOS` | `dimas2025` | ADMIN_CONTROL | TRACKER | RH | Dimas Eliel Ramos Garcia |
-| `CITLALI_GOMEZ` | `citlali6956` | STAFF_USER | TRACKER | EHS |
-| `AIMEE_RAMIREZ` | `aimee8554` | STAFF_USER | TRACKER | EHS |
-| `RUBI_MORENO` | `rubi3641` | STAFF_USER | TRACKER | EHS | Rubi Moreno Rodriguez |
-| `EDGAR_LOPEZ` | `edgar7917` | STAFF_USER | DOBLE | DISEÑO |
+| `LAURA_HUERTA` | `laura8256` | STAFF_USER | TRACKER | RH | Laura Edith Huerta Rocha |
+| `LILIANA_MARTINEZ` | `liliana4731` | STAFF_USER | TRACKER | RH | Liliana Aylin Martinez Ibarra |
+| `FRANCISCO_SANCHEZ_SERNA` | `francisco3814` | STAFF_USER | TRACKER | RH | Francisco Sanchez Serna |
+| `JUANY_RODRIGUEZ` | `juany2814` | STAFF_USER | TRACKER | FINANZAS | Juana Maria Rodriguez Juarez |
+| `ZAIRA_AGUILAR` | `zaira5892` | STAFF_USER | TRACKER | FINANZAS | Zaira Yazmin Aguilar Aguilon |
+| `ROCIO_CASTRO` | `rocio3947` | STAFF_USER | TRACKER | FINANZAS | Rocio Abigail Castro Covarrubias |
+| `DANIA_GONZALEZ` | `dania2322` | STAFF_USER | TRACKER | FINANZAS | Dania Lizbeth Gonzalez Lores |
+| `SONIA_GARCIA` | `sonia2960` | STAFF_USER | TRACKER | COMPRAS (+ALMACEN Y MAQUINARIA) | Sonia Garcia Perez |
+| `JUDITH_ECHAVARRIA` | `judith2951` | STAFF_USER | DOBLE | COMPRAS | Cristian Judith Echavarria Rodriguez |
+| `VANESSA_DE_LARA` | `vanessa6062` | STAFF_USER | TRACKER | COMPRAS | Erika Vanessa Rodriguez De Lara |
+| `EDUARDO_TERAN` | `eduardo9815` | STAFF_USER | DOBLE | PRESUPUESTOS | Jesus Eduardo Teran Garcia |
+| `ANTONIA_PINEDA` | `antonia7043` | STAFF_USER | TRACKER | PRESUPUESTOS | Antonia Pineda Lopez |
+| `CARLOS_MENDEZ` | `carlos2250` | STAFF_USER | TRACKER | CALIDAD | Carlos Mendez Urbina |
+| `RUBI_MORENO` | `rubi3641` | STAFF_USER | TRACKER | SEGURIDAD | Rubi Moreno Rodriguez |
+| `TERESA_GARZA` | `teresa7891` | STAFF_USER | DOBLE | PRECIOS UNITARIOS | Maria Teresa Hernandez Garza |
+| `GERALDINE_MARTINEZ` | `geraldine5279` | STAFF_USER | TRACKER | PRECIOS UNITARIOS | Geraldine Marie Martinez Hernandez |
+| `ANGEL_SALINAS` | `angel9042` | STAFF_USER | DOBLE | DISEÑO | Jose Angel Salinas Ramirez |
 | `URIMAR_LOPEZ` | `urimar7294` | STAFF_USER | TRACKER | DISEÑO | Edgar Urimar Lopez Maldonado |
-| `CESAR_EDUARDO_GARCIA` | `cesar7052` | STAFF_USER | TRACKER | DISEÑO |
-| `SAIRA` | `saira3725` | STAFF_USER | TRACKER | FACTURACION | (legacy — usar ZAIRA_AGUILAR) |
-| `ZAIRA_AGUILAR` | `zaira5892` | STAFF_USER | TRACKER | FACTURACION | Zaira Yazmin Aguilar Aguilon |
-| `FRANCISCO_SANCHEZ_SERNA` | `francisco3814` | STAFF_USER | TRACKER | RH |
-| `LILIANA_MARTINEZ` | `liliana4731` | STAFF_USER | TRACKER | RH |
-| `LAURA_HUERTA` | `laura8256` | STAFF_USER | TRACKER | RH |
-| `ROCIO_CASTRO` | `rocio3947` | STAFF_USER | TRACKER | FINANZAS |
+| `EDUARDO_MANZANARES` | `eduardo6234` | STAFF_USER | DOBLE | VENTAS | Eduardo Manzanares Sanchez |
+| `RAMIRO_RODRIGUEZ` | `ramiro9233` | STAFF_USER | DOBLE | VENTAS | Ramiro Rodriguez Escalante |
+| `SEBASTIAN_PADILLA` | `sebastian9385` | STAFF_USER | DOBLE | VENTAS | Erick Sebastian Padilla Carrillo |
+| `JEHU_MARTINEZ` | `jehu6696` | STAFF_USER | TRACKER | ELECTROMECANICA | Jehu Arsenio Martinez Montes |
+| `MIGUEL_GALLARDO` | `miguel5120` | STAFF_USER | TRACKER | ELECTROMECANICA | Miguel Angel Gallardo Jaramillo |
+| `ROLANDO_MORENO` | `rolando7508` | STAFF_USER | TRACKER | HVAC | Jesus Rolando Moreno Perez |
+| `EMILIANO_AREDON` | `emiliano4187` | STAFF_USER | TRACKER | HVAC | Emiliano Arredondo Gomez |
+| `INGE_OLIVO` | `inge2469` | STAFF_USER | TRACKER | CONSTRUCCION | Jaime Antonio Olivo Guerrero |
+| `RICARDO_MENDO` | `ricardo9414` | STAFF_USER | TRACKER | CONSTRUCCION | Ricardo Alonso Mendo Morales |
+| `ALFONSO_CORREA` | `alfonso4658` | STAFF_USER | DOBLE | CONSTRUCCION | Alfonso Correa De Leon |
+| `CESAR_EDUARDO_GARCIA` | `cesar7052` | STAFF_USER | TRACKER | CONSTRUCCION | Cesar Eduardo Garcia Avalos |
+| `EDUARDO_BENITEZ` | `eduardo1188` | STAFF_USER | TRACKER | LIMPIEZA | Eduardo Israel Benitez Garcia |
+| `SAIRA` | `saira3725` | STAFF_USER | TRACKER | FINANZAS | (legacy — usar `ZAIRA_AGUILAR`) |
 
-> Nombres legales corregidos (mismo login y contraseña):
-> - `SAIRA` → Zaira Yazmin Aguilar Aguilon (FACTURACION).
-> - `SONIA_GARCIA` → Sonia Garcia Perez (COMPRAS).
-> - `EMILIANO_AREDON` → Emiliano Arredondo Gomez (HVAC).
+## Cambios de esta actualización (organigrama oficial)
 
-> Movimiento de departamento: `CARLOS_MENDEZ` pasó de CONSTRUCCION a CALIDAD. `DIMAS_RAMOS` pasó de EHS a RH. Re-alta: `LILIANA_MARTINEZ` (RH), `LAURA_HUERTA` (RH), `ROCIO_CASTRO` (FINANZAS). Nombres legales completos actualizados: `DIMAS_RAMOS` → Dimas Eliel Ramos Garcia, `JUANY_RODRIGUEZ` → Juana Maria Rodriguez Juarez, `DANIA_GONZALEZ` → Dania Lizbeth Gonzalez Lores. Nuevo usuario `ZAIRA_AGUILAR` creado (Zaira Yazmin Aguilar Aguilon, FACTURACION, pass: zaira5892).
+**Movimientos de departamento:**
+- `LUIS_CARLOS` (ADMINISTRACION → **CEO**), `JUAN_JOSE_SANCHEZ` (VENTAS → **CEO**).
+- `ZAIRA_AGUILAR` y `DANIA_GONZALEZ` (FACTURACION → **FINANZAS**).
+- `JUDITH_ECHAVARRIA` (VENTAS → **COMPRAS**).
+- `EDUARDO_TERAN` (CONSTRUCCION → **PRESUPUESTOS**).
+- `RUBI_MORENO` (EHS → **SEGURIDAD**).
+- `TERESA_GARZA` (VENTAS → **PRECIOS UNITARIOS**), `GERALDINE_MARTINEZ` (ADMINISTRACION → **PRECIOS UNITARIOS**).
+- `ANGEL_SALINAS` (VENTAS → **DISEÑO**).
+- `ALFONSO_CORREA` (VENTAS → **CONSTRUCCION**), `CESAR_EDUARDO_GARCIA` (DISEÑO → **CONSTRUCCION**).
+- `EDUARDO_BENITEZ` (ADMINISTRACION → **LIMPIEZA**).
 
-> Bajas (eliminados de USER_DB): `SELENE_BALDONADO`, `MIGUEL_GONZALEZ`, `ALICIA_RIVERA`, `NELSON_MALDONADO`, `VICTOR_ALMACEN`, `ANTONIO_SALAZAR`, `DANIELA_CASTRO`, `ANTONIO_CABRERA`.
+**Alta nueva:**
+- `ANTONIA_PINEDA` — Antonia Pineda Lopez (PRESUPUESTOS, pass: `antonia7043`).
 
-> Nota: `ADMINISTRADOR` no tiene login — es solo tabla de visión (mirror `ADMIN_TRACKER`).
+**Bajas (eliminados de USER_DB):**
+- `CESAR_GOMEZ`, `GUILLERMO_DAMICO`, `REYNALDO_GARCIA`, `EDGAR_HOLT`, `ALEXIS_TORRES`, `RUBEN_PESQUEDA`, `GISELA_DOMINGUEZ`, `CITLALI_GOMEZ`, `AIMEE_RAMIREZ`, `EDGAR_LOPEZ`, `JUAN_ENRIQUE_PEREZ`.
+
+**Departamentos nuevos:** CEO, PRESUPUESTOS, PRECIOS UNITARIOS, SEGURIDAD, LIMPIEZA, ALMACEN Y MAQUINARIA.
+
+**Conservados a propósito:** `ANTONIA_VENTAS` (rol TONITA, permanece en VENTAS) y la hoja espejo `ADMINISTRADOR` (control, sin login).
+
+> **Para aplicar en producción:** entrar como ADMIN y ejecutar **Re-sincronizar Directorio** (`apiResyncDirectory`). Esto reescribe `DB_DIRECTORY` con el nuevo organigrama y crea automáticamente la hoja de tracker faltante (`ANTONIA PINEDA LOPEZ`).

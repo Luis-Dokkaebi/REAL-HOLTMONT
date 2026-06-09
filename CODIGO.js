@@ -32,64 +32,61 @@ const FOLIO_CONFIG = {
   COLUMN_NAME: 'Folio'
 };
 
+// ORGANIGRAMA OFICIAL (fuente de verdad: organigrama por departamento).
+// Cada persona aparece en el/los departamento(s) que le corresponde(n).
 const INITIAL_DIRECTORY = [
+    // CEO
+    { name: "LUIS CARLOS", dept: "CEO", type: "ESTANDAR" },
+    { name: "JUAN JOSE SANCHEZ", dept: "CEO", type: "ESTANDAR" },
+    // RECURSOS HUMANOS (RH)
+    { name: "DIMAS ELIEL RAMOS GARCIA", dept: "RH", type: "ESTANDAR" },
+    { name: "LAURA EDITH HUERTA ROCHA", dept: "RH", type: "ESTANDAR" },
+    { name: "LILIANA AYLIN MARTINEZ IBARRA", dept: "RH", type: "ESTANDAR" },
+    { name: "FRANCISCO SANCHEZ SERNA", dept: "RH", type: "ESTANDAR" },
+    // FINANZAS
+    { name: "JUANA MARIA RODRIGUEZ JUAREZ", dept: "FINANZAS", type: "ESTANDAR" },
+    { name: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FINANZAS", type: "ESTANDAR" },
+    { name: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", type: "ESTANDAR" },
+    { name: "DANIA LIZBETH GONZALEZ LORES", dept: "FINANZAS", type: "ESTANDAR" },
+    // COMPRAS
+    { name: "SONIA GARCIA PEREZ", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "JUDITH ECHAVARRIA", dept: "COMPRAS", type: "ESTANDAR" },
+    { name: "VANESSA DE LARA", dept: "COMPRAS", type: "ESTANDAR" },
+    // PRESUPUESTOS
+    { name: "EDUARDO TERAN", dept: "PRESUPUESTOS", type: "HIBRIDO" },
+    { name: "ANTONIA PINEDA LOPEZ", dept: "PRESUPUESTOS", type: "ESTANDAR" },
+    // CALIDAD
+    { name: "CARLOS MENDEZ", dept: "CALIDAD", type: "ESTANDAR" },
+    // SEGURIDAD
+    { name: "RUBI MORENO RODRIGUEZ", dept: "SEGURIDAD", type: "ESTANDAR" },
+    // PRECIOS UNITARIOS
+    { name: "TERESA GARZA", dept: "PRECIOS UNITARIOS", type: "HIBRIDO" },
+    { name: "GERALDINE MARTINEZ HERNANDEZ", dept: "PRECIOS UNITARIOS", type: "ESTANDAR" },
+    // DISEÑO
+    { name: "ANGEL SALINAS", dept: "DISEÑO", type: "HIBRIDO" },
+    { name: "EDGAR URIMAR LOPEZ MALDONADO", dept: "DISEÑO", type: "ESTANDAR" },
+    // VENTAS
     { name: "ANTONIA_VENTAS", dept: "VENTAS", type: "VENTAS" },
-    { name: "JUDITH ECHAVARRIA", dept: "VENTAS", type: "ESTANDAR" },
     { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "ESTANDAR" },
     { name: "RAMIRO RODRIGUEZ", dept: "VENTAS", type: "HIBRIDO" },
     { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "CESAR GOMEZ", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "ALFONSO CORREA", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "TERESA GARZA", dept: "VENTAS", type: "HIBRIDO" },
-    { name: "ANGEL SALINAS", dept: "VENTAS", type: "HIBRIDO" },
-    { name: "JUAN JOSE SANCHEZ", dept: "VENTAS", type: "ESTANDAR" },
-    { name: "LUIS CARLOS", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "EDUARDO BENITEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "GERALDINE MARTINEZ HERNANDEZ", dept: "ADMINISTRACION", type: "ESTANDAR" },
-    { name: "ADMINISTRADOR", dept: "ADMINISTRACION", type: "HIBRIDO" },
-    { name: "EDUARDO MANZANARES", dept: "HVAC", type: "ESTANDAR" },
-    { name: "JUAN JOSE SANCHEZ", dept: "HVAC", type: "ESTANDAR" },
+    // ELECTROMECANICA
+    { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
+    { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
+    // HVAC
     { name: "ROLANDO MORENO", dept: "HVAC", type: "ESTANDAR" },
     { name: "EMILIANO ARREDONDO GOMEZ", dept: "HVAC", type: "ESTANDAR" },
-    { name: "JUAN ENRIQUE PEREZ MENDEZ", dept: "HVAC", type: "ESTANDAR" },
-    { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "SEBASTIAN PADILLA", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "RICARDO MENDO", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "CARLOS MENDEZ", dept: "CALIDAD", type: "ESTANDAR" },
-    { name: "REYNALDO GARCIA", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    // CONSTRUCCION
     { name: "JAIME OLIVO", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "EDUARDO TERAN", dept: "CONSTRUCCION", type: "HIBRIDO" },
-    { name: "EDGAR HOLT", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "ALEXIS TORRES", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "TERESA GARZA", dept: "CONSTRUCCION", type: "HIBRIDO" },
-    { name: "RAMIRO RODRIGUEZ", dept: "CONSTRUCCION", type: "HIBRIDO" },
-    { name: "GUILLERMO DAMICO", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "RUBEN PESQUEDA", dept: "CONSTRUCCION", type: "ESTANDAR" },
-    { name: "JUDITH ECHAVARRIA", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "GISELA DOMINGUEZ", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "VANESSA DE LARA", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "SONIA GARCIA PEREZ", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "DANIA LIZBETH GONZALEZ LORES", dept: "COMPRAS", type: "ESTANDAR" },
-    { name: "DIMAS ELIEL RAMOS GARCIA", dept: "RH", type: "ESTANDAR" },
-    { name: "CITLALI GOMEZ", dept: "EHS", type: "ESTANDAR" },
-    { name: "AIMEE RAMIREZ", dept: "EHS", type: "ESTANDAR" },
-    { name: "RUBI MORENO RODRIGUEZ", dept: "EHS", type: "ESTANDAR" },
-    { name: "EDGAR HOLT", dept: "MAQUINARIA", type: "ESTANDAR" },
-    { name: "SONIA GARCIA PEREZ", dept: "MAQUINARIA", type: "ESTANDAR" },
-    { name: "ANGEL SALINAS", dept: "DISEÑO", type: "HIBRIDO" },
-    { name: "EDGAR HOLT", dept: "DISEÑO", type: "ESTANDAR" },
-    { name: "EDGAR LOPEZ", dept: "DISEÑO", type: "HIBRIDO" },
-    { name: "EDGAR URIMAR LOPEZ MALDONADO", dept: "DISEÑO", type: "ESTANDAR" },
-    { name: "CESAR EDUARDO GARCIA AVALOS", dept: "DISEÑO", type: "ESTANDAR" },
-    { name: "JUANA MARIA RODRIGUEZ JUAREZ", dept: "FINANZAS", type: "ESTANDAR" },
-    { name: "JUANA MARIA RODRIGUEZ JUAREZ", dept: "FACTURACION", type: "ESTANDAR" },
-    { name: "DANIA LIZBETH GONZALEZ LORES", dept: "FACTURACION", type: "ESTANDAR" },
-    { name: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FACTURACION", type: "ESTANDAR" },
-    { name: "FRANCISCO SANCHEZ SERNA", dept: "RH", type: "ESTANDAR" },
-    { name: "LILIANA AYLIN MARTINEZ IBARRA", dept: "RH", type: "ESTANDAR" },
-    { name: "LAURA EDITH HUERTA ROCHA", dept: "RH", type: "ESTANDAR" },
-    { name: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", type: "ESTANDAR" }
+    { name: "RICARDO MENDO", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "ALFONSO CORREA", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    { name: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", type: "ESTANDAR" },
+    // LIMPIEZA
+    { name: "EDUARDO BENITEZ", dept: "LIMPIEZA", type: "ESTANDAR" },
+    // ALMACEN Y MAQUINARIA
+    { name: "SONIA GARCIA PEREZ", dept: "ALMACEN Y MAQUINARIA", type: "ESTANDAR" },
+    // SISTEMA (hoja espejo de control, sin login)
+    { name: "ADMINISTRADOR", dept: "ADMINISTRACION", type: "HIBRIDO" }
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
@@ -214,50 +211,40 @@ const USER_DB = {
   "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo", email: "jaimeolivo@empresa.com" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder", email: "workorder@empresa.com" },
   "ANTONIA_VENTAS": { pass: "tonita2025", role: "TONITA", label: "Ventas", email: "ventas@empresa.com", staffName: "ANTONIA_VENTAS", dept: "VENTAS", seller: true },
-  "JUDITH_ECHAVARRIA": { pass: "judith2951", role: "STAFF_USER", label: "Judith Echavarria", email: "", staffName: "JUDITH ECHAVARRIA", dept: "VENTAS", seller: true },
-  "EDUARDO_MANZANARES": { pass: "eduardo6234", role: "STAFF_USER", label: "Eduardo Manzanares", email: "", staffName: "EDUARDO MANZANARES", dept: "VENTAS", seller: true },
-  "RAMIRO_RODRIGUEZ": { pass: "ramiro9233", role: "STAFF_USER", label: "Ramiro Rodriguez", email: "", staffName: "RAMIRO RODRIGUEZ", dept: "VENTAS", seller: true },
-  "SEBASTIAN_PADILLA": { pass: "sebastian9385", role: "STAFF_USER", label: "Sebastian Padilla", email: "", staffName: "SEBASTIAN PADILLA", dept: "VENTAS", seller: true },
-  "CESAR_GOMEZ": { pass: "cesar2681", role: "STAFF_USER", label: "Cesar Gomez", email: "", staffName: "CESAR GOMEZ", dept: "VENTAS", seller: true },
-  "ALFONSO_CORREA": { pass: "alfonso4658", role: "STAFF_USER", label: "Alfonso Correa", email: "", staffName: "ALFONSO CORREA", dept: "VENTAS", seller: true },
-  "TERESA_GARZA": { pass: "teresa7891", role: "STAFF_USER", label: "Teresa Garza", email: "", staffName: "TERESA GARZA", dept: "VENTAS", seller: true },
-  "GUILLERMO_DAMICO": { pass: "guillermo9975", role: "STAFF_USER", label: "Guillermo Damico", email: "", staffName: "GUILLERMO DAMICO", dept: "VENTAS", seller: true },
-  "ANGEL_SALINAS": { pass: "angel9042", role: "STAFF_USER", label: "Angel Salinas", email: "", staffName: "ANGEL SALINAS", dept: "VENTAS", seller: true },
-  "JUAN_JOSE_SANCHEZ": { pass: "juan8226", role: "STAFF_USER", label: "Juan Jose Sanchez", email: "", staffName: "JUAN JOSE SANCHEZ", dept: "VENTAS", seller: true },
-  "LUIS_CARLOS": { pass: "admin2025", role: "ADMIN", label: "Administrador", email: "luiscarlos@empresa.com", staffName: "LUIS CARLOS", dept: "ADMINISTRACION", seller: false },
-  "DANIA_GONZALEZ": { pass: "dania2322", role: "STAFF_USER", label: "Dania Lizbeth Gonzalez Lores", email: "", staffName: "DANIA LIZBETH GONZALEZ LORES", dept: "FACTURACION", seller: false },
+  "JUDITH_ECHAVARRIA": { pass: "judith2951", role: "STAFF_USER", label: "Cristian Judith Echavarria Rodriguez", email: "", staffName: "JUDITH ECHAVARRIA", dept: "COMPRAS", seller: true },
+  "EDUARDO_MANZANARES": { pass: "eduardo6234", role: "STAFF_USER", label: "Eduardo Manzanares Sanchez", email: "", staffName: "EDUARDO MANZANARES", dept: "VENTAS", seller: true },
+  "RAMIRO_RODRIGUEZ": { pass: "ramiro9233", role: "STAFF_USER", label: "Ramiro Rodriguez Escalante", email: "", staffName: "RAMIRO RODRIGUEZ", dept: "VENTAS", seller: true },
+  "SEBASTIAN_PADILLA": { pass: "sebastian9385", role: "STAFF_USER", label: "Erick Sebastian Padilla Carrillo", email: "", staffName: "SEBASTIAN PADILLA", dept: "VENTAS", seller: true },
+  "ALFONSO_CORREA": { pass: "alfonso4658", role: "STAFF_USER", label: "Alfonso Correa De Leon", email: "", staffName: "ALFONSO CORREA", dept: "CONSTRUCCION", seller: true },
+  "TERESA_GARZA": { pass: "teresa7891", role: "STAFF_USER", label: "Maria Teresa Hernandez Garza", email: "", staffName: "TERESA GARZA", dept: "PRECIOS UNITARIOS", seller: true },
+  "ANGEL_SALINAS": { pass: "angel9042", role: "STAFF_USER", label: "Jose Angel Salinas Ramirez", email: "", staffName: "ANGEL SALINAS", dept: "DISEÑO", seller: true },
+  "JUAN_JOSE_SANCHEZ": { pass: "juan8226", role: "STAFF_USER", label: "Juan Jose Sanchez Muñiz", email: "", staffName: "JUAN JOSE SANCHEZ", dept: "CEO", seller: true },
+  "LUIS_CARLOS": { pass: "admin2025", role: "ADMIN", label: "Luis Carlos Holt Montero", email: "luiscarlos@empresa.com", staffName: "LUIS CARLOS", dept: "CEO", seller: false },
+  "DANIA_GONZALEZ": { pass: "dania2322", role: "STAFF_USER", label: "Dania Lizbeth Gonzalez Lores", email: "", staffName: "DANIA LIZBETH GONZALEZ LORES", dept: "FINANZAS", seller: false },
   "JUANY_RODRIGUEZ": { pass: "juany2814", role: "STAFF_USER", label: "Juana Maria Rodriguez Juarez", email: "", staffName: "JUANA MARIA RODRIGUEZ JUAREZ", dept: "FINANZAS", seller: false },
-  "EDUARDO_BENITEZ": { pass: "eduardo1188", role: "STAFF_USER", label: "Eduardo Benitez", email: "", staffName: "EDUARDO BENITEZ", dept: "ADMINISTRACION", seller: false },
-  "ROLANDO_MORENO": { pass: "rolando7508", role: "STAFF_USER", label: "Rolando Moreno", email: "", staffName: "ROLANDO MORENO", dept: "HVAC", seller: false },
-  "MIGUEL_GALLARDO": { pass: "miguel5120", role: "STAFF_USER", label: "Miguel Gallardo", email: "", staffName: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", seller: false },
-  "JEHU_MARTINEZ": { pass: "jehu6696", role: "STAFF_USER", label: "Jehu Martinez", email: "", staffName: "JEHU MARTINEZ", dept: "ELECTROMECANICA", seller: false },
-  "RICARDO_MENDO": { pass: "ricardo9414", role: "STAFF_USER", label: "Ricardo Mendo", email: "", staffName: "RICARDO MENDO", dept: "CONSTRUCCION", seller: false },
-  "CARLOS_MENDEZ": { pass: "carlos2250", role: "STAFF_USER", label: "Carlos Mendez", email: "", staffName: "CARLOS MENDEZ", dept: "CALIDAD", seller: false },
-  "REYNALDO_GARCIA": { pass: "reynaldo6577", role: "STAFF_USER", label: "Reynaldo Garcia", email: "", staffName: "REYNALDO GARCIA", dept: "CONSTRUCCION", seller: false },
-  "INGE_OLIVO": { pass: "inge2469", role: "STAFF_USER", label: "Jaime Olivo", email: "", staffName: "JAIME OLIVO", dept: "CONSTRUCCION", seller: false },
-  "EDUARDO_TERAN": { pass: "eduardo9815", role: "STAFF_USER", label: "Eduardo Teran", email: "", staffName: "EDUARDO TERAN", dept: "CONSTRUCCION", seller: true },
-  "EDGAR_HOLT": { pass: "edgar5786", role: "STAFF_USER", label: "Edgar Holt", email: "", staffName: "EDGAR HOLT", dept: "CONSTRUCCION", seller: false },
-  "ALEXIS_TORRES": { pass: "alexis5712", role: "STAFF_USER", label: "Alexis Torres", email: "", staffName: "ALEXIS TORRES", dept: "CONSTRUCCION", seller: false },
-  "RUBEN_PESQUEDA": { pass: "ruben8494", role: "STAFF_USER", label: "Ruben Pesqueda", email: "", staffName: "RUBEN PESQUEDA", dept: "CONSTRUCCION", seller: false },
-  "GISELA_DOMINGUEZ": { pass: "gisela3308", role: "STAFF_USER", label: "Gisela Dominguez", email: "", staffName: "GISELA DOMINGUEZ", dept: "COMPRAS", seller: false },
-  "VANESSA_DE_LARA": { pass: "vanessa6062", role: "STAFF_USER", label: "Vanessa De Lara", email: "", staffName: "VANESSA DE LARA", dept: "COMPRAS", seller: false },
+  "EDUARDO_BENITEZ": { pass: "eduardo1188", role: "STAFF_USER", label: "Eduardo Israel Benitez Garcia", email: "", staffName: "EDUARDO BENITEZ", dept: "LIMPIEZA", seller: false },
+  "ROLANDO_MORENO": { pass: "rolando7508", role: "STAFF_USER", label: "Jesus Rolando Moreno Perez", email: "", staffName: "ROLANDO MORENO", dept: "HVAC", seller: false },
+  "MIGUEL_GALLARDO": { pass: "miguel5120", role: "STAFF_USER", label: "Miguel Angel Gallardo Jaramillo", email: "", staffName: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", seller: false },
+  "JEHU_MARTINEZ": { pass: "jehu6696", role: "STAFF_USER", label: "Jehu Arsenio Martinez Montes", email: "", staffName: "JEHU MARTINEZ", dept: "ELECTROMECANICA", seller: false },
+  "RICARDO_MENDO": { pass: "ricardo9414", role: "STAFF_USER", label: "Ricardo Alonso Mendo Morales", email: "", staffName: "RICARDO MENDO", dept: "CONSTRUCCION", seller: false },
+  "CARLOS_MENDEZ": { pass: "carlos2250", role: "STAFF_USER", label: "Carlos Mendez Urbina", email: "", staffName: "CARLOS MENDEZ", dept: "CALIDAD", seller: false },
+  "INGE_OLIVO": { pass: "inge2469", role: "STAFF_USER", label: "Jaime Antonio Olivo Guerrero", email: "", staffName: "JAIME OLIVO", dept: "CONSTRUCCION", seller: false },
+  "EDUARDO_TERAN": { pass: "eduardo9815", role: "STAFF_USER", label: "Jesus Eduardo Teran Garcia", email: "", staffName: "EDUARDO TERAN", dept: "PRESUPUESTOS", seller: true },
+  "VANESSA_DE_LARA": { pass: "vanessa6062", role: "STAFF_USER", label: "Erika Vanessa Rodriguez De Lara", email: "", staffName: "VANESSA DE LARA", dept: "COMPRAS", seller: false },
   "DIMAS_RAMOS": { pass: "dimas2025", role: "ADMIN_CONTROL", label: "Dimas Eliel Ramos Garcia", email: "dimas.ramos@holtmont.com", staffName: "DIMAS ELIEL RAMOS GARCIA", dept: "RH", seller: false },
-  "CITLALI_GOMEZ": { pass: "citlali6956", role: "STAFF_USER", label: "Citlali Gomez", email: "", staffName: "CITLALI GOMEZ", dept: "EHS", seller: false },
-  "AIMEE_RAMIREZ": { pass: "aimee8554", role: "STAFF_USER", label: "Aimee Ramirez", email: "", staffName: "AIMEE RAMIREZ", dept: "EHS", seller: false },
-  "RUBI_MORENO": { pass: "rubi3641", role: "STAFF_USER", label: "Rubi Moreno Rodriguez", email: "", staffName: "RUBI MORENO RODRIGUEZ", dept: "EHS", seller: false },
-  "EDGAR_LOPEZ": { pass: "edgar7917", role: "STAFF_USER", label: "Edgar Lopez", email: "", staffName: "EDGAR LOPEZ", dept: "DISEÑO", seller: true },
+  "RUBI_MORENO": { pass: "rubi3641", role: "STAFF_USER", label: "Rubi Moreno Rodriguez", email: "", staffName: "RUBI MORENO RODRIGUEZ", dept: "SEGURIDAD", seller: false },
   "URIMAR_LOPEZ": { pass: "urimar7294", role: "STAFF_USER", label: "Edgar Urimar Lopez Maldonado", email: "", staffName: "EDGAR URIMAR LOPEZ MALDONADO", dept: "DISEÑO", seller: false },
-  "SAIRA": { pass: "saira3725", role: "STAFF_USER", label: "Zaira Yazmin Aguilar Aguilon", email: "", staffName: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FACTURACION", seller: false },
-  "ZAIRA_AGUILAR": { pass: "zaira5892", role: "STAFF_USER", label: "Zaira Yazmin Aguilar Aguilon", email: "", staffName: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FACTURACION", seller: false },
+  "ANTONIA_PINEDA": { pass: "antonia7043", role: "STAFF_USER", label: "Antonia Pineda Lopez", email: "", staffName: "ANTONIA PINEDA LOPEZ", dept: "PRESUPUESTOS", seller: false },
+  "SAIRA": { pass: "saira3725", role: "STAFF_USER", label: "Zaira Yazmin Aguilar Aguilon", email: "", staffName: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FINANZAS", seller: false },
+  "ZAIRA_AGUILAR": { pass: "zaira5892", role: "STAFF_USER", label: "Zaira Yazmin Aguilar Aguilon", email: "", staffName: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FINANZAS", seller: false },
   "EMILIANO_AREDON": { pass: "emiliano4187", role: "STAFF_USER", label: "Emiliano Arredondo Gomez", email: "", staffName: "EMILIANO ARREDONDO GOMEZ", dept: "HVAC", seller: false },
   "SONIA_GARCIA": { pass: "sonia2960", role: "STAFF_USER", label: "Sonia Garcia Perez", email: "", staffName: "SONIA GARCIA PEREZ", dept: "COMPRAS", seller: false },
   "FRANCISCO_SANCHEZ_SERNA": { pass: "francisco3814", role: "STAFF_USER", label: "Francisco Sanchez Serna", email: "", staffName: "FRANCISCO SANCHEZ SERNA", dept: "RH", seller: false },
   "LILIANA_MARTINEZ": { pass: "liliana4731", role: "STAFF_USER", label: "Liliana Martinez Ibarra", email: "", staffName: "LILIANA AYLIN MARTINEZ IBARRA", dept: "RH", seller: false },
   "LAURA_HUERTA": { pass: "laura8256", role: "STAFF_USER", label: "Laura Huerta Rocha", email: "", staffName: "LAURA EDITH HUERTA ROCHA", dept: "RH", seller: false },
   "ROCIO_CASTRO": { pass: "rocio3947", role: "STAFF_USER", label: "Rocio Castro Covarrubias", email: "", staffName: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", seller: false },
-  "GERALDINE_MARTINEZ": { pass: "geraldine5279", role: "STAFF_USER", label: "Geraldine Martinez Hernandez", email: "", staffName: "GERALDINE MARTINEZ HERNANDEZ", dept: "ADMINISTRACION", seller: false },
-  "JUAN_ENRIQUE_PEREZ": { pass: "juan6431", role: "STAFF_USER", label: "Juan Enrique Perez Mendez", email: "", staffName: "JUAN ENRIQUE PEREZ MENDEZ", dept: "HVAC", seller: false },
-  "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "DISEÑO", seller: false }
+  "GERALDINE_MARTINEZ": { pass: "geraldine5279", role: "STAFF_USER", label: "Geraldine Marie Martinez Hernandez", email: "", staffName: "GERALDINE MARTINEZ HERNANDEZ", dept: "PRECIOS UNITARIOS", seller: false },
+  "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", seller: false }
 };
 
 /* SERVICIO HTML */
@@ -435,10 +422,34 @@ function apiResyncDirectory() {
         }
         SpreadsheetApp.flush();
 
-        // 3. Log
-        registrarLog("SISTEMA", "RESYNC_DB", "DB_DIRECTORY re-sincronizado desde código.");
+        // 3. Crear hojas de tracker/ventas faltantes para el personal del directorio
+        //    (p. ej. nuevas altas como ANTONIA PINEDA LOPEZ). No toca hojas existentes.
+        let creadas = 0;
+        const ensureSheet = function(sName, hdrs) {
+            if (!sName) return;
+            let s = findSheetSmart(sName);
+            if (!s) {
+                s = SS.insertSheet(sName);
+                s.appendRow(hdrs);
+                s.getRange(1, 1, 1, hdrs.length).setFontWeight("bold").setBackground("#e6e6e6");
+                creadas++;
+            }
+        };
+        INITIAL_DIRECTORY.forEach(function(u) {
+            try {
+                if (u.name === "ADMINISTRADOR") { ensureSheet(u.name, DEFAULT_TRACKER_HEADERS); return; }
+                if (u.type === 'ESTANDAR' || u.type === 'HIBRIDO') ensureSheet(u.name, DEFAULT_TRACKER_HEADERS);
+                if (u.type === 'VENTAS' || u.type === 'HIBRIDO') ensureSheet(u.name + " (VENTAS)", DEFAULT_SALES_HEADERS);
+            } catch (errSheet) {
+                console.error("Fallo al crear hoja para " + u.name + ": " + errSheet);
+            }
+        });
+        SpreadsheetApp.flush();
 
-        return { success: true, message: "Directorio re-sincronizado." };
+        // 4. Log
+        registrarLog("SISTEMA", "RESYNC_DB", "DB_DIRECTORY re-sincronizado desde código. Hojas nuevas: " + creadas);
+
+        return { success: true, message: "Directorio re-sincronizado. Hojas nuevas creadas: " + creadas };
     } catch (e) {
         console.error(e);
         return { success: false, message: "Error al re-sincronizar: " + e.message };
@@ -544,12 +555,18 @@ function getSystemConfig(role, username) {
   const fullDirectory = getDirectoryFromDB();
 
   const allDepts = {
+      "CEO": { label: "Dirección General (CEO)", icon: "fa-crown", color: "#b8860b" },
       "CONSTRUCCION": { label: "Construcción", icon: "fa-hard-hat", color: "#e83e8c" },
       "COMPRAS": { label: "Compras/Almacén", icon: "fa-shopping-cart", color: "#198754" },
+      "PRESUPUESTOS": { label: "Presupuestos", icon: "fa-calculator", color: "#6f42c1" },
+      "PRECIOS UNITARIOS": { label: "Precios Unitarios", icon: "fa-dollar-sign", color: "#20c997" },
+      "SEGURIDAD": { label: "Seguridad", icon: "fa-shield-alt", color: "#dc3545" },
       "EHS": { label: "Seguridad (EHS)", icon: "fa-shield-alt", color: "#dc3545" },
       "DISEÑO": { label: "Diseño & Ing.", icon: "fa-drafting-compass", color: "#0d6efd" },
       "ELECTROMECANICA": { label: "Electromecánica", icon: "fa-bolt", color: "#ffc107" },
       "HVAC": { label: "HVAC", icon: "fa-fan", color: "#fd7e14" },
+      "LIMPIEZA": { label: "Limpieza", icon: "fa-broom", color: "#0dcaf0" },
+      "ALMACEN Y MAQUINARIA": { label: "Almacén y Maquinaria", icon: "fa-warehouse", color: "#198754" },
       "ADMINISTRACION": { label: "Administración", icon: "fa-briefcase", color: "#6f42c1" },
       "VENTAS": { label: "Ventas", icon: "fa-handshake", color: "#0dcaf0" },
       "MAQUINARIA": { label: "Maquinaria", icon: "fa-truck", color: "#20c997" },
@@ -692,7 +709,7 @@ function generarDashboard() {
 function apiFetchAdminKPIs() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   // Vendedores to analyze based on USER_DB (excluding ADMIN roles)
-  const sellers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "EDGAR_LOPEZ", "ANTONIA_VENTAS"];
+  const sellers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "ANTONIA_VENTAS"];
 
   let allData = [];
 
@@ -2113,7 +2130,7 @@ function internalUpdateTask(personName, taskData, username) {
         const isAntonia = String(personName).toUpperCase() === "ANTONIA_VENTAS";
 
         // --- RESTRICTION BLOCK: limit editable fields for vendor users on sheets they don't own ---
-        const restrictedUsers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "EDGAR_LOPEZ"];
+        const restrictedUsers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA"];
         const cleanUN = String(username).toUpperCase().trim();
         if (restrictedUsers.includes(cleanUN)) {
              // Allow full access when editing their own tracker sheet
