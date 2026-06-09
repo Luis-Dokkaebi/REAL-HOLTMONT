@@ -2029,7 +2029,7 @@
                 </template>
 
                 <button class="btn btn-primary btn-sm py-0 px-2 me-1" @click="loadTrackerData" title="Actualizar"><i class="fas fa-sync-alt me-1"></i> Actualizar</button>
-                <button v-if="['ADMIN', 'PPC_ADMIN', 'ADMIN_CONTROL', 'TONITA', 'STAFF_USER'].includes(currentRole)" class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
+                <button class="btn btn-success btn-sm py-0 px-2" @click="addNewRow" title="Agregar"><i class="fas fa-plus me-1"></i> Fila</button>
                 <button class="btn btn-warning btn-sm py-0 px-2 ms-1 fw-bold" @click="saveAllTrackerRows" title="Guardar Todo"><i class="fas fa-save me-1"></i> Guardar Todo</button>
                 <button class="btn btn-info btn-sm py-0 px-2 ms-1 fw-bold text-white" @click="toggleTrackerSort" title="Invertir Orden">
                     <i class="fas" :class="staffTrackerSortAsc ? 'fa-sort-amount-down-alt' : 'fa-sort-amount-up'"></i> Invertir Orden
@@ -6775,6 +6775,7 @@ async function toggleVoiceRecording(btnElement) {
 
       // --- LOGICA GENERAL Y COMPUTED ---
       const salesStaff = computed(() => (config.value.directory || []).filter(p => p.dept === 'VENTAS' && p.name !== 'ANTONIA_VENTAS').map(p => p.name));
+      const allStaffList = computed(() => (config.value.directory || config.value.staff || []).map(p => p.name).filter((n, i, a) => a.indexOf(n) === i));
       const filteredStaff = computed(() => config.value.staff.filter(p => p.dept === currentDept.value && p.name.toLowerCase().includes(searchQuery.value.toLowerCase())));
       const filteredDirectory = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(staffSearch.value.toLowerCase()) && !selectedResponsables.value.includes(p.name)).slice(0,5));
       const pageTitle = computed(() => currentView.value);
@@ -8960,13 +8961,19 @@ const filteredStaffTrackerData = computed(() => {
       const openVendorSelector = (row, field) => {
           if (!isFieldEditable(field, row)) return;
 
+          const isSalesTable = String(staffTracker.value.name).toUpperCase().includes('VENTAS') || currentUsername.value === 'ANTONIA_VENTAS';
+          const staffToUse = allStaffList.value;
           const currentVals = row[field] ? String(row[field]).split(',').map(s => s.trim()) : [];
 
-          let htmlContent = '<div style="text-align:left; max-height:300px; overflow-y:auto;">';
-          salesStaff.value.forEach(staff => {
+          let htmlContent = `
+              <input type="text" id="swal-input-search" class="form-control mb-3" placeholder="Buscar empleado...">
+              <div id="swal-checkbox-list" style="text-align:left; max-height:300px; overflow-y:auto;">
+          `;
+
+          staffToUse.forEach(staff => {
               const checked = currentVals.includes(staff) ? 'checked' : '';
               htmlContent += `
-                  <div class="form-check">
+                  <div class="form-check employee-item" data-name="${staff.toLowerCase()}">
                       <input class="form-check-input" type="checkbox" value="${staff}" id="chk_${staff.replace(/\s+/g,'_')}" ${checked}>
                       <label class="form-check-label" for="chk_${staff.replace(/\s+/g,'_')}">
                           ${staff}
@@ -8977,13 +8984,29 @@ const filteredStaffTrackerData = computed(() => {
           htmlContent += '</div>';
 
           Swal.fire({
-              title: 'Asignar Vendedores',
+              title: isSalesTable ? 'Asignar Vendedor / Empleado' : 'Asignar Involucrados / Empleado',
               html: htmlContent,
               showCancelButton: true,
               confirmButtonText: 'Aplicar',
+              didOpen: () => {
+                  const searchInput = document.getElementById('swal-input-search');
+                  const items = document.querySelectorAll('#swal-checkbox-list .employee-item');
+
+                  searchInput.addEventListener('input', (e) => {
+                      const searchTerm = e.target.value.toLowerCase();
+                      items.forEach(item => {
+                          const name = item.getAttribute('data-name');
+                          if (name.includes(searchTerm)) {
+                              item.style.display = 'block';
+                          } else {
+                              item.style.display = 'none';
+                          }
+                      });
+                  });
+              },
               preConfirm: () => {
                   const selected = [];
-                  salesStaff.value.forEach(staff => {
+                  staffToUse.forEach(staff => {
                       const el = document.getElementById('chk_' + staff.replace(/\s+/g,'_'));
                       if (el && el.checked) selected.push(staff);
                   });
@@ -8997,20 +9020,47 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const openInvolucradosSelector = (item) => {
-          const allStaff = (config.value.directory || config.value.staff || []).map(p => p.name).filter((n, i, a) => a.indexOf(n) === i);
+          const allStaff = allStaffList.value;
           const currentVals = item.responsable ? String(item.responsable).split(',').map(s => s.trim()).filter(s => s) : [];
-          let htmlContent = '<div style="text-align:left; max-height:300px; overflow-y:auto;">';
+
+          let htmlContent = `
+              <input type="text" id="swal-input-search-inv" class="form-control mb-3" placeholder="Buscar empleado...">
+              <div id="swal-checkbox-list-inv" style="text-align:left; max-height:300px; overflow-y:auto;">
+          `;
+
           allStaff.forEach(staff => {
               const checked = currentVals.includes(staff) ? 'checked' : '';
               const id = 'inv_' + staff.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
-              htmlContent += `<div class="form-check"><input class="form-check-input" type="checkbox" value="${staff}" id="${id}" ${checked}><label class="form-check-label" for="${id}">${staff}</label></div>`;
+              htmlContent += `
+                  <div class="form-check employee-item-inv" data-name="${staff.toLowerCase()}">
+                      <input class="form-check-input" type="checkbox" value="${staff}" id="${id}" ${checked}>
+                      <label class="form-check-label" for="${id}">${staff}</label>
+                  </div>
+              `;
           });
           htmlContent += '</div>';
+
           Swal.fire({
               title: 'Asignar Involucrados',
               html: htmlContent,
               showCancelButton: true,
               confirmButtonText: 'Aplicar',
+              didOpen: () => {
+                  const searchInput = document.getElementById('swal-input-search-inv');
+                  const items = document.querySelectorAll('#swal-checkbox-list-inv .employee-item-inv');
+
+                  searchInput.addEventListener('input', (e) => {
+                      const searchTerm = e.target.value.toLowerCase();
+                      items.forEach(item => {
+                          const name = item.getAttribute('data-name');
+                          if (name.includes(searchTerm)) {
+                              item.style.display = 'block';
+                          } else {
+                              item.style.display = 'none';
+                          }
+                      });
+                  });
+              },
               preConfirm: () => {
                   const selected = [];
                   allStaff.forEach(staff => {
@@ -9650,7 +9700,7 @@ const filteredStaffTrackerData = computed(() => {
           } catch(e) { return ''; }
       };
 
-      return { visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
+      return { allStaffList, visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       openInvolucradosSelector,
       saveAllTrackerRows,
