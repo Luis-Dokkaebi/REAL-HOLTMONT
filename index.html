@@ -836,6 +836,17 @@
             <span class="nav-text fw-bold" style="color: #00d2ff;">MÉTRICAS COT.</span>
         </div>
 
+        <!-- DOCUMENTACIÓN: POLÍTICAS Y MANUAL DE USO -->
+        <div class="section-title" style="color: #4e9eff; border-color: rgba(78,158,255,0.3);">DOCUMENTACIÓN</div>
+        <div class="nav-item" :class="{ active: currentView === 'POLITICAS' }" @click="currentView = 'POLITICAS'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #4e9eff; background: rgba(78, 158, 255, 0.08);">
+            <div class="nav-icon-col"><i class="fas fa-file-contract" style="color: #4e9eff;"></i></div>
+            <span class="nav-text fw-bold" style="color: #4e9eff;">Políticas</span>
+        </div>
+        <div class="nav-item" :class="{ active: currentView === 'MANUAL_USO' }" @click="currentView = 'MANUAL_USO'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #00c9a7; background: rgba(0, 201, 167, 0.08);">
+            <div class="nav-icon-col"><i class="fas fa-book-open" style="color: #00c9a7;"></i></div>
+            <span class="nav-text fw-bold" style="color: #00c9a7;">Manual de Uso</span>
+        </div>
+
         <!-- CERTIFICADO HOLTZAR -->
         <div class="section-title" style="color: #d4af37; border-color: rgba(212,175,55,0.3);">CERTIFICACIÓN</div>
         <div class="nav-item" :class="{ active: currentView === 'CERTIFICADO_HOLTZAR' }" @click="currentView = 'CERTIFICADO_HOLTZAR'; currentDept = ''; currentModuleId = '';" style="border-left: 3px solid #d4af37; background: rgba(212, 175, 55, 0.08);">
@@ -4963,6 +4974,300 @@
         </div>
 
       </div>
+
+      <!-- ============ VISTA: POLÍTICAS ============ -->
+      <div v-if="currentView === 'POLITICAS'" class="animate__animated animate__fadeIn" style="min-height: 100%; background: linear-gradient(160deg, #f4f7fb 0%, #eef4ff 100%); overflow-y: auto;">
+
+        <!-- Hero Header -->
+        <div style="background: linear-gradient(135deg, #0f1f3f 0%, #1a3a6e 100%); padding: 35px 30px; text-align: center; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -30px; right: -30px; width: 160px; height: 160px; border-radius: 50%; background: rgba(78,158,255,0.10);"></div>
+          <div style="position: absolute; bottom: -20px; left: -20px; width: 100px; height: 100px; border-radius: 50%; background: rgba(78,158,255,0.08);"></div>
+          <i class="fas fa-file-contract" style="font-size: 50px; color: #4e9eff; margin-bottom: 12px; display: block; filter: drop-shadow(0 0 12px rgba(78,158,255,0.5));"></i>
+          <h2 style="color: #4e9eff; font-family: Georgia, serif; font-weight: bold; margin: 0 0 6px; font-size: 1.6rem; letter-spacing: 0.5px;">POLÍTICA DE REGISTRO, ACTUALIZACIÓN Y CIERRE DE ACTIVIDADES</h2>
+          <p style="color: #bbb; margin: 0; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;">Holtzar Service Plataforma</p>
+        </div>
+
+        <div class="p-4" style="max-width: 980px; margin: 0 auto;">
+
+          <!-- Document meta -->
+          <div class="d-flex flex-wrap gap-2 justify-content-center mb-4">
+            <span class="badge px-3 py-2" style="background:#1a3a6e; font-size:0.78rem;">PO-HOLTMONT-013</span>
+            <span class="badge px-3 py-2" style="background:#4e9eff; font-size:0.78rem;">REV-001</span>
+            <span class="badge px-3 py-2 text-dark" style="background:#dbe9ff; font-size:0.78rem;">Departamento: Recursos Humanos</span>
+            <span class="badge px-3 py-2 text-dark" style="background:#e9eef5; font-size:0.78rem;">Junio 2026</span>
+          </div>
+
+          <!-- 1. OBJETIVO -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3" style="color:#1a3a6e;"><span class="badge me-2" style="background:#4e9eff;">1</span>Objetivo</h5>
+              <p class="mb-0 text-secondary" style="line-height:1.7;">Establecer los lineamientos y obligaciones de cumplimiento obligatorio para todos los colaboradores de HOLTMONT respecto al registro, seguimiento, actualización y cierre de actividades mediante el sistema <strong>HOLTZAR SERVICE PLATAFORMA</strong>, con la finalidad de asegurar la correcta administración de las tareas, la trazabilidad de la información, el seguimiento oportuno de los proyectos y el cumplimiento de los objetivos organizacionales.</p>
+            </div>
+          </div>
+
+          <!-- 2. ALCANCE -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3" style="color:#1a3a6e;"><span class="badge me-2" style="background:#4e9eff;">2</span>Alcance</h5>
+              <p class="mb-0 text-secondary" style="line-height:1.7;">La presente política es aplicable a todos los empleados, colaboradores, supervisores, coordinadores, gerentes y personal que desempeñe actividades para HOLTMONT y que tenga acceso y uso de HOLTZAR SERVICE PLATAFORMA.</p>
+            </div>
+          </div>
+
+          <!-- 3. RESPONSABILIDADES DEL EMPLEADO -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3" style="color:#1a3a6e;"><span class="badge me-2" style="background:#4e9eff;">3</span>Responsabilidades del Empleado</h5>
+              <p class="text-secondary mb-3" style="line-height:1.7;">Como parte de sus responsabilidades laborales hacia HOLTMONT, cada empleado se obliga a:</p>
+
+              <div class="mb-3 ps-2" style="border-left:3px solid #4e9eff;">
+                <h6 class="fw-bold mb-2" style="color:#1a3a6e;">3.1 Registro Diario de Actividades</h6>
+                <ul class="text-secondary mb-0" style="line-height:1.7;">
+                  <li>Registrar diariamente en HOLTZAR SERVICE PLATAFORMA todas las actividades, tareas, proyectos, servicios o asignaciones que formen parte de sus funciones laborales.</li>
+                  <li>Mantener actualizada la información relacionada con sus actividades para garantizar la visibilidad y seguimiento de los trabajos asignados.</li>
+                </ul>
+              </div>
+
+              <div class="mb-3 ps-2" style="border-left:3px solid #4e9eff;">
+                <h6 class="fw-bold mb-2" style="color:#1a3a6e;">3.2 Planeación de Actividades</h6>
+                <ul class="text-secondary mb-0" style="line-height:1.7;">
+                  <li>Al inicio de cada jornada laboral, el empleado deberá destinar obligatoriamente <strong>treinta (30) minutos</strong> para la planeación y programación de sus actividades del día.</li>
+                  <li>Durante este periodo deberá registrar en la plataforma las actividades nuevas, prioridades, compromisos y tareas programadas para su ejecución.</li>
+                </ul>
+              </div>
+
+              <div class="mb-3 ps-2" style="border-left:3px solid #4e9eff;">
+                <h6 class="fw-bold mb-2" style="color:#1a3a6e;">3.3 Actualización de Avances</h6>
+                <ul class="text-secondary mb-0" style="line-height:1.7;">
+                  <li>El empleado deberá actualizar diariamente el porcentaje de avance de cada actividad registrada en la plataforma.</li>
+                  <li>Será obligatorio documentar en los campos de observaciones cualquier avance relevante, situación operativa, desviación o restricción que impacte el cumplimiento de la actividad.</li>
+                  <li>En caso de que una tarea no pueda concluirse en el plazo establecido, el empleado deberá registrar la justificación correspondiente en el apartado de observaciones, describiendo de manera clara y objetiva los motivos que impiden su cierre.</li>
+                </ul>
+              </div>
+
+              <div class="mb-3 ps-2" style="border-left:3px solid #4e9eff;">
+                <h6 class="fw-bold mb-2" style="color:#1a3a6e;">3.4 Cierre de Actividades</h6>
+                <ul class="text-secondary mb-0" style="line-height:1.7;">
+                  <li>Todas las actividades deberán cerrarse en tiempo y forma una vez concluidas.</li>
+                  <li>Como requisito obligatorio para el cierre de una actividad, el empleado deberá cargar en la nube de HOLTZAR SERVICE PLATAFORMA la evidencia documental correspondiente que respalde la ejecución y conclusión del trabajo realizado.</li>
+                  <li>La evidencia podrá consistir, según corresponda, en documentos, reportes, fotografías, formatos, archivos electrónicos, entregables o cualquier otro elemento que valide el cumplimiento de la actividad.</li>
+                </ul>
+              </div>
+
+              <div class="ps-2" style="border-left:3px solid #4e9eff;">
+                <h6 class="fw-bold mb-2" style="color:#1a3a6e;">3.5 Actualización al Final de la Jornada</h6>
+                <ul class="text-secondary mb-0" style="line-height:1.7;">
+                  <li>Al término de cada jornada laboral, el empleado deberá destinar obligatoriamente <strong>quince (15) minutos</strong> para revisar, actualizar y cerrar las actividades registradas durante el día.</li>
+                  <li>Durante este periodo deberá verificar que los porcentajes de avance, observaciones y evidencias se encuentren debidamente actualizados en el sistema.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. OBLIGATORIEDAD DE CUMPLIMIENTO -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3" style="color:#1a3a6e;"><span class="badge me-2" style="background:#4e9eff;">4</span>Obligatoriedad de Cumplimiento</h5>
+              <ul class="text-secondary mb-0" style="line-height:1.7;">
+                <li>El cumplimiento de la presente política constituye una obligación laboral de carácter obligatorio para todos los empleados de HOLTMONT.</li>
+                <li>La utilización adecuada de HOLTZAR SERVICE PLATAFORMA, el registro oportuno de actividades, la actualización de avances, el cierre de tareas y la carga de evidencias forman parte de las responsabilidades inherentes al puesto de trabajo y serán consideradas dentro de los criterios de evaluación del desempeño laboral.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 5. INCUMPLIMIENTO Y CONSECUENCIAS -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px; border-left:4px solid #e74c3c !important;">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3" style="color:#c0392b;"><span class="badge me-2 bg-danger">5</span>Incumplimiento y Consecuencias Administrativas</h5>
+              <p class="text-secondary" style="line-height:1.7;">El incumplimiento parcial o total de cualquiera de las disposiciones contenidas en la presente política podrá dar lugar a medidas administrativas por parte del Departamento de Recursos Humanos y de los responsables directos del área correspondiente.</p>
+              <p class="text-secondary mb-2" style="line-height:1.7;">Las acciones disciplinarias aplicables serán determinadas conforme a la gravedad de la falta, la reincidencia y las disposiciones establecidas en:</p>
+              <ul class="text-secondary" style="line-height:1.7;">
+                <li>El Reglamento Interior de Trabajo de HOLTMONT.</li>
+                <li>Contrato individual de trabajo.</li>
+                <li>Las políticas internas vigentes de la empresa.</li>
+                <li>La Ley Federal del Trabajo y demás disposiciones legales aplicables.</li>
+              </ul>
+              <p class="text-secondary mb-0" style="line-height:1.7;">Lo anterior podrá incluir llamados de atención, amonestaciones, medidas correctivas, actas administrativas y cualquier otra acción procedente conforme al marco normativo interno y legal aplicable.</p>
+            </div>
+          </div>
+
+          <!-- 6. ACEPTACIÓN Y COMPROMISO -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3" style="color:#1a3a6e;"><span class="badge me-2" style="background:#4e9eff;">6</span>Aceptación y Compromiso del Empleado</h5>
+              <p class="text-secondary" style="line-height:1.7;">Una vez leída y comprendida la presente política, el empleado manifiesta conocer el contenido, alcance y obligatoriedad de la misma, comprometiéndose a cumplir íntegramente con todas sus disposiciones.</p>
+              <p class="text-secondary" style="line-height:1.7;">Asimismo, el empleado acepta acatar las instrucciones, procedimientos, lineamientos y disposiciones reglamentarias que emanen de la empresa respecto al uso de HOLTZAR SERVICE PLATAFORMA y al cumplimiento de sus responsabilidades laborales.</p>
+              <p class="text-secondary mb-0" style="line-height:1.7;">La permanencia en la relación laboral y el uso de los sistemas corporativos implica la aceptación y observancia de las obligaciones aquí establecidas.</p>
+            </div>
+          </div>
+
+          <!-- 7. ACTUALIZACIÓN -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-body p-4">
+              <h5 class="fw-bold mb-3" style="color:#1a3a6e;"><span class="badge me-2" style="background:#4e9eff;">7</span>Actualización</h5>
+              <p class="text-secondary mb-0" style="line-height:1.7;">La presente política estará sujeta a cambios de acuerdo con las necesidades administrativas de la empresa.</p>
+            </div>
+          </div>
+
+          <!-- Firma -->
+          <div class="text-center py-4">
+            <p class="text-secondary mb-1">Atentamente</p>
+            <p class="fw-bold mb-0" style="color:#1a3a6e; font-family:Georgia,serif; font-size:1.1rem; letter-spacing:1px;">CORPORATIVO HOLTMONT</p>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============ VISTA: MANUAL DE USO ============ -->
+      <div v-if="currentView === 'MANUAL_USO'" class="animate__animated animate__fadeIn" style="min-height: 100%; background: linear-gradient(160deg, #f4fbf9 0%, #ecfaf5 100%); overflow-y: auto;">
+
+        <!-- Hero Header -->
+        <div style="background: linear-gradient(135deg, #04231d 0%, #0a5c4a 100%); padding: 35px 30px; text-align: center; position: relative; overflow: hidden;">
+          <div style="position: absolute; top: -30px; right: -30px; width: 160px; height: 160px; border-radius: 50%; background: rgba(0,201,167,0.10);"></div>
+          <div style="position: absolute; bottom: -20px; left: -20px; width: 100px; height: 100px; border-radius: 50%; background: rgba(0,201,167,0.08);"></div>
+          <i class="fas fa-book-open" style="font-size: 50px; color: #00c9a7; margin-bottom: 12px; display: block; filter: drop-shadow(0 0 12px rgba(0,201,167,0.5));"></i>
+          <h2 style="color: #00c9a7; font-family: Georgia, serif; font-weight: bold; margin: 0 0 6px; font-size: 1.7rem; letter-spacing: 1px;">MANUAL DE USO</h2>
+          <p style="color: #bbb; margin: 0; font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;">Holtzar Service Plataforma · Staff Tracker</p>
+        </div>
+
+        <div class="p-4" style="max-width: 980px; margin: 0 auto;">
+
+          <div class="alert border-0 mb-4 py-3" style="background: linear-gradient(135deg, #0a5c4a, #04231d); color: white; border-radius: 12px;">
+            <div class="d-flex align-items-center gap-3">
+              <i class="fas fa-info-circle" style="font-size: 26px; color: #00c9a7; flex-shrink: 0;"></i>
+              <div>
+                <div class="fw-bold mb-1" style="color: #00c9a7; font-size: 0.95rem;">GUÍA PASO A PASO</div>
+                <div class="small" style="color: #cfeee7;">Sigue estas instrucciones para registrar, actualizar y cerrar tus Tasks correctamente en la plataforma.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: INICIO DE SESIÓN -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-header border-0 py-3" style="background: linear-gradient(135deg, #04231d, #0a5c4a); border-radius:12px 12px 0 0;">
+              <span class="fw-bold" style="color:#00c9a7;"><i class="fas fa-sign-in-alt me-2"></i>1. Inicio de Sesión</span>
+            </div>
+            <div class="card-body p-4">
+              <ul class="text-secondary mb-0" style="line-height:1.8;">
+                <li>Abre <strong>Holtzar Service Plataforma</strong> por medio del link oficial.</li>
+                <li>Ingresa el usuario y la contraseña proporcionados por un medio oficial (correo o mensaje) y presiona <strong>Inicia sesión</strong>.</li>
+                <li>En caso de no poder iniciar sesión, revisa el usuario y la contraseña nuevamente. Si el problema persiste, informa a RH a la brevedad.</li>
+                <li>En la pantalla de inicio, dirígete al panel de opciones y selecciona <strong>"Mi Tabla"</strong>.</li>
+                <li>Obtendrás acceso a <strong>"STAFF_TRACKER"</strong>. La pantalla mostrará el enlistado de Tasks por empleado al terminar de cargar los datos.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: STAFF TRACKER -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-header border-0 py-3" style="background: linear-gradient(135deg, #04231d, #0a5c4a); border-radius:12px 12px 0 0;">
+              <span class="fw-bold" style="color:#00c9a7;"><i class="fas fa-table me-2"></i>2. Staff Tracker</span>
+            </div>
+            <div class="card-body p-4">
+              <ul class="text-secondary mb-0" style="line-height:1.8;">
+                <li>La hoja editable de Tasks se presenta como <strong>"Operativo"</strong>.</li>
+                <li>Se muestra la lista de involucrados en el Task activo.</li>
+                <li>La columna <strong>"Concepto"</strong> contiene la información sobre el Task activo.</li>
+                <li>La columna <strong>"Reloj"</strong> muestra los días transcurridos desde la asignación.</li>
+                <li>En <strong>"Clasificación"</strong> se muestra el nivel del Task: desde A, AA y AAA.</li>
+                <li>También cuentas con el añadido de documentación para cada Task.</li>
+                <li><strong>Importante:</strong> todo Task activo en "Operativo" deberá ser actualizado manualmente de manera diaria, finalizando al presionar el botón de guardado.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: ACTUALIZACIÓN DE AVANCE % -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-header border-0 py-3" style="background: linear-gradient(135deg, #04231d, #0a5c4a); border-radius:12px 12px 0 0;">
+              <span class="fw-bold" style="color:#00c9a7;"><i class="fas fa-percent me-2"></i>3. Actualización de Avance %</span>
+            </div>
+            <div class="card-body p-4">
+              <ul class="text-secondary mb-3" style="line-height:1.8;">
+                <li>Para editar <strong>"Avance %"</strong>, selecciona la casilla del Task correspondiente e ingresa un valor desde 0% al 100%.</li>
+                <li>Considera el valor <strong>0%</strong> como no iniciado y <strong>100%</strong> como completado.</li>
+                <li>Al actualizar "Avance %", concluye presionando el botón de guardado.</li>
+                <li>Al estar seguro de los datos ingresados, haz click en <strong>"Sí, guardar"</strong> para actualizar el Tracker. De lo contrario, selecciona <strong>"Cancelar"</strong> para volver al Tracker.</li>
+                <li>Espera la notificación de <strong>"Guardado"</strong> para garantizar la actualización debida del Tracker y da click en <strong>"OK"</strong>.</li>
+                <li>En caso de no mostrar la confirmación de Guardado, reinténtalo nuevamente.</li>
+              </ul>
+              <div class="alert alert-success border-0 mb-0 small" style="background:#e7f9f4; color:#0a5c4a;">
+                <i class="fas fa-clock me-1"></i> Cuando un Task se actualiza y guarda a un avance entre <strong>0% - 99%</strong>, se mantiene visible en la pestaña "Operativo" y el contador de días <strong>"Reloj"</strong> seguirá activo. Solo las tareas <strong>"Completadas" al 100%</strong> detienen el contador de días.
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: HISTORIAL DE TASKS -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-header border-0 py-3" style="background: linear-gradient(135deg, #04231d, #0a5c4a); border-radius:12px 12px 0 0;">
+              <span class="fw-bold" style="color:#00c9a7;"><i class="fas fa-history me-2"></i>4. Historial de Tasks – Tasks al 100%</span>
+            </div>
+            <div class="card-body p-4">
+              <ul class="text-secondary mb-0" style="line-height:1.8;">
+                <li>Seleccionando la pestaña <strong>"HISTORIAL"</strong> se muestran todas las actividades "Completadas".</li>
+                <li>Selecciona <strong>"Buscar por concepto"</strong> para identificar Tasks completados en el historial.</li>
+                <li>Los Tasks "Completados" al 100% mostrarán toda la información, archivos y comentarios añadidos en la vista "Operativo".</li>
+                <li>En caso de no encontrar Tasks completados, selecciona <strong>"Actualizar"</strong>. De no reflejarse, vuelve a "Operativo" y comprueba el cambio guardado.</li>
+                <li>Si los Tasks "Completados" al 100% debidamente no se reflejan en la pestaña de historial, informa a tu supervisor/RH a la brevedad.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: ARCHIVOS EN TASK -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-header border-0 py-3" style="background: linear-gradient(135deg, #04231d, #0a5c4a); border-radius:12px 12px 0 0;">
+              <span class="fw-bold" style="color:#00c9a7;"><i class="fas fa-paperclip me-2"></i>5. Gestión de Archivos en un Task</span>
+            </div>
+            <div class="card-body p-4">
+              <div class="mb-3">
+                <h6 class="fw-bold" style="color:#0a5c4a;"><i class="fas fa-cloud-upload-alt me-2"></i>Añadir archivos</h6>
+                <ul class="text-secondary mb-0" style="line-height:1.8;">
+                  <li>Para añadir archivos al Task, selecciona la <strong>"Nube"</strong> en la columna de archivos.</li>
+                  <li>Selecciona el archivo y presiona <strong>"Abrir"</strong>. El documento se cargará debidamente, mostrando el icono correspondiente.</li>
+                </ul>
+              </div>
+              <div class="mb-3">
+                <h6 class="fw-bold" style="color:#0a5c4a;"><i class="fas fa-eye me-2"></i>Visualizar archivos</h6>
+                <ul class="text-secondary mb-0" style="line-height:1.8;">
+                  <li>Para visualizar los archivos cargados, selecciona el icono de visualización.</li>
+                  <li>El archivo, dependiendo de su formato, se visualizará en una pestaña emergente.</li>
+                  <li>Al terminar, continúa presionando el botón de guardado para actualizar la plataforma.</li>
+                </ul>
+              </div>
+              <div>
+                <h6 class="fw-bold" style="color:#0a5c4a;"><i class="fas fa-trash-alt me-2"></i>Eliminar archivos</h6>
+                <ul class="text-secondary mb-0" style="line-height:1.8;">
+                  <li>Para eliminar un archivo, selecciona el icono de eliminar.</li>
+                  <li>Selecciona <strong>"Sí, eliminar"</strong> para continuar; de lo contrario presiona <strong>"Cancelar"</strong>.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN: CERTIFICADO HOLTZAR -->
+          <div class="card shadow-sm border-0 mb-3" style="border-radius:12px;">
+            <div class="card-header border-0 py-3" style="background: linear-gradient(135deg, #04231d, #0a5c4a); border-radius:12px 12px 0 0;">
+              <span class="fw-bold" style="color:#00c9a7;"><i class="fas fa-certificate me-2"></i>6. Certificado Holtzar</span>
+            </div>
+            <div class="card-body p-4">
+              <ul class="text-secondary mb-0" style="line-height:1.8;">
+                <li>En el panel de control selecciona <strong>"Certificado Holtzar"</strong>. En este apartado se encuentran videos de capacitación para el uso de la plataforma.</li>
+                <li>La plataforma registra la visualización del video y puede continuarse con la obtención de la certificación.</li>
+                <li>Continúa haciendo click en el apartado <strong>"Práctica de actividades"</strong>, o da click en el botón <strong>"Ir a práctica"</strong> en la parte inferior.</li>
+                <li>Sigue las instrucciones para completar la práctica.</li>
+                <li>Concluyendo cada una de las prácticas, obtendrás un certificado.</li>
+                <li>Cualquier actualización o cambio se reflejará en todos los usuarios, y aparecerá actualizado el video curso en "Certificado Holtzar".</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Cierre -->
+          <div class="text-center py-4">
+            <i class="fas fa-handshake mb-2" style="font-size:32px; color:#00c9a7;"></i>
+            <p class="fw-bold mb-0" style="color:#0a5c4a; font-family:Georgia,serif; font-size:1.1rem; letter-spacing:1px;">WE APPRECIATE YOUR ATTENTION</p>
+          </div>
+
+        </div>
+      </div>
+
     </main>
   </div>
 
