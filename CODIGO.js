@@ -345,7 +345,7 @@ function getDirectoryFromDB() {
           }
 
           const data = sheet.getDataRange().getValues();
-          if (data.length < 2) return [];
+          if (data.length < 2) return INITIAL_DIRECTORY;
 
           // Parse Data
           const headers = data[0].map(h => String(h).toUpperCase().trim());
@@ -353,7 +353,7 @@ function getDirectoryFromDB() {
           const deptIdx = headers.indexOf("DEPARTAMENTO");
           const typeIdx = headers.indexOf("TIPO_HOJA");
 
-          if (nameIdx === -1) return [];
+          if (nameIdx === -1) return INITIAL_DIRECTORY;
 
           const directory = [];
           for (let i = 1; i < data.length; i++) {
