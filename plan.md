@@ -1,35 +1,24 @@
-1. **Understand the requirements:**
-   - Add a new "Dashboard de KPIs Reales para Administradores" for Jaime Olivo (ADMIN_CONTROL).
-   - This should follow `SDD_KPI_ADMIN.md` exactly.
-   - It will replace the current mock data logic with real data dynamically calculated in the backend.
-   - Top Cards: Vol, Cierres, Pérdidas, Eficiencia. Cierres = % Ganadas (Ganadas / Enviadas).
-   - Charts: Embudo (Recibidas, Integradas, A tiempo, Seguimiento, Ganadas), Motivos de Pérdida (Doughnut), Productividad (Weekly line chart).
-   - Table: RENDIMIENTO INDIVIDUAL without "Llamar" action column. (COLABORADOR, VOL., GANADAS, % CIERRE (Ganadas / (Ganadas + Canceladas)), EFIC. (D), ESTADO (Eficiente, Riesgo, Cuello botella)).
-   - Implement `apiFetchAdminKPIs` in `CODIGO.js`.
-   - Implement frontend logic for UI and state. Ensure typography homogeneity.
+1. **Crear una función `generatePrefix(name)` en `CODIGO.js`**
+   - Esta función tomará el nombre del usuario (o `currentSheetName`).
+   - Mantendrá los prefijos hardcodeados actuales por compatibilidad:
+     - `JESUS_CANTU` -> `JC-`
+     - `LUIS_CARLOS` o `ADMINISTRADOR` -> `LC-`
+     - `JAIME_OLIVO` -> `JO-`
+     - `ANTONIA_VENTAS` -> `AV-`
+   - Si no coincide con los hardcodeados, tomará el nombre, lo limpiará (quitará espacios extra o guiones bajos), y tomará las primeras letras de las primeras dos palabras para generar el prefijo.
+   - Si solo tiene una palabra, tomará las primeras 2 letras de esa palabra.
+   - Siempre se añadirá `-` al final.
 
-2. **Backend (`CODIGO.js`) Changes:**
-   - Create `apiFetchAdminKPIs()` which extracts real data from all user trackers and Info Bank history if needed, or primarily active trackers, to compute:
-     - `globalMetrics`: { totalQuotes, ganadas, ganadasPercentage, perdidasRiesgo, riskAmount, averageEfficiency }
-     - `funnelData`: { recibidas, integradas, aTiempo, seguimiento, ganadas }
-     - `lossDistribution`: array of { label, value } for "Motivo Perdida"
-     - `weeklyProductivity`: array for Monday to Friday.
-     - `collaboratorStats`: array of { name, vol, ganadas, cierrePercentage, avgEfic, estado }
-   - Add this function to return aggregated KPI stats exactly as SDD requests.
+2. **Actualizar la generación de prefijos en `CODIGO.js`**
+   - Remplazar la lógica inline en `cmdRealizarAlta` (alrededor de la línea 3367) por una llamada a `generatePrefix`.
+   - Modificar cualquier otro lugar en `CODIGO.js` donde se asigne el folio `PPC-` por defecto en base al usuario que crea la tarea o proyecto.
+     - Específicamente, en `apiSavePPCData` (línea 2617), donde dice `id = "PPC-" + ...` cuando se recibe de Maestro. Actualizarlo para usar el prefijo del usuario de sesión (`username`).
+     - Al parecer la línea 2617 se llama en `apiSavePPCData`.
 
-3. **Frontend (`index.html`) Changes:**
-   - Update `INSTRUCCIONES_ADMIN_CONTROL` view (or add a separate KPI dashboard view button) for `ADMIN_CONTROL`. Wait, `KPI_DASHBOARD` already exists for `LUIS_CARLOS`. The request is to "implementa la nueva vista del 'Dashboard de KPIs para Administradores' para el usuario Jaime Olivo (ADMIN_CONTROL)".
-   - So I should make the "KPI_DASHBOARD" view accessible to `ADMIN_CONTROL` via a new Sidebar navigation button.
-   - Or maybe a completely new view `KPI_ADMIN_DASHBOARD` for Jaime Olivo based on the design document.
-   - The user asked to "implementa la nueva vista del 'Dashboard de KPIs para Administradores' para el usuario Jaime Olivo (ADMIN_CONTROL)".
-   - I'll replace the existing mocked KPI view or create a new dedicated admin one specifically for this purpose, aligning with the 3 sections defined in `SDD_KPI_ADMIN.md` (Top cards, Charts, Individual Performance Table).
-   - Sidebar: Add a button for "KPI DASHBOARD" visible to `ADMIN_CONTROL`.
-   - Update `kpiData` structure, `loadKPIData` function, and the HTML structure to match the new Top Cards, Charts, and Table.
-   - Include UI logic for Chart.js.
+3. **Verificación y Pruebas**
+   - Realizar `node syntax_check.js`.
+   - Confirmar que los test de integración pasen o al menos que el sintaxis sea válido.
 
-4. **Verify changes & pre-commit steps:**
-   - `pre_commit_instructions`
-   - Test UI with `python3 verify_ui.py`
-   - Test backend with `node syntax_check.js`
-
-Let's request a plan review.
+4. **Pre-commit checks**
+   - Ejecutar `pre_commit_instructions` tool.
+   - Realizar los pasos descritos para asegurar testing, verificación y reflexión.

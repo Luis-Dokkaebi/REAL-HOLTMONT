@@ -2614,7 +2614,8 @@ function apiSavePPCData(payload, activeUser) {
               if (activeUser === 'PREWORK_ORDER') {
                   id = generateWorkOrderFolio(item.cliente, item.especialidad);
               } else {
-                  id = "PPC-" + Math.floor(Math.random() * 1000000);
+                  let prefix = generatePrefix(activeUser);
+                  id = prefix + Math.floor(Math.random() * 1000000);
               }
           }
           generatedIds.push(id);
@@ -3364,7 +3365,8 @@ function cmdRealizarAlta() {
 
   const currentSheetName = sheet.getName();
   if (!taskObj["FOLIO"] && !taskObj["ID"]) {
-    let prefix = 'PPC-'; if (currentSheetName === 'JESUS_CANTU') prefix = 'JC-'; else if (currentSheetName === 'LUIS_CARLOS' || currentSheetName === 'ADMINISTRADOR') prefix = 'LC-'; else if (currentSheetName === 'JAIME_OLIVO') prefix = 'JO-'; else if (currentSheetName === 'ANTONIA_VENTAS') prefix = 'AV-'; taskObj["FOLIO"] = prefix + Math.floor(Math.random() * 100000);
+    let prefix = generatePrefix(currentSheetName);
+    taskObj["FOLIO"] = prefix + Math.floor(Math.random() * 100000);
     const folioCol = headers.indexOf("FOLIO") > -1 ? headers.indexOf("FOLIO") : headers.indexOf("ID");
     if (folioCol > -1) {
       sheet.getRange(row, folioCol + 1).setValue(taskObj["FOLIO"]);
@@ -3448,6 +3450,29 @@ function apiCreateStandardStructure(siteId, user) {
             createdBy: user || "SISTEMA"
         });
     });
+}
+
+/**
+ * GENERADOR DE PREFIJOS DE FOLIO BASADO EN NOMBRE
+ */
+function generatePrefix(name) {
+    if (!name) return 'PPC-';
+
+    const upperName = String(name).toUpperCase().trim();
+
+    if (upperName === 'JESUS_CANTU' || upperName === 'JESUS CANTU') return 'JC-';
+    if (upperName === 'LUIS_CARLOS' || upperName === 'LUIS CARLOS' || upperName === 'ADMINISTRADOR') return 'LC-';
+    if (upperName === 'JAIME_OLIVO' || upperName === 'JAIME OLIVO') return 'JO-';
+    if (upperName === 'ANTONIA_VENTAS' || upperName === 'ANTONIA VENTAS') return 'AV-';
+
+    const parts = upperName.split(/[\s_]+/).filter(p => p.length > 0);
+    if (parts.length >= 2) {
+        return (parts[0].charAt(0) + parts[1].charAt(0)) + '-';
+    } else if (parts.length === 1) {
+        return parts[0].substring(0, 2) + '-';
+    }
+
+    return 'PPC-';
 }
 
 /**
