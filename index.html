@@ -4198,7 +4198,7 @@
 <div v-if="currentView === 'PPC_FORM'" class="h-100 d-flex flex-column" style="background:white; padding:20px;">
            <div class="d-flex justify-content-between align-items-center mb-3">
                <div class="d-flex align-items-center"><h5 class="m-0 text-primary me-3"><i class="fas fa-th me-2"></i>{{ currentUsername === 'PREWORK_ORDER' ? 'Workorder' : (currentUsername === 'JESUS_CANTU' ? 'INTERDICIPLINARIA' : 'PPC Maestro') }}</h5><span v-if="ppcMenuTipo" class="badge bg-primary p-2 me-2">{{ ppcMenuTipo }}</span><div v-if="currentPpcProject" class="badge bg-light text-dark border p-2 d-flex align-items-center animate__animated animate__fadeIn"><i class="fas fa-folder-open text-warning me-2"></i><span>{{ currentPpcProject.name }}</span><span class="ms-2 badge" :class="currentPpcProject.type === 'INTERNO' ? 'bg-secondary' : (currentPpcProject.type === 'PREOPERATIVO' ? 'bg-warning text-dark' : 'bg-primary')">{{ currentPpcProject.type }}</span><button class="btn btn-sm ms-2 text-danger p-0" @click="currentPpcProject = null" title="Quitar filtro"><i class="fas fa-times"></i></button></div></div>
-               <div><button class="btn btn-outline-secondary btn-sm me-2" @click="currentView='PPC_MENU'"><i class="fas fa-arrow-left me-1"></i> Menú</button><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
+               <div><button class="btn btn-outline-secondary btn-sm me-2" @click="currentView='PPC_MENU'"><i class="fas fa-arrow-left me-1"></i> Atrás</button><button class="btn btn-outline-secondary btn-sm me-2" @click="currentView='PPC_MENU'"><i class="fas fa-bars me-1"></i> Menú</button><button class="btn btn-success fw-bold btn-sm me-2 shadow-sm" @click="openPpcProjectSelector"><i class="fas fa-plus-circle me-1"></i> PPC NUEVO</button><button class="btn btn-light border btn-sm" @click="goHome">Cerrar</button></div>
            </div>
            <div class="d-flex mb-3 align-items-end justify-content-end position-relative" style="min-height: 90px;">
                <div class="excel-container" style="height: auto; max-height: none; overflow: visible; flex:none; width: fit-content; z-index: 1; border:none; box-shadow:none; background: transparent;">
@@ -7259,6 +7259,10 @@ const filteredStaffTrackerData = computed(() => {
       const openPpcForm = (tipo) => {
           ppcMenuTipo.value = tipo || '';
           currentView.value = 'PPC_FORM';
+          google.script.run.withSuccessHandler(res => {
+              if(res.success && res.data.length > 0) { activityQueue.value = res.data; }
+              else { activityQueue.value = []; fillEmptyQueueRows(); }
+          }).apiFetchDrafts(tipo);
           google.script.run.withSuccessHandler(res => { if(res.success) ppcExistingData.value = res.data; }).apiFetchPPCData();
           // Cargar datos semanales para la columna ANT (semana anterior) si aún no están
           if (!weeklyPlanData.value.data || weeklyPlanData.value.data.length === 0) { loadWeeklyPlan(); }
@@ -8111,7 +8115,7 @@ const filteredStaffTrackerData = computed(() => {
 
           const item = JSON.parse(JSON.stringify(ppcData.value)); item.responsable = selectedResponsables.value.join(','); item.restricciones = ppcData.value.restricciones || extraData.value.restricciones; item.prioridades = ppcData.value.prioridades || extraData.value.prioridades; item.riesgos = ppcData.value.riesgos || extraData.value.riesgos; item.clasificacion = ppcData.value.clasificacion || extraData.value.clasificacion; if(currentPpcProject.value) { const tag = `[PROY: ${currentPpcProject.value.name}]`; item.comentarios = (item.comentarios ? item.comentarios + ' ' : '') + tag; } let fResp = ppcData.value.fechaRespuesta || extraData.value.fechaRespuesta; if(fResp) { const parts = fResp.split('-'); if(parts.length === 3) fResp = `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`; } item.fechaRespuesta = fResp; item.fechaAlta = new Date().toISOString(); item.id = 'PPC-' + Math.floor(Math.random() * 1000000000); activityQueue.value.push(item); ppcData.value.concepto=''; ppcData.value.horas=''; ppcData.value.comentarios=''; ppcData.value.comentariosPrevios=''; ppcData.value.clasificacion=''; ppcData.value.prioridades=''; ppcData.value.riesgos=''; ppcData.value.restricciones=''; ppcData.value.fechaRespuesta=''; selectedResponsables.value=[]; uploadSuccess.value=false; showExtraModal.value = false; syncQueueToBackend(); pulseNewRow('ppcDraftTable', 'last');
       };
-      const syncQueueToBackend = () => { google.script.run.apiSyncDrafts(JSON.parse(JSON.stringify(activityQueue.value))); };
+      const syncQueueToBackend = () => { google.script.run.apiSyncDrafts(JSON.parse(JSON.stringify(activityQueue.value)), ppcMenuTipo.value); };
 
       const saveWorkOrder = () => {
         if(!workorderData.value.cliente || !workorderData.value.tipoTrabajo || !workorderData.value.cotizador.length) {
@@ -8308,7 +8312,7 @@ const filteredStaffTrackerData = computed(() => {
             } else Swal.fire('Error',res.message,'error');
         }).withFailureHandler(handleErr).apiSavePPCData(payload, currentUsername.value);
       };
-      const clearQueue = () => { Swal.fire({ title: '¿Limpiar tabla?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }).then((result) => { if (result.isConfirmed) { activityQueue.value = []; google.script.run.apiClearDrafts(); } }); };
+      const clearQueue = () => { Swal.fire({ title: '¿Limpiar tabla?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí' }).then((result) => { if (result.isConfirmed) { activityQueue.value = []; google.script.run.apiClearDrafts(ppcMenuTipo.value); fillEmptyQueueRows(); } }); };
       const toIsoDate = (val) => { if (!val) return ''; const strVal = String(val); if (strVal.includes('T')) return strVal.split('T')[0]; const parts = strVal.split('/'); if (parts.length === 3) { let y = parts[2]; if (y.length === 2) y = '20' + y; return `${y}-${parts[1]}-${parts[0]}`; } return ''; };
       const formatDisplayDate = (val) => { if(!val) return ''; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{2}$/)) return val; if(String(val).match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) return val.replace(/\/(\d{4})$/, (m, y) => "/" + y.slice(-2)); return val; };
       const updateDateFromPicker = (e, row, h) => {

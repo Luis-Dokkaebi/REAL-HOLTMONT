@@ -2450,9 +2450,22 @@ function apiLogDateChange(payload, username) {
   }
 }
 
-function apiFetchDrafts() {
+
+function getDraftSheetNameForType(tipo) {
+  if (!tipo) return APP_CONFIG.draftSheetName;
+  const t = String(tipo).toUpperCase().trim();
+  if (t.includes('PROYECTO') && t.includes('INTERDISCIPLINARIA')) return 'PPC_BORRADOR_PROYECTO';
+  if (t.includes('INTERNA')) return 'PPC_BORRADOR_INTERNA';
+  if (t.includes('CLIENTE')) return 'PPC_BORRADOR_CLIENTE';
+  if (t.includes('GENERAL') && t.includes('PREOPERATIVA')) return 'PPC_BORRADOR_GENERAL';
+  if (t.includes('PROYECTO') && t.includes('PREOPERATIVA')) return 'PPC_BORRADOR_PREOP_PROY';
+  return APP_CONFIG.draftSheetName;
+}
+
+function apiFetchDrafts(tipo) {
   try {
-    const sheet = findSheetSmart(APP_CONFIG.draftSheetName);
+    const sheetName = getDraftSheetNameForType(tipo);
+    const sheet = findSheetSmart(sheetName);
     if (!sheet) return { success: true, data: [] };
     const rows = sheet.getDataRange().getValues();
     if (rows.length < 1) return { success: true, data: [] }; 
@@ -2474,7 +2487,8 @@ function apiFetchDrafts() {
         contratista: r[16] || "",
         cuantReq: r[17] || "",
         cuantReal: r[18] || "",
-        dias: diasObj
+        dias: diasObj,
+        saved: String(r[20]).toUpperCase() === 'TRUE'
       };
     }).filter(d => d.concepto);
     return { success: true, data: drafts };
@@ -2482,17 +2496,18 @@ function apiFetchDrafts() {
   }
 }
 
-function apiSyncDrafts(drafts) {
+function apiSyncDrafts(drafts, tipo) {
   const lock = LockService.getScriptLock();
   if (lock.tryLock(5000)) {
     try {
-      let sheet = findSheetSmart(APP_CONFIG.draftSheetName);
-      if (!sheet) { sheet = SS.insertSheet(APP_CONFIG.draftSheetName); }
+      const sheetName = getDraftSheetNameForType(tipo);
+      let sheet = findSheetSmart(sheetName);
+      if (!sheet) { sheet = SS.insertSheet(sheetName); }
       sheet.clear();
       const headers = [
           "ESPECIALIDAD", "CONCEPTO", "RESPONSABLE", "HORAS", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "PREVIOS",
           "PRIORIDAD", "RIESGOS", "RESTRICCIONES", "FECHA_RESP", "CLASIFICACION", "FECHA_ALTA",
-          "RUTA_CRITICA", "ZONA", "CONTRATISTA", "CUANT_REQ", "CUANT_REAL", "DIAS_JSON"
+          "RUTA_CRITICA", "ZONA", "CONTRATISTA", "CUANT_REQ", "CUANT_REAL", "DIAS_JSON", "SAVED_STATUS"
       ];
       if (drafts && drafts.length > 0) {
         const rows = drafts.map(d => [
@@ -2501,7 +2516,7 @@ function apiSyncDrafts(drafts) {
           d.prioridades || "", d.riesgos || "", d.restricciones || "", d.fechaRespuesta || "", 
           d.clasificacion || "", d.fechaAlta || new Date(),
           d.rutaCritica || "", d.zona || "", d.contratista || "", d.cuantReq || "", d.cuantReal || "",
-          JSON.stringify(d.dias || {})
+          JSON.stringify(d.dias || {}), d.saved === true ? 'TRUE' : 'FALSE'
         ]);
         sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
         sheet.getRange(2, 1, rows.length, rows[0].length).setValues(rows);
@@ -2515,9 +2530,10 @@ function apiSyncDrafts(drafts) {
   return { success: false, message: "Ocupado syncing drafts" };
 }
 
-function apiClearDrafts() {
+function apiClearDrafts(tipo) {
   try {
-    const sheet = findSheetSmart(APP_CONFIG.draftSheetName);
+    const sheetName = getDraftSheetNameForType(tipo);
+    const sheet = findSheetSmart(sheetName);
     if(sheet) sheet.clear();
     return { success: true };
   } catch(e) { return { success: false }; }
