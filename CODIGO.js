@@ -613,7 +613,7 @@ function getSystemConfig(role, username) {
           directory: fullDirectory,
           specialModules: ppcModulesEarly,
           accessProjects: false,
-          canSeeBancoJuntas: true
+          canSeeBancoJuntas: false
       };
   }
 
@@ -662,7 +662,7 @@ function getSystemConfig(role, username) {
       directory: fullDirectory,
       specialModules: ppcModules,
       accessProjects: true,
-      canSeeBancoJuntas: false
+      canSeeBancoJuntas: true
   };
 
   if (role === 'ADMIN_CONTROL') {
