@@ -591,7 +591,11 @@ function getSystemConfig(role, username) {
       allDepartments: allDepts, 
       staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ], 
       directory: fullDirectory,
-      specialModules: [ ppcModuleMaster, ppcModuleWeekly ],
+      specialModules: [
+        { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: allDepts["PRESUPUESTOS"] ? allDepts["PRESUPUESTOS"].color : "#6f42c1", type: "mirror_staff", target: "ANTONIA PINEDA LOPEZ" },
+        ppcModuleMaster,
+        ppcModuleWeekly
+      ],
       accessProjects: false,
       canSeeBancoJuntas: false
   };
