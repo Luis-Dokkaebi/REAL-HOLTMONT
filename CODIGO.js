@@ -54,7 +54,6 @@ const INITIAL_DIRECTORY = [
     { name: "VANESSA DE LARA", dept: "COMPRAS", type: "ESTANDAR" },
     // PRESUPUESTOS
     { name: "EDUARDO TERAN", dept: "PRESUPUESTOS", type: "HIBRIDO" },
-    { name: "ANTONIA PINEDA LOPEZ", dept: "PRESUPUESTOS", type: "ESTANDAR" },
     // CALIDAD
     { name: "CARLOS MENDEZ", dept: "CALIDAD", type: "ESTANDAR" },
     // SEGURIDAD
@@ -210,7 +209,7 @@ const USER_DB = {
   "JESUS_CANTU":      { pass: "ppc2025",   role: "PPC_ADMIN", label: "PPC Manager", email: "jesuscantu@empresa.com" },
   "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo", email: "jaimeolivo@empresa.com" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder", email: "workorder@empresa.com" },
-  "ANTONIA_VENTAS": { pass: "tonita2025", role: "TONITA", label: "Ventas", email: "ventas@empresa.com", staffName: "ANTONIA_VENTAS", dept: "VENTAS", seller: true },
+  "ANTONIA_VENTAS": { pass: "tonita2025", role: "TONITA", label: "Antonia Pineda", email: "ventas@empresa.com", staffName: "ANTONIA_VENTAS", dept: "VENTAS", seller: true },
   "JUDITH_ECHAVARRIA": { pass: "judith2951", role: "STAFF_USER", label: "Cristian Judith Echavarria Rodriguez", email: "", staffName: "JUDITH ECHAVARRIA", dept: "COMPRAS", seller: true },
   "EDUARDO_MANZANARES": { pass: "eduardo6234", role: "STAFF_USER", label: "Eduardo Manzanares Sanchez", email: "", staffName: "EDUARDO MANZANARES", dept: "VENTAS", seller: true },
   "RAMIRO_RODRIGUEZ": { pass: "ramiro9233", role: "STAFF_USER", label: "Ramiro Rodriguez Escalante", email: "", staffName: "RAMIRO RODRIGUEZ", dept: "VENTAS", seller: true },
@@ -234,7 +233,6 @@ const USER_DB = {
   "DIMAS_RAMOS": { pass: "dimas2025", role: "ADMIN_CONTROL", label: "Dimas Eliel Ramos Garcia", email: "dimas.ramos@holtmont.com", staffName: "DIMAS ELIEL RAMOS GARCIA", dept: "RH", seller: false },
   "RUBI_MORENO": { pass: "rubi3641", role: "STAFF_USER", label: "Rubi Moreno Rodriguez", email: "", staffName: "RUBI MORENO RODRIGUEZ", dept: "SEGURIDAD", seller: false },
   "URIMAR_LOPEZ": { pass: "urimar7294", role: "STAFF_USER", label: "Edgar Urimar Lopez Maldonado", email: "", staffName: "EDGAR URIMAR LOPEZ MALDONADO", dept: "DISEÑO", seller: false },
-  "ANTONIA_PINEDA": { pass: "antonia7043", role: "STAFF_USER", label: "Antonia Pineda Lopez", email: "", staffName: "ANTONIA PINEDA LOPEZ", dept: "PRESUPUESTOS", seller: false },
   "SAIRA": { pass: "saira3725", role: "STAFF_USER", label: "Zaira Yazmin Aguilar Aguilon", email: "", staffName: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FINANZAS", seller: false },
   "ZAIRA_AGUILAR": { pass: "zaira5892", role: "STAFF_USER", label: "Zaira Yazmin Aguilar Aguilon", email: "", staffName: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FINANZAS", seller: false },
   "EMILIANO_AREDON": { pass: "emiliano4187", role: "STAFF_USER", label: "Emiliano Arredondo Gomez", email: "", staffName: "EMILIANO ARREDONDO GOMEZ", dept: "HVAC", seller: false },
