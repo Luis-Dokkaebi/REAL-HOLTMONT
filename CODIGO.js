@@ -43,6 +43,7 @@ const INITIAL_DIRECTORY = [
     { name: "LAURA EDITH HUERTA ROCHA", dept: "RH", type: "ESTANDAR" },
     { name: "LILIANA AYLIN MARTINEZ IBARRA", dept: "RH", type: "ESTANDAR" },
     { name: "FRANCISCO SANCHEZ SERNA", dept: "RH", type: "ESTANDAR" },
+    { name: "DANIELA CASTRO", dept: "RH", type: "ESTANDAR" },
     // FINANZAS
     { name: "JUANA MARIA RODRIGUEZ JUAREZ", dept: "FINANZAS", type: "ESTANDAR" },
     { name: "ZAIRA YAZMIN AGUILAR AGUILON", dept: "FINANZAS", type: "ESTANDAR" },
@@ -82,6 +83,7 @@ const INITIAL_DIRECTORY = [
     { name: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", type: "ESTANDAR" },
     // LIMPIEZA
     { name: "EDUARDO BENITEZ", dept: "LIMPIEZA", type: "ESTANDAR" },
+    { name: "ANTONIO CABRERA", dept: "LIMPIEZA", type: "ESTANDAR" },
     // ALMACEN Y MAQUINARIA
     { name: "SONIA GARCIA PEREZ", dept: "ALMACEN Y MAQUINARIA", type: "ESTANDAR" },
     // SISTEMA (hoja espejo de control, sin login)
@@ -242,7 +244,9 @@ const USER_DB = {
   "LAURA_HUERTA": { pass: "laura8256", role: "STAFF_USER", label: "Laura Huerta Rocha", email: "", staffName: "LAURA EDITH HUERTA ROCHA", dept: "RH", seller: false },
   "ROCIO_CASTRO": { pass: "rocio3947", role: "STAFF_USER", label: "Rocio Castro Covarrubias", email: "", staffName: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", seller: false },
   "GERALDINE_MARTINEZ": { pass: "geraldine5279", role: "STAFF_USER", label: "Geraldine Marie Martinez Hernandez", email: "", staffName: "GERALDINE MARTINEZ HERNANDEZ", dept: "PRECIOS UNITARIOS", seller: false },
-  "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", seller: false }
+  "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", seller: false },
+  "DANIELA_CASTRO": { pass: "daniela1234", role: "STAFF_USER", label: "Daniela Castro", email: "", staffName: "DANIELA CASTRO", dept: "RH", seller: false },
+  "ANTONIO_CABRERA": { pass: "antonio5678", role: "STAFF_USER", label: "Antonio Cabrera", email: "", staffName: "ANTONIO CABRERA", dept: "LIMPIEZA", seller: false }
 };
 
 /* SERVICIO HTML */
