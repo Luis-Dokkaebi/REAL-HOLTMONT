@@ -85,7 +85,9 @@ const INITIAL_DIRECTORY = [
     // ALMACEN Y MAQUINARIA
     { name: "SONIA GARCIA PEREZ", dept: "ALMACEN Y MAQUINARIA", type: "ESTANDAR" },
     // SISTEMA (hoja espejo de control, sin login)
-    { name: "ADMINISTRADOR", dept: "ADMINISTRACION", type: "HIBRIDO" }
+    { name: "ADMINISTRADOR", dept: "ADMINISTRACION", type: "HIBRIDO" },
+    // GENERAL
+    { name: "DANIELA CASTRO", dept: "GENERAL", type: "ESTANDAR" }
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
@@ -216,6 +218,7 @@ const USER_DB = {
   "SEBASTIAN_PADILLA": { pass: "sebastian9385", role: "STAFF_USER", label: "Erick Sebastian Padilla Carrillo", email: "", staffName: "SEBASTIAN PADILLA", dept: "VENTAS", seller: true },
   "ALFONSO_CORREA": { pass: "alfonso4658", role: "STAFF_USER", label: "Alfonso Correa De Leon", email: "", staffName: "ALFONSO CORREA", dept: "CONSTRUCCION", seller: true },
   "TERESA_GARZA": { pass: "teresa7891", role: "STAFF_USER", label: "Maria Teresa Hernandez Garza", email: "", staffName: "TERESA GARZA", dept: "PRECIOS UNITARIOS", seller: true },
+  "DANIELA_CASTRO": { pass: "daniela1234", role: "STAFF_USER", label: "Daniela Castro", email: "", staffName: "DANIELA CASTRO", dept: "GENERAL", seller: false },
   "ANGEL_SALINAS": { pass: "angel9042", role: "STAFF_USER", label: "Jose Angel Salinas Ramirez", email: "", staffName: "ANGEL SALINAS", dept: "DISEÑO", seller: true },
   "JUAN_JOSE_SANCHEZ": { pass: "juan8226", role: "STAFF_USER", label: "Juan Jose Sanchez Muñiz", email: "", staffName: "JUAN JOSE SANCHEZ", dept: "CEO", seller: true },
   "LUIS_CARLOS": { pass: "admin2025", role: "ADMIN", label: "Luis Carlos Holt Montero", email: "luiscarlos@empresa.com", staffName: "LUIS CARLOS", dept: "CEO", seller: false },
