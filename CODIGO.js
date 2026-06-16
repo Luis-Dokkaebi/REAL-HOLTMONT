@@ -245,7 +245,8 @@ const USER_DB = {
   "LAURA_HUERTA": { pass: "laura8256", role: "STAFF_USER", label: "Laura Huerta Rocha", email: "", staffName: "LAURA EDITH HUERTA ROCHA", dept: "RH", seller: false },
   "ROCIO_CASTRO": { pass: "rocio3947", role: "STAFF_USER", label: "Rocio Castro Covarrubias", email: "", staffName: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", seller: false },
   "GERALDINE_MARTINEZ": { pass: "geraldine5279", role: "STAFF_USER", label: "Geraldine Marie Martinez Hernandez", email: "", staffName: "GERALDINE MARTINEZ HERNANDEZ", dept: "PRECIOS UNITARIOS", seller: false },
-  "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", seller: false }
+  "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", seller: false },
+  "ANTONIO_SALAZAR": { pass: "antonio1234", role: "STAFF_USER", label: "Antonio Salazar", email: "", staffName: "ANTONIO SALAZAR", dept: "GENERAL", seller: false }
 };
 
 /* SERVICIO HTML */
