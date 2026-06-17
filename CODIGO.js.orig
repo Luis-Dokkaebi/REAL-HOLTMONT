@@ -13,10 +13,10 @@ const SS = SpreadsheetApp.getActiveSpreadsheet();
 const WEBHOOK_OUTLOOK_URL = "https://hook.us2.make.com/fepkg526j29043bkw5imd8r2fhzmv2wq";
 
 const APP_CONFIG = {
-  folderIdUploads: "", 
-  ppcSheetName: "PPCV3",          
-  draftSheetName: "PPC_BORRADOR", 
-  salesSheetName: "Datos",        
+  folderIdUploads: "",
+  ppcSheetName: "PPCV3",
+  draftSheetName: "PPC_BORRADOR",
+  salesSheetName: "Datos",
   logSheetName: "LOG_SISTEMA",
   directorySheetName: "DB_DIRECTORY", // NUEVO: Hoja de Directorio
   // NUEVAS HOJAS PARA DETALLES DE WORK ORDER
@@ -274,12 +274,12 @@ function findHeaderRow(values) {
   for (let i = 0; i < Math.min(100, values.length); i++) {
     const rowStr = values[i].map(c => String(c).toUpperCase().replace(/\n/g, " ").replace(/\s+/g, " ").trim()).join("|");
     if (rowStr.includes("ID_SITIO") || rowStr.includes("ID_PROYECTO")) return i;
-    if (rowStr.includes("FOLIO") && rowStr.includes("CONCEPTO") && 
+    if (rowStr.includes("FOLIO") && rowStr.includes("CONCEPTO") &&
        (rowStr.includes("ALTA") || rowStr.includes("AVANCE") || rowStr.includes("STATUS") || rowStr.includes("FECHA"))) {
       return i;
     }
     if (rowStr.includes("ID") && rowStr.includes("RESPONSABLE")) return i;
-    if ((rowStr.includes("FOLIO") || rowStr.includes("ID")) && 
+    if ((rowStr.includes("FOLIO") || rowStr.includes("ID")) &&
         (rowStr.includes("DESCRIPCI") || rowStr.includes("RESPONSABLE") || rowStr.includes("CONCEPTO"))) {
       return i;
     }
@@ -325,7 +325,7 @@ function getDirectoryFromDB() {
   try {
       if (lock.tryLock(5000)) {
           let sheet = findSheetSmart(APP_CONFIG.directorySheetName);
-          
+
           // CREAR SI NO EXISTE
           if (!sheet) {
               sheet = SS.insertSheet(APP_CONFIG.directorySheetName);
@@ -336,7 +336,7 @@ function getDirectoryFromDB() {
               sheet.clear(); // Limpiar por si acaso el usuario puso encabezados manuales incorrectos
               const headers = ["NOMBRE", "DEPARTAMENTO", "TIPO_HOJA"];
               sheet.appendRow(headers);
-              
+
               // Populate from INITIAL_DIRECTORY
               const rows = INITIAL_DIRECTORY.map(u => [u.name, u.dept, u.type]);
               if (rows.length > 0) {
@@ -588,10 +588,10 @@ function getSystemConfig(role, username) {
   // const ecgModule = { id: "ECG_SALES", label: "Monitor Vivos", icon: "fa-heartbeat", color: "#d63384", type: "ecg_dashboard" };
   const kpiModule = { id: "KPI_DASHBOARD", label: "KPI Performance", icon: "fa-chart-line", color: "#d63384", type: "kpi_dashboard_view" };
 
-  if (role === 'TONITA') return { 
-      departments: { "VENTAS": allDepts["VENTAS"] }, 
-      allDepartments: allDepts, 
-      staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ], 
+  if (role === 'TONITA') return {
+      departments: { "VENTAS": allDepts["VENTAS"] },
+      allDepartments: allDepts,
+      staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ],
       directory: fullDirectory,
       specialModules: [
         { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: allDepts["PRESUPUESTOS"] ? allDepts["PRESUPUESTOS"].color : "#6f42c1", type: "mirror_staff", target: "ANTONIA PINEDA LOPEZ" },
@@ -660,10 +660,10 @@ function getSystemConfig(role, username) {
   }
 
   const ppcModules = [ ppcModuleMaster, ppcModuleWeekly ];
-  
-  if (role === 'PPC_ADMIN') return { 
-      departments: {}, 
-      allDepartments: allDepts, 
+
+  if (role === 'PPC_ADMIN') return {
+      departments: {},
+      allDepartments: allDepts,
       staff: [],
       directory: fullDirectory,
       specialModules: ppcModules,
@@ -1681,7 +1681,7 @@ function internalFetchSheetData(sheetName) {
         if (val instanceof Date) {
            if (val.getFullYear() < 1900) val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "HH:mm");
            else {
-              if (!sortDate) sortDate = val; 
+              if (!sortDate) sortDate = val;
               val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
            }
         } else if (typeof val === 'string') {
@@ -1706,7 +1706,7 @@ function internalFetchSheetData(sheetName) {
         if (isReadingHistory) historyTasks.push(rowObj); else activeTasks.push(rowObj);
       }
     }
-    
+
     const dateSorter = (a, b) => {
       const dA = a['_sortDate'] instanceof Date ? a['_sortDate'].getTime() : 0;
       const dB = b['_sortDate'] instanceof Date ? b['_sortDate'].getTime() : 0;
@@ -1715,11 +1715,11 @@ function internalFetchSheetData(sheetName) {
 
 
 
-    return { 
-      success: true, 
-      data: activeTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest), 
-      history: historyTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest), 
-      headers: cleanHeaders 
+    return {
+      success: true,
+      data: activeTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest),
+      history: historyTasks.sort(dateSorter).map(({_sortDate, ...rest}) => rest),
+      headers: cleanHeaders
     };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
@@ -1769,7 +1769,7 @@ function apiFetchSalesHistory() {
     if (!dataRes.success) return dataRes;
     const allData = [...dataRes.data, ...dataRes.history];
     const grouped = {};
-    
+
     allData.forEach(row => {
         const vendedorKey = Object.keys(row).find(k => k.toUpperCase().includes("VENDEDOR"));
         const clienteKey = Object.keys(row).find(k => k.toUpperCase().includes("CLIENTE"));
@@ -1780,7 +1780,7 @@ function apiFetchSalesHistory() {
         if (vendedorKey && row[vendedorKey]) {
             const name = String(row[vendedorKey]).trim().toUpperCase();
             if (!grouped[name]) grouped[name] = [];
-            
+
             let pulse = 0;
             const status = String(row[statusKey] || "").toUpperCase();
             if (status.includes("VENDIDA") || status.includes("APROBADA") || status.includes("GANADA")) pulse = 10;
@@ -1818,14 +1818,14 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         return { success: false, message: "Hoja ocupada, intenta de nuevo."};
     }
   }
-  
+
   try {
     const sheet = findSheetSmart(sheetName);
     if (!sheet) return { success: false, message: "Hoja no encontrada: " + sheetName };
     const dataRange = sheet.getDataRange();
     let values = dataRange.getValues();
     if (values.length === 0) return { success: false, message: "Hoja vacía" };
-    
+
     const headerRowIndex = findHeaderRow(values);
     if (headerRowIndex === -1) return { success: false, message: "Sin cabeceras válidas" };
     // 1. SANITIZAR HEADERS Y ELIMINAR FILTROS ROTOS (FIX CRÍTICO)
@@ -1840,10 +1840,10 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     if (headersChanged) {
         const existingFilter = sheet.getFilter();
         if (existingFilter) {
-            try { existingFilter.remove(); } catch(e) {} 
+            try { existingFilter.remove(); } catch(e) {}
         }
         sheet.getRange(headerRowIndex + 1, 1, 1, values[headerRowIndex].length).setValues([values[headerRowIndex]]);
-        SpreadsheetApp.flush(); 
+        SpreadsheetApp.flush();
     }
 
     // FIX: HEADERS CON SALTOS DE LINEA (NORMALIZACIÓN ROBUSTA)
@@ -1890,7 +1890,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     // 2. Procesar Tareas
     tasksArray.forEach(task => {
       let rowIndex = -1;
-      
+
       const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
 
       if (task._rowIndex) {
@@ -1927,7 +1927,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         });
         singleRowIndex = rowIndex;
         modified = true;
-      } 
+      }
       else {
           // BATCH DEDUP: Check if already appending this ID in current batch
           let appendedRowIndex = -1;
@@ -1974,8 +1974,8 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     if (avanceIdx > -1) {
         let separatorIndex = -1;
         for(let i=0; i<values.length; i++) {
-            if(String(values[i][0]).toUpperCase().includes("TAREAS REALIZADAS") || 
-               String(values[i].join("|")).toUpperCase().includes("TAREAS REALIZADAS")) { 
+            if(String(values[i][0]).toUpperCase().includes("TAREAS REALIZADAS") ||
+               String(values[i].join("|")).toUpperCase().includes("TAREAS REALIZADAS")) {
                 separatorIndex = i;
                 break;
             }
@@ -1995,7 +1995,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
 
         const newActiveRows = [];
         const movedRows = [];
-        
+
         activeRows.forEach(row => {
             const val = String(row[avanceIdx] || "").trim();
 
@@ -2033,12 +2033,12 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         if (rowsMoved || (rowsToAppend.length > 0 && separatorIndex === -1)) {
             if (separatorRow.length === 0) {
                 const sep = new Array(totalColumns).fill("");
-                const titleCol = totalColumns > 2 ? 2 : 0; 
+                const titleCol = totalColumns > 2 ? 2 : 0;
                 sep[titleCol] = "TAREAS REALIZADAS";
                 separatorRow = [sep];
             }
             values = [ ...headerAndTop, ...rowsToAppend, ...newActiveRows, ...separatorRow, ...movedRows, ...historyRows ];
-            rowsToAppend = []; 
+            rowsToAppend = [];
             modified = true;
             singleRowIndex = -1;
         }
@@ -2092,7 +2092,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
              try { applyTrafficLightToSheet(sheet); } catch(e) { console.warn("Auto-Format Error: " + e.toString()); }
         }
     }
-    
+
     SpreadsheetApp.flush();
     return { success: true, moved: rowsMoved };
   } catch (e) {
@@ -2263,7 +2263,7 @@ function internalUpdateTask(personName, taskData, username) {
              // "ya no mandará la misma tarea a la hoja de los vendedores"
              // UPDATE: Se reactiva la distribución por reporte de bug (No se reflejaban actividades).
 
-             const vendedorKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
+             const vendedorKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
              if (vendedorKey && taskData[vendedorKey]) {
                  const vendedores = String(taskData[vendedorKey]).split(',').map(s => s.trim());
 
@@ -2281,8 +2281,6 @@ function internalUpdateTask(personName, taskData, username) {
                                 let potentialSheet = targetSheet + " (VENTAS)";
                                 if (findSheetSmart(potentialSheet)) {
                                     finalTarget = potentialSheet;
-                                } else if (findSheetSmart(targetSheet)) {
-                                    finalTarget = targetSheet; // Fallback to literal if exact "(VENTAS)" missing
                                 }
                             }
 
@@ -2306,7 +2304,7 @@ function internalUpdateTask(personName, taskData, username) {
                  delete syncData._rowIndex;
                  delete syncData['PROCESO_LOG'];
                  delete syncData['PROCESO'];
-                 
+
                  const getTVal = (keys) => {
                      for (let k of keys) {
                          let found = Object.keys(syncData).find(key => key.toUpperCase().trim() === k);
@@ -2314,30 +2312,30 @@ function internalUpdateTask(personName, taskData, username) {
                      }
                      return "";
                  };
-                 
+
                  const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
                  const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'])).replace(/%/g, '').trim();
                  const avanceNum = parseFloat(avanceRaw);
                  const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1 || avanceRaw.toUpperCase() === 'SI';
-                 
+
                  const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
-                 
+
                  if (tFolio) {
                      const antData = internalFetchSheetData("ANTONIA_VENTAS");
                      if (antData.success && antData.data) {
                          const targetRow = antData.data.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
-                         
+
                          if (targetRow) {
                              let log = [];
                              try {
                                  if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
                              } catch(e) {}
-                             
+
                              let updated = false;
                              const updatedLog = log.map(entry => {
                                  let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ");
                                  let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ") : "";
-                                 
+
                                  if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                      entry.status = 'DONE';
                                      entry.endTimestamp = new Date().getTime();
@@ -2348,7 +2346,7 @@ function internalUpdateTask(personName, taskData, username) {
                                  }
                                  return entry;
                              });
-                             
+
                              if (updated) {
                                  const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
                                  let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
@@ -2386,7 +2384,7 @@ function internalUpdateTask(personName, taskData, username) {
                                      'PROCESO_LOG': JSON.stringify(updatedLog),
                                      'MAP COT': mapCotParts.join(' | ')
                                  };
-                                 
+
                                  const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
                                  fileCols.forEach(col => {
                                      let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
@@ -2394,7 +2392,7 @@ function internalUpdateTask(personName, taskData, username) {
                                          syncToAntonia[wKey] = taskData[wKey];
                                      }
                                  });
-                                 
+
                                  internalBatchUpdateTasks("ANTONIA_VENTAS", [syncToAntonia]);
                              } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
                                  internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
@@ -2404,7 +2402,7 @@ function internalUpdateTask(personName, taskData, username) {
                  }
 
                  // Sincronización Lateral (Peer-to-Peer via VENDEDOR field)
-                 const vKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
+                 const vKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR");
                  if (vKey && taskData[vKey]) {
                      const vList = String(taskData[vKey]).split(',').map(s => s.trim());
                      vList.forEach(otherVendor => {
@@ -2422,7 +2420,6 @@ function internalUpdateTask(personName, taskData, username) {
                              if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
                                  let potential = targetSheet + " (VENTAS)";
                                  if (findSheetSmart(potential)) targetSheet = potential;
-                                 else if (findSheetSmart(targetSheet)) targetSheet = targetSheet;
                              }
                              internalBatchUpdateTasks(targetSheet, [syncData]);
                          }
@@ -2464,7 +2461,7 @@ function apiFetchDrafts() {
     const sheet = findSheetSmart(APP_CONFIG.draftSheetName);
     if (!sheet) return { success: true, data: [] };
     const rows = sheet.getDataRange().getValues();
-    if (rows.length < 1) return { success: true, data: [] }; 
+    if (rows.length < 1) return { success: true, data: [] };
     const startRow = (rows[0][0] === "ESPECIALIDAD") ? 1 : 0;
     const drafts = rows.slice(startRow).map(r => {
       let diasObj = {l:false, m:false, x:false, j:false, v:false, s:false, d:false};
@@ -2507,7 +2504,7 @@ function apiSyncDrafts(drafts) {
         const rows = drafts.map(d => [
           d.especialidad || "", d.concepto || "", d.responsable || "", d.horas || "", d.cumplimiento || "NO",
           d.archivoUrl || "", d.comentarios || "", d.comentariosPrevios || "",
-          d.prioridades || "", d.riesgos || "", d.restricciones || "", d.fechaRespuesta || "", 
+          d.prioridades || "", d.riesgos || "", d.restricciones || "", d.fechaRespuesta || "",
           d.clasificacion || "", d.fechaAlta || new Date(),
           d.rutaCritica || "", d.zona || "", d.contratista || "", d.cuantReq || "", d.cuantReal || "",
           JSON.stringify(d.dias || {})
@@ -2564,10 +2561,10 @@ function apiSavePPCData(payload, activeUser) {
   if (lock.tryLock(30000)) {
     try {
       const items = Array.isArray(payload) ? payload : [payload];
-      
+
       // 1. VERIFICACIÓN CRÍTICA DE PPCV3
       let sheetPPC = findSheetSmart(APP_CONFIG.ppcSheetName);
-      if (!sheetPPC) { 
+      if (!sheetPPC) {
         sheetPPC = SS.insertSheet(APP_CONFIG.ppcSheetName);
         // Standardize headers for robustness
         sheetPPC.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
@@ -2598,11 +2595,11 @@ function apiSavePPCData(payload, activeUser) {
              sheetPPC4.appendRow(["ID", "ESPECIALIDAD", "DESCRIPCION", "RESPONSABLE", "FECHA", "RELOJ", "CUMPLIMIENTO", "ARCHIVO", "COMENTARIOS", "COMENTARIOS PREVIOS", "ESTATUS", "AVANCE", "CLASIFICACION", "PRIORIDAD", "RIESGOS", "FECHA_RESPUESTA", "DETALLES_EXTRA"]);
           }
       }
-      
+
       const fechaHoy = new Date();
       const fechaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
       const horaStr = Utilities.formatDate(fechaHoy, SS.getSpreadsheetTimeZone(), "HH:mm");
-      
+
       // Estructuras para Batch Operations
       const tasksBySheet = {};
       const logEntries = [];
@@ -2733,7 +2730,7 @@ function apiSavePPCData(payload, activeUser) {
                  'DIAS_S': item.dias ? (item.dias.s ? "x" : "") : (item.DIAS_S || ""),
                  'DIAS_D': item.dias ? (item.dias.d ? "x" : "") : (item.DIAS_D || "")
           };
-          
+
           // A. Persistencia en PPC Maestro (PPCV3)
           addTaskToSheet(APP_CONFIG.ppcSheetName, taskData);
 
@@ -2784,10 +2781,10 @@ function apiSavePPCData(payload, activeUser) {
             if (emailRes) {
                 const fIni = new Date();
                 const fFi = new Date(fIni.getTime() + (2 * 60 * 60 * 1000));
-                
+
                 const conceptoPPC = taskData.CONCEPTO || "Nueva Tarea PPC";
                 const cl = item.cliente || taskData.CLIENTE || "Holtmont";
-                
+
                 const payloadOutlookPPC = {
                     folio: id,
                     titulo: `Asignación PPC: ${conceptoPPC} - ${cl}`,
@@ -2797,7 +2794,7 @@ function apiSavePPCData(payload, activeUser) {
                     correoDestino: emailRes,
                     asignadoPor: activeUser || "SISTEMA"
                 };
-                
+
                 // Disparamos la notificación sin bloquear el flujo principal
                 try {
                     NotifierService.sendToOutlook(payloadOutlookPPC);
@@ -2850,7 +2847,7 @@ function apiSavePPCData(payload, activeUser) {
       }
 
       return { success: true, message: "Datos procesados y distribuidos correctamente.", ids: generatedIds };
-    } catch (e) { 
+    } catch (e) {
         console.error(e);
         registrarLog(activeUser || "SYSTEM", "ERROR_CRITICO_PPC", e.toString());
         return { success: false, message: "Error al guardar: " + e.toString() };
@@ -2866,7 +2863,7 @@ function uploadFileToDrive(data, type, name) {
     const folderId = APP_CONFIG.folderIdUploads;
     let folder;
     if (folderId && folderId.trim() !== "") { try { folder = DriveApp.getFolderById(folderId); } catch(e) { folder = DriveApp.getRootFolder();
-    } } 
+    } }
     else { folder = DriveApp.getRootFolder();
     }
     // FIX: Default to octet-stream if type is missing (e.g. .dwg, .zip)
@@ -2879,8 +2876,8 @@ function uploadFileToDrive(data, type, name) {
   }
 }
 
-function apiFetchPPCData() { 
-  try { 
+function apiFetchPPCData() {
+  try {
     const s = findSheetSmart(APP_CONFIG.ppcSheetName);
     if(!s) return {success:true,data:[]};
     const range = s.getDataRange();
@@ -2893,7 +2890,7 @@ function apiFetchPPCData() {
     const colMap = {
       id: headers.findIndex(h => h.includes("ID") || h.includes("FOLIO")),
       esp: headers.findIndex(h => h.includes("ESPECIALIDAD")),
-      con: headers.findIndex(h => h.includes("DESCRIPCI") || h.includes("CONCEPTO")), 
+      con: headers.findIndex(h => h.includes("DESCRIPCI") || h.includes("CONCEPTO")),
       resp: headers.findIndex(h => h.includes("RESPONSABLE") || h.includes("INVOLUCRADOS")),
       fecha: headers.findIndex(h => h.includes("FECHA") || h.includes("ALTA")),
       reloj: headers.findIndex(h => h.includes("RELOJ")),
@@ -2914,8 +2911,8 @@ function apiFetchPPCData() {
         comentariosPrevios: getVal(colMap.prev)
       };
     }).filter(x => x.concepto).reverse();
-    return { success: true, data: resultData }; 
-  } catch(e){ return {success:false, message: e.toString()} } 
+    return { success: true, data: resultData };
+  } catch(e){ return {success:false, message: e.toString()} }
 }
 
 function apiFetchWeeklyPlanData(username) {
@@ -2929,7 +2926,7 @@ function apiFetchWeeklyPlanData(username) {
     const headerRowIdx = findHeaderRow(data);
     if (headerRowIdx === -1) return { success: false, message: "Cabeceras no encontradas en PPCV3." };
     const originalHeaders = data[headerRowIdx].map(h => String(h).trim());
-    
+
     // CUSTOM VIEW FOR JESUS_CANTU
     if (isJesus) {
         // Define fixed header structure for the customized view
@@ -3001,7 +2998,7 @@ function apiFetchWeeklyPlanData(username) {
     const mappedHeaders = originalHeaders.map(h => {
         const up = h.toUpperCase();
         if (up.includes("ESPECIALIDAD") || up.includes("AREA") || up.includes("DEPARTAMENTO")) return "ESPECIALIDAD";
-        if (up.includes("DESCRIPCI") || up.includes("CONCEPTO")) return "CONCEPTO"; 
+        if (up.includes("DESCRIPCI") || up.includes("CONCEPTO")) return "CONCEPTO";
         if (up.includes("INVOLUCRADOS") || up.includes("RESPONSABLE") || up.includes("VENDEDOR") || up.includes("ENCARGADO")) return "RESPONSABLE";
         if (up.includes("ALTA") || up.includes("FECHA")) return "FECHA";
         if (up.includes("RELOJ") || up.includes("HORAS")) return "RELOJ";
@@ -3009,7 +3006,7 @@ function apiFetchWeeklyPlanData(username) {
         if (up.includes("CUMPLIMIENTO")) return "CUMPLIMIENTO";
         if (up === "COMENTARIOS" || up === "COMENTARIOS SEMANA EN CURSO" || up.includes("OBSERVACIONES")) return "COMENTARIOS SEMANA EN CURSO";
         if (up === "COMENTARIOS PREVIOS" || up === "COMENTARIOS SEMANA PREVIA" || up === "PREVIOS") return "COMENTARIOS SEMANA PREVIA";
-        return up; 
+        return up;
     });
     const displayHeaders = ["SEMANA", ...mappedHeaders];
     const rows = data.slice(headerRowIdx + 1);
@@ -3031,16 +3028,16 @@ function apiFetchWeeklyPlanData(username) {
       if (fechaVal) {
         let dateObj = null;
         if (String(fechaVal).includes("/")) {
-          const parts = String(fechaVal).split("/"); 
+          const parts = String(fechaVal).split("/");
           if(parts.length === 3) dateObj = new Date(parts[2], parts[1]-1, parts[0]);
         } else if (fechaVal instanceof Date) { dateObj = fechaVal; } else { dateObj = new Date(fechaVal); }
-        if (dateObj && !isNaN(dateObj.getTime())) semanaNum = getWeekNumber(dateObj); 
+        if (dateObj && !isNaN(dateObj.getTime())) semanaNum = getWeekNumber(dateObj);
       }
       rowObj["SEMANA"] = semanaNum;
-      
+
       return rowObj;
     }).filter(r => r["CONCEPTO"] || r["ID"] || r["FOLIO"]);
-    return { success: true, headers: displayHeaders, data: result.reverse() }; 
+    return { success: true, headers: displayHeaders, data: result.reverse() };
   } catch (e) {
     console.error(e);
     return { success: false, message: e.toString() };
@@ -3065,7 +3062,7 @@ function apiSaveSite(siteData) {
         sheet = SS.insertSheet("DB_SITIOS");
         sheet.appendRow(["ID_SITIO", "NOMBRE", "CLIENTE", "TIPO", "ESTATUS", "FECHA_CREACION", "CREADO_POR"]);
       }
-      
+
       const data = sheet.getDataRange().getValues();
       const cleanName = siteData.name.toUpperCase().trim();
       const nameColIdx = data.length > 0 ? data[0].indexOf("NOMBRE") : 1;
@@ -3080,12 +3077,12 @@ function apiSaveSite(siteData) {
         id,
         cleanName,
         siteData.client.toUpperCase().trim(),
-        siteData.type || "CLIENTE", 
+        siteData.type || "CLIENTE",
         "ACTIVO",
         new Date(),
         siteData.createdBy ? siteData.createdBy.toUpperCase().trim() : "ANONIMO"
       ]);
-      SpreadsheetApp.flush(); 
+      SpreadsheetApp.flush();
 
       // AUTOMATIZACIÓN: CREAR ESTRUCTURA ESTÁNDAR AUTOMÁTICAMENTE
       apiCreateStandardStructure(id, siteData.createdBy);
@@ -3112,10 +3109,10 @@ function apiSaveSubProject(subProjectData) {
         sheet = SS.insertSheet("DB_PROYECTOS");
         sheet.appendRow(["ID_PROYECTO", "ID_SITIO", "NOMBRE_SUBPROYECTO", "TIPO", "ESTATUS", "FECHA_CREACION", "CREADO_POR"]);
       }
-      
+
       const cleanName = subProjectData.name.toUpperCase().trim();
       const data = sheet.getDataRange().getValues();
-      let idSitioIdx = 1; 
+      let idSitioIdx = 1;
       let nameIdx = 2;
       const headerRow = findHeaderRow(data);
       if (headerRow > -1) {
@@ -3125,7 +3122,7 @@ function apiSaveSubProject(subProjectData) {
       }
 
       for(let i=1; i<data.length; i++) {
-          if (data[i][idSitioIdx] == subProjectData.parentId && 
+          if (data[i][idSitioIdx] == subProjectData.parentId &&
               String(data[i][nameIdx]).toUpperCase().trim() === cleanName) {
               return { success: false, message: "Ya existe ese subproyecto en este sitio."};
           }
@@ -3136,12 +3133,12 @@ function apiSaveSubProject(subProjectData) {
         id,
         subProjectData.parentId,
         cleanName,
-        subProjectData.type || "GENERAL", 
+        subProjectData.type || "GENERAL",
         "ACTIVO",
         new Date(),
         subProjectData.createdBy ? subProjectData.createdBy.toUpperCase().trim() : "ANONIMO"
       ]);
-      SpreadsheetApp.flush(); 
+      SpreadsheetApp.flush();
 
       registrarLog(subProjectData.createdBy || "ANONIMO", "NUEVO SUBPROYECTO", `Subproyecto: ${cleanName} (${id})`);
 
@@ -3251,7 +3248,7 @@ function apiFetchProjectTasks(projectName) {
 
     const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
     const projectTag = `[PROY: ${String(projectName).toUpperCase().trim()}]`;
-    
+
     // Indices clave
     let colIdx = {
        concepto: headers.indexOf("CONCEPTO"),
@@ -3308,14 +3305,14 @@ function apiSaveProjectTask(taskData, projectName, username) {
     try {
         const nameUpper = String(projectName).toUpperCase().trim();
         const tag = `[PROY: ${nameUpper}]`;
-        
+
         let coms = taskData['COMENTARIOS'] || "";
-        
+
         // Verificamos si ya tiene la etiqueta para no duplicar
         if (!String(coms).toUpperCase().includes(tag)) {
             taskData['COMENTARIOS'] = (coms + " " + tag).trim();
         }
-        
+
         const res = internalBatchUpdateTasks("ADMINISTRADOR", [taskData]);
         if(res.success) {
             registrarLog(username || "DESCONOCIDO", "ACTUALIZAR PROYECTO", `Proyecto: ${projectName}, ID: ${taskData['ID']||taskData['FOLIO']}`);
@@ -3351,7 +3348,7 @@ function cmdRealizarAlta() {
   const sheet = SS.getActiveSheet();
   const row = sheet.getActiveRange().getRow();
   const ui = SpreadsheetApp.getUi();
-  
+
   const dataRange = sheet.getDataRange();
   const values = dataRange.getValues();
   const headerIdx = findHeaderRow(values);
@@ -3383,11 +3380,11 @@ function cmdRealizarAlta() {
   }
 
   SS.toast("Guardando y distribuyendo tarea...", "Holtmont", 5);
-  
+
   taskObj['ESTATUS'] = taskObj['ESTATUS'] || 'ASIGNADO';
   const involucrados = taskObj["INVOLUCRADOS"] || taskObj["RESPONSABLE"] || "";
   const listaInv = String(involucrados).split(",").map(s => s.trim()).filter(s => s);
-  
+
   internalBatchUpdateTasks("ADMINISTRADOR", [taskObj]);
   listaInv.forEach(nombre => {
     internalBatchUpdateTasks(nombre, [taskObj]);
@@ -3417,7 +3414,7 @@ function cmdActualizar() {
 
   const headers = values[headerIdx].map(h => String(h).toUpperCase().trim());
   const rowData = values[row - 1];
-  const taskObj = { _rowIndex: row }; 
+  const taskObj = { _rowIndex: row };
 
   headers.forEach((h, i) => {
     if (h) taskObj[h] = rowData[i];
@@ -3450,8 +3447,8 @@ function apiCreateStandardStructure(siteId, user) {
     STANDARD_PROJECT_STRUCTURE.forEach(name => {
         // Determinamos el tipo para que el Front sepa cómo dibujarlo
         let tipo = "GENERAL";
-        if (name.includes("PPC")) tipo = "PPC_MASTER"; 
-        
+        if (name.includes("PPC")) tipo = "PPC_MASTER";
+
         apiSaveSubProject({
             parentId: siteId,
             name: name,
@@ -3613,7 +3610,7 @@ function apiGetNextWorkOrderSeq() {
 function incrementarContadorDias() {
   // Lista de hojas a procesar (Antonia + Vendedores)
   const sheetsToProcess = ["ANTONIA_VENTAS"];
-  
+
   try {
       const directory = getDirectoryFromDB();
       directory.forEach(user => {
@@ -3638,17 +3635,17 @@ function incrementarContadorDias() {
 
         const dataRange = sheet.getDataRange();
         const values = dataRange.getValues();
-        if (values.length < 2) return; 
+        if (values.length < 2) return;
 
         // Buscar Cabeceras
         const headerRowIdx = findHeaderRow(values);
         if (headerRowIdx === -1) return;
 
         const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
-        
+
         // Buscar columnas clave
         let diasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ" || h.includes("DIAS FINALIZ") || h.includes("DÍAS FINALIZ"));
-        
+
         const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'F. INICIO'];
         let fechaIdx = -1;
         for(let alias of fechaAliases) {
@@ -3701,10 +3698,10 @@ function incrementarContadorDias() {
                     } catch (e) {}
                 }
             }
-            
+
             if (calculated) updatedCount++;
             else if (newVal === undefined) newVal = ""; // Keep clean if calculation fails
-            
+
             newColumnValues.push([newVal]);
         }
 
@@ -3714,14 +3711,14 @@ function incrementarContadorDias() {
             // Re-apply traffic light just in case
             try { applyTrafficLightToSheet(sheet); } catch(e){}
         }
-        
+
         console.log(`[CONTADOR] ${sheetName}: ${updatedCount} actualizados.`);
 
       } catch (e) {
         console.error(`Error procesando ${sheetName}:`, e);
       }
   });
-  
+
   registrarLog("SISTEMA", "CONTADOR_DIARIO", `Actualización masiva de días completada.`);
 }
 
@@ -4245,7 +4242,7 @@ function applyTrafficLightToSheet(sheet) {
           colFechaIndices.push(i);
       }
   });
-  
+
   const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
   const colDiasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ" || h.includes("DIAS FINALIZ") || h.includes("DÍAS FINALIZ"));
 
@@ -4253,7 +4250,7 @@ function applyTrafficLightToSheet(sheet) {
 
   const rowHeader = headerRowIdx + 1; // 1-based (Fila de Titulos)
   const colClasiLet = colIndexToLetter(colClasiIdx + 1);
-  
+
   // Identify PRIMARY Date Column (for linking DIAS coloring)
   let primaryFechaIdx = -1;
   for(let alias of fechaAliases) {
@@ -4278,7 +4275,7 @@ function applyTrafficLightToSheet(sheet) {
   // 4. Iterar sobre TODAS las columnas de fecha encontradas
   colFechaIndices.forEach(idx => {
       const colFechaLet = colIndexToLetter(idx + 1);
-      
+
       const rangesToColor = [sheet.getRange(rowHeader, idx + 1, sheet.getMaxRows() - rowHeader + 1, 1)];
       if (idx === primaryFechaIdx && colDiasIdx > -1) {
           rangesToColor.push(sheet.getRange(rowHeader, colDiasIdx + 1, sheet.getMaxRows() - rowHeader + 1, 1));
@@ -4512,7 +4509,7 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
        // 1. Company Match (Loose)
        const rowClient = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
        if (!rowClient) return false;
-       
+
        // Check bidirectional inclusion to handle variations
        if (!rowClient.includes(targetCompany) && !targetCompany.includes(rowClient)) return false;
 
@@ -4521,7 +4518,7 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
        const dateVal = getVal(['FECHA INICIO', 'F. INICIO', 'F. VISITA', 'F. ENTREGA', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
 
        if (!dateVal) return false;
-       
+
        let dObj = null;
        if (dateVal instanceof Date) {
            dObj = dateVal;
@@ -4537,7 +4534,7 @@ function apiFetchInfoBankData(year, monthName, companyName, folderName) {
                if (!isNaN(parsed.getTime())) dObj = parsed;
            }
        }
-       
+
        if (!dObj || isNaN(dObj.getTime())) return false;
        if (dObj.getMonth() !== targetMonth) return false;
        if (dObj.getFullYear() !== targetYear) return false;
@@ -4580,12 +4577,12 @@ function apiFetchDistinctClients() {
     if (!res.success) return { success: false, message: res.message };
 
     const clients = new Set();
-    
+
     // Add existing static list for robustness (optional, but good practice to not lose hardcoded ones if needed)
-    // Actually, user said "I need all those from the ANTONIA_VENTAS list", implying dynamic. 
+    // Actually, user said "I need all those from the ANTONIA_VENTAS list", implying dynamic.
     // Let's check headers to find 'CLIENTE'
     // internalFetchSheetData returns objects with keys uppercased and trimmed.
-    
+
     const allData = [...res.data, ...(res.history || [])];
 
     allData.forEach(row => {
@@ -4644,8 +4641,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                  const c = clean(taskData['CONCEPTO']);
                  const d = clean(taskData['DESCRIPCION']);
                  const cl = clean(taskData['CLIENTE']);
-                 const vk = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
-                 const v = vk ? clean(taskData[vk]) : "";
+                 const v = clean(taskData['VENDEDOR']);
 
                  // Ignorar si VENDEDOR es solo el default "ANTONIA_VENTAS" y no hay nada más
                  const isVendedorDefault = v.toUpperCase() === "ANTONIA_VENTAS";
@@ -4860,34 +4856,34 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                        }
                        return "";
                    };
-                   
+
                    const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
                    const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'])).replace(/%/g, '').trim();
                    const avanceNum = parseFloat(avanceRaw);
                    const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1 || avanceRaw.toUpperCase() === 'SI';
                    const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
-                   
+
                    if (tFolio && isDone) {
                        if (!antDataFetched) {
                            const antData = internalFetchSheetData("ANTONIA_VENTAS");
                            if (antData.success && antData.data) antDataRows = antData.data;
                            antDataFetched = true;
                        }
-                       
+
                        const targetRow = antDataRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
                        if (targetRow) {
                            let log = [];
                            try {
                                if (targetRow['PROCESO_LOG']) log = JSON.parse(targetRow['PROCESO_LOG']);
                            } catch(e) {}
-                           
+
                            let updated = false;
                            let updatedLog = [];
                            if (Array.isArray(log)) {
                                updatedLog = log.map(entry => {
                                    let wNorm = String(personName).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ");
                                    let eNorm = entry.assignee ? String(entry.assignee).toUpperCase().trim().replace(/\s*\(VENTAS\)/g, "").replace(/_/g, " ") : "";
-                                   
+
                                    if (entry.status === 'IN_PROGRESS' && (eNorm === wNorm || eNorm.includes(wNorm) || wNorm.includes(eNorm) || eNorm === "" || wNorm === "") && isDone) {
                                        entry.status = 'DONE';
                                        entry.endTimestamp = new Date().getTime();
@@ -4899,7 +4895,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                    return entry;
                                });
                            }
-                           
+
                            if (updated) {
                                const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
                                let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
@@ -4937,7 +4933,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                    'PROCESO_LOG': JSON.stringify(updatedLog),
                                    'MAP COT': mapCotParts.join(' | ')
                                };
-                               
+
                                const fileCols = ['ARCHIVO', 'F2', 'LAYOUT', 'COTIZACION', 'EVIDENCIA'];
                                fileCols.forEach(col => {
                                    let wKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === col);
@@ -4945,17 +4941,17 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                        syncToAntonia[wKey] = taskData[wKey];
                                    }
                                });
-                               
+
                                syncPayloads.push(syncToAntonia);
                            }
                        }
                    }
                });
-               
+
                if (syncPayloads.length > 0) {
                    internalBatchUpdateTasks("ANTONIA_VENTAS", syncPayloads, false);
                }
-               
+
                if (String(personName).toUpperCase().includes("(VENTAS)")) {
                    internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
                }
@@ -4963,7 +4959,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)
                const peerUpdates = {};
                distributionTasks.forEach(t => {
-                   const vKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
+                   const vKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR");
                    if(vKey && t[vKey]) {
                        const vList = String(t[vKey]).split(',').map(s => s.trim());
                        vList.forEach(otherVendor => {
@@ -4976,7 +4972,6 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
                                    let potential = targetSheet + " (VENTAS)";
                                    if (findSheetSmart(potential)) targetSheet = potential;
-                                   else if (findSheetSmart(targetSheet)) targetSheet = targetSheet;
                                }
                                if(!peerUpdates[targetSheet]) peerUpdates[targetSheet] = [];
                                peerUpdates[targetSheet].push(t);
