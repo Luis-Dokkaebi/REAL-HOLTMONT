@@ -1,0 +1,27 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -2280,6 +2280,8 @@
+                                 let potentialSheet = targetSheet + " (VENTAS)";
+                                 if (findSheetSmart(potentialSheet)) {
+                                     finalTarget = potentialSheet;
++                                } else if (findSheetSmart(targetSheet)) {
++                                    finalTarget = targetSheet; // Fallback to literal if exact "(VENTAS)" missing
+                                 }
+                             }
+
+@@ -2420,6 +2422,8 @@
+                              if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
+                                  let potential = targetSheet + " (VENTAS)";
+                                  if (findSheetSmart(potential)) targetSheet = potential;
++                                 else if (findSheetSmart(targetSheet)) targetSheet = targetSheet;
+                              }
+                              internalBatchUpdateTasks(targetSheet, [syncData]);
+                          }
+@@ -4973,6 +4977,8 @@
+                                if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
+                                    let potential = targetSheet + " (VENTAS)";
+                                    if (findSheetSmart(potential)) targetSheet = potential;
++                                   else if (findSheetSmart(targetSheet)) targetSheet = targetSheet;
+                                }
+                                if(!peerUpdates[targetSheet]) peerUpdates[targetSheet] = [];
+                                peerUpdates[targetSheet].push(t);
