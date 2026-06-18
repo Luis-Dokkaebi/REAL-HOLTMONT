@@ -2419,12 +2419,17 @@ function internalUpdateTask(personName, taskData, username) {
                          if (currentSheetNorm !== otherVendorNorm) {
                              // Distribuir a este otro vendedor
                              let targetSheet = otherVendor;
-                             if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
-                                 let potential = targetSheet + " (VENTAS)";
-                                 if (findSheetSmart(potential)) targetSheet = potential;
-                                 else if (findSheetSmart(targetSheet)) targetSheet = targetSheet;
+                             // MODIFICADO: No agregar el sufijo "(VENTAS)" automáticamente si no es Antonia.
+                             // El usuario debe asignarse a su tabla base o a la tabla especificada.
+                             let finalSheet = null;
+                             if (findSheetSmart(targetSheet)) {
+                                 finalSheet = targetSheet;
+                             } else {
+                                 // Fallback opcional: solo si de verdad quiso asignar a "(VENTAS)" y lo escribió mal, pero no por defecto
+                                 finalSheet = targetSheet;
                              }
-                             internalBatchUpdateTasks(targetSheet, [syncData]);
+
+                             internalBatchUpdateTasks(finalSheet, [syncData]);
                          }
                      });
                  }
@@ -2758,25 +2763,35 @@ function apiSavePPCData(payload, activeUser) {
           const responsables = String(item.responsable || item.RESPONSABLE || "").split(",").map(s => s.trim()).filter(s => s);
 
           responsables.forEach(personName => {
-              if (!personName.toUpperCase().includes("(VENTAS)")) {
-                  // LOGICA ESPECIAL JESUS_CANTU: Filtrar columnas para evitar rotura en Tracker
-                  if (activeUser === 'JESUS_CANTU') {
-                      const staffData = {
-                          'FOLIO': taskData.FOLIO,
-                          'CONCEPTO': taskData.CONCEPTO,
-                          'AREA': taskData.AREA,
-                          'RESPONSABLE': taskData.INVOLUCRADOS,
-                          'FECHA': taskData.FECHA,
-                          'ESTATUS': taskData.ESTATUS,
-                          'AVANCE': taskData.AVANCE,
-                          'CLASIFICACION': taskData.CLASIFICACION,
-                          'PRIORIDAD': taskData.PRIORIDAD
-                          // Se omiten RUTA_CRITICA, ZONA, DIAS_X, etc.
-                      };
-                      addTaskToSheet(personName, staffData);
-                  } else {
-                      addTaskToSheet(personName, taskData);
+              // MODIFICADO: Solo Antonia Ventas envía al PPC hacia "(VENTAS)".
+              // El resto del equipo manda al Tracker (hoja sin sufijo VENTAS).
+              // Ya no ignoramos el nombre, sino que validamos la hoja.
+              let targetSheet = personName;
+              if (targetSheet.toUpperCase().includes("(VENTAS)")) {
+                  // Si el usuario por alguna razón selecciona el nombre con "(VENTAS)",
+                  // le quitamos el sufijo para que caiga en su Tracker (a menos que sea Antonia quien envía, que sí lo permite, pero PPC es solo Tracker)
+                  if (activeUser !== 'ANTONIA_VENTAS') {
+                      targetSheet = targetSheet.replace(/\s*\(VENTAS\)/i, "").trim();
                   }
+              }
+
+              // LOGICA ESPECIAL JESUS_CANTU: Filtrar columnas para evitar rotura en Tracker
+              if (activeUser === 'JESUS_CANTU') {
+                  const staffData = {
+                      'FOLIO': taskData.FOLIO,
+                      'CONCEPTO': taskData.CONCEPTO,
+                      'AREA': taskData.AREA,
+                      'RESPONSABLE': taskData.INVOLUCRADOS,
+                      'FECHA': taskData.FECHA,
+                      'ESTATUS': taskData.ESTATUS,
+                      'AVANCE': taskData.AVANCE,
+                      'CLASIFICACION': taskData.CLASIFICACION,
+                      'PRIORIDAD': taskData.PRIORIDAD
+                      // Se omiten RUTA_CRITICA, ZONA, DIAS_X, etc.
+                  };
+                  addTaskToSheet(targetSheet, staffData);
+              } else {
+                  addTaskToSheet(targetSheet, taskData);
               }
 
             // INTEGRACIÓN OUTLOOK: Enviar evento al responsable asignado desde el formulario PPC
@@ -4973,13 +4988,11 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                            if (currentSheetNorm !== otherVendorNorm) {
                                let targetSheet = otherVendor;
-                               if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
-                                   let potential = targetSheet + " (VENTAS)";
-                                   if (findSheetSmart(potential)) targetSheet = potential;
-                                   else if (findSheetSmart(targetSheet)) targetSheet = targetSheet;
-                               }
-                               if(!peerUpdates[targetSheet]) peerUpdates[targetSheet] = [];
-                               peerUpdates[targetSheet].push(t);
+                               // MODIFICADO: No agregar el sufijo "(VENTAS)" automáticamente si no es Antonia.
+                               // Se debe escribir exactamente a la tabla que especifican.
+                               let finalTarget = targetSheet;
+                               if(!peerUpdates[finalTarget]) peerUpdates[finalTarget] = [];
+                               peerUpdates[finalTarget].push(t);
                            }
                        });
                    }
