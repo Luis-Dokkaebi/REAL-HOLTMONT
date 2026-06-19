@@ -1,0 +1,12 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -3485,6 +3485,9 @@
+     if (upperName === 'LUIS_CARLOS' || upperName === 'LUIS CARLOS' || upperName === 'ADMINISTRADOR') return 'LC-';
+     if (upperName === 'JAIME_OLIVO' || upperName === 'JAIME OLIVO') return 'JO-';
+     if (upperName === 'ANTONIA_VENTAS' || upperName === 'ANTONIA VENTAS') return 'AV-';
++    if (upperName === 'RAMIRO_RODRIGUEZ' || upperName === 'RAMIRO RODRIGUEZ') return 'RR-';
++    if (upperName === 'SEBASTIAN_PADILLA' || upperName === 'SEBASTIAN PADILLA') return 'SP-';
++    if (upperName === 'TERESA_GARZA' || upperName === 'TERESA GARZA') return 'TG-';
+
+     const parts = upperName.split(/[\s_]+/).filter(p => p.length > 0);
+     if (parts.length >= 2) {

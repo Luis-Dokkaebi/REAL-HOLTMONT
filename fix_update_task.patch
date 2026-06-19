@@ -1,0 +1,12 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -3389,7 +3389,8 @@
+
+   const currentSheetName = sheet.getName();
+   if (!taskObj["FOLIO"] && !taskObj["ID"]) {
+-    let prefix = generatePrefix(activeUser || currentSheetName);
++    const assigner = username || personName || currentSheetName;
++    let prefix = generatePrefix(assigner);
+     taskObj["FOLIO"] = prefix + generateNumericSequence(prefix);
+     const folioCol = headers.indexOf("FOLIO") > -1 ? headers.indexOf("FOLIO") : headers.indexOf("ID");
+     if (folioCol > -1) {
