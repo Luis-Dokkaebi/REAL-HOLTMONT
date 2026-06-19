@@ -1,24 +1,22 @@
-1. **Crear una función `generatePrefix(name)` en `CODIGO.js`**
-   - Esta función tomará el nombre del usuario (o `currentSheetName`).
-   - Mantendrá los prefijos hardcodeados actuales por compatibilidad:
-     - `JESUS_CANTU` -> `JC-`
-     - `LUIS_CARLOS` o `ADMINISTRADOR` -> `LC-`
-     - `JAIME_OLIVO` -> `JO-`
-     - `ANTONIA_VENTAS` -> `AV-`
-   - Si no coincide con los hardcodeados, tomará el nombre, lo limpiará (quitará espacios extra o guiones bajos), y tomará las primeras letras de las primeras dos palabras para generar el prefijo.
-   - Si solo tiene una palabra, tomará las primeras 2 letras de esa palabra.
-   - Siempre se añadirá `-` al final.
+1. **Script de Limpieza (Deduplicación):**
+   - Crear una función `deduplicateAllSheets` en `CODIGO.js`.
+   - Iterar por todas las hojas del documento.
+   - Leer los datos de cada hoja.
+   - Encontrar índices de columnas clave (`FOLIO`, `ID`, `CONCEPTO`, `DESCRIPCION`, `FECHA`, `F. INICIO`).
+   - Identificar duplicados:
+     - Si hay Folio/ID, mantener un registro de los folios vistos. Si se repite, marcar la fila para eliminación.
+     - Si NO hay Folio/ID, concatenar Descripción/Concepto + Fecha y usarlo como llave. Si se repite, marcar la fila para eliminación.
+   - Borrar las filas marcadas de abajo hacia arriba para no afectar los índices.
 
-2. **Actualizar la generación de prefijos en `CODIGO.js`**
-   - Remplazar la lógica inline en `cmdRealizarAlta` (alrededor de la línea 3367) por una llamada a `generatePrefix`.
-   - Modificar cualquier otro lugar en `CODIGO.js` donde se asigne el folio `PPC-` por defecto en base al usuario que crea la tarea o proyecto.
-     - Específicamente, en `apiSavePPCData` (línea 2617), donde dice `id = "PPC-" + ...` cuando se recibe de Maestro. Actualizarlo para usar el prefijo del usuario de sesión (`username`).
-     - Al parecer la línea 2617 se llama en `apiSavePPCData`.
+2. **Arreglar la Generación de Folios Secuenciales:**
+   - Modificar la función `generateNumericSequence(key)` para que tome una llave (ej. el prefijo 'RR-') y mantenga una secuencia independiente para cada prefijo en las propiedades del script.
+   - Buscar todos los lugares donde se usa `Math.random()` para crear folios. Específicamente en:
+     - `apiSavePPCData` (línea ~2631): Cambiar `prefix + Math.floor(Math.random() * 1000000)` por `prefix + String(generateNumericSequence(prefix)).padStart(4, '0')`.
+     - `internalUpdateTask` (línea ~3393): Cambiar `prefix + Math.floor(Math.random() * 100000)` por la nueva lógica de secuencia usando `activeUser` u origen apropiado (en lugar de `currentSheetName` si queremos que sea quien asigna). Pero nota: el issue menciona que "si RAMIRO RODRIGUEZ le asigna una tarea a SEBASTIAN PADILLA le saldria en folio algo como RR-0001", entonces necesitamos asegurarnos de que la función que genera el folio reciba el usuario que está asignando.
+   - Asegurarnos de que el `activeUser` (quien asigna) se pase correctamente para generar el prefijo en todos los puntos de entrada, especialmente en los formularios de la UI.
 
-3. **Verificación y Pruebas**
-   - Realizar `node syntax_check.js`.
-   - Confirmar que los test de integración pasen o al menos que el sintaxis sea válido.
+3. **Pre Commit Steps:**
+   - Run the pre commit instructions step to ensure tests, verification and reflection is done.
 
-4. **Pre-commit checks**
-   - Ejecutar `pre_commit_instructions` tool.
-   - Realizar los pasos descritos para asegurar testing, verificación y reflexión.
+4. **Submit:**
+   - Create a commit to save the changes.

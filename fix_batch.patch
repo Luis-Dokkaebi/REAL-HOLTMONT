@@ -1,0 +1,14 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -4673,8 +4673,9 @@
+                  if (!hasContent) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
+
+                  // Use robust locked generator to avoid duplicates during mass-inserts
+-                 const seqNum = generateNumericSequence(seqKey);
+-                 taskData['FOLIO'] = "AV-" + seqNum;
++                 const prefix = generatePrefix(username || personName);
++                 const seqNum = generateNumericSequence(prefix);
++                 taskData['FOLIO'] = prefix + seqNum;
+              } else {
+                  // RESTRICTIONS FOR EXISTING TASKS
+                  const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'PROCESO', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ', 'CORREO', 'CARPETA', 'INFO CLIENTE', 'CORREOS', 'CARPETAS', 'REQUISITOR'];

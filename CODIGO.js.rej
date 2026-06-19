@@ -1,0 +1,31 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -3502,23 +3502,23 @@
+ /**
+  * GENERADOR DE FOLIO NUMÉRICO SECUENCIAL (NUEVO)
+  */
+ function generateNumericSequence(key) {
+   const lock = LockService.getScriptLock();
+   try {
+     if (lock.tryLock(5000)) {
+        const props = PropertiesService.getScriptProperties();
+-       let val = Number(props.getProperty(key) || 1000);
+-       // Check if the value got corrupted (e.g., from a timestamp)
+-       if (val > 10000000) {
+-           val = 1000;
++       const seqKey = "SEQ_" + key;
++       let val = Number(props.getProperty(seqKey) || 0);
++       if (isNaN(val) || val > 10000000) {
++           val = 0;
+        }
+        val++;
+-       props.setProperty(key, String(val));
+-       return val;
++       props.setProperty(seqKey, String(val));
++       return String(val).padStart(4, '0');
+     }
+   } catch(e) {} finally {
+       lock.releaseLock();
+   }
+   return String(Math.floor(1000 + Math.random() * 9000));
+ }

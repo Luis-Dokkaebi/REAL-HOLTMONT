@@ -2629,7 +2629,7 @@ function apiSavePPCData(payload, activeUser) {
                   id = generateWorkOrderFolio(item.cliente, item.especialidad);
               } else {
                   let prefix = generatePrefix(activeUser);
-                  id = prefix + Math.floor(Math.random() * 1000000);
+                  id = prefix + generateNumericSequence(prefix);
               }
           }
           generatedIds.push(id);
@@ -3390,7 +3390,7 @@ function cmdRealizarAlta() {
   const currentSheetName = sheet.getName();
   if (!taskObj["FOLIO"] && !taskObj["ID"]) {
     let prefix = generatePrefix(currentSheetName);
-    taskObj["FOLIO"] = prefix + Math.floor(Math.random() * 100000);
+    taskObj["FOLIO"] = prefix + generateNumericSequence(prefix);
     const folioCol = headers.indexOf("FOLIO") > -1 ? headers.indexOf("FOLIO") : headers.indexOf("ID");
     if (folioCol > -1) {
       sheet.getRange(row, folioCol + 1).setValue(taskObj["FOLIO"]);
@@ -3488,6 +3488,9 @@ function generatePrefix(name) {
     if (upperName === 'LUIS_CARLOS' || upperName === 'LUIS CARLOS' || upperName === 'ADMINISTRADOR') return 'LC-';
     if (upperName === 'JAIME_OLIVO' || upperName === 'JAIME OLIVO') return 'JO-';
     if (upperName === 'ANTONIA_VENTAS' || upperName === 'ANTONIA VENTAS') return 'AV-';
+    if (upperName === 'RAMIRO_RODRIGUEZ' || upperName === 'RAMIRO RODRIGUEZ') return 'RR-';
+    if (upperName === 'SEBASTIAN_PADILLA' || upperName === 'SEBASTIAN PADILLA') return 'SP-';
+    if (upperName === 'TERESA_GARZA' || upperName === 'TERESA GARZA') return 'TG-';
 
     const parts = upperName.split(/[\s_]+/).filter(p => p.length > 0);
     if (parts.length >= 2) {
@@ -3507,14 +3510,15 @@ function generateNumericSequence(key) {
   try {
     if (lock.tryLock(5000)) {
        const props = PropertiesService.getScriptProperties();
-       let val = Number(props.getProperty(key) || 1000);
-       // Check if the value got corrupted (e.g., from a timestamp)
-       if (val > 10000000) {
-           val = 1000;
+       const seqKey = "SEQ_" + key;
+       let val = Number(props.getProperty(seqKey) || 0);
+       // Check if the value got corrupted
+       if (isNaN(val) || val > 10000000) {
+           val = 0;
        }
        val++;
-       props.setProperty(key, String(val));
-       return String(val);
+       props.setProperty(seqKey, String(val));
+       return String(val).padStart(4, '0');
     }
   } catch(e) { console.error(e); } finally { lock.releaseLock(); }
   // Fallback to a random 4-digit number to avoid long timestamps
@@ -4673,8 +4677,9 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                  if (!hasContent) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
 
                  // Use robust locked generator to avoid duplicates during mass-inserts
-                 const seqNum = generateNumericSequence(seqKey);
-                 taskData['FOLIO'] = "AV-" + seqNum;
+                 const prefix = generatePrefix(username || personName);
+                 const seqNum = generateNumericSequence(prefix);
+                 taskData['FOLIO'] = prefix + seqNum;
              } else {
                  // RESTRICTIONS FOR EXISTING TASKS
                  const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'PROCESO', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ', 'CORREO', 'CARPETA', 'INFO CLIENTE', 'CORREOS', 'CARPETAS', 'REQUISITOR'];
@@ -5403,4 +5408,94 @@ function runFullArchivingBatch() {
     } else {
         ui.alert("❌ Error: " + res.message);
     }
+}
+function deduplicateAllSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  let totalDeleted = 0;
+
+  // We only want to run this on actual data sheets, not system/config sheets
+  const excludeSheets = ["DB_DIRECTORY", "ESTATUS", "APP_CONFIG", "DASHBOARD", "PPC_BORRADOR"];
+
+  for (let i = 0; i < sheets.length; i++) {
+    const sheet = sheets[i];
+    const sheetName = sheet.getName();
+
+    if (excludeSheets.some(ex => sheetName.includes(ex))) {
+      continue;
+    }
+
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) continue; // Skip empty sheets or just headers
+
+    const headers = data[0].map(h => String(h).toUpperCase().trim());
+
+    const folioIdx = headers.indexOf("FOLIO");
+    const idIdx = headers.indexOf("ID");
+    const conceptoIdx = headers.indexOf("CONCEPTO");
+    const descIdx = headers.indexOf("DESCRIPCION");
+    const fechaIdx = headers.indexOf("FECHA");
+    const fInicioIdx = headers.indexOf("F. INICIO");
+
+    const seenFolios = new Set();
+    const seenCombos = new Set();
+    const rowsToDelete = [];
+
+    // Go from top to bottom to identify duplicates (keeping the first one we see)
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      let isDuplicate = false;
+
+      const folio = (folioIdx > -1 ? row[folioIdx] : "") || (idIdx > -1 ? row[idIdx] : "");
+      const folioStr = String(folio).trim();
+
+      if (folioStr !== "" && folioStr !== "SIN-FOLIO") {
+        if (seenFolios.has(folioStr)) {
+          isDuplicate = true;
+        } else {
+          seenFolios.add(folioStr);
+        }
+      } else {
+        // No folio, use concept/desc + date combination
+        const concept = (conceptoIdx > -1 ? row[conceptoIdx] : "") || (descIdx > -1 ? row[descIdx] : "");
+        const dateRaw = (fechaIdx > -1 ? row[fechaIdx] : "") || (fInicioIdx > -1 ? row[fInicioIdx] : "");
+
+        let dateStr = "";
+        if (dateRaw instanceof Date) {
+            // just standard format for comparison
+            dateStr = dateRaw.toISOString().split('T')[0];
+        } else {
+            dateStr = String(dateRaw).trim();
+        }
+
+        const conceptStr = String(concept).trim().toUpperCase();
+
+        if (conceptStr !== "") {
+            const comboKey = conceptStr + "|||" + dateStr;
+            if (seenCombos.has(comboKey)) {
+                isDuplicate = true;
+            } else {
+                seenCombos.add(comboKey);
+            }
+        }
+      }
+
+      if (isDuplicate) {
+        // Row to delete is r + 1 (1-based index in sheets)
+        rowsToDelete.push(r + 1);
+      }
+    }
+
+    // Delete rows from bottom to top to preserve indices
+    if (rowsToDelete.length > 0) {
+      Logger.log(`Found ${rowsToDelete.length} duplicates in sheet ${sheetName}`);
+      for (let j = rowsToDelete.length - 1; j >= 0; j--) {
+        sheet.deleteRow(rowsToDelete[j]);
+        totalDeleted++;
+      }
+    }
+  }
+
+  Logger.log(`Total duplicate rows deleted across all sheets: ${totalDeleted}`);
+  return totalDeleted;
 }
