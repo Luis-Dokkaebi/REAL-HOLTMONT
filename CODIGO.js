@@ -5413,6 +5413,9 @@ function deduplicateAllSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheets = ss.getSheets();
   let totalDeleted = 0;
+  
+  // Mover el Set afuera del loop permite borrar duplicados cruzados entre hojas si así se desea,
+  // pero el usuario especificó "de todas las hojas", y vimos que el bug replicó la misma tarea en la MISMA hoja repetidas veces.
 
   // We only want to run this on actual data sheets, not system/config sheets
   const excludeSheets = ["DB_DIRECTORY", "ESTATUS", "APP_CONFIG", "DASHBOARD", "PPC_BORRADOR"];
@@ -5428,25 +5431,41 @@ function deduplicateAllSheets() {
     const data = sheet.getDataRange().getValues();
     if (data.length <= 1) continue; // Skip empty sheets or just headers
 
-    const headers = data[0].map(h => String(h).toUpperCase().trim());
+    let headerRowIndex = -1;
+    let headers = [];
+    let folioIdx = -1;
+    let conceptoIdx = -1;
+    let fechaIdx = -1;
 
-    const folioIdx = headers.indexOf("FOLIO");
-    const idIdx = headers.indexOf("ID");
-    const conceptoIdx = headers.indexOf("CONCEPTO");
-    const descIdx = headers.indexOf("DESCRIPCION");
-    const fechaIdx = headers.indexOf("FECHA");
-    const fInicioIdx = headers.indexOf("F. INICIO");
+    // Buscar la fila de encabezados en las primeras 20 filas
+    for (let r = 0; r < Math.min(20, data.length); r++) {
+      const currentHeaders = data[r].map(h => String(h).toUpperCase().trim());
+      const fIdx = currentHeaders.findIndex(h => h === "FOLIO" || h === "ID");
+      const cIdx = currentHeaders.findIndex(h => h === "CONCEPTO" || h === "DESCRIPCION" || h === "TAREA" || h === "DESCRIPCIÓN");
+      
+      if (fIdx > -1 && cIdx > -1) {
+        headerRowIndex = r;
+        headers = currentHeaders;
+        folioIdx = fIdx;
+        conceptoIdx = cIdx;
+        fechaIdx = currentHeaders.findIndex(h => h === "FECHA" || h === "F. INICIO" || h.includes("FECHA"));
+        break;
+      }
+    }
+    
+    // Si no encuentra columnas clave, es mejor omitir la hoja que borrar a ciegas
+    if (headerRowIndex === -1 || conceptoIdx === -1) continue; 
 
     const seenFolios = new Set();
     const seenCombos = new Set();
     const rowsToDelete = [];
 
-    // Go from top to bottom to identify duplicates (keeping the first one we see)
-    for (let r = 1; r < data.length; r++) {
+    // Go from top to bottom to identify duplicates starting AFTER the header row
+    for (let r = headerRowIndex + 1; r < data.length; r++) {
       const row = data[r];
       let isDuplicate = false;
 
-      const folio = (folioIdx > -1 ? row[folioIdx] : "") || (idIdx > -1 ? row[idIdx] : "");
+      const folio = folioIdx > -1 ? row[folioIdx] : "";
       const folioStr = String(folio).trim();
 
       if (folioStr !== "" && folioStr !== "SIN-FOLIO") {
@@ -5457,19 +5476,20 @@ function deduplicateAllSheets() {
         }
       } else {
         // No folio, use concept/desc + date combination
-        const concept = (conceptoIdx > -1 ? row[conceptoIdx] : "") || (descIdx > -1 ? row[descIdx] : "");
-        const dateRaw = (fechaIdx > -1 ? row[fechaIdx] : "") || (fInicioIdx > -1 ? row[fInicioIdx] : "");
-
+        const concept = conceptoIdx > -1 ? row[conceptoIdx] : "";
+        const dateRaw = fechaIdx > -1 ? row[fechaIdx] : "";
+        
         let dateStr = "";
         if (dateRaw instanceof Date) {
             // just standard format for comparison
-            dateStr = dateRaw.toISOString().split('T')[0];
+            dateStr = dateRaw.toISOString().split('T')[0]; 
         } else {
             dateStr = String(dateRaw).trim();
         }
-
-        const conceptStr = String(concept).trim().toUpperCase();
-
+        
+        // The image shows the concept is huge, and in the log there was 'Found 496 duplicates'.
+        const conceptStr = String(concept).trim().toUpperCase().substring(0, 50); // Use first 50 chars to prevent slight formatting changes from breaking it
+        
         if (conceptStr !== "") {
             const comboKey = conceptStr + "|||" + dateStr;
             if (seenCombos.has(comboKey)) {
@@ -5495,7 +5515,25 @@ function deduplicateAllSheets() {
       }
     }
   }
-
+  
   Logger.log(`Total duplicate rows deleted across all sheets: ${totalDeleted}`);
   return totalDeleted;
+}
+
+function debugSheetHeaders() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("JEHU MARTINEZ");
+  if (!sheet) {
+    Logger.log("No sheet found for JEHU MARTINEZ");
+    return;
+  }
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return;
+  
+  const headers = data[0].map(h => String(h).toUpperCase().trim());
+  Logger.log("HEADERS:");
+  Logger.log(JSON.stringify(headers));
+  
+  Logger.log("ROW 1:");
+  Logger.log(JSON.stringify(data[1]));
 }
