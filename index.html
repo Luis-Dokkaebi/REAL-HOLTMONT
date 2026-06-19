@@ -8583,7 +8583,7 @@ const filteredStaffTrackerData = computed(() => {
       const isTaskDone = (task) => {
           const status = String(task.ESTATUS || '').toUpperCase();
           const avance = String(task.AVANCE || '').replace('%','').trim();
-          return status.includes('DONE') || status.includes('REALIZAD') || avance === '100' || avance === '1.0';
+          return status.includes('DONE') || status.includes('REALIZAD') || avance === '100';
       };
 
       const getResponsible = (task) => {
