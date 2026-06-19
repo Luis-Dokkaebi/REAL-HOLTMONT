@@ -2318,7 +2318,7 @@ function internalUpdateTask(personName, taskData, username) {
                  const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
                  const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'])).replace(/%/g, '').trim();
                  const avanceNum = parseFloat(avanceRaw);
-                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1 || avanceRaw.toUpperCase() === 'SI';
+                 const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceRaw.toUpperCase() === 'SI';
                  
                  const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
                  
@@ -4879,7 +4879,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    const estatus = String(getTVal(['ESTATUS', 'STATUS', 'ESTADO'])).toUpperCase().trim();
                    const avanceRaw = String(getTVal(['AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'])).replace(/%/g, '').trim();
                    const avanceNum = parseFloat(avanceRaw);
-                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceNum === 1 || avanceRaw.toUpperCase() === 'SI';
+                   const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || estatus === 'REALIZADO' || estatus === 'COMPLETADO' || estatus === 'DONE' || avanceRaw === '100' || avanceNum === 100 || avanceRaw.toUpperCase() === 'SI';
                    const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
                    
                    if (tFolio && isDone) {
