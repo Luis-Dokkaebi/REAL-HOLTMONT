@@ -211,7 +211,7 @@ const USER_DB = {
   "JESUS_CANTU":      { pass: "ppc2025",   role: "PPC_ADMIN", label: "PPC Manager", email: "jesuscantu@empresa.com" },
   "JAIME_OLIVO":      { pass: "admin2025", role: "ADMIN_CONTROL", label: "Jaime Olivo", email: "jaimeolivo@empresa.com" },
   "PREWORK_ORDER":    { pass: "workorder2026", role: "WORKORDER_USER", label: "Workorder", email: "workorder@empresa.com" },
-  "ANTONIA_VENTAS": { pass: "tonita2025", role: "TONITA", label: "Antonia Pineda", email: "ventas@empresa.com", staffName: "ANTONIA_VENTAS", dept: "VENTAS", seller: true },
+  "ANTONIA_VENTAS": { pass: "tonita2025", role: "TONITA", label: "Antonia Pineda", email: "ventas@empresa.com", staffName: "ANTONIA PINEDA LOPEZ", dept: "VENTAS", seller: false },
   "JUDITH_ECHAVARRIA": { pass: "judith2951", role: "STAFF_USER", label: "Cristian Judith Echavarria Rodriguez", email: "", staffName: "JUDITH ECHAVARRIA", dept: "COMPRAS", seller: true },
   "EDUARDO_MANZANARES": { pass: "eduardo6234", role: "STAFF_USER", label: "Eduardo Manzanares Sanchez", email: "", staffName: "EDUARDO MANZANARES", dept: "VENTAS", seller: true },
   "RAMIRO_RODRIGUEZ": { pass: "ramiro9233", role: "STAFF_USER", label: "Ramiro Rodriguez Escalante", email: "", staffName: "RAMIRO RODRIGUEZ", dept: "VENTAS", seller: true },
@@ -715,7 +715,7 @@ function generarDashboard() {
 function apiFetchAdminKPIs() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   // Vendedores to analyze based on USER_DB (excluding ADMIN roles)
-  const sellers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA", "ANTONIA_VENTAS"];
+  const sellers = ["ANGEL_SALINAS", "TERESA_GARZA", "EDUARDO_TERAN", "EDUARDO_MANZANARES", "RAMIRO_RODRIGUEZ", "SEBASTIAN_PADILLA"]; // Antonia removed from select list
 
   let allData = [];
 
@@ -2272,6 +2272,9 @@ function internalUpdateTask(personName, taskData, username) {
                          try {
                             // TRAFFIC SPLITTING REFACTORIZADO
                             let targetSheet = vName;
+                            if (targetSheet.toUpperCase() === "ANTONIA_VENTAS") {
+                                targetSheet = "ANTONIA PINEDA LOPEZ";
+                            }
                             let hasSuffix = targetSheet.toUpperCase().includes("(VENTAS)");
                             let finalTarget = null;
 
@@ -2419,6 +2422,9 @@ function internalUpdateTask(personName, taskData, username) {
                          if (currentSheetNorm !== otherVendorNorm) {
                              // Distribuir a este otro vendedor
                              let targetSheet = otherVendor;
+                             if (targetSheet.toUpperCase() === "ANTONIA_VENTAS") {
+                                 targetSheet = "ANTONIA PINEDA LOPEZ";
+                             }
                              // MODIFICADO: No agregar el sufijo "(VENTAS)" automáticamente si no es Antonia.
                              // El usuario debe asignarse a su tabla base o a la tabla especificada.
                              let finalSheet = null;
@@ -2767,6 +2773,9 @@ function apiSavePPCData(payload, activeUser) {
               // El resto del equipo manda al Tracker (hoja sin sufijo VENTAS).
               // Ya no ignoramos el nombre, sino que validamos la hoja.
               let targetSheet = personName;
+              if (targetSheet.toUpperCase() === "ANTONIA_VENTAS") {
+                  targetSheet = "ANTONIA PINEDA LOPEZ";
+              }
               if (targetSheet.toUpperCase().includes("(VENTAS)")) {
                   // Si el usuario por alguna razón selecciona el nombre con "(VENTAS)",
                   // le quitamos el sufijo para que caiga en su Tracker (a menos que sea Antonia quien envía, que sí lo permite, pero PPC es solo Tracker)
@@ -4993,6 +5002,9 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                            if (currentSheetNorm !== otherVendorNorm) {
                                let targetSheet = otherVendor;
+                             if (targetSheet.toUpperCase() === "ANTONIA_VENTAS") {
+                                 targetSheet = "ANTONIA PINEDA LOPEZ";
+                             }
                                // MODIFICADO: No agregar el sufijo "(VENTAS)" automáticamente si no es Antonia.
                                // Se debe escribir exactamente a la tabla que especifican.
                                let finalTarget = targetSheet;
