@@ -5431,21 +5431,37 @@ function deduplicateAllSheets() {
     const data = sheet.getDataRange().getValues();
     if (data.length <= 1) continue; // Skip empty sheets or just headers
 
-    const headers = data[0].map(h => String(h).toUpperCase().trim());
+    let headerRowIndex = -1;
+    let headers = [];
+    let folioIdx = -1;
+    let conceptoIdx = -1;
+    let fechaIdx = -1;
 
-    const folioIdx = headers.findIndex(h => h === "FOLIO" || h === "ID");
-    const conceptoIdx = headers.findIndex(h => h === "CONCEPTO" || h === "DESCRIPCION" || h === "TAREA" || h === "DESCRIPCIÓN");
-    const fechaIdx = headers.findIndex(h => h === "FECHA" || h === "F. INICIO" || h.includes("FECHA"));
+    // Buscar la fila de encabezados en las primeras 20 filas
+    for (let r = 0; r < Math.min(20, data.length); r++) {
+      const currentHeaders = data[r].map(h => String(h).toUpperCase().trim());
+      const fIdx = currentHeaders.findIndex(h => h === "FOLIO" || h === "ID");
+      const cIdx = currentHeaders.findIndex(h => h === "CONCEPTO" || h === "DESCRIPCION" || h === "TAREA" || h === "DESCRIPCIÓN");
+
+      if (fIdx > -1 && cIdx > -1) {
+        headerRowIndex = r;
+        headers = currentHeaders;
+        folioIdx = fIdx;
+        conceptoIdx = cIdx;
+        fechaIdx = currentHeaders.findIndex(h => h === "FECHA" || h === "F. INICIO" || h.includes("FECHA"));
+        break;
+      }
+    }
 
     // Si no encuentra columnas clave, es mejor omitir la hoja que borrar a ciegas
-    if (conceptoIdx === -1) continue;
+    if (headerRowIndex === -1 || conceptoIdx === -1) continue;
 
     const seenFolios = new Set();
     const seenCombos = new Set();
     const rowsToDelete = [];
 
-    // Go from top to bottom to identify duplicates (keeping the first one we see)
-    for (let r = 1; r < data.length; r++) {
+    // Go from top to bottom to identify duplicates starting AFTER the header row
+    for (let r = headerRowIndex + 1; r < data.length; r++) {
       const row = data[r];
       let isDuplicate = false;
 
@@ -5502,4 +5518,22 @@ function deduplicateAllSheets() {
 
   Logger.log(`Total duplicate rows deleted across all sheets: ${totalDeleted}`);
   return totalDeleted;
+}
+
+function debugSheetHeaders() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName("JEHU MARTINEZ");
+  if (!sheet) {
+    Logger.log("No sheet found for JEHU MARTINEZ");
+    return;
+  }
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return;
+
+  const headers = data[0].map(h => String(h).toUpperCase().trim());
+  Logger.log("HEADERS:");
+  Logger.log(JSON.stringify(headers));
+
+  Logger.log("ROW 1:");
+  Logger.log(JSON.stringify(data[1]));
 }
