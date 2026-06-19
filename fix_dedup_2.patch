@@ -1,0 +1,12 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -5465,7 +5465,8 @@
+             dateStr = String(dateRaw).trim();
+         }
+
+-        const conceptStr = String(concept).trim().toUpperCase();
++        // The image shows the concept is huge, and in the log there was 'Found 496 duplicates'.
++        const conceptStr = String(concept).trim().toUpperCase().substring(0, 50); // Use first 50 chars to prevent slight formatting changes from breaking it
+
+         if (conceptStr !== "") {
+             const comboKey = conceptStr + "|||" + dateStr;
