@@ -87,7 +87,8 @@ const INITIAL_DIRECTORY = [
     // SISTEMA (hoja espejo de control, sin login)
     { name: "ADMINISTRADOR", dept: "ADMINISTRACION", type: "HIBRIDO" },
     // GENERAL
-    { name: "DANIELA CASTRO", dept: "GENERAL", type: "ESTANDAR" }
+    { name: "DANIELA CASTRO", dept: "GENERAL", type: "ESTANDAR" },
+    { name: "CESAR GOMEZ", dept: "GENERAL", type: "ESTANDAR" }
 ];
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
@@ -246,7 +247,8 @@ const USER_DB = {
   "ROCIO_CASTRO": { pass: "rocio3947", role: "STAFF_USER", label: "Rocio Castro Covarrubias", email: "", staffName: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", seller: false },
   "GERALDINE_MARTINEZ": { pass: "geraldine5279", role: "STAFF_USER", label: "Geraldine Marie Martinez Hernandez", email: "", staffName: "GERALDINE MARTINEZ HERNANDEZ", dept: "PRECIOS UNITARIOS", seller: false },
   "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", seller: false },
-  "ANTONIO_SALAZAR": { pass: "antonio1234", role: "STAFF_USER", label: "Antonio Salazar", email: "", staffName: "ANTONIO SALAZAR", dept: "GENERAL", seller: false }
+  "ANTONIO_SALAZAR": { pass: "antonio1234", role: "STAFF_USER", label: "Antonio Salazar", email: "", staffName: "ANTONIO SALAZAR", dept: "GENERAL", seller: false },
+  "CESAR_GOMEZ": { pass: "cesar1234", role: "STAFF_USER", label: "Cesar Gomez", email: "", staffName: "CESAR GOMEZ", dept: "GENERAL", seller: false }
 };
 
 /* SERVICIO HTML */
