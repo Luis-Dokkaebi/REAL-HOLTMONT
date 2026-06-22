@@ -2001,9 +2001,9 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         activeRows.forEach(row => {
             const val = String(row[avanceIdx] || "").trim();
 
-            // FIX ROBUSTO: Detección de 100% (Soporta "100,0", "100.0", "1", "1.0")
+            // FIX ROBUSTO: Detección de 100% (Soporta "100,0", "100.0")
             let isComplete = false;
-            const strictMatch = val === "100" || val === "100%" || val === "1.0" || val === "1";
+            const strictMatch = val === "100" || val === "100%";
 
             if (strictMatch) {
                 isComplete = true;
@@ -2012,8 +2012,8 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                 const cleanVal = val.replace('%', '').replace(',', '.').trim();
                 const num = parseFloat(cleanVal);
                 if (!isNaN(num)) {
-                   // Comprobar si es 1 (Factor) o 100 (Entero)
-                   if (Math.abs(num - 100) < 0.01 || Math.abs(num - 1) < 0.001) {
+                   // Comprobar si es 100 (Entero)
+                   if (Math.abs(num - 100) < 0.01) {
                        isComplete = true;
                    }
                 }
