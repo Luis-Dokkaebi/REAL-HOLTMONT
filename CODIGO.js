@@ -2281,17 +2281,30 @@ function internalUpdateTask(personName, taskData, username) {
                             if (targetSheet.toUpperCase() === "ANTONIA_VENTAS") {
                                 targetSheet = "ANTONIA PINEDA LOPEZ";
                             }
-                            let hasSuffix = targetSheet.toUpperCase().includes("(VENTAS)");
+
+                            if (username !== 'ANTONIA_VENTAS') {
+                                // REGLA ESTRICTA: Nadie excepto ANTONIA_VENTAS puede enviar a hojas con (VENTAS)
+                                targetSheet = targetSheet.replace(/\s*\(VENTAS\)/ig, "").trim();
+                            }
+
                             let finalTarget = null;
+                            let hasSuffix = targetSheet.toUpperCase().includes("(VENTAS)");
 
                             if (hasSuffix) {
                                 finalTarget = targetSheet;
                             } else {
-                                let potentialSheet = targetSheet + " (VENTAS)";
-                                if (findSheetSmart(potentialSheet)) {
-                                    finalTarget = potentialSheet;
-                                } else if (findSheetSmart(targetSheet)) {
-                                    finalTarget = targetSheet; // Fallback to literal if exact "(VENTAS)" missing
+                                // Si NO es Antonia, NUNCA debemos agregar (VENTAS) como fallback.
+                                if (username === 'ANTONIA_VENTAS') {
+                                    let potentialSheet = targetSheet + " (VENTAS)";
+                                    if (findSheetSmart(potentialSheet)) {
+                                        finalTarget = potentialSheet;
+                                    } else if (findSheetSmart(targetSheet)) {
+                                        finalTarget = targetSheet;
+                                    }
+                                } else {
+                                    if (findSheetSmart(targetSheet)) {
+                                        finalTarget = targetSheet;
+                                    }
                                 }
                             }
 
@@ -2782,12 +2795,9 @@ function apiSavePPCData(payload, activeUser) {
               if (targetSheet.toUpperCase() === "ANTONIA_VENTAS") {
                   targetSheet = "ANTONIA PINEDA LOPEZ";
               }
-              if (targetSheet.toUpperCase().includes("(VENTAS)")) {
-                  // Si el usuario por alguna razón selecciona el nombre con "(VENTAS)",
-                  // le quitamos el sufijo para que caiga en su Tracker (a menos que sea Antonia quien envía, que sí lo permite, pero PPC es solo Tracker)
-                  if (activeUser !== 'ANTONIA_VENTAS') {
-                      targetSheet = targetSheet.replace(/\s*\(VENTAS\)/i, "").trim();
-                  }
+              if (activeUser !== 'ANTONIA_VENTAS') {
+                  // REGLA ESTRICTA: Nadie excepto ANTONIA_VENTAS puede enviar a hojas con (VENTAS)
+                  targetSheet = targetSheet.replace(/\s*\(VENTAS\)/ig, "").trim();
               }
 
               // LOGICA ESPECIAL JESUS_CANTU: Filtrar columnas para evitar rotura en Tracker
@@ -5014,6 +5024,12 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                              if (targetSheet.toUpperCase() === "ANTONIA_VENTAS") {
                                  targetSheet = "ANTONIA PINEDA LOPEZ";
                              }
+
+                             if (username !== 'ANTONIA_VENTAS') {
+                                 // REGLA ESTRICTA: Nadie excepto ANTONIA_VENTAS puede enviar a hojas con (VENTAS)
+                                 targetSheet = targetSheet.replace(/\s*\(VENTAS\)/ig, "").trim();
+                             }
+
                                // MODIFICADO: No agregar el sufijo "(VENTAS)" automáticamente si no es Antonia.
                                // Se debe escribir exactamente a la tabla que especifican.
                                let finalTarget = targetSheet;
