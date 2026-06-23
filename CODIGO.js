@@ -1895,7 +1895,12 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     tasksArray.forEach(task => {
       let rowIndex = -1;
       
-      const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
+      let tFolio = "";
+      Object.keys(task).forEach(k => {
+          if (k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') {
+              if (task[k]) tFolio = String(task[k]).toUpperCase().trim();
+          }
+      });
 
       if (task._rowIndex) {
         const candidateRowIndex = parseInt(task._rowIndex) - 1;
@@ -1968,6 +1973,13 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         });
 
         // AUTO-GENERATE FOLIO FOR EXISTING ROWS IF MISSING
+        let hasTaskFolio = false;
+        Object.keys(task).forEach(k => {
+            if ((k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') && task[k]) {
+                hasTaskFolio = true;
+            }
+        });
+
         if (folioIdx > -1 && !values[rowIndex][folioIdx]) {
              let prefix = sheetName.toUpperCase() === "ANTONIA_VENTAS" || sheetName.toUpperCase().includes("(VENTAS)") ? "AV-" : generatePrefix(sheetName);
              let seqKey = sheetName.toUpperCase() === "ANTONIA_VENTAS" || sheetName.toUpperCase().includes("(VENTAS)") ? 'ANTONIA_SEQ_V2' : prefix;
@@ -1975,7 +1987,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
              values[rowIndex][folioIdx] = prefix + seqNum;
              task['FOLIO'] = values[rowIndex][folioIdx];
              task['ID'] = values[rowIndex][folioIdx];
-        } else if (folioIdx > -1 && values[rowIndex][folioIdx] && !task['FOLIO']) {
+        } else if (folioIdx > -1 && values[rowIndex][folioIdx] && !hasTaskFolio) {
              task['FOLIO'] = values[rowIndex][folioIdx];
              task['ID'] = values[rowIndex][folioIdx];
         }
@@ -1986,7 +1998,12 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       else {
           // BATCH DEDUP: Check if already appending this ID in current batch
           let appendedRowIndex = -1;
-          const tFolioStr = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
+          let tFolioStr = "";
+          Object.keys(task).forEach(k => {
+              if (k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') {
+                  if (task[k]) tFolioStr = String(task[k]).toUpperCase().trim();
+              }
+          });
           const tConceptStr = String(task['CONCEPTO'] || task['DESCRIPCION'] || task['TAREA'] || "").trim().toUpperCase().substring(0, 50);
 
           for(let k=0; k<rowsToAppend.length; k++) {
@@ -2026,9 +2043,17 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                   const cIdx = getColIdx(key);
                   if (cIdx > -1) newRow[cIdx] = task[key];
               });
-              if (folioIdx > -1 && !newRow[folioIdx] && (task['FOLIO'] || task['ID'])) {
-                  newRow[folioIdx] = task['FOLIO'] || task['ID'];
-              } else if (folioIdx > -1 && !newRow[folioIdx] && !task['FOLIO'] && !task['ID']) {
+
+              let existingTaskFolio = null;
+              Object.keys(task).forEach(k => {
+                  if ((k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') && task[k]) {
+                      existingTaskFolio = task[k];
+                  }
+              });
+
+              if (folioIdx > -1 && !newRow[folioIdx] && existingTaskFolio) {
+                  newRow[folioIdx] = existingTaskFolio;
+              } else if (folioIdx > -1 && !newRow[folioIdx] && !existingTaskFolio) {
                  let prefix = sheetName.toUpperCase() === "ANTONIA_VENTAS" || sheetName.toUpperCase().includes("(VENTAS)") ? "AV-" : generatePrefix(sheetName);
                  let seqKey = sheetName.toUpperCase() === "ANTONIA_VENTAS" || sheetName.toUpperCase().includes("(VENTAS)") ? 'ANTONIA_SEQ_V2' : prefix;
                  const seqNum = generateNumericSequence(seqKey);
@@ -2246,16 +2271,25 @@ function internalUpdateTask(personName, taskData, username) {
         // --- END RESTRICTION BLOCK ---
 
         // 1. AUTO-INCREMENT FOLIO (Before Saving)
-        if (!taskData['FOLIO'] && !taskData['ID']) {
+        let existingFolio = null;
+        Object.keys(taskData).forEach(k => {
+            const kUp = k.toUpperCase().trim();
+            if ((kUp === 'FOLIO' || kUp === 'ID') && taskData[k]) {
+                existingFolio = taskData[k];
+            }
+        });
+
+        if (!existingFolio) {
              // NEW TASK -> GENERATE ID for any user
              let prefix = isAntonia ? "AV-" : generatePrefix(username || personName);
              let seqKey = isAntonia ? 'ANTONIA_SEQ_V2' : prefix;
              const seqNum = generateNumericSequence(seqKey);
              taskData['FOLIO'] = prefix + seqNum;
+             existingFolio = taskData['FOLIO'];
         }
 
         if (isAntonia) {
-             if (taskData['FOLIO'] || taskData['ID']) {
+             if (existingFolio) {
                  // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
                  // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
 
