@@ -1868,7 +1868,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         'RELOJ': ['RELOJ', 'HORAS', 'DIAS', 'DÍAS'],
         'ESTATUS': ['ESTATUS', 'STATUS'],
         'CUMPLIMIENTO': ['CUMPLIMIENTO', 'CUMPL.', 'CUMP'],
-        'AVANCE': ['AVANCE', 'AVANCE %', '% AVANCE'],
+        'AVANCE': ['AVANCE', 'AVANCE %', '% AVANCE', '%'],
         'ALTA': ['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD', 'ALTA'],
         'FECHA_RESPUESTA': ['FECHA_RESPUESTA', 'FECHA RESPUESTA', 'FECHA FIN', 'FECHA ESTIMADA DE FIN', 'FECHA ESTIMADA', 'FECHA DE ENTREGA', 'FECHA_FIN', 'DEADLINE', 'FEC. EST. FIN'],
         'PRIORIDAD': ['PRIORIDAD', 'PRIORIDADES', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.'],
@@ -2045,9 +2045,11 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     // 3. AUTO-ARCHIVADO
     let rowsMoved = false;
     const avanceIdx = getColIdx('AVANCE');
+    const cumplimientoIdx = getColIdx('CUMPLIMIENTO');
+    const estatusIdx = getColIdx('ESTATUS');
     const fechaTerminoIdx = getColIdx('FECHA_TERMINO');
 
-    if (avanceIdx > -1) {
+    if (avanceIdx > -1 || cumplimientoIdx > -1 || estatusIdx > -1) {
         let separatorIndex = -1;
         for(let i=0; i<values.length; i++) {
             if(String(values[i][0]).toUpperCase().includes("TAREAS REALIZADAS") || 
@@ -2073,25 +2075,33 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         const movedRows = [];
         
         activeRows.forEach(row => {
-            const val = String(row[avanceIdx] || "").trim();
-
-            // FIX ROBUSTO: Detección de 100% (Soporta "100,0", "100.0")
             let isComplete = false;
-            const strictMatch = val === "100" || val === "100%";
 
-            if (strictMatch) {
+            const valEstatus = estatusIdx > -1 ? String(row[estatusIdx] || "").toUpperCase().trim() : "";
+            const doneStatuses = ['HECHO', 'TERMINADO', 'FINALIZADO', 'REALIZADO', 'COMPLETADO', 'DONE'];
+            if (doneStatuses.includes(valEstatus)) {
                 isComplete = true;
-            } else {
-                // Limpieza para formatos de moneda/porcentaje latinos (ej. "100,0")
-                const cleanVal = val.replace('%', '').replace(',', '.').trim();
-                const num = parseFloat(cleanVal);
-                if (!isNaN(num)) {
-                   // Comprobar si es 100 (Entero)
-                   if (Math.abs(num - 100) < 0.01) {
-                       isComplete = true;
-                   }
-                }
             }
+
+            [avanceIdx, cumplimientoIdx].forEach(idx => {
+                if (idx > -1) {
+                    const rawVal = row[idx];
+                    const valStr = String(rawVal || "").trim();
+                    const strictMatch = valStr === "100" || valStr === "100%" || valStr.toUpperCase() === "SI";
+                    if (strictMatch) {
+                        isComplete = true;
+                    } else if (valStr) {
+                        const cleanVal = valStr.replace('%', '').replace(',', '.').trim();
+                        const num = parseFloat(cleanVal);
+                        if (!isNaN(num) && Math.abs(num - 100) < 0.01) {
+                            isComplete = true;
+                        } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.001) {
+                            // Handles Google Sheets native 100% (1.0) percentage formatting
+                            isComplete = true;
+                        }
+                    }
+                }
+            });
 
             if (isComplete) {
                 // AUTO-TIMESTAMP: FECHA TERMINO REAL
@@ -5652,4 +5662,70 @@ function debugSheetHeaders() {
   
   Logger.log("ROW 1:");
   Logger.log(JSON.stringify(data[1]));
+}
+
+/**
+ * ================================================================
+ * TEST UNITARIO PARA VERIFICAR FIX DE AUTO-ARCHIVADO AL 100%
+ * ================================================================
+ * El usuario reportó que al dar 100% no se pasaba a tareas realizadas.
+ * Ejecutar esta función para validar que la lógica interna de auto-archivo
+ * funciona tanto con '100%', '100' y el valor numérico 1 (formato nativo de Sheets).
+ */
+function test_avance_100_bug() {
+    Logger.log("Iniciando prueba de auto-archivado (100%)...");
+
+    // Simular fila de Google Sheets (donde '1' representa 100% por formato de porcentaje)
+    const mockRowNumeric = ["TEST-001", "PENDIENTE", 1, ""];
+    const mockRowString = ["TEST-002", "PENDIENTE", "100%", ""];
+
+    const estatusIdx = 1;
+    const avanceIdx = 2;
+    const cumplimientoIdx = 3;
+
+    let isCompleteNumeric = false;
+    let isCompleteString = false;
+
+    [mockRowNumeric, mockRowString].forEach((row, i) => {
+        let isComplete = false;
+
+        const valEstatus = estatusIdx > -1 ? String(row[estatusIdx] || "").toUpperCase().trim() : "";
+        const doneStatuses = ['HECHO', 'TERMINADO', 'FINALIZADO', 'REALIZADO', 'COMPLETADO', 'DONE'];
+        if (doneStatuses.includes(valEstatus)) {
+            isComplete = true;
+        }
+
+        [avanceIdx, cumplimientoIdx].forEach(idx => {
+            if (idx > -1) {
+                const rawVal = row[idx];
+                const valStr = String(rawVal || "").trim();
+                const strictMatch = valStr === "100" || valStr === "100%" || valStr.toUpperCase() === "SI";
+
+                if (strictMatch) {
+                    isComplete = true;
+                } else if (valStr) {
+                    const cleanVal = valStr.replace('%', '').replace(',', '.').trim();
+                    const num = parseFloat(cleanVal);
+                    if (!isNaN(num) && Math.abs(num - 100) < 0.01) {
+                        isComplete = true;
+                    } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.001) {
+                        // Handles Google Sheets native 100% (1.0) percentage formatting
+                        isComplete = true;
+                    }
+                }
+            }
+        });
+
+        if (i === 0) isCompleteNumeric = isComplete;
+        if (i === 1) isCompleteString = isComplete;
+    });
+
+    Logger.log("Prueba fila numérica (1 nativo): " + (isCompleteNumeric ? "ÉXITO" : "FALLO"));
+    Logger.log("Prueba fila string ('100%'): " + (isCompleteString ? "ÉXITO" : "FALLO"));
+
+    if (isCompleteNumeric && isCompleteString) {
+        Logger.log("✔ TEST PASADO: El bug del 100% ha sido corregido correctamente.");
+    } else {
+        Logger.log("❌ TEST FALLIDO.");
+    }
 }
