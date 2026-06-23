@@ -7922,6 +7922,8 @@ const filteredStaffTrackerData = computed(() => {
 
       const saveAllTrackerRows = () => {
           if (staffTracker.value.data.length === 0) return;
+          if (isSubmitting.value) return; // Prevention for double clicking and racing conditions
+
           Swal.fire({
               title: '¿Guardar Todo?',
               text: `Se guardarán ${staffTracker.value.data.length} filas.`,
@@ -7930,8 +7932,10 @@ const filteredStaffTrackerData = computed(() => {
               confirmButtonText: 'Sí, Guardar'
           }).then((result) => {
               if (result.isConfirmed) {
+                  isSubmitting.value = true;
                   Swal.showLoading();
                   google.script.run.withSuccessHandler(res => {
+                      isSubmitting.value = false;
                       Swal.close();
                       if (res.success) {
                           Swal.fire('Guardado', 'Todas las tareas han sido actualizadas.', 'success');
@@ -7939,6 +7943,9 @@ const filteredStaffTrackerData = computed(() => {
                       } else {
                           Swal.fire('Error', res.message, 'error');
                       }
+                  }).withFailureHandler(err => {
+                      isSubmitting.value = false;
+                      handleErr(err);
                   }).apiSaveTrackerBatch(staffTracker.value.name, JSON.parse(JSON.stringify(staffTracker.value.data)), currentUsername.value);
               }
           });

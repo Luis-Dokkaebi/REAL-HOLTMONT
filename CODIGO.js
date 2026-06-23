@@ -54,6 +54,7 @@ const INITIAL_DIRECTORY = [
     { name: "VANESSA DE LARA", dept: "COMPRAS", type: "ESTANDAR" },
     // PRESUPUESTOS
     { name: "EDUARDO TERAN", dept: "PRESUPUESTOS", type: "HIBRIDO" },
+    { name: "ANTONIA PINEDA LOPEZ", dept: "PRESUPUESTOS", type: "ESTANDAR" },
     // CALIDAD
     { name: "CARLOS MENDEZ", dept: "CALIDAD", type: "ESTANDAR" },
     // SEGURIDAD
@@ -223,6 +224,7 @@ const USER_DB = {
   "ANGEL_SALINAS": { pass: "angel9042", role: "STAFF_USER", label: "Jose Angel Salinas Ramirez", email: "", staffName: "ANGEL SALINAS", dept: "DISEÑO", seller: true },
   "JUAN_JOSE_SANCHEZ": { pass: "juan8226", role: "STAFF_USER", label: "Juan Jose Sanchez Muñiz", email: "", staffName: "JUAN JOSE SANCHEZ", dept: "CEO", seller: true },
   "LUIS_CARLOS": { pass: "admin2025", role: "ADMIN", label: "Luis Carlos Holt Montero", email: "luiscarlos@empresa.com", staffName: "LUIS CARLOS", dept: "CEO", seller: false },
+  "ANTONIA_PINEDA": { pass: "antonia2025", role: "STAFF_USER", label: "Antonia Pineda Lopez", email: "", staffName: "ANTONIA PINEDA LOPEZ", dept: "PRESUPUESTOS", seller: false },
   "DANIA_GONZALEZ": { pass: "dania2322", role: "STAFF_USER", label: "Dania Lizbeth Gonzalez Lores", email: "", staffName: "DANIA LIZBETH GONZALEZ LORES", dept: "FINANZAS", seller: false },
   "JUANY_RODRIGUEZ": { pass: "juany2814", role: "STAFF_USER", label: "Juana Maria Rodriguez Juarez", email: "", staffName: "JUANA MARIA RODRIGUEZ JUAREZ", dept: "FINANZAS", seller: false },
   "EDUARDO_BENITEZ": { pass: "eduardo1188", role: "STAFF_USER", label: "Eduardo Israel Benitez Garcia", email: "", staffName: "EDUARDO BENITEZ", dept: "LIMPIEZA", seller: false },
@@ -1921,10 +1923,47 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
           }
       }
 
+      // NO-DUPLICATE GATEKEEPER: Fallback search by CONCEPTO + FECHA if Folio wasn't found
+      if (rowIndex === -1) {
+          const tConcept = String(task['CONCEPTO'] || task['DESCRIPCION'] || task['TAREA'] || "").trim().toUpperCase().substring(0, 50);
+          const tDate = String(task['FECHA'] || task['F. INICIO'] || "").trim();
+
+          if (tConcept) {
+             const conceptIdx = getColIdx('CONCEPTO') > -1 ? getColIdx('CONCEPTO') : getColIdx('DESCRIPCION');
+             const dateIdx = getColIdx('FECHA') > -1 ? getColIdx('FECHA') : getColIdx('F. INICIO');
+
+             if (conceptIdx > -1) {
+                 for (let i = headerRowIndex + 1; i < values.length; i++) {
+                     const row = values[i];
+                     const rowConcept = String(row[conceptIdx]).trim().toUpperCase().substring(0, 50);
+                     const rowDateRaw = row[dateIdx];
+
+                     let rowDateStr = "";
+                     if (rowDateRaw instanceof Date) {
+                         rowDateStr = rowDateRaw.toISOString().split('T')[0];
+                     } else {
+                         rowDateStr = String(rowDateRaw || "").trim();
+                     }
+
+                     // If Concept matches exactly, and Date matches (or we don't have dates to compare), it's the same task
+                     if (rowConcept === tConcept && (tDate === "" || rowDateStr === "" || rowDateStr.includes(tDate) || tDate.includes(rowDateStr))) {
+                         rowIndex = i;
+                         console.warn(`[SYNC GATEKEEPER] Duplicado interceptado. Tarea '${tConcept}' asignada a fila existente ${rowIndex+1} ignorando Folio.`);
+                         break;
+                     }
+                 }
+             }
+          }
+      }
+
       if (rowIndex > -1 && rowIndex < values.length) {
          Object.keys(task).forEach(key => {
             if (key.startsWith('_')) return;
             const cIdx = getColIdx(key);
+            // Don't overwrite existing valid folio with a new different folio if we matched by concept
+            if ((cIdx === folioIdx) && values[rowIndex][cIdx]) {
+                 return;
+            }
             if (cIdx > -1) values[rowIndex][cIdx] = task[key];
         });
         singleRowIndex = rowIndex;
@@ -1933,15 +1972,29 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       else {
           // BATCH DEDUP: Check if already appending this ID in current batch
           let appendedRowIndex = -1;
-          const tFolio = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
+          const tFolioStr = String(task['FOLIO'] || task['ID'] || "").toUpperCase().trim();
+          const tConceptStr = String(task['CONCEPTO'] || task['DESCRIPCION'] || task['TAREA'] || "").trim().toUpperCase().substring(0, 50);
 
-          if (folioIdx > -1 && tFolio) {
-               for(let k=0; k<rowsToAppend.length; k++) {
-                   if(String(rowsToAppend[k][folioIdx]).toUpperCase().trim() === tFolio) {
-                       appendedRowIndex = k;
-                       break;
-                   }
-               }
+          for(let k=0; k<rowsToAppend.length; k++) {
+              const pendingRow = rowsToAppend[k];
+              const pendingFolio = folioIdx > -1 ? String(pendingRow[folioIdx]).toUpperCase().trim() : "";
+
+              if (folioIdx > -1 && tFolioStr && pendingFolio === tFolioStr) {
+                  appendedRowIndex = k;
+                  break;
+              }
+
+              // Secondary batch check by concept
+              if (tConceptStr) {
+                  const cIdx = getColIdx('CONCEPTO') > -1 ? getColIdx('CONCEPTO') : getColIdx('DESCRIPCION');
+                  if (cIdx > -1) {
+                      const pendingConcept = String(pendingRow[cIdx]).trim().toUpperCase().substring(0, 50);
+                      if (pendingConcept === tConceptStr) {
+                          appendedRowIndex = k;
+                          break;
+                      }
+                  }
+              }
           }
 
           if (appendedRowIndex > -1) {
@@ -5505,35 +5558,35 @@ function deduplicateAllSheets() {
       const folio = folioIdx > -1 ? row[folioIdx] : "";
       const folioStr = String(folio).trim();
 
-      if (folioStr !== "" && folioStr !== "SIN-FOLIO") {
+      // ALWAYS check by concept + date FIRST to catch duplicates with DIFFERENT folios
+      const concept = conceptoIdx > -1 ? row[conceptoIdx] : "";
+      const dateRaw = fechaIdx > -1 ? row[fechaIdx] : "";
+
+      let dateStr = "";
+      if (dateRaw instanceof Date) {
+          // just standard format for comparison
+          dateStr = dateRaw.toISOString().split('T')[0];
+      } else {
+          dateStr = String(dateRaw).trim();
+      }
+
+      const conceptStr = String(concept).trim().toUpperCase().substring(0, 50);
+
+      if (conceptStr !== "") {
+          const comboKey = conceptStr + "|||" + dateStr;
+          if (seenCombos.has(comboKey)) {
+              isDuplicate = true;
+          } else {
+              seenCombos.add(comboKey);
+          }
+      }
+
+      // If not marked as duplicate by concept, check by FOLIO
+      if (!isDuplicate && folioStr !== "" && folioStr !== "SIN-FOLIO") {
         if (seenFolios.has(folioStr)) {
           isDuplicate = true;
         } else {
           seenFolios.add(folioStr);
-        }
-      } else {
-        // No folio, use concept/desc + date combination
-        const concept = conceptoIdx > -1 ? row[conceptoIdx] : "";
-        const dateRaw = fechaIdx > -1 ? row[fechaIdx] : "";
-        
-        let dateStr = "";
-        if (dateRaw instanceof Date) {
-            // just standard format for comparison
-            dateStr = dateRaw.toISOString().split('T')[0]; 
-        } else {
-            dateStr = String(dateRaw).trim();
-        }
-        
-        // The image shows the concept is huge, and in the log there was 'Found 496 duplicates'.
-        const conceptStr = String(concept).trim().toUpperCase().substring(0, 50); // Use first 50 chars to prevent slight formatting changes from breaking it
-        
-        if (conceptStr !== "") {
-            const comboKey = conceptStr + "|||" + dateStr;
-            if (seenCombos.has(comboKey)) {
-                isDuplicate = true;
-            } else {
-                seenCombos.add(comboKey);
-            }
         }
       }
 
