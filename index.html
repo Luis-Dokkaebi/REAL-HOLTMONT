@@ -6447,7 +6447,7 @@ async function toggleVoiceRecording(btnElement) {
                       Swal.fire('Error', res.message, 'error');
                   }
                   e.target.value = null;
-              }).uploadFileToDrive(ev.target.result, file.type, file.name);
+              }).uploadFileToDrive(ev.target.result, file.type, file.name, currentUsername.value);
           };
           r.readAsDataURL(file);
       };
@@ -8056,7 +8056,7 @@ const filteredStaffTrackerData = computed(() => {
       };
 
       const openCellUpload = (row, col) => { uploadingCell.value = {row, col}; cellFileInput.value.click(); };
-      const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (isMediaColumn(colName) || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name); }; r.readAsDataURL(file); };
+      const handleCellFile = (e) => { const file = e.target.files[0]; if(!file || !uploadingCell.value.row) return; Swal.showLoading(); const r = new FileReader(); r.onload = (ev) => { google.script.run.withSuccessHandler(res => { if(res.success){ const colName = String(uploadingCell.value.col).toUpperCase(); if (isMediaColumn(colName) || colName === 'REQUISITOR') { const currentVal = uploadingCell.value.row[uploadingCell.value.col] || ''; uploadingCell.value.row[uploadingCell.value.col] = currentVal ? currentVal + '\n' + res.fileUrl : res.fileUrl; } else { uploadingCell.value.row[uploadingCell.value.col] = res.fileUrl; } saveRow(uploadingCell.value.row); } else Swal.fire('Error', res.message, 'error'); e.target.value = null; }).uploadFileToDrive(ev.target.result, file.type, file.name, currentUsername.value); }; r.readAsDataURL(file); };
       const addResponsable = (n) => { selectedResponsables.value.push(n); staffSearch.value=''; };
       const openFileDialog = () => fileInput.value.click();
       const handleFileSelect = (e) => {
@@ -8079,7 +8079,7 @@ const filteredStaffTrackerData = computed(() => {
                   }
                   if (currentView.value !== 'WORKORDER_FORM') Swal.fire('Archivo Subido','','success');
               }
-          }).uploadFileToDrive(ev.target.result,file.type,file.name);
+          }).uploadFileToDrive(ev.target.result,file.type,file.name, currentUsername.value);
           r.readAsDataURL(file);
       };
       const triggerUpload = (type) => { currentUploadType.value = type; fileInput.value.click(); };

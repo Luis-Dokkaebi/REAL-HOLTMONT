@@ -2954,7 +2954,7 @@ function apiSavePPCData(payload, activeUser) {
   return { success: false, message: "Sistema Ocupado, intenta de nuevo." };
 }
 
-function uploadFileToDrive(data, type, name) {
+function uploadFileToDrive(data, type, name, username) {
   try {
     const folderId = APP_CONFIG.folderIdUploads;
     let folder;
@@ -2967,6 +2967,15 @@ function uploadFileToDrive(data, type, name) {
     const blob = Utilities.newBlob(Utilities.base64Decode(data.split(',')[1]), mimeType, name);
     const file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    let uEmail = username || "DESCONOCIDO";
+    if (uEmail === "DESCONOCIDO") {
+        try { uEmail = Session.getActiveUser().getEmail() || "DESCONOCIDO"; } catch(e) {}
+    }
+    try {
+       registrarLog(uEmail, "UPLOAD_FILE", `Archivo subido: ${name} (${file.getUrl()})`);
+    } catch(e){}
+
     return { success: true, fileUrl: file.getUrl() };
   } catch (e) { return { success: false, message: e.toString() };
   }
