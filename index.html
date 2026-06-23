@@ -6740,7 +6740,17 @@ async function toggleVoiceRecording(btnElement) {
           google.script.run.withSuccessHandler(res => {
               row._isSaving = false;
               Swal.close();
-              if (res.success) { row._isNew = false; if(res.moved) { refreshProjectTasks(); Swal.fire({ icon: 'success', title: 'Archivado', timer: 1000, showConfirmButton: false }); } else { Swal.fire({ icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false }); refreshProjectTasks(); } }
+              if (res.success) {
+                  if (res.data) {
+                      Object.assign(row, res.data);
+                  }
+                  row._isNew=false;
+                  row._isSaving = false;
+                  if (res.data && (res.data.FOLIO || res.data.ID)) {
+                      row.FOLIO = res.data.FOLIO || res.data.ID;
+                      if (row.ID === undefined) row.ID = row.FOLIO;
+                  }
+                  if(res.moved) { refreshProjectTasks(); Swal.fire({ icon: 'success', title: 'Archivado', timer: 1000, showConfirmButton: false }); } else { Swal.fire({ icon: 'success', title: 'Guardado', timer: 1000, showConfirmButton: false }); refreshProjectTasks(); } }
               else { Swal.fire('Error', res.message, 'error'); }
           }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiSaveProjectTask(JSON.parse(JSON.stringify(row)), currentPpcProject.value.name, currentUsername.value);
       };
@@ -7150,7 +7160,14 @@ const filteredStaffTrackerData = computed(() => {
           Toast.fire({ icon: 'info', title: 'Guardando...' });
           google.script.run.withSuccessHandler(res => {
               row._isSaving = false;
-              if(res.success) Toast.fire({ icon: 'success', title: 'Actualizado' });
+              if(res.success) {
+                  row._isNew = false;
+                  if (res.data && (res.data.FOLIO || res.data.ID)) {
+                      row.FOLIO = res.data.FOLIO || res.data.ID;
+                      if (row.ID === undefined) row.ID = row.FOLIO;
+                  }
+                  Toast.fire({ icon: 'success', title: 'Actualizado' });
+              }
               else Swal.fire('Error', res.message, 'error');
           }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiUpdatePPCV3(JSON.parse(JSON.stringify(row)), currentUsername.value);
       };
@@ -7986,8 +8003,7 @@ const filteredStaffTrackerData = computed(() => {
           row._isSaving = true;
 
           const sheetName = String(staffTracker.value.name).toUpperCase();
-          // const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
-          const isExcludedSheet = false; // Enabled for everyone now
+          const isExcludedSheet = false;
 
           if (!isExcludedSheet) {
               const now = new Date();
@@ -8017,7 +8033,11 @@ const filteredStaffTrackerData = computed(() => {
               row._isSaving = false;
               Swal.close();
               if(res.success){
+                  if (res.data) {
+                      Object.assign(row, res.data);
+                  }
                   row._isNew=false;
+                  row._isSaving = false;
                   if (res.data && (res.data.FOLIO || res.data.ID)) {
                       row.FOLIO = res.data.FOLIO || res.data.ID;
                       if (row.ID === undefined) row.ID = row.FOLIO;
