@@ -1966,6 +1966,20 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
             }
             if (cIdx > -1) values[rowIndex][cIdx] = task[key];
         });
+
+        // AUTO-GENERATE FOLIO FOR EXISTING ROWS IF MISSING
+        if (folioIdx > -1 && !values[rowIndex][folioIdx]) {
+             let prefix = sheetName.toUpperCase() === "ANTONIA_VENTAS" || sheetName.toUpperCase().includes("(VENTAS)") ? "AV-" : generatePrefix(sheetName);
+             let seqKey = sheetName.toUpperCase() === "ANTONIA_VENTAS" || sheetName.toUpperCase().includes("(VENTAS)") ? 'ANTONIA_SEQ_V2' : prefix;
+             const seqNum = generateNumericSequence(seqKey);
+             values[rowIndex][folioIdx] = prefix + seqNum;
+             task['FOLIO'] = values[rowIndex][folioIdx];
+             task['ID'] = values[rowIndex][folioIdx];
+        } else if (folioIdx > -1 && values[rowIndex][folioIdx] && !task['FOLIO']) {
+             task['FOLIO'] = values[rowIndex][folioIdx];
+             task['ID'] = values[rowIndex][folioIdx];
+        }
+
         singleRowIndex = rowIndex;
         modified = true;
       } 
@@ -2014,6 +2028,13 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
               });
               if (folioIdx > -1 && !newRow[folioIdx] && (task['FOLIO'] || task['ID'])) {
                   newRow[folioIdx] = task['FOLIO'] || task['ID'];
+              } else if (folioIdx > -1 && !newRow[folioIdx] && !task['FOLIO'] && !task['ID']) {
+                 let prefix = sheetName.toUpperCase() === "ANTONIA_VENTAS" || sheetName.toUpperCase().includes("(VENTAS)") ? "AV-" : generatePrefix(sheetName);
+                 let seqKey = sheetName.toUpperCase() === "ANTONIA_VENTAS" || sheetName.toUpperCase().includes("(VENTAS)") ? 'ANTONIA_SEQ_V2' : prefix;
+                 const seqNum = generateNumericSequence(seqKey);
+                 newRow[folioIdx] = prefix + seqNum;
+                 task['FOLIO'] = newRow[folioIdx];
+                 task['ID'] = newRow[folioIdx];
               }
               const statusIdx = getColIdx('ESTATUS');
               if(statusIdx > -1 && !newRow[statusIdx]) newRow[statusIdx] = 'ASIGNADO';
@@ -2177,6 +2198,7 @@ function apiUpdatePPCV3(taskData, username) {
   if(res.success) {
       const action = (taskData['COMENTARIOS'] || taskData['comentarios']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
       registrarLog(username || "DESCONOCIDO", action, `Update ${targetSheet} ID: ${taskData['ID']||taskData['FOLIO']}`);
+      res.data = taskData; // Return the updated taskData to the frontend
   }
   return res;
 }
@@ -2245,9 +2267,12 @@ function internalUpdateTask(personName, taskData, username) {
 
         const res = internalBatchUpdateTasks(personName, [taskData]);
 
-        if (res.success && username) {
-             const action = (taskData['COMENTARIOS'] || taskData['comentarios'] || taskData['COMENTARIOS SEMANA EN CURSO']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
-             registrarLog(username, action, `Update Task ID: ${taskData['ID']||taskData['FOLIO']} en ${personName}`);
+        if (res.success) {
+             res.data = taskData;
+             if (username) {
+                 const action = (taskData['COMENTARIOS'] || taskData['comentarios'] || taskData['COMENTARIOS SEMANA EN CURSO']) ? "ACTUALIZAR/COMENTARIO" : "ACTUALIZAR";
+                 registrarLog(username, action, `Update Task ID: ${taskData['ID']||taskData['FOLIO']} en ${personName}`);
+             }
         }
 
         // --- SMART ARCHIVING TRIGGER (SINGLE EDIT) ---
@@ -3412,6 +3437,7 @@ function apiSaveProjectTask(taskData, projectName, username) {
         const res = internalBatchUpdateTasks("ADMINISTRADOR", [taskData]);
         if(res.success) {
             registrarLog(username || "DESCONOCIDO", "ACTUALIZAR PROYECTO", `Proyecto: ${projectName}, ID: ${taskData['ID']||taskData['FOLIO']}`);
+            res.data = taskData;
         }
         return res;
     } catch (e) {
