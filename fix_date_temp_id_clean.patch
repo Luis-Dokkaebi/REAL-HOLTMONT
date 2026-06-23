@@ -1,0 +1,67 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -1825,6 +1825,7 @@
+
+     const headerRowIndex = findHeaderRow(values);
+     if (headerRowIndex === -1) return { success: false, message: "Sin cabeceras válidas" };
++    const cache = CacheService.getScriptCache();
+     // 1. SANITIZAR HEADERS Y ELIMINAR FILTROS ROTOS (FIX CRÍTICO)
+     let headersChanged = false;
+     for(let c = 0; c < values[headerRowIndex].length; c++) {
+@@ -1903,6 +1904,13 @@
+           }
+       });
+
++      const tempIdKey = task['_tempId'];
++      if (tempIdKey) {
++           const processed = cache.get(tempIdKey);
++           if (processed) return; // Skip if already processed in another thread
++           cache.put(tempIdKey, "1", 120); // 2 minute memory
++      }
++
+       if (task._rowIndex) {
+         const candidateRowIndex = parseInt(task._rowIndex) - 1;
+         // 2.1 VALIDACIÓN DE SEGURIDAD (ANTI-DESPLAZAMIENTO)
+@@ -1949,15 +1957,17 @@
+
+                      let rowDateStr = "";
+                      if (rowDateRaw instanceof Date) {
+-                         const dRaw = String(rowDateRaw || "").trim();
+-                         if (dRaw.includes('/')) {
+-                             const p = dRaw.split('/');
+-                             if (p.length === 3) rowDateStr = `${p[2].length===2?'20'+p[2]:p[2]}-${p[1]}-${p[0]}`;
+-                         } else rowDateStr = dRaw;
++                         rowDateStr = Utilities.formatDate(rowDateRaw, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), "dd/MM/yy");
++                     } else {
++                         rowDateStr = String(rowDateRaw || "").trim();
+                      }
+
+                      // Restore date check: If Concept matches exactly, AND Date matches exactly
+                      // If both dates are empty or unprovided, we DO NOT match to avoid overwriting random tasks.
+                      // They must both have a valid matching date to be considered duplicates without a Folio.
+-                     const isDateMatch = (tDate !== "" && rowDateStr !== "") && (rowDateStr.includes(tDate) || tDate.includes(rowDateStr));
++
++                     const cleanTDate = tDate.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
++                     const cleanRowDate = rowDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
++                     const isDateMatch = (cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate));
+
+                      if (rowConcept === tConcept && isDateMatch) {
+                          rowIndex = i;
+@@ -2026,16 +2036,21 @@
+
+                       let pendingDateStr = "";
+                       if (dIdx > -1) {
+                           const pDateRaw = pendingRow[dIdx];
+-                          if (pDateRaw instanceof Date) pendingDateStr = pDateRaw.toISOString().split('T')[0];
++                          if (pDateRaw instanceof Date) pendingDateStr = Utilities.formatDate(pDateRaw, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), "dd/MM/yy");
+                           else pendingDateStr = String(pDateRaw || "").trim();
+                       }
+
+                       const tDateStr = String(task['FECHA'] || task['F. INICIO'] || "").trim();
+-                      const isDateMatch = (tDateStr !== "" && pendingDateStr !== "") && (pendingDateStr.includes(tDateStr) || tDateStr.includes(pendingDateStr));
++                      const cleanTDate = tDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
++                      const cleanRowDate = pendingDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
++                      const isDateMatch = (cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate));
+
+                       if (pendingConcept === tConceptStr && isDateMatch) {
+                           appendedRowIndex = k;

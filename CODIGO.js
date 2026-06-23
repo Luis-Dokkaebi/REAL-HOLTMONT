@@ -1832,6 +1832,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     
     const headerRowIndex = findHeaderRow(values);
     if (headerRowIndex === -1) return { success: false, message: "Sin cabeceras válidas" };
+    const cache = CacheService.getScriptCache();
     // 1. SANITIZAR HEADERS Y ELIMINAR FILTROS ROTOS (FIX CRÍTICO)
     let headersChanged = false;
     for(let c = 0; c < values[headerRowIndex].length; c++) {
@@ -1902,6 +1903,14 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
           }
       });
 
+      const tempIdKey = task['_tempId'];
+      if (tempIdKey) {
+           const cacheKey = sheetName + "_" + tempIdKey;
+           const processed = cache.get(cacheKey);
+           if (processed) return; // Skip if already processed for this specific sheet
+           cache.put(cacheKey, "1", 120); // 2 minute memory
+      }
+
       if (task._rowIndex) {
         const candidateRowIndex = parseInt(task._rowIndex) - 1;
         // 2.1 VALIDACIÓN DE SEGURIDAD (ANTI-DESPLAZAMIENTO)
@@ -1945,13 +1954,20 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
 
                      let rowDateStr = "";
                      if (rowDateRaw instanceof Date) {
-                         rowDateStr = rowDateRaw.toISOString().split('T')[0];
+                         rowDateStr = Utilities.formatDate(rowDateRaw, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), "dd/MM/yy");
                      } else {
                          rowDateStr = String(rowDateRaw || "").trim();
                      }
 
-                     // If Concept matches exactly, and Date matches (or we don't have dates to compare), it's the same task
-                     if (rowConcept === tConcept && (tDate === "" || rowDateStr === "" || rowDateStr.includes(tDate) || tDate.includes(rowDateStr))) {
+                     // Restore date check: If Concept matches exactly, AND Date matches exactly
+                     // If both dates are empty or unprovided, we DO NOT match to avoid overwriting random tasks.
+                     // They must both have a valid matching date to be considered duplicates without a Folio.
+
+                     const cleanTDate = tDate.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
+                     const cleanRowDate = rowDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
+                     const isDateMatch = (cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate));
+
+                     if (rowConcept === tConcept && isDateMatch) {
                          rowIndex = i;
                          console.warn(`[SYNC GATEKEEPER] Duplicado interceptado. Tarea '${tConcept}' asignada a fila existente ${rowIndex+1} ignorando Folio.`);
                          break;
@@ -2015,12 +2031,27 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                   break;
               }
 
-              // Secondary batch check by concept
+              // Secondary batch check by concept AND date AND tempId
               if (tConceptStr) {
                   const cIdx = getColIdx('CONCEPTO') > -1 ? getColIdx('CONCEPTO') : getColIdx('DESCRIPCION');
+                  const dIdx = getColIdx('FECHA') > -1 ? getColIdx('FECHA') : getColIdx('F. INICIO');
+
                   if (cIdx > -1) {
                       const pendingConcept = String(pendingRow[cIdx]).trim().toUpperCase().substring(0, 50);
-                      if (pendingConcept === tConceptStr) {
+
+                      let pendingDateStr = "";
+                      if (dIdx > -1) {
+                          const pDateRaw = pendingRow[dIdx];
+                          if (pDateRaw instanceof Date) pendingDateStr = Utilities.formatDate(pDateRaw, SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone(), "dd/MM/yy");
+                          else pendingDateStr = String(pDateRaw || "").trim();
+                      }
+
+                      const tDateStr = String(task['FECHA'] || task['F. INICIO'] || "").trim();
+                      const cleanTDate = tDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
+                      const cleanRowDate = pendingDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
+                      const isDateMatch = (cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate));
+
+                      if (pendingConcept === tConceptStr && isDateMatch) {
                           appendedRowIndex = k;
                           break;
                       }
@@ -4821,6 +4852,12 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                            (v !== "" && !isVendedorDefault);
 
         if (!hasContent && !taskData['FOLIO'] && !taskData['ID']) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
+
+        // CHECK FOR _tempId
+        const tempIdKey = taskData['_tempId'];
+        if (tempIdKey) {
+             // We keep it so index.html can identify the returned row
+        }
 
         // Use robust locked generator to avoid duplicates during mass-inserts
         if (!taskData['FOLIO'] && !taskData['ID'] && hasContent) {

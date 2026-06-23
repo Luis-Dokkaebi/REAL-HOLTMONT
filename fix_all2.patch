@@ -1,9 +1,0 @@
---- CODIGO.js
-+++ CODIGO.js
-@@ -4790,6 +4790,7 @@
-               // Group by vendor to batch updates
-               const byVendor = {};
-               distributionTasks.forEach(t => {
-                   const vendedorKey = Object.keys(t).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
-                   if (vendedorKey && t[vendedorKey]) {
-                        const vNames = String(t[vendedorKey]).split(',').map(s => s.trim());
