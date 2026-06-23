@@ -7970,7 +7970,8 @@ const filteredStaffTrackerData = computed(() => {
 
       const addNewRow = () => {
           if(!staffTracker.value.headers.length) return;
-          const row={_isNew:true};
+          const tempId = 'temp_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+          const row={_isNew:true, _tempId: tempId};
 
           const sheetName = String(staffTracker.value.name).toUpperCase();
           // const isExcludedSheet = sheetName.includes('(VENTAS)') || sheetName === 'ANTONIA_VENTAS';
@@ -7999,8 +8000,19 @@ const filteredStaffTrackerData = computed(() => {
           pulseNewRow('trackerTable', 'first');
       };
       const saveRow = (row, event) => {
-          if (row._isSaving) return;
+          if (row._isSaving || isSubmitting.value) {
+               Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'warning',
+                    title: 'Guardando, espere un momento...',
+                    showConfirmButton: false,
+                    timer: 1500
+               });
+               return;
+          }
           row._isSaving = true;
+          isSubmitting.value = true;
 
           const sheetName = String(staffTracker.value.name).toUpperCase();
           const isExcludedSheet = false;
@@ -8031,6 +8043,7 @@ const filteredStaffTrackerData = computed(() => {
           Swal.showLoading();
           google.script.run.withSuccessHandler(res => {
               row._isSaving = false;
+              isSubmitting.value = false;
               Swal.close();
               if(res.success){
                   if (res.data) {
@@ -8051,7 +8064,7 @@ const filteredStaffTrackerData = computed(() => {
               } else {
                   Swal.fire('Error', res.message, 'error');
               }
-          }).withFailureHandler(err => { row._isSaving = false; handleErr(err); }).apiUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
+          }).withFailureHandler(err => { row._isSaving = false; isSubmitting.value = false; handleErr(err); }).internalUpdateTask(staffTracker.value.name, JSON.parse(JSON.stringify(row)), currentUsername.value);
       };
 
       const deleteFile = (row, h, urlToDelete) => {
