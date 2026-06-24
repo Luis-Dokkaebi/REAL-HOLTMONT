@@ -7955,6 +7955,18 @@ const filteredStaffTrackerData = computed(() => {
                       isSubmitting.value = false;
                       Swal.close();
                       if (res.success) {
+                          // Actualizar datos localmente para preservar folios autogenerados
+                          if (res.data && Array.isArray(res.data)) {
+                              res.data.forEach(updatedRow => {
+                                  if (updatedRow._tempId) {
+                                      const localRow = staffTracker.value.data.find(r => r._tempId === updatedRow._tempId);
+                                      if (localRow) {
+                                          Object.assign(localRow, updatedRow);
+                                          localRow._isNew = false;
+                                      }
+                                  }
+                              });
+                          }
                           Swal.fire('Guardado', 'Todas las tareas han sido actualizadas.', 'success');
                           loadTrackerData(); // Reload to get updated IDs/States
                       } else {

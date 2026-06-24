@@ -1983,6 +1983,13 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
             const cIdx = getColIdx(key);
             // Don't overwrite existing valid folio with a new different folio if we matched by concept
             if ((cIdx === folioIdx) && values[rowIndex][cIdx]) {
+                 // Pero asegurarnos de que la tarea que el sistema devuelve mantenga el folio válido de la base de datos
+                 task['FOLIO'] = values[rowIndex][cIdx];
+                 task['ID'] = values[rowIndex][cIdx];
+                 return;
+            } else if ((cIdx === folioIdx) && !values[rowIndex][cIdx] && task[key]) {
+                 // Si la tabla no tenía folio pero la tarea sí, lo respetamos y NO lo generamos
+                 values[rowIndex][cIdx] = task[key];
                  return;
             }
             if (cIdx > -1) values[rowIndex][cIdx] = task[key];
@@ -2310,7 +2317,8 @@ function internalUpdateTask(personName, taskData, username) {
             }
         });
 
-        if (!existingFolio) {
+        const isNewTask = !existingFolio;
+        if (isNewTask) {
              // NEW TASK -> GENERATE ID for any user
              let prefix = isAntonia ? "AV-" : generatePrefix(username || personName);
              let seqKey = isAntonia ? 'ANTONIA_SEQ_V2' : prefix;
@@ -2320,7 +2328,8 @@ function internalUpdateTask(personName, taskData, username) {
         }
 
         if (isAntonia) {
-             if (existingFolio) {
+             // Solo aplicar restricciones si NO es una tarea recién creada en la interfaz
+             if (!isNewTask) {
                  // 2. EXISTING TASK -> APPLY RESTRICTIONS (User Request)
                  // "Una vez que guarde... los únicos datos que pueda modificar es FECHA VISITA, ESTATUS y AVANCE"
 
@@ -2571,8 +2580,16 @@ function internalUpdateTask(personName, taskData, username) {
                                  });
                                  
                                  internalBatchUpdateTasks("ANTONIA_VENTAS", [syncToAntonia]);
-                             } else if (String(personName).toUpperCase().includes("(VENTAS)")) {
+                             }
+
+                             // Sincronización general a Antonia independientemente del estado
+                             if (String(personName).toUpperCase().includes("(VENTAS)")) {
                                  internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                             } else {
+                                 const reverseFolio = syncData['FOLIO'] || syncData['ID'];
+                                 if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
+                                     internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                                 }
                              }
                          }
                      }
@@ -5168,6 +5185,18 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
                }
 
+               // Sincronización Reversa hacia Antonia (NO está completa si no termina en VENTAS ni está DONE)
+               const antoniaReverseSyncTasks = [];
+               distributionTasks.forEach(t => {
+                   const reverseFolio = t['FOLIO'] || t['ID'];
+                   if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
+                       antoniaReverseSyncTasks.push(t);
+                   }
+               });
+               if (antoniaReverseSyncTasks.length > 0) {
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", antoniaReverseSyncTasks, false);
+               }
+
                // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)
                const peerUpdates = {};
                distributionTasks.forEach(t => {
@@ -5208,7 +5237,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           registrarLog(username, "BATCH_UPDATE", `Actualizadas ${tasks.length} tareas en ${personName}`);
       }
 
-      return { success: true, message: "Guardado exitoso" };
+      return { success: true, message: "Guardado exitoso", data: processedTasks };
 
     } catch (e) {
       return { success: false, message: e.toString() };
