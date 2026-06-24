@@ -1,0 +1,37 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -4875,15 +4875,22 @@
+                            (cl !== "") ||
+                            (v !== "" && !isVendedorDefault);
+
+-        if (!hasContent && !taskData['FOLIO'] && !taskData['ID']) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
++        // Buscar de forma insensible a mayúsculas si existe un FOLIO o ID
++        let existingTaskFolio = null;
++        Object.keys(taskData).forEach(k => {
++            if ((k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') && taskData[k]) {
++                existingTaskFolio = taskData[k];
++            }
++        });
++
++        if (!hasContent && !existingTaskFolio) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
+
+         // CHECK FOR _tempId
+         const tempIdKey = taskData['_tempId'];
+         if (tempIdKey) {
+              // We keep it so index.html can identify the returned row
+         }
+
+-        // Use robust locked generator to avoid duplicates during mass-inserts
+-        if (!taskData['FOLIO'] && !taskData['ID'] && hasContent) {
++        if (!existingTaskFolio && hasContent) {
+             let prefix = isAntonia ? "AV-" : generatePrefix(username || personName);
+             let seqKey = isAntonia ? 'ANTONIA_SEQ_V2' : prefix;
+             const seqNum = generateNumericSequence(seqKey);
+             taskData['FOLIO'] = prefix + seqNum;
+         }
+
+         if (isAntonia) {
+-             if (taskData['FOLIO'] || taskData['ID']) {
++             if (existingTaskFolio || taskData['FOLIO']) {
+                  // RESTRICTIONS FOR EXISTING TASKS
+                  const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'PROCESO', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ', 'CORREO', 'CARPETA', 'INFO CLIENTE', 'CORREOS', 'CARPETAS', 'REQUISITOR'];

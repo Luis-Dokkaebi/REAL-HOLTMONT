@@ -1,0 +1,28 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -4875,15 +4875,22 @@
+                            (cl !== "") ||
+                            (v !== "" && !isVendedorDefault);
+
+-        if (!hasContent && !taskData['FOLIO'] && !taskData['ID']) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
++        // Buscar de forma insensible a mayúsculas si existe un FOLIO o ID
++        let existingTaskFolio = null;
++        Object.keys(taskData).forEach(k => {
++            if ((k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') && taskData[k]) {
++                existingTaskFolio = taskData[k];
++            }
++        });
++
++        if (!hasContent && !existingTaskFolio) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
+
+         // CHECK FOR _tempId
+         const tempIdKey = taskData['_tempId'];
+         if (tempIdKey) {
+              // We keep it so index.html can identify the returned row
+         }
+
+-        // Use robust locked generator to avoid duplicates during mass-inserts
+-        if (!taskData['FOLIO'] && !taskData['ID'] && hasContent) {
++        if (!existingTaskFolio && hasContent) {
+             let prefix = isAntonia ? "AV-" : generatePrefix(username || personName);
+             let seqKey = isAntonia ? 'ANTONIA_SEQ_V2' : prefix;
