@@ -1965,7 +1965,11 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
 
                      const cleanTDate = tDate.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
                      const cleanRowDate = rowDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
-                     const isDateMatch = (cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate));
+
+                     // RELAXED GATEKEEPER: If both dates are empty, or if they match, we consider it a duplicate
+                     // Since new tasks might be sent without date and generated on the fly, a strict date match causes duplicates.
+                     const isDateMatch = (cleanTDate === "" && cleanRowDate === "") ||
+                                         ((cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate)));
 
                      if (rowConcept === tConcept && isDateMatch) {
                          rowIndex = i;
@@ -2056,7 +2060,9 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                       const tDateStr = String(task['FECHA'] || task['F. INICIO'] || "").trim();
                       const cleanTDate = tDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
                       const cleanRowDate = pendingDateStr.replace(/-/g, '/').replace(/20(\d{2})/, '$1');
-                      const isDateMatch = (cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate));
+
+                      const isDateMatch = (cleanTDate === "" && cleanRowDate === "") ||
+                                          ((cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate)));
 
                       if (pendingConcept === tConceptStr && isDateMatch) {
                           appendedRowIndex = k;
@@ -2349,7 +2355,10 @@ function internalUpdateTask(personName, taskData, username) {
              }
         }
 
+        const originalTempId = taskData['_tempId'];
         const res = internalBatchUpdateTasks(personName, [taskData]);
+
+        if (originalTempId) taskData['_tempId'] = originalTempId;
 
         if (res.success) {
              res.data = taskData;
@@ -4874,6 +4883,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
         const tempIdKey = taskData['_tempId'];
         if (tempIdKey) {
              // We keep it so index.html can identify the returned row
+             // Conservamos el tempId para inyectarlo al final
         }
 
         // Use robust locked generator to avoid duplicates during mass-inserts
@@ -4995,6 +5005,13 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
       // Batch Update Main Sheet
       const res = internalBatchUpdateTasks(personName, processedTasks, false); // Already locked
+
+      processedTasks.forEach((t, i) => {
+          const originalTask = tasks[i];
+          if (originalTask && originalTask['_tempId']) {
+              t['_tempId'] = originalTask['_tempId'];
+          }
+      });
 
       if (res.success) {
           // --- SMART ARCHIVING TRIGGER (ANTONIA) ---
