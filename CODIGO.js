@@ -276,21 +276,29 @@ function findSheetSmart(name) {
 // DETECTOR DE CABECERAS INTELIGENTE
 function findHeaderRow(values) {
   for (let i = 0; i < Math.min(100, values.length); i++) {
-    const rowStr = values[i].map(c => String(c).toUpperCase().replace(/\n/g, " ").replace(/\s+/g, " ").trim()).join("|");
+    const cells = values[i].map(c => String(c).toUpperCase().replace(/\n/g, " ").replace(/\s+/g, " ").trim());
+    const rowStr = cells.join("|");
+
+    // Strict match to prevent "ID AL TRACKER" from falsely identifying as the ID column
+    const hasFolioOrId = cells.includes("FOLIO") || cells.includes("ID");
+    const hasConceptoOrDesc = cells.some(c => c === "CONCEPTO" || c.includes("DESCRIPCI") || c === "ACTIVIDAD");
+    const hasResponsable = cells.some(c => c === "RESPONSABLE" || c === "INVOLUCRADOS" || c === "VENDEDOR" || c === "ENCARGADO");
+
     if (rowStr.includes("ID_SITIO") || rowStr.includes("ID_PROYECTO")) return i;
-    if (rowStr.includes("FOLIO") && rowStr.includes("CONCEPTO") && 
-       (rowStr.includes("ALTA") || rowStr.includes("AVANCE") || rowStr.includes("STATUS") || rowStr.includes("FECHA"))) {
+
+    if (hasFolioOrId && hasConceptoOrDesc &&
+       (cells.includes("ALTA") || cells.includes("AVANCE") || cells.includes("STATUS") || cells.includes("ESTATUS") || cells.includes("FECHA") || cells.includes("F_INICIO") || cells.includes("F. INICIO"))) {
       return i;
     }
-    if (rowStr.includes("ID") && rowStr.includes("RESPONSABLE")) return i;
-    if ((rowStr.includes("FOLIO") || rowStr.includes("ID")) && 
-        (rowStr.includes("DESCRIPCI") || rowStr.includes("RESPONSABLE") || rowStr.includes("CONCEPTO"))) {
-      return i;
-    }
-    if (rowStr.includes("CLIENTE") && (rowStr.includes("VENDEDOR") || rowStr.includes("AREA") || rowStr.includes("CLASIFICACION"))) return i;
-    // SOPORTE PARA AGENDA PERSONAL Y HABITOS
-    if (rowStr.includes("ID") && rowStr.includes("TITULO") && rowStr.includes("USUARIO")) return i;
-    if (rowStr.includes("ID") && rowStr.includes("HABITO") && rowStr.includes("USUARIO")) return i;
+
+    if (hasFolioOrId && hasResponsable) return i;
+
+    if (hasFolioOrId && (hasConceptoOrDesc || hasResponsable)) return i;
+
+    if (cells.includes("CLIENTE") && (cells.includes("VENDEDOR") || cells.includes("AREA") || cells.includes("CLASIFICACION"))) return i;
+
+    if (cells.includes("ID") && cells.includes("TITULO") && cells.includes("USUARIO")) return i;
+    if (cells.includes("ID") && cells.includes("HABITO") && cells.includes("USUARIO")) return i;
   }
   return -1;
 }
