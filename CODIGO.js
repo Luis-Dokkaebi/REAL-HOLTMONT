@@ -2106,7 +2106,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                  task['ID'] = newRow[folioIdx];
               }
               const statusIdx = getColIdx('ESTATUS');
-              if(statusIdx > -1 && !newRow[statusIdx]) newRow[statusIdx] = 'ASIGNADO';
+              if(statusIdx > -1 && !newRow[statusIdx]) newRow[statusIdx] = 'PENDIENTE';
               rowsToAppend.push(newRow);
           }
       }
@@ -2905,13 +2905,13 @@ function apiSavePPCData(payload, activeUser) {
           const taskData = {
                  'FOLIO': id,
                  'CONCEPTO': item.concepto || item.CONCEPTO,
-                 'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "",
+                 'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "A",
                  'AREA': item.especialidad || item.ESPECIALIDAD,
                  'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
                  'FECHA': fechaStr,
                  'HORA': horaStr,
                  'RELOJ': (item.horas !== undefined && item.horas !== "") ? item.horas : ((item.RELOJ !== undefined && item.RELOJ !== "") ? item.RELOJ : 0),
-                 'ESTATUS': "ASIGNADO",
+                 'ESTATUS': "PENDIENTE",
                  'PRIORIDAD': item.prioridad || item.prioridades || item.PRIORIDAD,
                  'RESTRICCIONES': item.restricciones,
                  'RIESGOS': item.riesgos || item.RIESGOS,
@@ -2919,7 +2919,7 @@ function apiSavePPCData(payload, activeUser) {
                  'AVANCE': "0%",
                  'COMENTARIOS': comentarios,
                  'ARCHIVO': item.archivoUrl,
-                 'CUMPLIMIENTO': item.cumplimiento || item.CUMPLIMIENTO,
+                 'CUMPLIMIENTO': item.cumplimiento || item.CUMPLIMIENTO || "NO",
                  'COMENTARIOS PREVIOS': item.comentariosPrevios || "",
                  'REQUISITOR': item.requisitor,
                  'CONTACTO': item.contacto,
@@ -3604,7 +3604,7 @@ function cmdRealizarAlta() {
 
   SS.toast("Guardando y distribuyendo tarea...", "Holtmont", 5);
   
-  taskObj['ESTATUS'] = taskObj['ESTATUS'] || 'ASIGNADO';
+  taskObj['ESTATUS'] = taskObj['ESTATUS'] || 'PENDIENTE';
   const involucrados = taskObj["INVOLUCRADOS"] || taskObj["RESPONSABLE"] || "";
   const listaInv = String(involucrados).split(",").map(s => s.trim()).filter(s => s);
   
