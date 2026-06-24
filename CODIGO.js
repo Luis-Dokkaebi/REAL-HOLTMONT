@@ -2905,7 +2905,7 @@ function apiSavePPCData(payload, activeUser) {
           const taskData = {
                  'FOLIO': id,
                  'CONCEPTO': item.concepto || item.CONCEPTO,
-                 'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "Media",
+                 'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "",
                  'AREA': item.especialidad || item.ESPECIALIDAD,
                  'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
                  'FECHA': fechaStr,
