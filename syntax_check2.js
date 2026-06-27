@@ -1,10 +1,11 @@
-const esprima = require('esprima');
-const fs2 = require('fs');
+const fs = require('fs');
+const html = fs.readFileSync('index.html', 'utf8');
+
+const scriptContent = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 
 try {
-  const code = fs2.readFileSync('CODIGO.js', 'utf8');
-  esprima.parseScript(code);
-  console.log("No syntax errors in CODIGO.js");
+  new Function(scriptContent);
+  console.log("No syntax errors found by Function constructor.");
 } catch (e) {
-  console.log("Syntax error in CODIGO.js:", e.message);
+  console.error("Syntax error in script block:", e);
 }
