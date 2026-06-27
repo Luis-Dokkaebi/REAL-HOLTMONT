@@ -826,7 +826,7 @@
 
 
         <!-- BOTÓN PRODUCTIVIDAD ACTIVIDADES -->
-        <div class="nav-item" v-if="['ADMIN', 'ADMIN_CONTROL', 'PPC_ADMIN'].includes(currentRole)" :class="{ active: currentView === 'PRODUCTIVIDAD_ACTIVIDADES' }" @click="currentView = 'PRODUCTIVIDAD_ACTIVIDADES'; currentDept = ''; currentModuleId = '';">
+        <div class="nav-item" v-if="['ADMIN'].includes(currentRole)" :class="{ active: currentView === 'PRODUCTIVIDAD_ACTIVIDADES' }" @click="currentView = 'PRODUCTIVIDAD_ACTIVIDADES'; currentDept = ''; currentModuleId = '';">
             <div class="nav-icon-col"><i class="fas fa-chart-line text-primary"></i></div>
             <span class="nav-text text-primary fw-bold">PRODUCTIVIDAD ACTIVIDADES</span>
         </div>
@@ -3003,10 +3003,16 @@
                         <small class="text-muted">Métricas de Actividades Realizadas (Excluye Ventas)</small>
                     </div>
                 </div>
-                <div>
-                    <button class="btn btn-outline-primary shadow-sm" @click="runTrackerProductivityAgent()" :disabled="isLoadingTrackerProductivity">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <select class="form-select form-select-sm" v-model="tpFilters.month" style="width:120px;">
+                        <option v-for="(mn, idx) in qmMonthNames" :key="idx" :value="idx+1">{{ mn }}</option>
+                    </select>
+                    <select class="form-select form-select-sm" v-model="tpFilters.year" style="width:100px;">
+                        <option v-for="yr in qmYears" :key="yr" :value="yr">{{ yr }}</option>
+                    </select>
+                    <button class="btn btn-outline-primary shadow-sm btn-sm" @click="runTrackerProductivityAgent()" :disabled="isLoadingTrackerProductivity">
                         <span v-if="isLoadingTrackerProductivity" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                        <i v-else class="fas fa-magic me-2"></i> {{ isLoadingTrackerProductivity ? 'Ejecutando Agente...' : 'EJECUTAR AGENTE TRACKER' }}
+                        <i v-else class="fas fa-magic me-2"></i> {{ isLoadingTrackerProductivity ? 'Ejecutando Agente...' : 'EJECUTAR AGENTE' }}
                     </button>
                 </div>
             </div>
@@ -5944,7 +5950,7 @@ async function toggleVoiceRecording(btnElement) {
       const isRecording = ref(false);
       let recognition = null;
       const isLoggedIn = ref(false);
-      const trackerProductivityData = ref(null); const isLoadingTrackerProductivity = ref(false); const loginPass = ref(''); const loginUser = ref(''); const loggingIn = ref(false); const currentUser = ref(''); const currentUsername = ref('');
+      const tpFilters = ref({ month: new Date().getMonth() + 1, year: new Date().getFullYear() }); const trackerProductivityData = ref(null); const isLoadingTrackerProductivity = ref(false); const loginPass = ref(''); const loginUser = ref(''); const loggingIn = ref(false); const currentUser = ref(''); const currentUsername = ref('');
       const currentRole = ref(''); // NUEVO: Estado para el rol del usuario
       const currentView = ref('DASHBOARD'); const currentDept = ref('');
       const config = ref({ departments: {}, staff: [], directory: [], specialModules: [] });
@@ -8881,7 +8887,7 @@ const filteredStaffTrackerData = computed(() => {
           }).withFailureHandler(err => {
               isLoadingTrackerProductivity.value = false;
               showToast('Falla de conexión al ejecutar agente: ' + err, 'error');
-          }).runTrackerProductivityAgent({ month: now.getMonth() + 1, year: now.getFullYear() });
+          }).runTrackerProductivityAgent({ month: tpFilters.value.month, year: tpFilters.value.year });
       };
 
       const loadPersonalAgenda = () => {
@@ -10004,7 +10010,7 @@ const filteredStaffTrackerData = computed(() => {
           } catch(e) { return ''; }
       };
 
-      return { allStaffList, visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation, runTrackerProductivityAgent, trackerProductivityData, isLoadingTrackerProductivity,
+      return { allStaffList, visibleTrackerHeaders, focusReqInput, syncReqToMat, addMeal, getMeals, isHabitDone, toggleHabit, promptAddHabit, loadPersonalAgenda, filteredDailyTasks, saveActivity, toggleActivityStatus, showNewActivityModal, newActivity, selectedDailyDay, personalAgenda, renderPersonalCharts, deleteFile, isLoggedIn, loginPass, loginUser, loggingIn, doLogin, logout, currentUser, currentUsername, currentRole, currentView, config, staffTracker, weeklyPlanData, searchQuery, goHome, selectDept, openStaffTracker, reloadStaffTracker, goBackToDept, saveRow, addNewRow, openModule, filteredStaff, getTrafficStyle, ppcData, isSubmitting, selectedResponsables, staffSearch, filteredDirectory, addResponsable, promptExtraData, confirmAddToQueue, activityQueue, submitBatch, clearQueue, pageTitle, openFileDialog, handleFileSelect, fileInput, isUploadingFile, uploadSuccess, closeIframe, showExtraModal, extraData, priorityOpts, riskOpts, salesStaff, cellFileInput, openCellUpload, handleCellFile, toIsoDate, updateDateFromPicker, formatDisplayDate, isMediaColumn, getColumnStyle, getHeaderLabel, isCol, isFieldEditable, deptStats, currentDeptData, currentModuleId, currentDept, ppcExistingData, dynamicPpc, saveDynamicPPC, getFechaRespuestaStyle, getFechaInicioTrafficStyle, syncQueueToBackend, isCompact, toggleSidebar, loadWeeklyPlan, weeklyStats, savePPCV3Row, selectedWeek, availableWeeks, filteredWeeklyData, projectCards, activeProjectsList, projectSubFolders, openFolderContent, toggleExpand, showPpcSelectorModal, openPpcProjectSelector, ppcMode, selectPpcProject, createNewProject, newProject, currentPpcProject, loadCascadeTree, showSubProjectModal, currentTargetSite, newSubProject, openAddSubProject, createSubProject, openProjectTask, projectTasks, refreshProjectTasks, addNewProjectTask, saveProjectRow, isRecording, toggleDictation, runTrackerProductivityAgent, trackerProductivityData, isLoadingTrackerProductivity, tpFilters,
       ecgData, loadEcgData, renderEcgCharts, toInitials, showPassword, currentTheme, toggleTheme, availableSpecialties, filterSpecialty, filterCompliance, kpiData, loadKPIData, loadExecutiveSummary, executiveSummaryData, activeTrackerTab, trackerSubView, switchTrackerTab, loadTrackerData, getAvatarUrl, workorderData, saveWorkOrder, currentWorkorderId, addWorkorderItem, removeWorkorderItem, formatCurrency, workorderTypes, generatedFolio, vehicleData, vehicleControlData, vehicleControlData2, showWorkOrderLogic, triggerUpload,
       openInvolucradosSelector,
       saveAllTrackerRows,
