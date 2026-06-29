@@ -2669,7 +2669,11 @@ function internalUpdateTask(personName, taskData, username) {
         const isNewTask = !existingFolio;
         if (isNewTask) {
              // NEW TASK -> GENERATE ID for any user
-             let prefix = isAntonia ? "AV-" : generatePrefix(username || personName);
+             let prefixSource = username || personName;
+            if (String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ" && String(username).toUpperCase().trim() === "ANTONIA_VENTAS") {
+                prefixSource = "ANTONIA PINEDA LOPEZ";
+            }
+            let prefix = isAntonia ? "AV-" : generatePrefix(prefixSource);
              let seqKey = isAntonia ? 'ANTONIA_SEQ_V2' : prefix;
              const seqNum = generateNumericSequence(seqKey);
              taskData['FOLIO'] = prefix + seqNum;
@@ -5239,7 +5243,11 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
         // Use robust locked generator to avoid duplicates during mass-inserts
         if (!existingTaskFolio && hasContent) {
-            let prefix = isAntonia ? "AV-" : generatePrefix(username || personName);
+            let prefixSource = username || personName;
+            if (String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ" && String(username).toUpperCase().trim() === "ANTONIA_VENTAS") {
+                prefixSource = "ANTONIA PINEDA LOPEZ";
+            }
+            let prefix = isAntonia ? "AV-" : generatePrefix(prefixSource);
             let seqKey = isAntonia ? 'ANTONIA_SEQ_V2' : prefix;
             const seqNum = generateNumericSequence(seqKey);
             taskData['FOLIO'] = prefix + seqNum;
