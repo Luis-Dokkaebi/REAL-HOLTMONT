@@ -2623,6 +2623,10 @@ function apiUpdatePPCV3(taskData, username) {
 
 function internalUpdateTask(personName, taskData, username) {
     try {
+        // REGLA ESTRICTA: Redirigir siempre a ANTONIA PINEDA LOPEZ si alguien que no es ella manda a ANTONIA_VENTAS
+        if (String(personName).toUpperCase().trim() === "ANTONIA_VENTAS" && String(username).toUpperCase().trim() !== "ANTONIA_VENTAS") {
+            personName = "ANTONIA PINEDA LOPEZ";
+        }
         // GUARD: PPCV3 Inmutabilidad (Solo modificable por Weekly Plan)
         if (String(personName).trim().toUpperCase() === String(APP_CONFIG.ppcSheetName).trim().toUpperCase()) {
             return { success: false, message: "Operación no permitida: PPCV3 es de solo lectura desde esta vista." };
