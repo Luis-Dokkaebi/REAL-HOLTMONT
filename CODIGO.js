@@ -2842,6 +2842,10 @@ function internalUpdateTask(personName, taskData, username) {
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
         } else {
              try {
+                 const isAntoniaPersonal = String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ";
+                 if (isAntoniaPersonal) {
+                     // Do not perform ANY reverse sync or status sync towards ANTONIA_VENTAS if acting as personal tracker
+                 } else {
                  const syncData = JSON.parse(JSON.stringify(taskData));
                  delete syncData._rowIndex;
                  delete syncData['PROCESO_LOG'];
@@ -2889,7 +2893,8 @@ function internalUpdateTask(personName, taskData, username) {
                                  return entry;
                              });
                              
-                             if (updated) {
+                             const isAntoniaPersonal = String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ";
+                             if (updated && !isAntoniaPersonal) {
                                  const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
                                  let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
                                  let mapCotParts = stepsOrder.map(step => {
@@ -2939,18 +2944,21 @@ function internalUpdateTask(personName, taskData, username) {
                              }
 
                              // Sincronización general a Antonia independientemente del estado
-                             if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
-                             } else {
-                                 const reverseFolio = syncData['FOLIO'] || syncData['ID'];
-                                 if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
+                             if (!isAntoniaPersonal) {
+                                 if (String(personName).toUpperCase().includes("(VENTAS)")) {
                                      internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                                 } else {
+                                     const reverseFolio = syncData['FOLIO'] || syncData['ID'];
+                                     if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
+                                         internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                                     }
                                  }
                              }
                          }
                      }
                  }
 
+                 } // End of isAntoniaPersonal check
                  // Sincronización Lateral (Peer-to-Peer via VENDEDOR field)
                  const vKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
                  if (vKey && taskData[vKey]) {
@@ -5454,7 +5462,8 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           }
 
           // Handle Reverse Sync (Vendor -> Antonia)
-          if (!isAntonia && distributionTasks.length > 0) {
+          const isAntoniaPersonal = String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ";
+          if (!isAntonia && !isAntoniaPersonal && distributionTasks.length > 0) {
                const syncPayloads = [];
                let antDataFetched = false;
                let antDataRows = [];
