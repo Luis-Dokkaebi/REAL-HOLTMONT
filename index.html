@@ -9870,7 +9870,7 @@ const filteredStaffTrackerData = computed(() => {
               });
               try {
                   const res = await new Promise((resolve) => {
-                      google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+                      google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask(staffTracker.value.name || currentUsername.value, row, currentUsername.value);
                   });
                   if (res && res.success) {
                       Swal.fire({ title: 'Éxito', text: 'Cotización finalizada correctamente.', icon: 'success', timer: 1500 });
@@ -9967,7 +9967,7 @@ const filteredStaffTrackerData = computed(() => {
 
           try {
               const res = await new Promise((resolve) => {
-                  google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask("ANTONIA_VENTAS", row, currentUsername.value);
+                  google.script.run.withSuccessHandler(resolve).withFailureHandler(resolve).apiUpdateTask(staffTracker.value.name || currentUsername.value, row, currentUsername.value);
               });
 
               delete row._assignToWorker;
