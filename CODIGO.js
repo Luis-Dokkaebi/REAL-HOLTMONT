@@ -2670,7 +2670,7 @@ function internalUpdateTask(personName, taskData, username) {
         if (isNewTask) {
              // NEW TASK -> GENERATE ID for any user
              let prefixSource = username || personName;
-            if (String(personName).toUpperCase() === "ANTONIA PINEDA LOPEZ" && String(username).toUpperCase() === "ANTONIA_VENTAS") {
+            if (String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ" && String(username).toUpperCase().trim() === "ANTONIA_VENTAS") {
                 prefixSource = "ANTONIA PINEDA LOPEZ";
             }
             let prefix = isAntonia ? "AV-" : generatePrefix(prefixSource);
@@ -2842,10 +2842,6 @@ function internalUpdateTask(personName, taskData, username) {
              try { internalBatchUpdateTasks("ADMINISTRADOR", [distData]); } catch(e){}
         } else {
              try {
-                 const isAntoniaPersonal = String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ";
-                 if (isAntoniaPersonal) {
-                     // Do not perform ANY reverse sync or status sync towards ANTONIA_VENTAS if acting as personal tracker
-                 } else {
                  const syncData = JSON.parse(JSON.stringify(taskData));
                  delete syncData._rowIndex;
                  delete syncData['PROCESO_LOG'];
@@ -2893,8 +2889,7 @@ function internalUpdateTask(personName, taskData, username) {
                                  return entry;
                              });
                              
-                             const isAntoniaPersonal = String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ";
-                             if (updated && !isAntoniaPersonal) {
+                             if (updated) {
                                  const stepsOrder = ["L", "CD", "EP", "CI", "EV", "CEC", "RCC"];
                                  let oldParts = (targetRow["MAP COT"] || "").split(/\||>|\//).map(p => p.trim());
                                  let mapCotParts = stepsOrder.map(step => {
@@ -2944,21 +2939,18 @@ function internalUpdateTask(personName, taskData, username) {
                              }
 
                              // Sincronización general a Antonia independientemente del estado
-                             if (!isAntoniaPersonal) {
-                                 if (String(personName).toUpperCase().includes("(VENTAS)")) {
+                             if (String(personName).toUpperCase().includes("(VENTAS)")) {
+                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                             } else {
+                                 const reverseFolio = syncData['FOLIO'] || syncData['ID'];
+                                 if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
                                      internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
-                                 } else {
-                                     const reverseFolio = syncData['FOLIO'] || syncData['ID'];
-                                     if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
-                                         internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
-                                     }
                                  }
                              }
                          }
                      }
                  }
 
-                 } // End of isAntoniaPersonal check
                  // Sincronización Lateral (Peer-to-Peer via VENDEDOR field)
                  const vKey = Object.keys(taskData).find(k => k.toUpperCase().trim() === "VENDEDOR" || k.toUpperCase().trim() === "RESPONSABLE" || k.toUpperCase().trim() === "INVOLUCRADOS");
                  if (vKey && taskData[vKey]) {
@@ -5252,7 +5244,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
         // Use robust locked generator to avoid duplicates during mass-inserts
         if (!existingTaskFolio && hasContent) {
             let prefixSource = username || personName;
-            if (String(personName).toUpperCase() === "ANTONIA PINEDA LOPEZ" && String(username).toUpperCase() === "ANTONIA_VENTAS") {
+            if (String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ" && String(username).toUpperCase().trim() === "ANTONIA_VENTAS") {
                 prefixSource = "ANTONIA PINEDA LOPEZ";
             }
             let prefix = isAntonia ? "AV-" : generatePrefix(prefixSource);
@@ -5462,8 +5454,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           }
 
           // Handle Reverse Sync (Vendor -> Antonia)
-          const isAntoniaPersonal = String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ";
-          if (!isAntonia && !isAntoniaPersonal && distributionTasks.length > 0) {
+          if (!isAntonia && distributionTasks.length > 0) {
                const syncPayloads = [];
                let antDataFetched = false;
                let antDataRows = [];
