@@ -9885,7 +9885,7 @@ const filteredStaffTrackerData = computed(() => {
               return;
           }
 
-          const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory.filter(p => p.name !== 'ANTONIA_VENTAS').map(p => p.name) : [];
+          const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory.filter(p => p.name !== 'ANTONIA_VENTAS' && (p.dept === 'VENTAS' || p.name.includes('(VENTAS)') || p.seller)).map(p => p.name) : [];
 
           let optionsHtml = '';
           staffList.forEach(name => {
@@ -9896,6 +9896,7 @@ const filteredStaffTrackerData = computed(() => {
               title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
               html: `
                   <div class="mb-2 text-start text-muted small">Selecciona una o varias personas para esta etapa (Ctrl/Cmd + Click para múltiples):</div>
+                  <input type="text" id="swal-search" class="form-control mb-2" placeholder="Buscar vendedor...">
                   <select id="swal-multi-select" class="form-select" multiple size="8">
                       ${optionsHtml}
                   </select>
@@ -9903,6 +9904,20 @@ const filteredStaffTrackerData = computed(() => {
               showCancelButton: true,
               confirmButtonText: 'Asignar',
               cancelButtonText: 'Cancelar',
+              didOpen: () => {
+                  const searchInput = document.getElementById('swal-search');
+                  const selectElement = document.getElementById('swal-multi-select');
+                  searchInput.addEventListener('input', (e) => {
+                      const term = e.target.value.toLowerCase();
+                      Array.from(selectElement.options).forEach(opt => {
+                          if (opt.text.toLowerCase().includes(term)) {
+                              opt.style.display = '';
+                          } else {
+                              opt.style.display = 'none';
+                          }
+                      });
+                  });
+              },
               preConfirm: () => {
                   const selectElement = document.getElementById('swal-multi-select');
                   const selectedOptions = Array.from(selectElement.selectedOptions).map(option => option.value);
