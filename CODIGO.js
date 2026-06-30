@@ -2939,12 +2939,19 @@ function internalUpdateTask(personName, taskData, username) {
                              }
 
                              // Sincronización general a Antonia independientemente del estado
+                             let safeSyncData = Object.assign({}, syncData);
+                             ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'].forEach(k => delete safeSyncData[k]);
+                             if (typeof syncToAntonia !== 'undefined' && syncToAntonia['MAP COT']) {
+                                 safeSyncData['MAP COT'] = syncToAntonia['MAP COT'];
+                                 safeSyncData['PROCESO_LOG'] = syncToAntonia['PROCESO_LOG'];
+                             }
+
                              if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [safeSyncData]);
                              } else {
-                                 const reverseFolio = syncData['FOLIO'] || syncData['ID'];
+                                 const reverseFolio = safeSyncData['FOLIO'] || safeSyncData['ID'];
                                  if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
-                                     internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                                     internalBatchUpdateTasks("ANTONIA_VENTAS", [safeSyncData]);
                                  }
                              }
                          }
@@ -5564,7 +5571,17 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                }
                
                if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                   internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
+                   const safeDistTasks = distributionTasks.map(t => {
+                       let st = Object.assign({}, t);
+                       ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'].forEach(k => delete st[k]);
+                       const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
+                       if (matchedSync) {
+                           st['MAP COT'] = matchedSync['MAP COT'];
+                           st['PROCESO_LOG'] = matchedSync['PROCESO_LOG'];
+                       }
+                       return st;
+                   });
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", safeDistTasks, false);
                }
 
                // Sincronización Reversa hacia Antonia (NO está completa si no termina en VENTAS ni está DONE)
@@ -5582,7 +5599,17 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    }
                });
                if (antoniaReverseSyncTasks.length > 0) {
-                   internalBatchUpdateTasks("ANTONIA_VENTAS", antoniaReverseSyncTasks, false);
+                   const safeRevTasks = antoniaReverseSyncTasks.map(t => {
+                       let st = Object.assign({}, t);
+                       ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'].forEach(k => delete st[k]);
+                       const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
+                       if (matchedSync) {
+                           st['MAP COT'] = matchedSync['MAP COT'];
+                           st['PROCESO_LOG'] = matchedSync['PROCESO_LOG'];
+                       }
+                       return st;
+                   });
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", safeRevTasks, false);
                }
 
                // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)

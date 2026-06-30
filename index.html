@@ -2606,14 +2606,32 @@
                              <span style="position:absolute; right:2px; top:50%; transform:translateY(-50%); color:#217346; font-size:10px; font-weight:bold; pointer-events:none;">%</span>
                          </div>
                          <div v-else-if="isCol(h, ['ESTATUS','STATUS'])" style="width:100%; height:100%;">
-                             <div v-if="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100">
-                                  <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:10px; font-weight:bold; padding:4px; text-align:center; white-space:normal; line-height:1.1; min-height: 25px;"
-                                       :style="getAntoniaStatusStyle(row[h])"
-                                       @click="openStatusSelector(row, h)">
-                                      {{ row[h] }}
+                             <div v-if="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100 w-100">
+                                  <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:2px 4px; border-bottom:1px solid #dee2e6;">
+                                      <div style="cursor:pointer; font-size:10px; font-weight:bold; text-align:center; white-space:normal; line-height:1.1; flex-grow:1; margin-right:4px;"
+                                           :style="getAntoniaStatusStyle(row[h])"
+                                           @click="openStatusSelector(row, h)">
+                                          {{ row[h] }}
+                                      </div>
+                                      <div style="cursor:pointer; padding:2px;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
+                                          <i class="fas fa-fire text-danger fa-lg"></i>
+                                      </div>
                                   </div>
-                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; border-top:1px solid #dee2e6; cursor:pointer;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
-                                      <i class="fas fa-fire text-danger fa-lg py-1"></i>
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; padding: 2px;">
+                                      <div class="hp-timeline-container" style="justify-content: center; padding: 0;">
+                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null" style="margin-right: 5px; width: 45px;">
+                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)" style="width: 20px; height: 20px; font-size: 8px;">
+                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
+                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'" style="width: 10px; height: 10px; font-size: 6px; bottom: -2px; right: -2px;">
+                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                                  </div>
+                                              </div>
+                                              <div class="hp-text" style="font-size: 7px; line-height: 1;">
+                                                  {{ step.id }}<br>
+                                                  <span class="hp-time" style="font-size: 7px;">{{ step.timeLabel }}</span>
+                                              </div>
+                                          </div>
+                                      </div>
                                   </div>
                              </div>
                              <input v-else
@@ -2621,23 +2639,6 @@
                                     :readonly="!isFieldEditable(h, row)"
                                     style="text-align:center; font-weight:bold; font-size:10px; width:100%; height:100%; border:none; outline:none; padding:6px 1px; background:transparent;"
                                     class="excel-input">
-                         </div>
-                         <div v-else-if="isCol(h, ['MAP COT', 'PROCESO'])" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding: 2px;">
-                            <div class="hp-timeline-container" style="justify-content: center; padding: 0;">
-                                <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null" style="margin-right: 5px; width: 45px;">
-                                    <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)" style="width: 24px; height: 24px; font-size: 10px;">
-                                        <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
-                                        <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'" style="width: 10px; height: 10px; font-size: 6px; bottom: -2px; right: -2px;">
-                                            <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
-                                        </div>
-                                    </div>
-                                    <div class="hp-text" style="font-size: 8px; line-height: 1;">
-                                        {{ step.isDone ? 'HECHO' : 'PENDIENTE' }}<br>
-                                        {{ step.id }}<br>
-                                        <span class="hp-time" style="font-size: 8px;">{{ step.timeLabel }}</span>
-                                    </div>
-                                </div>
-                            </div>
                          </div>
                          <div v-else-if="isCol(h, ['REQUISITOR'])" class="d-flex" style="height:100%; width:100%; align-items:center;">
                              <input v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" style="flex:1; min-width:0;" spellcheck="false">
@@ -7093,7 +7094,7 @@ async function toggleVoiceRecording(btnElement) {
           if (!staffTracker.value.headers) return [];
           return staffTracker.value.headers.filter(h => {
               const up = String(h).toUpperCase().trim();
-              return up !== 'PROCESO_LOG' && up !== 'PROCESO';
+              return up !== 'PROCESO_LOG' && up !== 'PROCESO' && up !== 'MAP COT';
           });
       });
 
@@ -7223,7 +7224,7 @@ const filteredStaffTrackerData = computed(() => {
           else if (up === 'INFO CLIENTE') { w = '70px'; fs = '10px'; align='center'; }
           else if (isCol(h, ['DIAS','RELOJ','CLASIFICACION','DÍAS FINALIZ. COTIZ','DIAS FINALIZ. COTIZ'])) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('AVANCE')) { w = '40px'; fs = '10px'; pad = '8px 1px'; }
-          else if (isCol(h, ['ESTATUS','STATUS'])) { w = '65px'; fs = '10px'; pad = '8px 1px'; }
+          else if (isCol(h, ['ESTATUS','STATUS'])) { w = currentUsername.value === 'ANTONIA_VENTAS' || (staffTracker.value && staffTracker.value.name && staffTracker.value.name.includes('VENTAS')) ? '320px' : '65px'; fs = '10px'; pad = '8px 1px'; }
           else if (up.includes('FECHA') || up.includes('RESPUESTA')) { w = '65px'; fs = '10px'; }
           else if (up === 'F2') { w = '35px'; fs = '10px'; align='center'; }
           else if (up.includes('COTIZACION') || up.includes('COT')) { w = '70px'; fs = '10px'; align='center'; }
@@ -9884,27 +9885,50 @@ const filteredStaffTrackerData = computed(() => {
               return;
           }
 
-          const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory.filter(p => p.name !== 'ANTONIA_VENTAS').map(p => p.name) : [];
+          const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory
+              .filter(p => p.name !== 'ANTONIA_VENTAS' && (p.dept === 'VENTAS' || p.type === 'VENTAS' || p.type === 'HIBRIDO'))
+              .map(p => p.type === 'HIBRIDO' ? p.name + ' (VENTAS)' : p.name) : [];
 
           let optionsHtml = '';
-          staffList.forEach(name => {
-              optionsHtml += `<option value="${name}">${name}</option>`;
+          staffList.forEach((name, i) => {
+              optionsHtml += `
+                  <div class="form-check text-start swal-worker-option" data-name="${name.toLowerCase()}">
+                      <input class="form-check-input swal-worker-checkbox" type="checkbox" value="${name}" id="workerCheck${i}">
+                      <label class="form-check-label" for="workerCheck${i}">
+                          ${name}
+                      </label>
+                  </div>`;
           });
 
           const { value: selectedWorkers, isDismissed } = await Swal.fire({
               title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
               html: `
-                  <div class="mb-2 text-start text-muted small">Selecciona una o varias personas para esta etapa (Ctrl/Cmd + Click para múltiples):</div>
-                  <select id="swal-multi-select" class="form-select" multiple size="8">
+                  <div class="mb-2 text-start text-muted small">Selecciona una o varias personas para esta etapa:</div>
+                  <input type="text" id="swal-search" class="form-control mb-3" placeholder="Buscar vendedor...">
+                  <div id="swal-checkbox-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
                       ${optionsHtml}
-                  </select>
+                  </div>
               `,
               showCancelButton: true,
               confirmButtonText: 'Asignar',
               cancelButtonText: 'Cancelar',
+              didOpen: () => {
+                  const searchInput = document.getElementById('swal-search');
+                  const options = document.querySelectorAll('.swal-worker-option');
+                  searchInput.addEventListener('input', (e) => {
+                      const term = e.target.value.toLowerCase();
+                      options.forEach(opt => {
+                          if (opt.getAttribute('data-name').includes(term)) {
+                              opt.style.display = '';
+                          } else {
+                              opt.style.display = 'none';
+                          }
+                      });
+                  });
+              },
               preConfirm: () => {
-                  const selectElement = document.getElementById('swal-multi-select');
-                  const selectedOptions = Array.from(selectElement.selectedOptions).map(option => option.value);
+                  const checkboxes = document.querySelectorAll('.swal-worker-checkbox:checked');
+                  const selectedOptions = Array.from(checkboxes).map(cb => cb.value);
                   if (selectedOptions.length === 0) {
                       Swal.showValidationMessage('Debes seleccionar al menos una persona');
                       return false;
