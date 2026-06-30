@@ -9887,7 +9887,7 @@ const filteredStaffTrackerData = computed(() => {
 
           const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory
               .filter(p => p.name !== 'ANTONIA_VENTAS' && (p.dept === 'VENTAS' || p.type === 'VENTAS' || p.type === 'HIBRIDO'))
-              .map(p => p.type === 'HIBRIDO' ? p.name + ' (VENTAS)' : p.name) : [];
+              .map(p => p.name.includes('(VENTAS)') ? p.name : p.name + ' (VENTAS)') : [];
 
           let optionsHtml = '';
           staffList.forEach((name, i) => {
