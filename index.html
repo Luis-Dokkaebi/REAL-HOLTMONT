@@ -9885,32 +9885,40 @@ const filteredStaffTrackerData = computed(() => {
               return;
           }
 
-          const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory.filter(p => p.name !== 'ANTONIA_VENTAS' && (p.dept === 'VENTAS' || p.name.includes('(VENTAS)') || p.seller)).map(p => p.name) : [];
+          const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory
+              .filter(p => p.name !== 'ANTONIA_VENTAS' && (p.dept === 'VENTAS' || p.type === 'VENTAS' || p.type === 'HIBRIDO'))
+              .map(p => p.type === 'HIBRIDO' ? p.name + ' (VENTAS)' : p.name) : [];
 
           let optionsHtml = '';
-          staffList.forEach(name => {
-              optionsHtml += `<option value="${name}">${name}</option>`;
+          staffList.forEach((name, i) => {
+              optionsHtml += `
+                  <div class="form-check text-start swal-worker-option" data-name="${name.toLowerCase()}">
+                      <input class="form-check-input swal-worker-checkbox" type="checkbox" value="${name}" id="workerCheck${i}">
+                      <label class="form-check-label" for="workerCheck${i}">
+                          ${name}
+                      </label>
+                  </div>`;
           });
 
           const { value: selectedWorkers, isDismissed } = await Swal.fire({
               title: `Asignar etapa: ${getFullProcessName(currentStatus)}`,
               html: `
-                  <div class="mb-2 text-start text-muted small">Selecciona una o varias personas para esta etapa (Ctrl/Cmd + Click para múltiples):</div>
-                  <input type="text" id="swal-search" class="form-control mb-2" placeholder="Buscar vendedor...">
-                  <select id="swal-multi-select" class="form-select" multiple size="8">
+                  <div class="mb-2 text-start text-muted small">Selecciona una o varias personas para esta etapa:</div>
+                  <input type="text" id="swal-search" class="form-control mb-3" placeholder="Buscar vendedor...">
+                  <div id="swal-checkbox-list" style="max-height: 200px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 10px;">
                       ${optionsHtml}
-                  </select>
+                  </div>
               `,
               showCancelButton: true,
               confirmButtonText: 'Asignar',
               cancelButtonText: 'Cancelar',
               didOpen: () => {
                   const searchInput = document.getElementById('swal-search');
-                  const selectElement = document.getElementById('swal-multi-select');
+                  const options = document.querySelectorAll('.swal-worker-option');
                   searchInput.addEventListener('input', (e) => {
                       const term = e.target.value.toLowerCase();
-                      Array.from(selectElement.options).forEach(opt => {
-                          if (opt.text.toLowerCase().includes(term)) {
+                      options.forEach(opt => {
+                          if (opt.getAttribute('data-name').includes(term)) {
                               opt.style.display = '';
                           } else {
                               opt.style.display = 'none';
@@ -9919,8 +9927,8 @@ const filteredStaffTrackerData = computed(() => {
                   });
               },
               preConfirm: () => {
-                  const selectElement = document.getElementById('swal-multi-select');
-                  const selectedOptions = Array.from(selectElement.selectedOptions).map(option => option.value);
+                  const checkboxes = document.querySelectorAll('.swal-worker-checkbox:checked');
+                  const selectedOptions = Array.from(checkboxes).map(cb => cb.value);
                   if (selectedOptions.length === 0) {
                       Swal.showValidationMessage('Debes seleccionar al menos una persona');
                       return false;
