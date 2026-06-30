@@ -67,9 +67,9 @@ const INITIAL_DIRECTORY = [
     { name: "EDGAR URIMAR LOPEZ MALDONADO", dept: "DISEÑO", type: "ESTANDAR" },
     // VENTAS
     { name: "ANTONIA_VENTAS", dept: "VENTAS", type: "VENTAS" },
-    { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "HIBRIDO" },
     { name: "RAMIRO RODRIGUEZ", dept: "VENTAS", type: "HIBRIDO" },
-    { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "HIBRIDO" },
     // ELECTROMECANICA
     { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
     { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
