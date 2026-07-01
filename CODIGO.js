@@ -2937,7 +2937,10 @@ function internalUpdateTask(personName, taskData, username) {
 
                              // Sincronización general a Antonia independientemente del estado
                              let safeSyncData = Object.assign({}, syncData);
-                             ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'].forEach(k => delete safeSyncData[k]);
+                             const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
+                             Object.keys(safeSyncData).forEach(k => {
+                                 if (delKeys.includes(k.toUpperCase().trim())) delete safeSyncData[k];
+                             });
                              if (typeof syncToAntonia !== 'undefined' && syncToAntonia['MAP COT']) {
                                  safeSyncData['MAP COT'] = syncToAntonia['MAP COT'];
                                  safeSyncData['PROCESO_LOG'] = syncToAntonia['PROCESO_LOG'];
@@ -5567,7 +5570,10 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                if (String(personName).toUpperCase().includes("(VENTAS)")) {
                    const safeDistTasks = distributionTasks.map(t => {
                        let st = Object.assign({}, t);
-                       ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'].forEach(k => delete st[k]);
+                       const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
+                       Object.keys(st).forEach(k => {
+                           if (delKeys.includes(k.toUpperCase().trim())) delete st[k];
+                       });
                        const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
                        if (matchedSync) {
                            st['MAP COT'] = matchedSync['MAP COT'];
@@ -5595,7 +5601,10 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                if (antoniaReverseSyncTasks.length > 0) {
                    const safeRevTasks = antoniaReverseSyncTasks.map(t => {
                        let st = Object.assign({}, t);
-                       ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'].forEach(k => delete st[k]);
+                       const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
+                       Object.keys(st).forEach(k => {
+                           if (delKeys.includes(k.toUpperCase().trim())) delete st[k];
+                       });
                        const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
                        if (matchedSync) {
                            st['MAP COT'] = matchedSync['MAP COT'];
