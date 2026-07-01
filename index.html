@@ -9886,7 +9886,7 @@ const filteredStaffTrackerData = computed(() => {
           }
 
           const staffList = config.value && Array.isArray(config.value.directory) ? config.value.directory
-              .filter(p => p.name !== 'ANTONIA_VENTAS' && (p.dept === 'VENTAS' || p.type === 'VENTAS' || p.type === 'HIBRIDO' || p.name === 'MIGUEL GALLARDO'))
+              .filter(p => p.name !== 'ANTONIA_VENTAS' && p.name !== 'EDUARDO TERAN' && (p.dept === 'VENTAS' || p.type === 'VENTAS' || p.type === 'HIBRIDO' || p.name === 'MIGUEL GALLARDO'))
               .map(p => p.name.replace(/\s*\(VENTAS\)/ig, '').trim()) : [];
 
           let optionsHtml = '';
