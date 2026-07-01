@@ -2730,11 +2730,7 @@ function internalUpdateTask(personName, taskData, username) {
              if (taskData._removeWorker) {
                  const workerToRemove = taskData._removeWorker;
                  try {
-                     let targetSheet = workerToRemove;
-                     if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
-                         const potentialSheet = targetSheet + " (VENTAS)";
-                         if (findSheetSmart(potentialSheet)) targetSheet = potentialSheet;
-                     }
+                     let targetSheet = String(workerToRemove).replace(/\s*\(VENTAS\)/ig, "").trim();
                      const workerSheet = findSheetSmart(targetSheet);
                      if (workerSheet) {
                          const targetId = String(existingFolio || taskData['FOLIO'] || taskData['ID'] || "").toUpperCase().trim();
@@ -2772,11 +2768,12 @@ function internalUpdateTask(personName, taskData, username) {
                  try {
                      const workers = Array.isArray(taskData._assignToWorker) ? taskData._assignToWorker : [taskData._assignToWorker];
                      for (let worker of workers) {
+                         const cleanWorker = String(worker).replace(/\s*\(VENTAS\)/ig, "").trim();
                          const assignData = JSON.parse(JSON.stringify(distData));
                          assignData['ESTATUS'] = 'PENDIENTE';
                          assignData['AVANCE'] = '0%';
-                         const tRes = internalBatchUpdateTasks(worker, [assignData]);
-                         if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${worker}: ${tRes.message}`);
+                         const tRes = internalBatchUpdateTasks(cleanWorker, [assignData]);
+                         if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${cleanWorker}: ${tRes.message}`);
                      }
                  } catch(e) {
                      registrarLog("ANTONIA", "DIST_ERROR", e.toString());
@@ -4423,7 +4420,7 @@ function test_Generacion_MAP_COT() {
 
       registrarLog = function() {};
 
-      internalUpdateTask("ANGEL SALINAS (VENTAS)", {
+      internalUpdateTask("ANGEL SALINAS", {
           'FOLIO': 'AV-TEST-001',
           'AVANCE': '100%',
           'ESTATUS': 'DONE'
@@ -4522,7 +4519,7 @@ function test_Flujo_Completo_Delegacion_y_Sincronizacion() {
 
         // Paso 1 (Delegar) -> Simulado desde Frontend a internalUpdateTask
         const taskRow = Object.assign({}, dbAntonia[0]);
-        taskRow._assignToWorker = ["ANGEL SALINAS (VENTAS)"];
+        taskRow._assignToWorker = ["ANGEL SALINAS"];
         taskRow._assignStep = "CD";
         taskRow.PROCESO_LOG = JSON.stringify([{step: "CD", status: "IN_PROGRESS", assignee: "ANGEL SALINAS", timestamp: new Date().getTime()}]);
         taskRow["MAP COT"] = '⚪ L | 🔴 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC';
@@ -5278,11 +5275,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
              if (taskData._removeWorker) {
                  const workerToRemove = taskData._removeWorker;
                  try {
-                     let targetSheet = workerToRemove;
-                     if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
-                         const potentialSheet = targetSheet + " (VENTAS)";
-                         if (findSheetSmart(potentialSheet)) targetSheet = potentialSheet;
-                     }
+                     let targetSheet = String(workerToRemove).replace(/\s*\(VENTAS\)/ig, "").trim();
                      const workerSheet = findSheetSmart(targetSheet);
                      if (workerSheet) {
                          const targetId = String(existingTaskFolio || taskData['FOLIO'] || taskData['ID'] || "").toUpperCase().trim();
@@ -5324,13 +5317,14 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                      const clienteStr = taskData["CLIENTE"] || "Desconocido";
 
                      for (let worker of workers) {
+                         const cleanWorker = String(worker).replace(/\s*\(VENTAS\)/ig, "").trim();
                          const assignData = JSON.parse(JSON.stringify(distData));
                          assignData['ESTATUS'] = 'PENDIENTE';
                          assignData['AVANCE'] = '0%';
-                         internalBatchUpdateTasks(worker, [assignData]);
+                         internalBatchUpdateTasks(cleanWorker, [assignData]);
 
                          // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado
-                         const userEmail = findUserEmailByLabel(worker);
+                         const userEmail = findUserEmailByLabel(cleanWorker);
                          if (userEmail) {
                              const fInicio = new Date();
                              const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
