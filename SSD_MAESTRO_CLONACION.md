@@ -9,32 +9,34 @@
 
 ## 0. Cómo usar este documento
 
-El documento tiene dos partes:
+El documento tiene tres partes:
 
 - **PARTE I — Narrativa (§1 a §18):** arquitectura, modelo de datos, reglas de negocio, organigrama, integraciones, despliegue y deuda técnica, con nivel de detalle suficiente para entender **por qué** el sistema está hecho como está hecho.
 - **PARTE II — Anexos de código fuente (§19 a §21):** el cuerpo **literal y completo** de las funciones backend más críticas (`CODIGO.js`), de los métodos frontend más críticos (`index.html`), y el inventario completo de las ~90 variables de estado reactivo de Vue con su propósito exacto.
+- **PARTE III — Checklist de verificación de migración (§22):** pensado específicamente para auditar una reimplementación en otra tecnología (ej. Python/FastAPI) contra este SSD. Si el objetivo **no** es leer el sistema original sino **verificar si una migración ya hecha coincide con él**, empezar directamente en §22 y usar el resto del documento como referencia de detalle bajo demanda (cada ítem del checklist cita la sección exacta donde está la spec completa).
 
 Si tuvieras que reconstruir "Holtmont Workspace" desde una carpeta vacía, sigue este orden:
 
 1. Lee §1–§4 para entender qué es el sistema, con qué tecnologías está hecho, y cómo se relacionan sus 3 capas.
 2. Lee §5 para el esquema completo de la base de datos (hojas y columnas exactas de Google Sheets).
-3. Lee §6 para el organigrama completo (43 usuarios, sin contraseñas) y la matriz de permisos por rol.
+3. Lee §6 para el organigrama completo (41 usuarios, sin contraseñas) y la matriz de permisos por rol.
 4. Lee §7 para el catálogo de las ~140 funciones del backend, agrupadas por responsabilidad.
 5. Lee §8 para el mapa de vistas y el inventario de estado reactivo del frontend.
 6. Lee §9 para el sistema de diseño (Design Tokens).
 7. Lee §10 para las reglas de negocio críticas, **con ejemplos de payload JSON antes/después** de cada transición relevante.
 8. Lee §11–§13 para integraciones externas, triggers y el estado real de seguridad.
-9. Lee §14–§16 para testing, la guía de despliegue paso a paso, y la deuda técnica conocida.
+9. Lee §14–§16 para testing, la guía de despliegue paso a paso, y la deuda técnica conocida (incluye 3 bugs reales confirmados en el sistema original).
 10. Lee §17–§18 para el índice función-por-función y el índice de documentos relacionados.
-11. Usa **§19 (Anexo A)** para copiar/pegar el código backend literal de las 15 funciones más críticas.
-12. Usa **§20 (Anexo B)** para copiar/pegar el código frontend literal de los 12 métodos Vue más críticos.
+11. Usa **§19 (Anexo A)** para copiar/pegar el código backend literal de las funciones más críticas (19 subsecciones, cubre prácticamente todos los módulos del backend).
+12. Usa **§20 (Anexo B)** para copiar/pegar el código frontend literal de los métodos Vue más críticos.
 13. Usa **§21 (Anexo C)** para el inventario completo de las ~90 variables `ref()`/`reactive()` del frontend.
+14. Usa **§22** como checklist activo si estás auditando una migración: cada ítem `☐` tiene un criterio de aceptación verificable y cita dónde está la spec completa. Los ítems marcados 🐛 son bugs confirmados del sistema original que se recomienda **corregir, no replicar** en una reimplementación nueva.
 
 ---
 
 ## 1. Resumen Ejecutivo
 
-**Holtmont Workspace** es una plataforma interna tipo ERP/CRM/BPM ligero para **Holtmont** (empresa de construcción/ingeniería), usada por 43 cuentas de usuario repartidas en 19 departamentos posibles (CEO, RH, Finanzas, Compras, Presupuestos, Calidad, Seguridad, Precios Unitarios, Diseño, Ventas, Electromecánica, HVAC, Construcción, Limpieza, Almacén y Maquinaria, Administración, Facturación, Maquinaria, EHS).
+**Holtmont Workspace** es una plataforma interna tipo ERP/CRM/BPM ligero para **Holtmont** (empresa de construcción/ingeniería), usada por 41 cuentas de usuario repartidas en 19 departamentos posibles (CEO, RH, Finanzas, Compras, Presupuestos, Calidad, Seguridad, Precios Unitarios, Diseño, Ventas, Electromecánica, HVAC, Construcción, Limpieza, Almacén y Maquinaria, Administración, Facturación, Maquinaria, EHS).
 
 Resuelve cuatro problemas de negocio:
 
@@ -5766,4 +5768,158 @@ const saveRow = (row, event) => {
 
 ---
 
-*Fin del documento. Este SSD se generó por inspección directa y literal del código fuente (`CODIGO.js`, `index.html`, `appsscript.json`, `CREDENCIALES.md`) y de todos los SDD existentes en el repositorio a la fecha indicada — no es una fuente independiente del código, es su mapa y, en los Anexos A/B, su copia literal de las partes más críticas. Si el código cambia, este documento debe re-derivarse.*
+# PARTE III — Verificación de Migración a Python/FastAPI
+
+## 22. Checklist de Verificación de Paridad (Holtmont Workspace GAS → FastAPI)
+
+> **Propósito de esta sección:** este SSD no solo documenta el sistema original — está pensado para que **otra sesión de Claude (u otro desarrollador), con acceso al repositorio de la migración en Python/FastAPI pero sin haber leído `CODIGO.js`/`index.html`**, pueda verificar de forma sistemática si esa migración es funcionalmente equivalente al sistema descrito aquí, ítem por ítem.
+>
+> **Cómo usar este checklist:**
+> 1. Por cada ítem `☐`, buscar en el repo de FastAPI el endpoint/módulo/regla equivalente.
+> 2. Marcar `✅ OK` si el comportamiento coincide con el criterio de aceptación citado (y la sección del SSD donde está la spec completa/el código fuente original).
+> 3. Marcar `❌ FALTA` si no se encontró ninguna implementación equivalente.
+> 4. Marcar `⚠️ DIFERENTE` si existe algo similar pero el comportamiento diverge del criterio — anotar en qué.
+> 5. Los ítems marcados **🐛 BUG CONOCIDO** son comportamientos rotos o inconsistentes del sistema **original** (documentados en §16 y en el Anexo A) — la recomendación por defecto es **corregirlos en la migración, no replicarlos tal cual**; si se prefiere paridad exacta primero y corrección después, dejarlo anotado explícitamente en el reporte de auditoría.
+> 6. Al terminar, producir un reporte con: total de ítems, cuántos `✅`/`❌`/`⚠️`, y el detalle de cada `❌`/`⚠️` con la sección del SSD que se está incumpliendo.
+
+### 22.1 Autenticación y Sesión (spec: §6.2–6.3, §7.1, Anexo A §19.1)
+
+- ☐ Endpoint de login que reciba `username`/`password` y devuelva `{success, role, name, username}` — comparación de credenciales equivalente a `apiLogin` (línea 310).
+- ☐ Login registra auditoría en el equivalente de `LOG_SISTEMA` con acción `LOGIN` (éxito) o `LOGIN_FAIL` (fallo) — mismo criterio que `registrarLog`.
+- ☐ Logout registra auditoría `LOGOUT`.
+- ☐ Existen los 6 roles exactos: `ADMIN`, `ADMIN_CONTROL`, `PPC_ADMIN`, `TONITA`, `WORKORDER_USER`, `STAFF_USER` — sin renombrar ni fusionar ninguno (§6.2).
+- ☐ Endpoint equivalente a `getSystemConfig(role, username)` que arme el árbol de navegación exacto por rol (19 departamentos, módulos especiales) — ver árbol completo en Anexo A §19.10.
+- ☐ **Caso especial `JUANY_RODRIGUEZ`**: verificar que la migración preserva la excepción hardcodeada de acceso ampliado a `COMPRAS`/`FACTURACION`/`FINANZAS` (§6.2) — es fácil perderla al migrar porque no está en ninguna tabla, solo en un `if` de código.
+- ☐ Relabel dinámico: si el usuario es `JESUS_CANTU`, el módulo "PPC Maestro" se muestra como "INTERDICIPLINARIA" (§6.2, preservar aunque sea un typo histórico, o decidir conscientemente corregirlo).
+- ☐ Lista `restrictedUsers` (6 vendedores: `ANGEL_SALINAS`, `TERESA_GARZA`, `EDUARDO_TERAN`, `EDUARDO_MANZANARES`, `RAMIRO_RODRIGUEZ`, `SEBASTIAN_PADILLA`) con permisos de edición reducidos sobre hojas/tablas ajenas — criterio exacto de columnas permitidas en §6.2 y Anexo A §19.4.
+- ☐ ⚠️ **Decisión de diseño requerida**: `apiLogin` compara contraseña con `===` en texto plano (§13) — la migración a Python **debería** usar hash+salt (bcrypt/argon2) en vez de replicar texto plano; confirmar que se tomó esta decisión conscientemente y no por omisión.
+
+### 22.2 Organigrama y Directorio (spec: §5.2, §6.3–6.5, Anexo A §19.1/§19.11)
+
+- ☐ Modelo de datos equivalente a `DB_DIRECTORY`: campos `NOMBRE`, `DEPARTAMENTO`, `TIPO_HOJA` (valores `ESTANDAR`/`HIBRIDO`/`VENTAS`).
+- ☐ Semilla de datos con las 36 entradas de `INITIAL_DIRECTORY` (tabla completa en §6.4) — verificar que el organigrama migrado coincide persona por persona, departamento por departamento.
+- ☐ Las 41 cuentas de `USER_DB` (tabla completa sin contraseñas en §6.3) migradas con: `role`, `label`, `email`, `staffName`, `dept`, `seller`.
+- ☐ Endpoint equivalente a `apiResyncDirectory` (solo rol `ADMIN`) que re-sincronice el directorio desde la fuente de verdad de código/config y cree automáticamente cualquier Tracker faltante.
+- ☐ Endpoints equivalentes a `apiAddEmployee`/`apiDeleteEmployee` — alta crea automáticamente el Tracker (y la tabla de Ventas si `type` es `VENTAS`/`HIBRIDO`); baja **no** borra el Tracker asociado (comportamiento intencional, no bug, ver Anexo A §19.11).
+- ☐ ⚠️ **Decisión de diseño requerida**: `CESAR_GOMEZ` está documentado como "baja" en `CREDENCIALES.md` pero sigue activo en `USER_DB` (§6.3) — decidir explícitamente si la migración lo trata como activo o inactivo, no dejarlo a que la ambigüedad se resuelva por accidente.
+
+### 22.3 Motor de Trackers: lectura, guardado por lotes, anti-duplicación (spec: §5.3, §10.3, Anexo A §19.2–19.4)
+
+- ☐ Endpoint de lectura equivalente a `internalFetchSheetData`/`apiFetchStaffTrackerData`: separa filas activas de filas archivadas (bajo el equivalente del separador `"TAREAS REALIZADAS"`).
+- ☐ Endpoint de guardado por lotes equivalente a `apiSaveTrackerBatch` (Anexo A §19.2) que reproduzca, como mínimo:
+  - ☐ Generación de `_tempId` en cliente + bloqueo anti-duplicación de 120s en servidor (Gatekeeper, §10.3).
+  - ☐ Búsqueda de fila por folio existente, con fallback a búsqueda por `CONCEPTO`+`FECHA` si el folio no se encuentra o hay desplazamiento de filas.
+  - ☐ Generación atómica de folios (`generateNumericSequence`, con lock, fallback a número aleatorio si supera 10,000,000).
+  - ☐ Auto-sanación de secuencia de folios `AV-XXXX` para `ANTONIA_VENTAS` (escaneo del batch por folios más altos que el contador guardado).
+  - ☐ Auto-archivado de filas al 100% (evaluando `ESTATUS` en la lista de estados terminales, o `AVANCE`/`CUMPLIMIENTO` en `100`/`100%`/`SI`/valor numérico `1`).
+- ☐ Endpoint de edición de una sola fila equivalente a `internalUpdateTask` (Anexo A §19.4), incluyendo la redirección forzosa: escribir en la hoja/tabla maestra de Ventas si el usuario no es la cuenta de Ventas se redirige al Tracker de la persona en cuestión, no a la tabla maestra.
+- ☐ Guardia de inmutabilidad: el equivalente de la hoja `PPCV3` es de solo lectura fuera del flujo "Planeación Semanal" (rechazo explícito, no silencioso).
+- ☐ Resolución de alias de columna (15 grupos, ver diccionario completo en Anexo A §19.3) — si la migración usa columnas de base de datos con nombres fijos en vez de texto libre, este punto puede resolverse estructuralmente en el modelo de datos en vez de replicar el alias-matching, **pero debe documentarse esa decisión de diseño**.
+- ☐ Interpretación de `AVANCE`/`CUMPLIMIENTO`: `100`, `'100'`, `'100%'`, `'SI'` y el equivalente del valor porcentual crudo de Sheets (`1.0`) tratados todos como "100%" — o, si la migración usa un tipo de dato numérico real (recomendado), documentar que este parcheo defensivo ya no aplica y por qué.
+
+### 22.4 Papa Caliente — máquina de estados de cotizaciones (spec: §10.2, `PAPA_CALIENTE_SDD.md`)
+
+- ☐ Modelo de datos para las 7 etapas `L, CD, EP, CI, EV, CEC, RCC` en orden fijo.
+- ☐ Estructura equivalente a `PROCESO_LOG`: por cada paso, `step`, `status` (`IN_PROGRESS`/`DONE`), `assignee`, `timestamp`/`dateStr`, `endTimestamp`/`endDateStr`.
+- ☐ Endpoint de delegación: asigna un paso a un trabajador, copia la tarea a su Tracker con estado inicial `PENDIENTE`/`0%`, dispara notificación (ver §22.11).
+- ☐ Endpoint/lógica de reverse-sync: cuando el delegado marca su tarea como terminada (criterio flexible: `100`, `100%`, `1`, `1.0`, `HECHO`, `TERMINADO`, `FINALIZADO`, `REALIZADO`, `COMPLETADO`, `DONE`, `SI`), la etapa correspondiente en `PROCESO_LOG` pasa a `DONE` y se copian los archivos adjuntos de vuelta a la tabla maestra — **sin** sobrescribir `ESTATUS`/`AVANCE` de la fila maestra con los del delegado.
+- ☐ Regeneración del string visual equivalente a `MAP COT` (o su reemplazo estructurado) sincronizada con `PROCESO_LOG`.
+- ☐ Cierre terminal en `RCC` con las 3 resoluciones: `GANADA`, `PERDIDA X PRECIO`, `DESCUENTO`.
+- ☐ Ejemplo de payload/estado completo reproducido en §10.2 — usarlo como caso de prueba end-to-end literal (crear folio → delegar `CD` → completar como delegado → verificar reverse-sync).
+
+### 22.5 Enrutamiento y "Caso Antonia" (spec: §10.1)
+
+- ☐ Prefijo de folio `AV-` exclusivo de la cuenta de Ventas maestra.
+- ☐ Redirección forzosa: cualquier usuario que no sea la cuenta de Ventas nunca puede escribir directamente en la tabla maestra de Ventas.
+- ☐ Filtro de sufijo `(VENTAS)`: ningún usuario excepto la cuenta de Ventas puede enrutar hacia tablas que representen "Ventas" de otra persona.
+- ☐ `VENDEDOR`, `RESPONSABLE`, `INVOLUCRADOS` tratados como sinónimos intercambiables en la lógica de distribución (no como 3 campos con lógica distinta) — confirmar que la migración no los separó accidentalmente en 3 flujos diferentes.
+- ☐ Lista blanca (`allowedBase`) de columnas editables sobre una fila ya existente de la tabla maestra de Ventas — 45 columnas exactas listadas en §5.4, más cualquier columna con "FECHA"/"ALTA" en el nombre.
+
+### 22.6 Módulo PPC — checklist de sitio (spec: §5.5, §7.4, Anexo A §19.6)
+
+- ☐ Distinción clara en el código/documentación de la migración entre "módulo PPC" (checklist de sitio) y "Papa Caliente" (pipeline de cotizaciones) — **no fusionarlos**, son sistemas independientes (§10.4).
+- ☐ Endpoint equivalente a `apiSavePPCData`: guarda en la tabla maestra PPC, distribuye a cada `responsable` (múltiples, separados por coma) a su Tracker personal, respalda en la tabla de control, y (si el usuario es la cuenta de Ventas) también en la variante `PPCV4` con mapeo de encabezados alterno.
+- ☐ Auto-migración de columnas específicas para `JESUS_CANTU` (`RUTA_CRITICA`, `ZONA`, `CUANT_REQUERIDO`, `CUANT_REAL`, `CONTRATISTA`, `DIAS_L`...`DIAS_D`) — si el modelo de datos de la migración ya tiene columnas fijas, confirmar que existen sin necesidad de "auto-migración" en caliente.
+- ☐ Filtrado de columnas específico para `JESUS_CANTU` al distribuir a Tracker personal (solo 9 campos, no todo el objeto).
+- ☐ `CUMPLIMIENTO` con fallback estricto a `'NO'` si viene vacío.
+- ☐ Los 3 subtipos de PPC (`PPC INTERNO`, `PPC PREOPERATIVO`, `PPC CLIENTE`) como parte de la estructura estándar de subproyectos.
+
+### 22.7 Work Orders (spec: §5.7, §16.1)
+
+- ☐ Modelo de datos equivalente a las 5 tablas relacionales `DB_WO_MATERIALES`, `DB_WO_MANO_OBRA`, `DB_WO_HERRAMIENTAS`, `DB_WO_EQUIPOS`, `DB_WO_PROGRAMA`, todas ligadas por `FOLIO` — columnas exactas en §5.7.
+- ☐ Algoritmo de folio equivalente a `generateWorkOrderFolio`: secuencia de 4 dígitos + iniciales de cliente + abreviatura de departamento (mapa de 19 entradas) + fecha `DDMMYY` — o un esquema de folio nuevo, documentado explícitamente como cambio de diseño.
+- ☐ Sub-objeto de flujo de aprobación (`papaCaliente` en materiales/herramientas: Residente→Compras→Controller→Almacén→Logística) — tercera acepción de "papa caliente" del sistema (§10.4), verificar que no se confundió con las otras dos al migrar.
+- ☐ Control vehicular duplicado (dos bloques independientes de inspección/checklist en el mismo formulario) — confirmar si la migración preserva la duplicación o la resolvió a una lista de N vehículos (cambio de diseño razonable, pero debe documentarse).
+- ☐ 🐛 **No hace falta replicar**: en el sistema original, `workorder_form.html` es código huérfano nunca servido (§16.1) — la migración no necesita un artefacto equivalente separado, el formulario de Work Order es una vista más dentro de la SPA/API principal.
+
+### 22.8 Proyectos / Cascada Sitio→Subproyecto→Tarea (spec: §5.8, Anexo A §19.12)
+
+- ☐ Modelo de datos equivalente a `DB_SITIOS` (`ID_SITIO`, `NOMBRE`, `CLIENTE`, `TIPO`, `ESTATUS`, `FECHA_CREACION`, `CREADO_POR`) y `DB_PROYECTOS` (`ID_PROYECTO`, `ID_SITIO`, `NOMBRE_SUBPROYECTO`, `TIPO`, `ESTATUS`, `FECHA_CREACION`, `CREADO_POR`).
+- ☐ Al crear un sitio, auto-generación de los 10 subproyectos estándar (`NAVE`, `AMPLIACION`, `PPC INTERNO`, `PPC PREOPERATIVO`, `PPC CLIENTE`, `DOCUMENTOS`, `PLANOS Y DISEÑOS`, `FOTOGRAFIAS`, `CORRESPONDENCIA`, `REPORTES`).
+- ☐ Endpoint equivalente a `apiFetchCascadeTree` que arma el árbol completo Sitio→Subproyectos.
+- ☐ 🐛 **BUG CONOCIDO — corregir, no replicar**: el endpoint equivalente a `apiFetchProjectTasks` en el sistema original **siempre falla** (`ReferenceError` por variable indefinida, §16.2, Anexo A §19.12) — la migración debe implementar correctamente el filtrado de tareas por proyecto (por la etiqueta `[PROY: <nombre>]` en comentarios/concepto, o mejor, por una relación estructurada `project_id` en el modelo de datos de Python), **no** replicar la falla.
+- ☐ Etiquetado de tareas por proyecto: en el original, se inyecta un tag de texto `[PROY: <nombre>]` dentro del campo de comentarios como mecanismo de relación (`apiSaveProjectTask`) — la migración debería reemplazar esto por una relación de base de datos real (foreign key), documentado como mejora intencional.
+
+### 22.9 KPIs — Dashboard ejecutivo (spec: §5.10, §10.5, Anexo A §19.7)
+
+- ☐ Endpoint equivalente a `apiFetchAdminKPIs` que recalcule en vivo (no desde snapshot) sobre las tablas de Ventas de los 6 vendedores exactos: `ANGEL_SALINAS`, `TERESA_GARZA`, `EDUARDO_TERAN`, `EDUARDO_MANZANARES`, `RAMIRO_RODRIGUEZ`, `SEBASTIAN_PADILLA` (`ANTONIA_VENTAS` excluida deliberadamente).
+- ☐ Fórmula `% de Ganadas` = ganadas / (ganadas + enviadas-sin-ganar), **no** ganadas/total (§10.5).
+- ☐ Fórmula `% Cierre por colaborador` = ganadas / (ganadas + canceladas), excluyendo explícitamente lo que sigue en curso.
+- ☐ Semaforización de colaborador: `avgEfic > 2.0` → "Cuello botella"; `>= 1.5` → "Riesgo"; si no, "Eficiente".
+- ☐ Productividad semanal solo cuenta los últimos 7 días, agrupados Lunes-Viernes (sin fin de semana).
+- ☐ ⚠️ **Decisión de diseño**: en el original, `JUDITH_ECHAVARRIA`, `ALFONSO_CORREA` y `JUAN_JOSE_SANCHEZ` son `seller: true` pero **no** están en la lista de 6 vendedores analizados por el Dashboard de KPIs — confirmar si la migración corrige esta inconsistencia (incluir a los 9 `seller: true`) o la preserva; cualquiera de las dos es válida pero debe ser una decisión explícita, no un olvido.
+
+### 22.10 Agentes narrativos con IA (spec: Anexo A §19.17–19.19)
+
+- ☐ Motor de métricas de cotizaciones (`apiFetchQuoteAgentMetrics`) con SLA por clasificación `A`/`AA`/`AAA` (límites 3/14/30 días respectivamente) y agrupación por cotizador.
+- ☐ Motor de reglas de alerta de cotizaciones — 4 reglas exactas con sus umbrales, tabla completa en Anexo A §19.17.
+- ☐ Motor de métricas de productividad de Trackers (`apiFetchTrackerProductivityMetrics`) — excluye vendedores (`seller: true`) y la cuenta de Ventas; solo cuenta personal `ESTANDAR`/`HIBRIDO`.
+- ☐ Motor de reglas de alerta de productividad — 3 reglas exactas, ver Anexo A §19.18.
+- ☐ Integración con Gemini para generar el resumen narrativo — usar la key desde configuración/secretos (no hardcodeada, ver §22.11).
+- ☐ Envío de reporte HTML por correo — decidir el canal en Python (SMTP/SendGrid/etc., equivalente a `MailApp`).
+- ☐ 🐛 **BUG CONOCIDO — corregir, no replicar**: en el original, el reporte de productividad nunca llega a los roles `ADMIN_CONTROL` porque busca una llave de usuario inexistente (`USER_DB['ADMIN_CONTROL']`, Anexo A §19.18) — la migración debe resolver correctamente los destinatarios por rol (ej. iterar todos los usuarios con `role == 'ADMIN_CONTROL'`), no replicar la lista de destinatarios incompleta.
+
+### 22.11 Integraciones externas (spec: §11, Anexo A §19.8/§19.14)
+
+- ☐ Notificación de asignación de tarea hacia Outlook/Microsoft 365 — vía el canal que la migración elija (webhook a Make.com/Power Automate igual que el original, Microsoft Graph API directo, u otro) — payload mínimo: folio, título, descripción, fecha inicio/fin, correo destino, quién asignó.
+- ☐ Los 3 puntos de disparo exactos de esa notificación: delegación de paso Papa Caliente, asignación general vía `VENDEDOR`/`RESPONSABLE`/`INVOLUCRADOS`, asignación desde el módulo PPC (lista completa en §11.2).
+- ☐ Resolución de email de usuario por nombre visible (`findUserEmailByLabel`) — tolerante a variaciones de formato de nombre.
+- ☐ Integración con Gemini API para resúmenes narrativos y (opcionalmente) transcripción de audio.
+- ☐ 🐛 **BUG CONOCIDO — corregir, no replicar**: la API key de Gemini hardcodeada en texto plano en `transcribirConGemini` (§13, Anexo A §19.14) — la migración debe leer **todas** las credenciales de Gemini desde variables de entorno/secret manager, sin excepción, y la key expuesta (`AIzaSyA7Lv551Quq7lMCynU7kRq9T1_MIaK6kkc`) debe darse por comprometida y rotarse en Google Cloud independientemente de la migración.
+- ☐ ⚠️ **Decisión de diseño**: si la migración a FastAPI ya no usa Google Sheets, decidir si el flujo de transcripción de audio se conserva igual (Gemini) o se resuelve con otro proveedor — no es parte del comportamiento de negocio central, es infraestructura.
+
+### 22.12 Triggers y automatizaciones (spec: §12)
+
+- ☐ Job diario equivalente a `incrementarContadorDias` (recalcula el contador de días transcurridos por fila) — en Python probablemente ya no hace falta si el cálculo se hace on-the-fly en cada request en vez de mantenerse cacheado en una celda, documentar la decisión.
+- ☐ Job diario equivalente a `autoUpdateQuoteMetrics` (refresco de métricas agregadas de cotizaciones).
+- ☐ Menú/comandos administrativos nativos de Sheets (`onOpen`, `cmdRealizarAlta`, `cmdActualizar`) — sin equivalente necesario en una API REST pura; confirmar que la funcionalidad que exponían (alta/actualización rápida de fila) está cubierta por otro medio (endpoint admin, panel, etc.).
+- ☐ Sistema de folio legado (`generarFolioAutomatico`, numérico simple, distinto de `AV-XXXX`) — evaluar si sigue siendo necesario o es deuda técnica que no debe migrarse (§12).
+
+### 22.13 Banco de Información y Agenda personal (spec: §5.9, §5.11, Anexo A §19.15–19.16)
+
+- ☐ Estructura de archivos equivalente a `[Año]/[Mes]/[Cliente]` (o su equivalente en el storage elegido para Python — S3, filesystem, etc.) para cotizaciones archivadas.
+- ☐ Archivado automático disparado al guardar una fila con `COTIZACION`/`ARCHIVO` no vacío, tanto en el flujo batch como en edición individual.
+- ☐ Endpoints equivalentes a `apiFetchInfoBankCompanies`/`apiFetchInfoBankData`/`apiFetchDistinctClients`, leyendo **solo** de la tabla maestra de Ventas (histórico consolidado, no todas las tablas).
+- ☐ Modelo de datos equivalente a `AGENDA_PERSONAL` y `HABITOS_LOG` (columnas en §5.11) — notar que en el original **no** están en la configuración central (`APP_CONFIG`), es un módulo aparte.
+- ☐ ⚠️ **Decisión de diseño**: el original devuelve datos de ejemplo hardcodeados si las tablas de agenda/hábitos no existen aún (§5.11) — decidir si la migración preserva ese fallback de demo o simplemente devuelve listas vacías (ambas son válidas, pero afecta la primera experiencia de un tenant/usuario nuevo).
+
+### 22.14 Frontend / Paridad de UI (spec: §8–§9, §20, Anexo C §21)
+
+- ☐ Las ~90 variables de estado documentadas en el Anexo C tienen su equivalente funcional en el estado del frontend de Python (React/Vue/lo que sea) — no es necesario que sean literalmente `ref()` de Vue, pero sí que exista cobertura funcional 1 a 1 (ningún módulo "perdido" en la migración).
+- ☐ Mapa de vistas (§8.3): las 10 vistas activas migradas (excluyendo `ECG_VIEW`, que ya estaba deshabilitada en el original — no hace falta migrarla salvo que se quiera reactivar el módulo).
+- ☐ Reglas tipográficas obligatorias: cabeceras en minúsculas (excepto "Folio"/"ID"), datos en mayúsculas, tabla base 11px Arial (§9, `AGENTS.md` §7).
+- ☐ Semáforo de fechas por `CLASIFICACION` (`A`=3d/buffer 1, `AA`=15d/buffer 3, `AAA`=30d/buffer 5) — lógica exacta en Anexo B §20.3, reproducida también server-side en el original vía `applyTrafficLightToSheet` (Anexo A §19.13); en la migración probablemente basta con una sola implementación (server o client), no las dos duplicadas.
+- ☐ Timeline visual de Papa Caliente con los 7 pasos y sus 3 estados de color (pendiente/en progreso/completado) — lógica de cálculo de tiempo transcurrido en Anexo B §20.5.
+- ☐ Permisos de edición por celda equivalentes a `isFieldEditable` — confirmar que la fuente de verdad de permisos vive **solo** en el backend de Python (el original tiene una duplicación frontend/backend parcialmente inconsistente, ver nota en Anexo B §20.1; la migración es una oportunidad de tener una sola fuente de verdad consultada por el frontend, no una copia).
+
+### 22.15 Seguridad (spec: §13)
+
+- ☐ Contraseñas migradas con hash+salt, **nunca** en texto plano en base de datos ni en el repositorio de código de la migración.
+- ☐ Las 41 contraseñas actuales (expuestas en el historial de este repo GAS) tratadas como comprometidas y rotadas antes de dar acceso a los usuarios reales en el sistema Python.
+- ☐ La API key de Gemini hardcodeada (§13, §22.11) rotada independientemente de cuándo se complete la migración.
+- ☐ Autorización por columna/campo con una única fuente de verdad server-side (no duplicada cliente/servidor como en el original).
+- ☐ Si se expone algún endpoint tipo webhook (equivalente al de Make.com/Outlook), validar que tenga algún mecanismo de autenticación/secreto compartido — el original no lo tiene (§13).
+
+---
+
+*Fin del documento. Este SSD se generó por inspección directa y literal del código fuente (`CODIGO.js`, `index.html`, `appsscript.json`, `CREDENCIALES.md`) y de todos los SDD existentes en el repositorio a la fecha indicada — no es una fuente independiente del código, es su mapa y, en los Anexos A/B, su copia literal de las partes más críticas. El §22 es la capa de verificación pensada específicamente para auditar la migración a Python/FastAPI; úsalo como checklist activo, no como lectura pasiva. Si el código GAS original cambia, este documento debe re-derivarse.*
