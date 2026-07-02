@@ -13,7 +13,7 @@ El documento tiene tres partes:
 
 - **PARTE I — Narrativa (§1 a §18):** arquitectura, modelo de datos, reglas de negocio, organigrama, integraciones, despliegue y deuda técnica, con nivel de detalle suficiente para entender **por qué** el sistema está hecho como está hecho.
 - **PARTE II — Anexos de código fuente (§19 a §21):** el cuerpo **literal y completo** de las funciones backend más críticas (`CODIGO.js`), de los métodos frontend más críticos (`index.html`), y el inventario completo de las ~90 variables de estado reactivo de Vue con su propósito exacto.
-- **PARTE III — Checklist de verificación de migración (§22):** pensado específicamente para auditar una reimplementación en otra tecnología (ej. Python/FastAPI) contra este SSD. Si el objetivo **no** es leer el sistema original sino **verificar si una migración ya hecha coincide con él**, empezar directamente en §22 y usar el resto del documento como referencia de detalle bajo demanda (cada ítem del checklist cita la sección exacta donde está la spec completa).
+- **PARTE III — Migración a Python/FastAPI (§22–§23):** §22 es el checklist de verificación de paridad funcional, pensado para auditar una reimplementación contra este SSD ítem por ítem. §23 es la guía de mejora consciente — qué patrones del código original **no** conviene replicar tal cual, con evidencia concreta y el remedio recomendado en FastAPI/Python. Si el objetivo **no** es leer el sistema original sino **verificar/mejorar una migración ya en curso**, empezar directamente en §22–§23 y usar el resto del documento como referencia de detalle bajo demanda (cada ítem cita la sección exacta donde está la spec completa).
 
 Si tuvieras que reconstruir "Holtmont Workspace" desde una carpeta vacía, sigue este orden:
 
@@ -31,6 +31,7 @@ Si tuvieras que reconstruir "Holtmont Workspace" desde una carpeta vacía, sigue
 12. Usa **§20 (Anexo B)** para copiar/pegar el código frontend literal de los métodos Vue más críticos.
 13. Usa **§21 (Anexo C)** para el inventario completo de las ~90 variables `ref()`/`reactive()` del frontend.
 14. Usa **§22** como checklist activo si estás auditando una migración: cada ítem `☐` tiene un criterio de aceptación verificable y cita dónde está la spec completa. Los ítems marcados 🐛 son bugs confirmados del sistema original que se recomienda **corregir, no replicar** en una reimplementación nueva.
+15. Lee **§23** antes de escribir código nuevo en la migración: son 12 anti-patrones reales del código original (hardcodeo de reglas de negocio por nombre de persona, funciones gigantes, doble fuente de verdad, validación manual en vez de esquemas, etc.), cada uno con evidencia concreta y el remedio aplicable en FastAPI/Python — no son las contraseñas ni la API key (eso ya está en §13/§22.11/§22.15), son los demás atajos tomados "por velocidad".
 
 ---
 
@@ -5922,4 +5923,109 @@ const saveRow = (row, event) => {
 
 ---
 
-*Fin del documento. Este SSD se generó por inspección directa y literal del código fuente (`CODIGO.js`, `index.html`, `appsscript.json`, `CREDENCIALES.md`) y de todos los SDD existentes en el repositorio a la fecha indicada — no es una fuente independiente del código, es su mapa y, en los Anexos A/B, su copia literal de las partes más críticas. El §22 es la capa de verificación pensada específicamente para auditar la migración a Python/FastAPI; úsalo como checklist activo, no como lectura pasiva. Si el código GAS original cambia, este documento debe re-derivarse.*
+## 23. Buenas Prácticas Recomendadas para la Migración (anti-patrones reales detectados y su remedio)
+
+> Esta sección no es una lista genérica de "buenas prácticas de software" — cada ítem cita el **anti-patrón real y específico** encontrado al leer `CODIGO.js`/`index.html` línea por línea para este SSD, casi siempre explicable por "se hizo así por velocidad de entrega", y propone el remedio concreto aplicable en FastAPI/Python. Las contraseñas en texto plano y la API key hardcodeada ya están cubiertas en §13 y §22.11/§22.15 — aquí van los demás.
+
+### 23.1 Lógica de negocio hardcodeada por nombre de persona, no por atributo/rol
+
+**Evidencia:** el código tiene decenas de condicionales del tipo `if (username === 'JESUS_CANTU')`, `if (String(username).toUpperCase().trim() === 'JUANY_RODRIGUEZ')`, `if (personName === "ANTONIA PINEDA LOPEZ" && username === "ANTONIA_VENTAS")`, dispersos en `getSystemConfig`, `apiSaveTrackerBatch`, `apiSavePPCData`, `generatePrefix`. Cada vez que alguien cambia de puesto o se contrata a reemplazar a esa persona, hay que **editar y redesplegar el código fuente**, no cambiar un dato.
+
+**Por qué es un problema:** acopla reglas de negocio a identidades específicas en vez de a los atributos que esas identidades representan (rol, permiso, tipo de cuenta). Es exactamente el motivo por el que la excepción de `JUANY_RODRIGUEZ` (§6.2) es fácil de perder en una migración — nadie la va a encontrar buscando "roles" o "permisos", solo leyendo cada función una por una, como tuve que hacer yo para este documento.
+
+**Remedio en FastAPI/Python:**
+- Modelar permisos como **datos**, no como código: una tabla `role_overrides` o un campo `extra_departments: list[str]` en el modelo de usuario, en vez de un `if` con el username literal.
+- Los relabels dinámicos (ej. "PPC Maestro" → "INTERDICIPLINARIA" solo para `JESUS_CANTU`) deberían ser un campo de configuración por usuario/rol (`custom_module_labels: dict`), no una rama de código.
+- Regla general: si al leer una función de negocio aparece un nombre propio entre comillas, es una señal de que ese dato debería vivir en la base de datos.
+
+### 23.2 Listas de "quién es vendedor"/"quién tiene restricciones" hardcodeadas y duplicadas, en vez de un atributo consultado dinámicamente
+
+**Evidencia:** el array `sellers`/`restrictedUsers` de 6 nombres aparece **repetido y ligeramente distinto** en al menos 3 lugares (`apiFetchAdminKPIs`, `internalUpdateTask`) — y es la causa raíz de la inconsistencia documentada en §22.9: 9 usuarios tienen `seller: true` en `USER_DB`, pero solo 6 aparecen en la lista hardcodeada del Dashboard de KPIs.
+
+**Por qué es un problema:** dos fuentes de verdad para el mismo concepto ("¿quién es vendedor?") que pueden divergir — y de hecho ya divergieron en producción. Cada función que necesita "la lista de vendedores" la reinventa.
+
+**Remedio en FastAPI/Python:** una sola función/query (`get_sellers()` → `SELECT * FROM users WHERE seller = true`) consultada por **todo** el código que necesite esa lista. Nunca una lista literal de usernames dentro de una función de negocio. Si un vendedor se da de baja o se contrata uno nuevo, un solo `UPDATE` en la base de datos basta — cero despliegues de código.
+
+### 23.3 Doble fuente de verdad para el mismo estado (string visual vs. JSON estructurado)
+
+**Evidencia:** el timeline de Papa Caliente se representa simultáneamente en `PROCESO_LOG` (JSON estructurado, la fuente "real") y en `MAP COT` (string con emojis, regenerado a mano por 3 implementaciones casi idénticas del mismo algoritmo de reconstrucción — en `apiSaveTrackerBatch`, `internalUpdateTask` y el propio `getProcessTimeline` del frontend). El código incluso tiene manejo especial para "entradas basura" (`garbageForStep`) del `MAP COT` que quedaron desincronizadas de `PROCESO_LOG` en algún momento — evidencia directa de que la duplicación ya causó bugs de datos en producción.
+
+**Por qué es un problema:** cualquier vista derivada (un string legible) que se persiste por separado del dato estructurado del que deriva, tarde o temprano se desincroniza. El código de "reconciliación" (`garbageForStep`) es deuda técnica pagando intereses sobre esa decisión original.
+
+**Remedio en FastAPI/Python:** persistir **solo** el JSON estructurado (`proceso_log` como columna JSONB, o mejor, una tabla `pipeline_steps` normalizada con `step`, `status`, `assignee_id`, `started_at`, `ended_at`). La representación visual (el equivalente al `MAP COT`) se **calcula al vuelo** en el endpoint de lectura o en el frontend a partir del dato estructurado — nunca se persiste una copia. Elimina por completo la clase de bug que representa `garbageForStep`.
+
+### 23.4 Enums de negocio repetidos como arrays literales en cada función, en vez de una constante única
+
+**Evidencia:** la lista de "estados que cuentan como completado" —`['HECHO', 'TERMINADO', 'FINALIZADO', 'REALIZADO', 'COMPLETADO', 'DONE']`— aparece **copiada y pegada, idéntica, al menos 4 veces** (`apiSaveTrackerBatch`, `internalUpdateTask` ×2, `internalBatchUpdateTasks`). Lo mismo con la lista de columnas a excluir al hacer reverse-sync (`['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO']`), repetida 3 veces.
+
+**Por qué es un problema:** si mañana el negocio agrega un octavo valor válido para "completado" (ej. `'CERRADO'`), hay que recordar actualizar las 4 copias — y ya vimos con `MAP COT`/`garbageForStep` qué pasa cuando el sistema depende de mantener copias sincronizadas a mano.
+
+**Remedio en FastAPI/Python:** un único `Enum`/`Literal` de Python (`class TaskStatus(str, Enum): DONE = "HECHO"; ...`) o una constante `COMPLETED_STATUSES: frozenset[str]`, importado donde se necesite. Es el ejemplo de libro de texto de por qué DRY importa: no es estética, es que **el bug de sincronización ya ocurrió en este código** (§10.2, `garbageForStep`).
+
+### 23.5 Nombres de hoja/tabla como strings literales dispersos, solo parcialmente centralizados
+
+**Evidencia:** `APP_CONFIG` centraliza *algunos* nombres de tabla (`ppcSheetName`, `logSheetName`, etc., §5.1) — pero `"ANTONIA_VENTAS"`, `"ADMINISTRADOR"`, `"PPCV4"`, `"AGENDA_PERSONAL"`, `"HABITOS_LOG"`, `"DB_SITIOS"`, `"DB_PROYECTOS"` aparecen como literales de texto sueltos por todo `CODIGO.js`, sin pasar por ninguna constante (§5.11 documenta esto explícitamente para las dos últimas).
+
+**Por qué es un problema:** centralización a medias es peor que ninguna, porque da una falsa sensación de que "ya está resuelto" — un `grep` rápido de `"ANTONIA_VENTAS"` en el código encuentra decenas de apariciones literales que un refactor de nombre tendría que tocar una por una.
+
+**Remedio en FastAPI/Python:** un único módulo `constants.py` (o, mejor aún, nombres de tabla reales de SQL que nunca se referencian por string en absoluto, sino a través del ORM) con **cero** excepciones — si hace falta referenciar el nombre de una tabla/entidad más de una vez, es una constante, sin importar cuán "obvio" parezca el nombre en el momento de escribirlo.
+
+### 23.6 Funciones gigantes que hacen 5 cosas a la vez ("God functions")
+
+**Evidencia:** `apiSaveTrackerBatch` (Anexo A §19.2) tiene 487 líneas y hace, en una sola función: generación de folios, saneamiento de datos, distribución a hojas de otros usuarios, envío de notificaciones a Outlook, archivado de cotizaciones, y reverse-sync completo con reconciliación de `MAP COT`. `internalBatchUpdateTasks` (444 líneas) mezcla resolución de alias de columnas, tres estrategias distintas de matching de filas, deduplicación intra-batch, y auto-archivado.
+
+**Por qué es un problema:** son imposibles de testear unitariamente (los tests existentes en `test_*.js`, §14, tienen que mockear el archivo *completo* con `vm`/regex-patching porque no hay forma de aislar una sola responsabilidad) y cualquier cambio pequeño en una de las 5 responsabilidades arriesga romper las otras 4 sin que ningún test lo detecte a tiempo — que es, con alta probabilidad, cómo se originaron los bugs documentados en §16.2/§19.18.
+
+**Remedio en FastAPI/Python:** descomponer en servicios de responsabilidad única inyectables (`FolioService`, `DistributionService`, `ReverseSyncService`, `NotificationService`, `ArchivingService`), orquestados por un caso de uso delgado (`SaveTrackerBatchUseCase`) que los llama en secuencia. Cada servicio se testea unitariamente con mocks reales de sus dependencias (no regex sobre texto fuente), y un cambio en `NotificationService` no puede romper `FolioService` porque no comparten estado mutable implícito.
+
+### 23.7 Estado global mutable a nivel de módulo, sin inyección de dependencias
+
+**Evidencia:** `const SS = SpreadsheetApp.getActiveSpreadsheet();` (línea 10) es una variable global de módulo que **todas** las funciones del backend usan implícitamente. Es la razón por la que los tests en Node (§14) tienen que hacer `code.replace(/const SS = SpreadsheetApp\.getActiveSpreadsheet\(\);/g, ...)` sobre el **texto fuente** antes de poder ejecutar nada — un `sed` sobre el código como estrategia de testing es la señal más clara posible de que falta inyección de dependencias.
+
+**Por qué es un problema:** acoplamiento fuerte a un recurso global hace que testear cualquier función aislada requiera trucos frágiles (parchear texto fuente) en vez de simplemente pasar un mock.
+
+**Remedio en FastAPI/Python:** usar el sistema de dependencias de FastAPI (`Depends()`) para inyectar la sesión de base de datos (o cualquier repositorio) en cada endpoint/servicio. En testing, se sobreescribe la dependencia (`app.dependency_overrides`) con una implementación en memoria o una base de datos de prueba — sin tocar una sola línea del código de producción ni parchear texto fuente.
+
+### 23.8 Errores silenciados o indiferenciados (`catch(e) {}` y `catch(e) { return {success:false, message: e.toString()} }` genérico en todas partes)
+
+**Evidencia:** hay bloques `catch(e) {}` completamente vacíos (ej. dentro del loop de distribución de `apiSaveTrackerBatch`, Anexo A §19.2) que tragan cualquier excepción sin registrar nada. Y el patrón dominante en el resto del código es capturar **cualquier** excepción — desde un error de red esperable hasta un `ReferenceError` de programación como el de §16.2 — y devolver el mismo `{success: false, message: e.toString()}` genérico. Así fue como el bug de `apiFetchProjectTasks` (una falla de programación, no una condición de negocio) pasó desapercibido: el `catch` no distingue "el usuario no tiene permiso" de "hay un typo en el código".
+
+**Por qué es un problema:** un `catch` que no distingue tipos de error hace indetectables los bugs de programación — se ven idénticos a errores de negocio esperables, y no hay ninguna alerta/log estructurado que dispare una notificación cuando ocurre algo que **no debería poder pasar nunca** (como una `ReferenceError`).
+
+**Remedio en FastAPI/Python:** usar excepciones tipadas (`class BusinessRuleError(Exception)` vs. dejar que los `TypeError`/`AttributeError`/etc. de programación **se propaguen** sin capturarlos genéricamente) + un manejador de excepciones global de FastAPI que traduzca errores de negocio a respuestas HTTP controladas (400/409) y **reporte a un sistema de monitoreo** (Sentry, logging estructurado con nivel `ERROR`) cualquier excepción no anticipada, en vez de devolverla silenciosamente como un JSON `{success:false}` indistinguible de un caso de negocio normal.
+
+### 23.9 Validación de entrada manual y defensiva en vez de esquemas declarativos
+
+**Evidencia:** todo el código está lleno de patrones `item.concepto || item.CONCEPTO`, `taskData['ESTATUS'] || 'PENDIENTE'`, `Object.keys(taskData).find(k => k.toUpperCase().trim() === 'FOLIO')` — validación y normalización de payloads hecha a mano, campo por campo, en cada función (ver `apiSavePPCData`, Anexo A §19.6, como ejemplo extremo: ~25 campos mapeados manualmente con fallbacks `||`).
+
+**Por qué es un problema:** no hay ningún punto único donde se garantice la forma de un payload — cada función reimplementa su propia validación ad hoc, con inconsistencias entre funciones (una espera `folio` en minúscula, otra `FOLIO` en mayúscula) que son precisamente la razón por la que existe toda la infraestructura de "insensibilidad a mayúsculas" documentada en §10.6.
+
+**Remedio en FastAPI/Python:** modelos Pydantic explícitos en cada endpoint (`class SaveTrackerTaskRequest(BaseModel): folio: str | None = None; estatus: TaskStatus = TaskStatus.PENDIENTE; ...`). FastAPI valida automáticamente en el borde de la API, devuelve 422 con el detalle exacto del campo inválido, y **elimina por completo** la necesidad de la capa de "resolución de alias de columna insensible a mayúsculas" (§10.6, Anexo A §19.3) — esa capa entera es un parche sobre la falta de un esquema, no una funcionalidad de negocio que deba migrarse.
+
+### 23.10 Sin paginación: cada lectura carga la hoja/tabla completa en memoria
+
+**Evidencia:** literalmente todas las funciones de lectura (`internalFetchSheetData`, `apiFetchInfoBankData`, `deduplicateAllSheets`, etc.) hacen `sheet.getDataRange().getValues()` — traen **toda** la hoja a memoria, sin importar si tiene 50 o 50,000 filas, y filtran/agregan en JavaScript después.
+
+**Por qué es un problema:** es razonable en Google Sheets (no hay otra API), pero es un anti-patrón grave si se replica contra una base de datos real — no escala, y desperdicia round-trips de red trayendo datos que se van a descartar de inmediato.
+
+**Remedio en FastAPI/Python:** filtrar y paginar en la consulta SQL (`WHERE`, `LIMIT`/`OFFSET` o cursor-based pagination), nunca traer la tabla completa para filtrar en Python. Los cálculos de agregación (KPIs, métricas de productividad) deberían resolverse con `GROUP BY`/funciones de ventana en SQL cuando sea posible, no iterando arrays en memoria como hace todo el código actual (`apiFetchAdminKPIs`, Anexo A §19.7, es el ejemplo más claro: agregación manual en JS sobre datos ya cargados por completo).
+
+### 23.11 Esquema de "base de datos" sin migraciones versionadas — se crea la hoja "si no existe" en tiempo de ejecución
+
+**Evidencia:** el patrón `let sheet = findSheetSmart(name); if (!sheet) { sheet = SS.insertSheet(name); sheet.appendRow([...headers]); }` se repite en más de 10 funciones distintas — el "esquema" de cada tabla vive implícito en el primer lugar del código que la usa, no en un solo sitio versionado.
+
+**Por qué es un problema:** no hay forma de saber, sin leer todo `CODIGO.js`, cuál es el esquema completo y actual de una tabla — y si dos funciones distintas crean la misma tabla con headers ligeramente distintos en algún momento de la historia del código, se generan inconsistencias silenciosas.
+
+**Remedio en FastAPI/Python:** migraciones versionadas con Alembic (o el equivalente del ORM elegido) como única fuente de verdad del esquema, aplicadas explícitamente en deploy — nunca "crear la tabla la primera vez que alguien la usa" como efecto secundario de un endpoint de negocio.
+
+### 23.12 Aprovechar lo que FastAPI da gratis y el sistema original no tenía
+
+Esto no es un anti-patrón a corregir sino una oportunidad a **no desperdiciar** en la migración:
+- **Documentación OpenAPI automática**: el sistema original no tiene ningún contrato de API formal — `google.script.run` es RPC implícito sin schema. FastAPI genera `/docs` automáticamente a partir de los modelos Pydantic; usarlo como la única fuente de verdad de la API en vez de escribir documentación de endpoints a mano (que se desactualiza).
+- **`Depends()` para autorización centralizada**: reemplaza la lógica de permisos duplicada y parcialmente inconsistente entre frontend (`isFieldEditable`, Anexo B §20.1) y backend (`allowedBase`, `restrictedUsers`) por un único `Depends(require_role(...))`/`Depends(check_field_permission(...))` consultado en cada endpoint — una sola fuente de verdad de autorización, nunca duplicada en el cliente.
+- **`response_model` tipado**: garantiza que la forma de la respuesta sea siempre consistente, eliminando la necesidad de que el frontend tolere campos en mayúsculas/minúsculas variables como hace hoy (§10.6).
+- **Testing con `TestClient` + fixtures reales de base de datos** en vez de regex-patchear el código fuente (§14, §23.7) — pytest + una base de datos de prueba (SQLite en memoria o un contenedor) permite tests de integración reales y rápidos, algo que el sistema original nunca pudo tener por estar atado a servicios de Google no mockeables limpiamente.
+
+---
+
+*Fin del documento. Este SSD se generó por inspección directa y literal del código fuente (`CODIGO.js`, `index.html`, `appsscript.json`, `CREDENCIALES.md`) y de todos los SDD existentes en el repositorio a la fecha indicada — no es una fuente independiente del código, es su mapa y, en los Anexos A/B, su copia literal de las partes más críticas. El §22 es la capa de verificación pensada específicamente para auditar la migración a Python/FastAPI; el §23 es la capa de mejora consciente (qué NO replicar tal cual, y por qué). Úsalos como checklists activos, no como lectura pasiva. Si el código GAS original cambia, este documento debe re-derivarse.*
