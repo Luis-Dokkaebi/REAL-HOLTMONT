@@ -342,6 +342,17 @@ Los 3 nodos que contienen `"PPC"` en el nombre se marcan `type: "PPC_MASTER"` pa
 
 Hoja de métricas agregadas escrita por `apiWriteQuoteMetricsToSheet()` y refrescada por el trigger diario `autoUpdateQuoteMetrics()`. Es una hoja **distinta** de la fuente que consume `apiFetchAdminKPIs()` (Anexo A §19.7) para el Dashboard de KPIs del CEO: `apiFetchAdminKPIs` recalcula en vivo directamente desde las hojas `<Vendedor> (VENTAS)` de los 6 vendedores activos, mientras que `KPI_COTIZACIONES` es un snapshot diario usado por el "agente" narrativo con Gemini (`runQuoteMetricsAgent`/`_sendAgentEmail`). Ver fórmulas de negocio exactas en `SDD_KPI_ADMIN.md` y su reproducción operativa en §10.5 de este documento.
 
+### 5.11 `AGENDA_PERSONAL` y `HABITOS_LOG` — módulo de agenda/hábitos personales (no documentado en `APP_CONFIG`)
+
+A diferencia de todas las demás hojas del sistema, estas dos **no están declaradas en la constante `APP_CONFIG`** (§5.1) — sus nombres están hardcodeados directamente como strings literales dentro de las funciones que las usan (`findSheetSmart("AGENDA_PERSONAL")`, `findSheetSmart("HABITOS_LOG")`, código completo en Anexo A §19.16). Se crean perezosamente la primera vez que alguien guarda un evento/hábito.
+
+| Hoja | Headers |
+|---|---|
+| `AGENDA_PERSONAL` | `ID, USUARIO, TITULO, TIPO, FECHA, HORA_INICIO, HORA_FIN, DETALLES, CLASIFICACION, ESTATUS` |
+| `HABITOS_LOG` | `ID, USUARIO, HABITO, META, LOG_JSON, FECHA_ACTUALIZACION` |
+
+Particularidad de diseño: `apiFetchUnifiedAgenda(username)` (Anexo A §19.16) **si ninguna de las dos hojas existe todavía**, devuelve datos de ejemplo hardcodeados (rutina de mañana, gimnasio, comida; hábitos de lectura/ejercicio/meditación) en vez de un arreglo vacío — es un fallback de demostración intencional para que la UI de Agenda nunca se vea vacía en un tenant nuevo, no un error. Al clonar el sistema para una organización nueva, este comportamiento se mantiene hasta que el primer usuario guarda su primer evento real.
+
 ---
 
 ## 6. Organigrama, Roles y Matriz de Permisos (RBAC)
@@ -552,10 +563,10 @@ La lógica de la máquina de estados vive **dentro de** `apiSaveTrackerBatch` e 
 `apiCreateStandardStructure` 📄, `generateWorkOrderFolio` 📄, `generatePrefix` 📄, `apiGetNextWorkOrderSeq`, y el guardado de las 5 sub-tablas relacionales vía `saveChildData` (§5.7).
 
 ### 7.6 Proyectos/Sitios (cascada)
-`apiSaveSite`, `apiSaveSubProject`, `apiFetchCascadeTree`, `apiFetchProjectTasks`, `apiSaveProjectTask`.
+`apiSaveSite`, `apiSaveSubProject`, `apiFetchCascadeTree`, `apiFetchProjectTasks` 📄 (⚠️ contiene un `ReferenceError` que la rompe siempre en producción, ver Anexo A §19.12), `apiSaveProjectTask`, `apiFetchWeeklyPlanData` 📄. Código completo de los seis en Anexo A §19.12.
 
 ### 7.7 KPIs y Productividad (agentes con IA)
-`apiFetchAdminKPIs` 📄 (línea 719, 185 líneas — Dashboard de KPIs, ver `SDD_KPI_ADMIN.md` y §10.5), `apiFetchTrackerProductivityMetrics` / `runTrackerProductivityAgent` / `_sendTrackerProductivityEmail`, `apiFetchTeamKPIData`, `apiFetchQuoteAgentMetrics` / `apiWriteQuoteMetricsToSheet` / `runQuoteMetricsAgent` / `_sendAgentEmail` / `apiGetLastAgentReport`, `autoUpdateQuoteMetrics` (trigger diario), `callGeminiAPI` / `apiSaveGeminiKey` / `apiCheckGeminiKey` (integración Gemini para resúmenes narrativos y transcripción de audio vía `transcribirConGemini`).
+`apiFetchAdminKPIs` 📄 (línea 719, 185 líneas — Dashboard de KPIs, ver `SDD_KPI_ADMIN.md` y §10.5), `apiFetchTrackerProductivityMetrics` / `runTrackerProductivityAgent` / `_sendTrackerProductivityEmail` (agente narrativo del lado de productividad de Trackers, mismo patrón que el de cotizaciones), `apiFetchTeamKPIData`, `apiFetchQuoteAgentMetrics` (motor de métricas mensuales por SLA/clasificación/cotizador — su forma de salida está documentada indirectamente por el prompt de Gemini reproducido en Anexo A §19.17) / `apiWriteQuoteMetricsToSheet` / `runQuoteMetricsAgent` 📄 / `_sendAgentEmail` 📄 / `apiGetLastAgentReport` 📄 (motor de reglas + prompt Gemini + email HTML vía `MailApp`, código completo en Anexo A §19.17), `autoUpdateQuoteMetrics` (trigger diario), `callGeminiAPI` 📄 / `apiSaveGeminiKey` / `apiCheckGeminiKey` (integración Gemini para resúmenes narrativos y transcripción de audio vía `transcribirConGemini` 📄, código completo en Anexo A §19.14).
 
 ### 7.8 Agenda, Calendario y Hábitos personales
 `apiFetchCombinedCalendarData`, `apiFetchUnifiedAgenda`, `apiSavePersonalEvent`, `apiSaveHabitLog`.
@@ -820,7 +831,10 @@ Nótese que `fechaInicio`/`fechaFin` pasan por `formatDateForOutlook()`, que **r
 Todas requieren que el usuario destino tenga `email` (o `outlookEmail`, aunque el código real solo usa la clave `email`) poblado en `USER_DB` con su correo corporativo real `@holtmont.com` (o `@empresa.com` en las cuentas más antiguas que aún no fueron migradas — ver §13 para la implicación de que esto también está en el objeto con contraseñas en texto plano).
 
 ### 11.3 Gemini AI
-`callGeminiAPI(prompt)` (con `apiSaveGeminiKey`/`apiCheckGeminiKey` para gestionar la API key en `PropertiesService`, nunca hardcodeada en el archivo) se usa para: (a) generar resúmenes narrativos en los reportes automáticos de productividad y de cotizaciones (`_sendTrackerProductivityEmail`, `_sendAgentEmail`), y (b) transcripción de audio (`transcribirConGemini(base64Audio, mimeType)`) — el audio llega ya grabado desde el navegador (no hay streaming en vivo, ver restricción §2.2 punto 4).
+`callGeminiAPI(prompt)` (con `apiSaveGeminiKey`/`apiCheckGeminiKey` para gestionar la API key correctamente en `PropertiesService`) se usa para generar los resúmenes narrativos de los reportes automáticos de productividad y de cotizaciones (`_sendTrackerProductivityEmail`, `_sendAgentEmail` — código completo de este último en Anexo A §19.17). La transcripción de audio (`transcribirConGemini(base64Audio, mimeType)`) usa una llamada **independiente** a la misma API de Gemini, pero — a diferencia de `callGeminiAPI` — con la key **hardcodeada en texto plano** en el propio código fuente en vez de leerla de `PropertiesService`; ver la advertencia de seguridad detallada en §13 y el código exacto en Anexo A §19.14. El audio llega ya grabado desde el navegador (no hay streaming en vivo, ver restricción §2.2 punto 4).
+
+### 11.4 `MailApp` — correo nativo de Gmail/Workspace (tercer canal, distinto de Make.com y de Gemini)
+El reporte mensual de cotizaciones (`_sendAgentEmail`, Anexo A §19.17) se envía por `MailApp.sendEmail({to, subject, htmlBody})` — el correo nativo de Apps Script, que no pasa por Make.com ni requiere ningún webhook externo. Es el **único** punto de todo el sistema que usa este mecanismo; el resto de las notificaciones automáticas (asignaciones Papa Caliente, distribución general, PPC) usan el webhook de Outlook (§11.2). Los destinatarios están hardcodeados a `ANTONIA_VENTAS` y `LUIS_CARLOS` leyendo su `email` desde `USER_DB` — no hay forma de configurar destinatarios adicionales sin editar el código.
 
 ---
 
@@ -844,6 +858,8 @@ Todas requieren que el usuario destino tenga `email` (o `outlookEmail`, aunque e
 > Cualquiera con acceso de lectura a este repositorio (incluyendo el historial de git) puede leer usuario y contraseña de cada empleado. `SDD_HOLTMONT_WORKSPACE.md` §2.2 ya documenta esto como una limitación conocida ("aceptable en un ecosistema privado" según esa nota), pero para un clon nuevo — sobre todo si el repositorio deja de ser estrictamente privado, o si se sube a un proveedor de terceros — esto es una vulnerabilidad real de exposición de credenciales.
 >
 > **Recomendación si se clona este sistema:** antes de desplegar, migrar `USER_DB` a `PropertiesService`/hash+salt, y **rotar todas las contraseñas actuales**, ya que quedaron expuestas en el historial de este repositorio. Esto no fue solicitado en esta tarea y por lo tanto no se ha modificado — se documenta aquí para que quien clone el proyecto lo decida conscientemente.
+>
+> **Segunda credencial expuesta, distinta de las contraseñas:** la función `transcribirConGemini` (línea 5809, Anexo A §19.14) tiene una **API key de Google Gemini hardcodeada en texto plano** (`AIzaSyA7Lv551Quq7lMCynU7kRq9T1_MIaK6kkc`), a pesar de que el resto del sistema (`callGeminiAPI`) sí gestiona esa misma credencial correctamente vía `PropertiesService`. Si esta key sigue activa en Google Cloud, cualquiera con acceso de lectura a este repositorio puede usarla para consumir la cuota de la API a nombre de Holtmont. Se recomienda rotarla/revocarla igual que las contraseñas.
 
 Aparte de esto:
 - No hay tokens de sesión persistentes verificados en cada request — la sesión vive en memoria del cliente (`ref()` de Vue) mientras la pestaña esté abierta. `apiLogin` compara la contraseña con `===` (comparación exacta de string, sin hash ni tiempo constante — técnicamente vulnerable a timing attacks, aunque de impacto marginal dado que el atacante ya necesitaría acceso de red al endpoint de GAS).
@@ -906,9 +922,14 @@ Tanto `AGENTS.md` como `SDD_HOLTMONT_WORKSPACE.md` (§1.1, §7.3) describen `wor
 
 **Conclusión:** `workorder_form.html` es una **copia archivada/huérfana** de una versión del formulario de Work Order — probablemente el punto de partida antes de que su markup se integrara directamente en `index.html`, o un experimento para separarlo que nunca se conectó. La vista `WORKORDER_FORM` que sí funciona en producción (§8.3) renderiza el fragmento que vive **dentro de** `index.html`, no este archivo. Cualquiera que clone el sistema y solo copie `workorder_form.html` esperando obtener el formulario de Work Order **no obtendrá nada visible**, porque ningún `doGet` lo sirve. La forma correcta de clonar el módulo de Work Order es copiar `index.html` completo (que ya lo incluye) — ver ajuste al paso 4 de la guía de despliegue en §15.
 
+### 16.2 Hallazgo: `apiFetchProjectTasks` está rota en producción (bug de variable indefinida)
+
+Ver el código completo y el análisis línea por línea en el Anexo A §19.12. Resumen: la función referencia una variable `sheetName` que nunca se declaró en su alcance (el parámetro se llama `projectName`); el `catch` genérico de la función absorbe el `ReferenceError` resultante y siempre devuelve `{success: false}`. Efecto observable: dentro de la vista `PROJECT_TASKS_VIEW` (cascada Sitio→Subproyecto→Tarea, roles con `accessProjects: true`), el árbol de sitios/subproyectos (`apiFetchCascadeTree`) carga con normalidad, pero al entrar a un subproyecto específico para ver sus tareas, la llamada siempre falla. Este es un bug genuino de producción descubierto al escribir este documento, no una limitación de diseño documentada previamente en `AGENTS.md` ni en ningún otro SDD del repositorio.
+
 | Archivo(s) | Por qué existen | Por qué ignorarlos al clonar |
 |---|---|---|
 | `workorder_form.html` | Copia archivada/huérfana del formulario de Work Order (ver §16.1) — nunca se sirve desde ningún `doGet` ni se incluye desde `index.html` | El formulario real y funcional está duplicado dentro de `index.html`; usar ese, no este archivo |
+| `apiFetchProjectTasks` en `CODIGO.js` (línea 3854) | No es un archivo, es una función activa con un bug real (§16.2, Anexo A §19.12): referencia la variable indefinida `sheetName` | No ignorar — es código en producción que falla silenciosamente; documentado aquí para que se corrija conscientemente si se clona el sistema |
 | `CODIGO.js.bak`, `CODIGO.js.orig`, `CODIGO.js.rej` | Respaldo manual / residuo de un merge con patch rechazado | Contenido desactualizado respecto a `CODIGO.js`; el `.rej` ni siquiera es JS válido completo (es un fragmento de diff) |
 | `*.patch` (`fix_date_temp_id*.patch`, `fix_duplication.patch`) | Registro histórico de parches ya aplicados | Ya están incorporados en `CODIGO.js`; re-aplicarlos duplicaría cambios |
 | `tracker_productivity_tool.js` … `_tool3.js`, `tracker_productivity_ui_tool.js` … `_ui_tool7.js` | Iteraciones sucesivas del mismo módulo de productividad durante desarrollo | Solo la lógica ya integrada en `CODIGO.js` (`apiFetchTrackerProductivityMetrics`, `runTrackerProductivityAgent`, etc.) es la vigente |
@@ -3544,6 +3565,1324 @@ function apiDeleteEmployee(name) {
 ```
 
 > **Nota importante para clonar:** `apiAddEmployee` crea la hoja Tracker nueva pero **no** la inserta en la posición correcta relativa al separador `"TAREAS REALIZADAS"` (§5.3) ni le aplica `applyTrafficLightToSheet` — la primera fila real que se guarde en esa hoja disparará el auto-formato normalmente vía `internalBatchUpdateTasks`. También nótese que **`apiDeleteEmployee` borra la fila de `DB_DIRECTORY` pero no elimina la hoja Tracker asociada** — el Tracker de una persona dada de baja permanece en la Spreadsheet indefinidamente, simplemente deja de aparecer en la navegación. Esto es consistente con lo observado en §6.3 (`CESAR_GOMEZ` documentado como baja pero con `USER_DB`/hoja aún presentes) — es el comportamiento esperado del sistema, no un bug.
+
+### 19.12 Módulo Proyectos/Cascada: `apiFetchWeeklyPlanData`, `getWeekNumber`, `apiSaveSite`, `apiSaveSubProject`, `apiFetchCascadeTree`, `apiFetchProjectTasks` (⚠️ contiene un bug real, ver nota), `apiSaveProjectTask`
+
+```js
+function apiFetchWeeklyPlanData(username) {
+  try {
+    const isJesus = String(username).toUpperCase().trim() === 'JESUS_CANTU';
+    const sheetName = (String(username).toUpperCase().trim() === 'ANTONIA_VENTAS') ? 'PPCV4' : APP_CONFIG.ppcSheetName;
+    const sheet = findSheetSmart(sheetName);
+    if (!sheet) return { success: false, message: "No existe la hoja " + sheetName };
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) return { success: true, headers: [], data: [] };
+    const headerRowIdx = findHeaderRow(data);
+    if (headerRowIdx === -1) return { success: false, message: "Cabeceras no encontradas en PPCV3." };
+    const originalHeaders = data[headerRowIdx].map(h => String(h).trim());
+
+    // CUSTOM VIEW FOR JESUS_CANTU
+    if (isJesus) {
+        // Define fixed header structure for the customized view
+        const jesusHeaders = [
+            'RUTA_CRITICA', 'ZONA', 'ESPECIALIDAD', 'CONCEPTO',
+            'CUANT_REQUERIDO', 'CUANT_REAL', 'RESPONSABLE', 'CONTRATISTA',
+            'DIAS_L', 'DIAS_M', 'DIAS_X', 'DIAS_J', 'DIAS_V', 'DIAS_S', 'DIAS_D',
+            'CUMPLIMIENTO'
+        ];
+
+        // Map data rows to these headers based on column matching
+        const rows = data.slice(headerRowIdx + 1);
+        const result = rows.map((r, i) => {
+            const rowObj = { _rowIndex: headerRowIdx + i + 2 };
+            // Helper to find value in row by fuzzy header match
+            const getVal = (candidates) => {
+                for (let c of candidates) {
+                    const idx = originalHeaders.findIndex(h => h.toUpperCase().trim() === c.toUpperCase().trim() || h.toUpperCase().trim().includes(c.toUpperCase().trim()));
+                    if (idx > -1) return r[idx];
+                }
+                return "";
+            };
+
+            rowObj['RUTA_CRITICA'] = getVal(['RUTA_CRITICA', 'RUTA CRITICA', 'CRITICA']);
+            rowObj['ZONA'] = getVal(['ZONA', 'UBICACION', 'AREA GEOGRAFICA']);
+            rowObj['ESPECIALIDAD'] = getVal(['ESPECIALIDAD', 'AREA', 'DISCIPLINA']);
+            rowObj['CONCEPTO'] = getVal(['CONCEPTO', 'DESCRIPCION', 'DEFINIDA', 'ATERRIZADA', 'ACTIVIDAD']);
+
+            // CUANTIFICACION LOGIC (Handle Merged Headers)
+            rowObj['CUANT_REQUERIDO'] = getVal(['CUANT_REQUERIDO', 'REQUERIDO']);
+            rowObj['CUANT_REAL'] = getVal(['CUANT_REAL', 'REAL']);
+
+            if (!rowObj['CUANT_REQUERIDO']) {
+                const qIdx = originalHeaders.findIndex(h => h.toUpperCase().includes('CUANTIFICACIÓN') || h.toUpperCase().includes('CUANTIFICACION'));
+                if (qIdx > -1) {
+                    rowObj['CUANT_REQUERIDO'] = r[qIdx];
+                    rowObj['CUANT_REAL'] = r[qIdx + 1];
+                }
+            }
+
+            rowObj['RESPONSABLE'] = getVal(['RESPONSABLE', 'ENCARGADO', 'PERSONA RESPONSABLE']);
+            rowObj['CONTRATISTA'] = getVal(['CONTRATISTA', 'PROVEEDOR']);
+            rowObj['DIAS_L'] = getVal(['DIAS_L', 'LUNES', 'L']);
+            rowObj['DIAS_M'] = getVal(['DIAS_M', 'MARTES', 'M']);
+            rowObj['DIAS_X'] = getVal(['DIAS_X', 'MIERCOLES', 'MIÉRCOLES', 'X', 'MI']);
+            rowObj['DIAS_J'] = getVal(['DIAS_J', 'JUEVES', 'J']);
+            rowObj['DIAS_V'] = getVal(['DIAS_V', 'VIERNES', 'V']);
+            rowObj['DIAS_S'] = getVal(['DIAS_S', 'SABADO', 'SÁBADO', 'S']);
+            rowObj['DIAS_D'] = getVal(['DIAS_D', 'DOMINGO', 'D']);
+            rowObj['CUMPLIMIENTO'] = getVal(['CUMPLIMIENTO']);
+
+            // Add ID if available for saving
+            rowObj['ID'] = getVal(['ID', 'FOLIO']);
+            rowObj['FOLIO'] = rowObj['ID'];
+
+            // HIDDEN FIELDS PRESERVATION (CRITICAL FOR SYNC)
+            rowObj['FECHA'] = getVal(['FECHA', 'ALTA', 'FECHA INICIO', 'F. INICIO', 'FECHA_INICIO', 'FECHA VISITA', 'F. VISITA']);
+            rowObj['ESTATUS'] = getVal(['ESTATUS', 'STATUS']);
+            rowObj['AVANCE'] = getVal(['AVANCE', 'AVANCE %']);
+            rowObj['CLASIFICACION'] = getVal(['CLASIFICACION']);
+            rowObj['PRIORIDAD'] = getVal(['PRIORIDAD']);
+
+            return rowObj;
+        }).filter(r => r["CONCEPTO"] || r["ID"]);
+
+        return { success: true, headers: jesusHeaders, data: result.reverse() };
+    }
+
+    const mappedHeaders = originalHeaders.map(h => {
+        const up = h.toUpperCase();
+        if (up.includes("ESPECIALIDAD") || up.includes("AREA") || up.includes("DEPARTAMENTO")) return "ESPECIALIDAD";
+        if (up.includes("DESCRIPCI") || up.includes("CONCEPTO")) return "CONCEPTO";
+        if (up.includes("INVOLUCRADOS") || up.includes("RESPONSABLE") || up.includes("VENDEDOR") || up.includes("ENCARGADO")) return "RESPONSABLE";
+        if (up.includes("ALTA") || up.includes("FECHA")) return "FECHA";
+        if (up.includes("RELOJ") || up.includes("HORAS")) return "RELOJ";
+        if (up.includes("ARCHIV") || up.includes("CLIP") || up.includes("LINK") || up.includes("EVIDENCIA")) return "ARCHIVO";
+        if (up.includes("CUMPLIMIENTO")) return "CUMPLIMIENTO";
+        if (up === "COMENTARIOS" || up === "COMENTARIOS SEMANA EN CURSO" || up.includes("OBSERVACIONES")) return "COMENTARIOS SEMANA EN CURSO";
+        if (up === "COMENTARIOS PREVIOS" || up === "COMENTARIOS SEMANA PREVIA" || up === "PREVIOS") return "COMENTARIOS SEMANA PREVIA";
+        return up;
+    });
+    const displayHeaders = ["SEMANA", ...mappedHeaders];
+    const rows = data.slice(headerRowIdx + 1);
+    const result = rows.map((r, i) => {
+      const rowObj = { _rowIndex: headerRowIdx + i + 2 };
+      mappedHeaders.forEach((h, colIdx) => {
+        let val = r[colIdx];
+        if (val instanceof Date) {
+           if (val.getFullYear() < 1900) {
+              val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "HH:mm");
+           } else {
+              val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
+           }
+        }
+        rowObj[h] = val;
+      });
+      const fechaVal = rowObj["FECHA"];
+      let semanaNum = "-";
+      if (fechaVal) {
+        let dateObj = null;
+        if (String(fechaVal).includes("/")) {
+          const parts = String(fechaVal).split("/");
+          if(parts.length === 3) dateObj = new Date(parts[2], parts[1]-1, parts[0]);
+        } else if (fechaVal instanceof Date) { dateObj = fechaVal; } else { dateObj = new Date(fechaVal); }
+        if (dateObj && !isNaN(dateObj.getTime())) semanaNum = getWeekNumber(dateObj);
+      }
+      rowObj["SEMANA"] = semanaNum;
+
+      return rowObj;
+    }).filter(r => r["CONCEPTO"] || r["ID"] || r["FOLIO"]);
+    return { success: true, headers: displayHeaders, data: result.reverse() };
+  } catch (e) {
+    console.error(e);
+    return { success: false, message: e.toString() };
+  }
+}
+
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
+  var yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  var weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+  return weekNo;
+}
+
+// 1. Guardar Nuevo Sitio (Padre)
+function apiSaveSite(siteData) {
+  const lock = LockService.getScriptLock();
+  if (lock.tryLock(5000)) {
+    try {
+      let sheet = findSheetSmart("DB_SITIOS");
+      if (!sheet) {
+        sheet = SS.insertSheet("DB_SITIOS");
+        sheet.appendRow(["ID_SITIO", "NOMBRE", "CLIENTE", "TIPO", "ESTATUS", "FECHA_CREACION", "CREADO_POR"]);
+      }
+
+      const data = sheet.getDataRange().getValues();
+      const cleanName = siteData.name.toUpperCase().trim();
+      const nameColIdx = data.length > 0 ? data[0].indexOf("NOMBRE") : 1;
+      for(let i=1; i<data.length; i++) {
+         if (data[i][nameColIdx] && String(data[i][nameColIdx]).toUpperCase().trim() === cleanName) {
+             return { success: false, message: "Ya existe un sitio con ese nombre."};
+         }
+      }
+
+      const id = "SITE-" + new Date().getTime();
+      sheet.appendRow([
+        id,
+        cleanName,
+        siteData.client.toUpperCase().trim(),
+        siteData.type || "CLIENTE",
+        "ACTIVO",
+        new Date(),
+        siteData.createdBy ? siteData.createdBy.toUpperCase().trim() : "ANONIMO"
+      ]);
+      SpreadsheetApp.flush();
+
+      // AUTOMATIZACIÓN: CREAR ESTRUCTURA ESTÁNDAR AUTOMÁTICAMENTE
+      apiCreateStandardStructure(id, siteData.createdBy);
+
+      registrarLog(siteData.createdBy || "ANONIMO", "NUEVO SITIO", `Sitio: ${cleanName} (${id})`);
+
+      return { success: true, id: id, message: "Sitio creado correctamente con estructura PPC completa." };
+    } catch (e) {
+      return { success: false, message: e.toString() };
+    } finally {
+      lock.releaseLock();
+    }
+  }
+  return { success: false, message: "El sistema está ocupado." };
+}
+
+// 2. Guardar Nuevo Subproyecto (Hijo)
+function apiSaveSubProject(subProjectData) {
+  const lock = LockService.getScriptLock();
+  if (lock.tryLock(5000)) {
+    try {
+      let sheet = findSheetSmart("DB_PROYECTOS");
+      if (!sheet) {
+        sheet = SS.insertSheet("DB_PROYECTOS");
+        sheet.appendRow(["ID_PROYECTO", "ID_SITIO", "NOMBRE_SUBPROYECTO", "TIPO", "ESTATUS", "FECHA_CREACION", "CREADO_POR"]);
+      }
+
+      const cleanName = subProjectData.name.toUpperCase().trim();
+      const data = sheet.getDataRange().getValues();
+      let idSitioIdx = 1;
+      let nameIdx = 2;
+      const headerRow = findHeaderRow(data);
+      if (headerRow > -1) {
+          const headers = data[headerRow].map(h=>String(h).toUpperCase());
+          idSitioIdx = headers.indexOf("ID_SITIO");
+          nameIdx = headers.indexOf("NOMBRE_SUBPROYECTO");
+      }
+
+      for(let i=1; i<data.length; i++) {
+          if (data[i][idSitioIdx] == subProjectData.parentId &&
+              String(data[i][nameIdx]).toUpperCase().trim() === cleanName) {
+              return { success: false, message: "Ya existe ese subproyecto en este sitio."};
+          }
+      }
+
+      const id = "PROJ-" + new Date().getTime() + "-" + Math.floor(Math.random()*1000);
+      sheet.appendRow([
+        id,
+        subProjectData.parentId,
+        cleanName,
+        subProjectData.type || "GENERAL",
+        "ACTIVO",
+        new Date(),
+        subProjectData.createdBy ? subProjectData.createdBy.toUpperCase().trim() : "ANONIMO"
+      ]);
+      SpreadsheetApp.flush();
+
+      registrarLog(subProjectData.createdBy || "ANONIMO", "NUEVO SUBPROYECTO", `Subproyecto: ${cleanName} (${id})`);
+
+      return { success: true, id: id, message: "Subproyecto agregado." };
+    } catch (e) {
+      return { success: false, message: e.toString() };
+    } finally {
+      lock.releaseLock();
+    }
+  }
+  return { success: false, message: "El sistema está ocupado." };
+}
+
+// 3. Obtener Árbol Completo
+function apiFetchCascadeTree() {
+  try {
+    const sites = [];
+    const sheetSites = findSheetSmart("DB_SITIOS");
+    if (sheetSites) {
+      const values = sheetSites.getDataRange().getValues();
+      const headerRowIdx = findHeaderRow(values);
+      if (headerRowIdx !== -1 && values.length > headerRowIdx + 1) {
+        const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
+        const colMap = {
+           id: headers.findIndex(h => h.includes("ID")),
+           name: headers.findIndex(h => h.includes("NOMBRE")),
+           client: headers.findIndex(h => h.includes("CLIENTE")),
+           type: headers.findIndex(h => h.includes("TIPO")),
+           status: headers.findIndex(h => h.includes("ESTATUS")),
+           date: headers.findIndex(h => h.includes("FECHA"))
+        };
+        for (let i = headerRowIdx + 1; i < values.length; i++) {
+          const row = values[i];
+          if (colMap.id > -1 && colMap.name > -1 && row[colMap.id]) {
+             let dateStr = "";
+             if (colMap.date > -1 && row[colMap.date]) {
+                 try { dateStr = Utilities.formatDate(new Date(row[colMap.date]), SS.getSpreadsheetTimeZone(), "dd/MM/yy HH:mm");
+                 } catch(e) {}
+             }
+             sites.push({
+               id: String(row[colMap.id]).trim(),
+               name: String(row[colMap.name]).trim(),
+               client: (colMap.client > -1) ? String(row[colMap.client]) : "",
+               type: (colMap.type > -1) ? String(row[colMap.type]) : "CLIENTE",
+               status: (colMap.status > -1) ? String(row[colMap.status]) : "ACTIVO",
+               createdAt: dateStr,
+               subProjects: [],
+               expanded: false
+             });
+          }
+        }
+      }
+    }
+
+    const sheetProjs = findSheetSmart("DB_PROYECTOS");
+    if (sheetProjs) {
+      const values = sheetProjs.getDataRange().getValues();
+      const headerRowIdx = findHeaderRow(values);
+      if (headerRowIdx !== -1 && values.length > headerRowIdx + 1) {
+        const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
+        const colMap = {
+           parentId: headers.findIndex(h => h.includes("SITIO") || h.includes("PADRE")),
+           name: headers.findIndex(h => h.includes("NOMBRE") || h.includes("SUBPROYECTO")),
+           type: headers.findIndex(h => h.includes("TIPO") || h.includes("ESPECIALIDAD")),
+           status: headers.findIndex(h => h.includes("ESTATUS"))
+        };
+        for (let i = headerRowIdx + 1; i < values.length; i++) {
+          const row = values[i];
+          if (colMap.parentId > -1 && colMap.name > -1 && row[colMap.parentId]) {
+             const parentId = String(row[colMap.parentId]).trim();
+             const parent = sites.find(s => String(s.id).trim() === parentId);
+             if (parent) {
+               // CAMBIO: Si es PPC, asignamos el icono correcto
+               const pName = String(row[colMap.name]).trim().toUpperCase();
+               let icon = "fa-clipboard-list";
+               if (pName.includes("PPC")) icon = "fa-tasks";
+
+               parent.subProjects.push({
+                 id: row[0],
+                 name: String(row[colMap.name]).trim(),
+                 type: (colMap.type > -1) ? String(row[colMap.type]) : "GENERAL",
+                 status: (colMap.status > -1) ? String(row[colMap.status]) : "ACTIVO",
+                 icon: icon
+               });
+             }
+          }
+        }
+      }
+    }
+    return { success: true, data: sites };
+  } catch (e) {
+    console.error(e);
+    return { success: false, message: "Error leyendo DB: " + e.toString() };
+  }
+}
+
+function apiFetchProjectTasks(projectName) {
+  try {
+    const sheet = findSheetSmart("ADMINISTRADOR");
+    if (!sheet) return { success: false, message: "No se encuentra la hoja ADMINISTRADOR" };
+
+    const values = sheet.getDataRange().getValues();
+    if (values.length < 2) return { success: true, data: [], headers: [] };
+
+    const headerRowIdx = findHeaderRow(values);
+    if (headerRowIdx === -1) return { success: false, message: "Sin cabeceras válidas" };
+
+    const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
+    const projectTag = `[PROY: ${String(projectName).toUpperCase().trim()}]`;
+
+    // Indices clave
+    let colIdx = {
+       concepto: headers.indexOf("CONCEPTO"),
+       comentarios: headers.indexOf("COMENTARIOS")
+    };
+    if (colIdx.concepto === -1) colIdx.concepto = headers.findIndex(h => h.includes("CONCEPTO") || h.includes("DESCRIPCI"));
+    if (colIdx.comentarios === -1) colIdx.comentarios = headers.findIndex(h => h.includes("COMENTARIOS"));
+    const dataRows = values.slice(headerRowIdx + 1);
+    const filteredTasks = [];
+    for (let i = 0; i < dataRows.length; i++) {
+        const row = dataRows[i];
+        const comText = (colIdx.comentarios > -1 && row[colIdx.comentarios]) ? String(row[colIdx.comentarios]).toUpperCase() : "";
+        const descText = (colIdx.concepto > -1 && row[colIdx.concepto]) ? String(row[colIdx.concepto]).toUpperCase() : "";
+        if (comText.includes(projectTag) || descText.includes(projectTag)) {
+            let rowObj = { _rowIndex: headerRowIdx + i + 2 };
+            headers.forEach((h, k) => {
+                let val = row[k];
+                if (val instanceof Date) {
+                    val = Utilities.formatDate(val, SS.getSpreadsheetTimeZone(), "dd/MM/yy");
+                }
+                rowObj[h] = val;
+            });
+            filteredTasks.push(rowObj);
+        }
+    }
+
+    if (sheetName.includes('ANTONIA_VENTAS')) {
+        const estatusIdx = headers.indexOf('ESTATUS');
+        const avanceIdx = headers.indexOf('AVANCE');
+        const mapCotIdx = headers.indexOf('MAP COT');
+
+        if (mapCotIdx !== -1) {
+            headers.splice(mapCotIdx, 1); // remove
+
+            // Recalculate positions
+            const estIdx2 = headers.indexOf('ESTATUS');
+            if (estIdx2 !== -1) {
+                headers.splice(estIdx2 + 1, 0, 'MAP COT');
+            } else {
+                headers.push('MAP COT');
+            }
+        }
+    }
+    return { success: true, data: filteredTasks.reverse(), headers: headers };
+
+  } catch (e) {
+    console.error(e);
+    return { success: false, message: e.toString() };
+  }
+}
+
+// *** MODIFICADO PARA INCLUIR ETIQUETAS DE LOS NUEVOS PPCs ***
+function apiSaveProjectTask(taskData, projectName, username) {
+    try {
+        const nameUpper = String(projectName).toUpperCase().trim();
+        const tag = `[PROY: ${nameUpper}]`;
+
+        let coms = taskData['COMENTARIOS'] || "";
+
+        // Verificamos si ya tiene la etiqueta para no duplicar
+        if (!String(coms).toUpperCase().includes(tag)) {
+            taskData['COMENTARIOS'] = (coms + " " + tag).trim();
+        }
+
+        const res = internalBatchUpdateTasks("ADMINISTRADOR", [taskData]);
+        if(res.success) {
+            registrarLog(username || "DESCONOCIDO", "ACTUALIZAR PROYECTO", `Proyecto: ${projectName}, ID: ${taskData['ID']||taskData['FOLIO']}`);
+            res.data = taskData;
+        }
+        return res;
+    } catch (e) {
+        return { success: false, message: e.toString() };
+    }
+}
+```
+
+> ## 🐛 Bug real confirmado en `apiFetchProjectTasks` (línea 3854)
+>
+> La línea `if (sheetName.includes('ANTONIA_VENTAS')) {` referencia una variable `sheetName` que **no existe en ningún alcance de esta función**: el parámetro se llama `projectName`, la constante local que sí apunta a una hoja es `sheet` (el objeto `Sheet`, sin método `.includes()`), y no hay ninguna variable global `sheetName` en todo `CODIGO.js` (verificado — cero declaraciones `var/let/const sheetName` a nivel de archivo). Esto es un **`ReferenceError: sheetName is not defined`** garantizado, en JavaScript estricto de V8, cada vez que se llama a esta función.
+>
+> Como toda la función está envuelta en `try { ... } catch (e) { return { success: false, message: e.toString() }; }`, el error se captura silenciosamente: `apiFetchProjectTasks` **siempre devuelve `success: false`** con el mensaje `"ReferenceError: sheetName is not defined"`, perdiendo todo el trabajo de filtrado por etiqueta `[PROY: ...]` ya realizado en `filteredTasks`, y el frontend nunca recibe las tareas del proyecto solicitado.
+>
+> **Impacto:** la vista `PROJECT_TASKS_VIEW` (§8.3) — el listado de tareas dentro de un subproyecto en la cascada Sitio→Subproyecto→Tarea — está rota en producción a la fecha de este documento. `apiFetchCascadeTree` (el árbol) sí funciona porque no comparte esa función; solo el detalle de tareas por subproyecto falla.
+>
+> **Fix mínimo si se clona y se corrige:** reemplazar `sheetName.includes('ANTONIA_VENTAS')` por `String(sheet.getName()).toUpperCase().includes('ANTONIA_VENTAS')`, que es casi con certeza la intención original del autor (comparar el nombre real de la hoja `ADMINISTRADOR` — que nunca contendría literalmente "ANTONIA_VENTAS" salvo que se edite la condición para el caso correcto, ej. comparar contra `projectName` en su lugar). No se aplicó esta corrección en este documento porque no fue solicitada — se reporta para que quien mantenga el sistema lo decida.
+
+### 19.13 Formato condicional (semáforo nativo de Sheets): `applyTrafficLightToSheet`, `setupConditionalFormatting`
+
+```js
+function applyTrafficLightToSheet(sheet) {
+  if (!sheet) return false;
+  const sNameUpper = sheet.getName().toUpperCase().trim();
+
+  // Exclusiones Internas (Seguridad)
+  const excludedSubstrings = ["LOG_", "DB_", "DATOS", "BORRADOR"];
+  if (excludedSubstrings.some(ex => sNameUpper.includes(ex))) return false;
+
+  const lastRow = sheet.getLastRow();
+  const lastCol = sheet.getLastColumn();
+  if (lastRow < 2) return false;
+
+  // 1. Encontrar Cabeceras
+  const values = sheet.getRange(1, 1, Math.min(20, lastRow), lastCol).getValues();
+  const headerRowIdx = findHeaderRow(values);
+  if (headerRowIdx === -1) return false;
+
+  const headers = values[headerRowIdx].map(h => String(h).toUpperCase().trim());
+
+  // 2. Identificar Columnas
+  const fechaAliases = ['FECHA', 'FECHA ALTA', 'FECHA INICIO', 'ALTA', 'FECHA DE INICIO', 'FECHA VISITA', 'FECHA DE ALTA', 'FECHA_ALTA', 'F. INICIO', 'F. VISITA', 'F. ENTREGA'];
+  const colFechaIndices = [];
+  headers.forEach((h, i) => {
+      if (fechaAliases.includes(h) || h.startsWith("FECHA ")) {
+          colFechaIndices.push(i);
+      }
+  });
+
+  const colClasiIdx = headers.findIndex(h => h.includes("CLASIFICACION") || h.includes("CLASI"));
+  const colDiasIdx = headers.findIndex(h => h === "DIAS" || h === "RELOJ" || h.includes("DIAS FINALIZ") || h.includes("DÍAS FINALIZ"));
+
+  if (colFechaIndices.length === 0 || colClasiIdx === -1) return false;
+
+  const rowHeader = headerRowIdx + 1; // 1-based (Fila de Titulos)
+  const colClasiLet = colIndexToLetter(colClasiIdx + 1);
+
+  // Identify PRIMARY Date Column (for linking DIAS coloring)
+  let primaryFechaIdx = -1;
+  for(let alias of fechaAliases) {
+      const idx = headers.indexOf(alias);
+      if(idx > -1) { primaryFechaIdx = idx; break; }
+  }
+  if(primaryFechaIdx === -1 && colFechaIndices.length > 0) primaryFechaIdx = colFechaIndices[0];
+
+  // 3. Limpieza Inteligente de Reglas Antiguas
+  const rules = sheet.getConditionalFormatRules();
+  const cleanRules = rules.filter(r => {
+      const formula = (r.getBooleanCondition() && r.getBooleanCondition().getCriteriaType() === SpreadsheetApp.BooleanCriteria.CUSTOM_FORMULA)
+                      ? r.getBooleanCondition().getCriteriaValues()[0]
+                      : "";
+      // Eliminamos reglas de semáforo viejas (detectadas por referencia a CLASI + TODAY)
+      if (formula.includes("TODAY") && formula.includes(colClasiLet) && formula.includes("ISNUMBER")) return false;
+      return true;
+  });
+
+  const newRules = [];
+
+  // 4. Iterar sobre TODAS las columnas de fecha encontradas
+  colFechaIndices.forEach(idx => {
+      const colFechaLet = colIndexToLetter(idx + 1);
+
+      const rangesToColor = [sheet.getRange(rowHeader, idx + 1, sheet.getMaxRows() - rowHeader + 1, 1)];
+      if (idx === primaryFechaIdx && colDiasIdx > -1) {
+          rangesToColor.push(sheet.getRange(rowHeader, colDiasIdx + 1, sheet.getMaxRows() - rowHeader + 1, 1));
+      }
+
+      const addRulePair = (clase, dias, buffer) => {
+          const formulaBase = `AND(UPPER(TRIM($${colClasiLet}${rowHeader}))="${clase}", ISNUMBER($${colFechaLet}${rowHeader}), ROW()>${rowHeader})`;
+          const diffFormula = `(TODAY() - INT($${colFechaLet}${rowHeader}))`;
+
+          // VENCIDO (ROJO): > dias
+          newRules.push(SpreadsheetApp.newConditionalFormatRule()
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} > ${dias})`)
+              .setBackground("#FF0000")
+              .setFontColor("#FFFFFF")
+              .setRanges(rangesToColor)
+              .build());
+
+          // POR VENCER (AMARILLO): Entre (dias - buffer) y dias
+          const warningStart = dias - buffer;
+          newRules.push(SpreadsheetApp.newConditionalFormatRule()
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} >= ${warningStart}, ${diffFormula} <= ${dias})`)
+              .setBackground("#FFFF00")
+              .setFontColor("#000000")
+              .setRanges(rangesToColor)
+              .build());
+
+          // A TIEMPO (VERDE): < warningStart
+          newRules.push(SpreadsheetApp.newConditionalFormatRule()
+              .whenFormulaSatisfied(`=AND(${formulaBase}, ${diffFormula} < ${warningStart})`)
+              .setBackground("#00FF00")
+              .setFontColor("#000000")
+              .setRanges(rangesToColor)
+              .build());
+      };
+
+      // Configuración: Clase, Límite, Buffer (Días de aviso antes del límite)
+      addRulePair("A", 3, 1);    // Verde < 2, Amarillo 2-3, Rojo > 3
+      addRulePair("AA", 15, 3);  // Verde < 12, Amarillo 12-15, Rojo > 15
+      addRulePair("AAA", 30, 5); // Verde < 25, Amarillo 25-30, Rojo > 30
+  });
+
+  sheet.setConditionalFormatRules(newRules.concat(cleanRules));
+  return true;
+}
+
+function setupConditionalFormatting() {
+  const ui = SpreadsheetApp.getUi();
+  const excludedSheets = [
+      APP_CONFIG.logSheetName.toUpperCase(),
+      APP_CONFIG.salesSheetName.toUpperCase(),
+      APP_CONFIG.draftSheetName.toUpperCase()
+  ];
+
+  const allSheets = SS.getSheets();
+  let logMsg = "";
+  let count = 0;
+
+  allSheets.forEach(sheet => {
+    const sName = sheet.getName().trim();
+    const sNameUpper = sName.toUpperCase();
+
+    if (excludedSheets.includes(sNameUpper)) return;
+
+    // Delegamos a la nueva función robusta
+    if (applyTrafficLightToSheet(sheet)) {
+       logMsg += `✅ ${sName}\n`;
+       count++;
+    }
+  });
+
+  if (count > 0) {
+      ui.alert(`Semaforización aplicada a ${count} hojas:\n${logMsg}`);
+  } else {
+      ui.alert("⚠️ No se encontraron hojas aptas (con columnas CLASIFICACION y FECHA) para aplicar formato.");
+  }
+}
+```
+
+> **Nota:** `applyTrafficLightToSheet` colorea la hoja de Google Sheets **nativamente** (reglas de formato condicional reales de Sheets, visibles incluso fuera de la Web App) usando los mismos umbrales por `CLASIFICACION` (`A`=3 días/buffer 1, `AA`=15/3, `AAA`=30/5) que `getTrafficStyle` en el frontend (§20.3) — son dos implementaciones independientes del mismo semáforo de negocio, una en fórmulas de Sheets y otra en JS de cliente, que **deben mantenerse sincronizadas manualmente** si el negocio cambia los umbrales.
+
+### 19.14 Integración con Gemini AI: `callGeminiAPI`, `transcribirConGemini` (⚠️ API key hardcodeada, ver nota) y deduplicación masiva `deduplicateAllSheets`
+
+```js
+function callGeminiAPI(prompt) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY') || '';
+  if (!apiKey) return { success: false, text: '', message: 'GEMINI_API_KEY no configurada.' };
+
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+  const payload = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.4, maxOutputTokens: 512 }
+  });
+
+  try {
+    const response = UrlFetchApp.fetch(url, {
+      method: 'post',
+      contentType: 'application/json',
+      payload: payload,
+      muteHttpExceptions: true
+    });
+    const code = response.getResponseCode();
+    if (code !== 200) {
+      return { success: false, text: '', message: 'Gemini HTTP ' + code + ': ' + response.getContentText() };
+    }
+    const json = JSON.parse(response.getContentText());
+    const text = (json.candidates && json.candidates[0] && json.candidates[0].content &&
+                  json.candidates[0].content.parts && json.candidates[0].content.parts[0].text) || '';
+    return { success: true, text: text.trim() };
+  } catch (e) {
+    return { success: false, text: '', message: e.toString() };
+  }
+}
+```
+
+```js
+function transcribirConGemini(base64Audio, mimeType) {
+  // IMPORTANTE: Reemplazar con la API Key real del proyecto
+  const API_KEY = "AIzaSyA7Lv551Quq7lMCynU7kRq9T1_MIaK6kkc";
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+
+  const payload = {
+    contents: [{
+      parts: [
+        { text: "Transcribe el siguiente audio exactamente como se escucha. Corrige ortografía básica. Solo dame el texto limpio en español." },
+        {
+          inline_data: {
+            mime_type: mimeType || "audio/mp3",
+            data: base64Audio
+          }
+        }
+      ]
+    }]
+  };
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  try {
+    const response = UrlFetchApp.fetch(url, options);
+    const json = JSON.parse(response.getContentText());
+
+    if (json.candidates && json.candidates[0].content) {
+      return json.candidates[0].content.parts[0].text;
+    } else {
+      return "Error: No pude escuchar el audio claramente.";
+    }
+  } catch (e) {
+    return "Error en el sistema: " + e.toString();
+  }
+}
+```
+
+> ## 🔑 Credencial expuesta confirmada: API key de Gemini hardcodeada en texto plano (línea 5809)
+>
+> A diferencia de `callGeminiAPI` (arriba), que correctamente lee la key desde `PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY')`, la función `transcribirConGemini` tiene una **API key de Google Gemini escrita literalmente en el código fuente**, comentada con `// IMPORTANTE: Reemplazar con la API Key real del proyecto` — es decir, el comentario indica que debería ser un placeholder, pero el valor presente (`AIzaSyA7Lv551Quq7lMCynU7kRq9T1_MIaK6kkc`) tiene el formato exacto de una key real de Google Cloud/Generative Language API (prefijo `AIzaSy`, 39 caracteres). Este valor queda expuesto a cualquiera con acceso de lectura al repositorio, igual que las contraseñas de `USER_DB` (§13).
+>
+> **Recomendación si se clona este sistema:** tratar esta key como comprometida — rotarla/revocarla en Google Cloud Console antes de desplegar, y refactorizar `transcribirConGemini` para leer de `PropertiesService` igual que `callGeminiAPI`, eliminando la duplicación de dos mecanismos distintos de gestión de credenciales para el mismo proveedor dentro del mismo archivo.
+
+```js
+function deduplicateAllSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheets = ss.getSheets();
+  let totalDeleted = 0;
+
+  // Mover el Set afuera del loop permite borrar duplicados cruzados entre hojas si así se desea,
+  // pero el usuario especificó "de todas las hojas", y vimos que el bug replicó la misma tarea en la MISMA hoja repetidas veces.
+
+  // We only want to run this on actual data sheets, not system/config sheets
+  const excludeSheets = ["DB_DIRECTORY", "ESTATUS", "APP_CONFIG", "DASHBOARD", "PPC_BORRADOR"];
+
+  for (let i = 0; i < sheets.length; i++) {
+    const sheet = sheets[i];
+    const sheetName = sheet.getName();
+
+    if (excludeSheets.some(ex => sheetName.includes(ex))) {
+      continue;
+    }
+
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) continue; // Skip empty sheets or just headers
+
+    let headerRowIndex = -1;
+    let headers = [];
+    let folioIdx = -1;
+    let conceptoIdx = -1;
+    let fechaIdx = -1;
+
+    // Buscar la fila de encabezados en las primeras 20 filas
+    for (let r = 0; r < Math.min(20, data.length); r++) {
+      const currentHeaders = data[r].map(h => String(h).toUpperCase().trim());
+      const fIdx = currentHeaders.findIndex(h => h === "FOLIO" || h === "ID");
+      const cIdx = currentHeaders.findIndex(h => h === "CONCEPTO" || h === "DESCRIPCION" || h === "TAREA" || h === "DESCRIPCIÓN");
+
+      if (fIdx > -1 && cIdx > -1) {
+        headerRowIndex = r;
+        headers = currentHeaders;
+        folioIdx = fIdx;
+        conceptoIdx = cIdx;
+        fechaIdx = currentHeaders.findIndex(h => h === "FECHA" || h === "F. INICIO" || h.includes("FECHA"));
+        break;
+      }
+    }
+
+    // Si no encuentra columnas clave, es mejor omitir la hoja que borrar a ciegas
+    if (headerRowIndex === -1 || conceptoIdx === -1) continue;
+
+    const seenFolios = new Set();
+    const seenCombos = new Set();
+    const rowsToDelete = [];
+
+    // Go from top to bottom to identify duplicates starting AFTER the header row
+    for (let r = headerRowIndex + 1; r < data.length; r++) {
+      const row = data[r];
+      let isDuplicate = false;
+
+      const folio = folioIdx > -1 ? row[folioIdx] : "";
+      const folioStr = String(folio).trim();
+
+      // ALWAYS check by concept + date FIRST to catch duplicates with DIFFERENT folios
+      const concept = conceptoIdx > -1 ? row[conceptoIdx] : "";
+      const dateRaw = fechaIdx > -1 ? row[fechaIdx] : "";
+
+      let dateStr = "";
+      if (dateRaw instanceof Date) {
+          // just standard format for comparison
+          dateStr = dateRaw.toISOString().split('T')[0];
+      } else {
+          dateStr = String(dateRaw).trim();
+      }
+
+      const conceptStr = String(concept).trim().toUpperCase().substring(0, 50);
+
+      if (conceptStr !== "") {
+          const comboKey = conceptStr + "|||" + dateStr;
+          if (seenCombos.has(comboKey)) {
+              isDuplicate = true;
+          } else {
+              seenCombos.add(comboKey);
+          }
+      }
+
+      // If not marked as duplicate by concept, check by FOLIO
+      if (!isDuplicate && folioStr !== "" && folioStr !== "SIN-FOLIO") {
+        if (seenFolios.has(folioStr)) {
+          isDuplicate = true;
+        } else {
+          seenFolios.add(folioStr);
+        }
+      }
+
+      if (isDuplicate) {
+        // Row to delete is r + 1 (1-based index in sheets)
+        rowsToDelete.push(r + 1);
+      }
+    }
+
+    // Delete rows from bottom to top to preserve indices
+    if (rowsToDelete.length > 0) {
+      Logger.log(`Found ${rowsToDelete.length} duplicates in sheet ${sheetName}`);
+      for (let j = rowsToDelete.length - 1; j >= 0; j--) {
+        sheet.deleteRow(rowsToDelete[j]);
+        totalDeleted++;
+      }
+    }
+  }
+
+  Logger.log(`Total duplicate rows deleted across all sheets: ${totalDeleted}`);
+  return totalDeleted;
+}
+```
+
+> **Nota:** `deduplicateAllSheets` es una herramienta de **reparación manual retroactiva** (se ejecuta a mano desde el editor de Apps Script cuando ya ocurrió una duplicación, ej. por el bug histórico que documentan `test_deduplication.js`/`test_duplication_issue.js`, §14) — no es un guardia preventivo que corra automáticamente. La prevención real en tiempo de escritura es el Gatekeeper de `internalBatchUpdateTasks` (§10.3, Anexo A §19.3). Nótese que su criterio de "duplicado" (mismo `CONCEPTO`+`FECHA`, o mismo `FOLIO`) es el mismo patrón usado en el Gatekeeper — es intencional, para que la limpieza retroactiva sea consistente con la regla de prevención hacia adelante.
+
+### 19.15 Banco de Información: `apiFetchInfoBankCompanies`, `apiFetchInfoBankData`, `apiFetchDistinctClients` (líneas 4995–5181)
+
+```js
+function apiFetchInfoBankCompanies(year, monthName) {
+  try {
+    const sheetName = "ANTONIA_VENTAS";
+    const res = internalFetchSheetData(sheetName);
+    if (!res.success) return { success: false, message: res.message };
+
+    const monthMap = {
+        'ENERO': 0, 'FEBRERO': 1, 'MARZO': 2, 'ABRIL': 3, 'MAYO': 4, 'JUNIO': 5,
+        'JULIO': 6, 'AGOSTO': 7, 'SEPTIEMBRE': 8, 'OCTUBRE': 9, 'NOVIEMBRE': 10, 'DICIEMBRE': 11
+    };
+    const targetMonth = monthMap[String(monthName).toUpperCase().trim()];
+    const targetYear = parseInt(year) || new Date().getFullYear();
+
+    if (targetMonth === undefined) return { success: false, message: "Mes inválido" };
+
+    const clients = new Set();
+    const allData = [...res.data, ...(res.history || [])];
+
+    allData.forEach(row => {
+       // Helper para buscar valores insensible a mayúsculas
+       const keys = Object.keys(row);
+       const upperKeys = keys.map(k => k.toUpperCase().trim());
+       const getVal = (targetKeys) => {
+           for (const t of targetKeys) {
+               const idx = upperKeys.indexOf(t);
+               if (idx > -1) return row[keys[idx]];
+           }
+           return null;
+       };
+
+       const dateVal = getVal(['FECHA INICIO', 'F. INICIO', 'F. VISITA', 'F. ENTREGA', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
+
+       if (!dateVal) return;
+
+       let dObj = null;
+       if (dateVal instanceof Date) {
+           dObj = dateVal;
+       } else {
+           // Try parsing string dd/mm/yy
+           const parts = String(dateVal).split('/');
+           if (parts.length === 3) {
+               let y = parseInt(parts[2]);
+               if (y < 100) y += 2000;
+               dObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+           } else {
+               const parsed = new Date(dateVal);
+               if (!isNaN(parsed.getTime())) dObj = parsed;
+           }
+       }
+
+       if (!dObj || isNaN(dObj.getTime())) return;
+       if (dObj.getMonth() !== targetMonth) return;
+       if (dObj.getFullYear() !== targetYear) return;
+
+       const c = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
+       if (c) clients.add(c);
+    });
+
+    return { success: true, data: Array.from(clients).sort() };
+  } catch(e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function apiFetchInfoBankData(year, monthName, companyName, folderName) {
+  try {
+    const sheetName = "ANTONIA_VENTAS";
+    const res = internalFetchSheetData(sheetName);
+    if (!res.success) return { success: false, message: res.message };
+
+    const monthMap = {
+        'ENERO': 0, 'FEBRERO': 1, 'MARZO': 2, 'ABRIL': 3, 'MAYO': 4, 'JUNIO': 5,
+        'JULIO': 6, 'AGOSTO': 7, 'SEPTIEMBRE': 8, 'OCTUBRE': 9, 'NOVIEMBRE': 10, 'DICIEMBRE': 11
+    };
+    const targetMonth = monthMap[String(monthName).toUpperCase().trim()];
+    const targetYear = parseInt(year) || 2025;
+    const targetCompany = String(companyName).toUpperCase().trim();
+
+    if (targetMonth === undefined) return { success: false, message: "Mes inválido" };
+
+    const allData = [...res.data, ...(res.history || [])];
+
+    // Filtrar datos
+    const filtered = allData.filter(row => {
+       // Helper para buscar valores insensible a mayúsculas
+       const keys = Object.keys(row);
+       const upperKeys = keys.map(k => k.toUpperCase().trim());
+       const getVal = (targetKeys) => {
+           for (const t of targetKeys) {
+               const idx = upperKeys.indexOf(t);
+               if (idx > -1) return row[keys[idx]];
+           }
+           return null;
+       };
+
+       // 1. Company Match (Loose)
+       const rowClient = String(getVal(['CLIENTE']) || '').toUpperCase().trim();
+       if (!rowClient) return false;
+
+       // Check bidirectional inclusion to handle variations
+       if (!rowClient.includes(targetCompany) && !targetCompany.includes(rowClient)) return false;
+
+       // 2. Date Match (Prioridad: FECHA INICIO)
+       // Se prioriza 'FECHA INICIO' tal cual pidió el usuario, luego fallbacks.
+       const dateVal = getVal(['FECHA INICIO', 'F. INICIO', 'F. VISITA', 'F. ENTREGA', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']);
+
+       if (!dateVal) return false;
+
+       let dObj = null;
+       if (dateVal instanceof Date) {
+           dObj = dateVal;
+       } else {
+           // Try parsing string dd/mm/yy
+           const parts = String(dateVal).split('/');
+           if (parts.length === 3) {
+               let y = parseInt(parts[2]);
+               if (y < 100) y += 2000;
+               dObj = new Date(y, parseInt(parts[1])-1, parseInt(parts[0]));
+           } else {
+               const parsed = new Date(dateVal);
+               if (!isNaN(parsed.getTime())) dObj = parsed;
+           }
+       }
+
+       if (!dObj || isNaN(dObj.getTime())) return false;
+       if (dObj.getMonth() !== targetMonth) return false;
+       if (dObj.getFullYear() !== targetYear) return false;
+
+       return true;
+    });
+
+    // NORMALIZACION DE DATOS PARA EL FRONTEND (SOLICITUD USUARIO)
+    const mappedData = filtered.map(row => {
+       const keys = Object.keys(row);
+       const upperKeys = keys.map(k => k.toUpperCase().trim());
+       const getVal = (targetKeys) => {
+           for (const t of targetKeys) {
+               const idx = upperKeys.indexOf(t);
+               if (idx > -1) return row[keys[idx]];
+           }
+           return "";
+       };
+
+       return {
+           'FECHA_INICIO': getVal(['FECHA INICIO', 'FECHA_INICIO', 'FECHA DE INICIO', 'FECHA', 'ALTA', 'FECHA ALTA', 'FECHA_ALTA', 'FECHA VISITA']),
+           'AREA': getVal(['AREA', 'DEPARTAMENTO', 'ESPECIALIDAD']),
+           'CONCEPTO': getVal(['CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN', 'ACTIVIDAD']),
+           'VENDEDOR': getVal(['VENDEDOR', 'RESPONSABLE', 'ENCARGADO', 'INVOLUCRADOS']),
+           'ESTATUS': getVal(['ESTATUS', 'STATUS', 'ESTADO']),
+           'FOLIO': getVal(['FOLIO', 'ID']),
+           'COTIZACION': getVal(['COTIZACION', 'ARCHIVO', 'LINK', 'URL', 'PDF'])
+       };
+    });
+
+    return { success: true, data: mappedData };
+  } catch(e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function apiFetchDistinctClients() {
+  try {
+    const sheetName = "ANTONIA_VENTAS";
+    const res = internalFetchSheetData(sheetName);
+    if (!res.success) return { success: false, message: res.message };
+
+    const clients = new Set();
+
+    const allData = [...res.data, ...(res.history || [])];
+
+    allData.forEach(row => {
+        if (row['CLIENTE']) {
+            const c = String(row['CLIENTE']).trim().toUpperCase();
+            if (c) clients.add(c);
+        }
+    });
+
+    const sortedClients = Array.from(clients).sort();
+    return { success: true, data: sortedClients };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+```
+
+> **Nota:** las tres funciones leen **exclusivamente** de `ANTONIA_VENTAS` (nunca de las hojas individuales de los vendedores) — el Banco de Información es, por diseño, una vista analítica centrada en el histórico consolidado de Ventas, no un buscador global de archivos de todo el sistema. `internalFetchSheetData` (usada internamente) ya separa filas activas (`res.data`) de las archivadas bajo el separador `"TAREAS REALIZADAS"` (`res.history`, §5.3) — estas tres funciones concatenan ambas listas para no perder cotizaciones ya cerradas.
+
+### 19.16 Agenda personal y hábitos: `apiFetchCombinedCalendarData`, `apiFetchUnifiedAgenda`, `apiSavePersonalEvent`, `apiSaveHabitLog` (líneas 5670–5802)
+
+```js
+function apiFetchCombinedCalendarData(sheetName) {
+  try {
+      const results = [];
+      const baseName = String(sheetName).replace(/\s*\(VENTAS\)/i, "").trim();
+      // Si es ANTONIA_VENTAS, solo buscamos ahí (ella distribuye)
+      const targets = (baseName.toUpperCase() === "ANTONIA_VENTAS") ? ["ANTONIA_VENTAS"] : [baseName, baseName + " (VENTAS)"];
+
+      targets.forEach(t => {
+          const res = internalFetchSheetData(t);
+          if (res.success && res.data) {
+              results.push(...res.data);
+          }
+      });
+
+      // --- ADDED: Personal Agenda Integration for Dashboard ---
+      const personalRes = internalFetchSheetData("AGENDA_PERSONAL");
+      if (personalRes.success && personalRes.data) {
+          const myEvents = personalRes.data.filter(e => String(e.USUARIO).trim().toUpperCase() === baseName.toUpperCase());
+          const mappedEvents = myEvents.map(e => ({
+              ...e,
+              CONCEPTO: e.TITULO || e.CONCEPTO,
+              CLIENTE: "PERSONAL"
+          }));
+          results.push(...mappedEvents);
+      }
+      // --------------------------------------------------------
+
+      // Deduplicate by ID/FOLIO
+      const uniqueTasks = {};
+      results.forEach(r => {
+          const id = r.ID || r.FOLIO || (r.CONCEPTO ? r.CONCEPTO + r.FECHA : null);
+          if (id) uniqueTasks[id] = r;
+      });
+
+      const finalData = Object.values(uniqueTasks);
+
+      return { success: true, data: finalData };
+  } catch(e) {
+      return { success: false, message: e.toString() };
+  }
+}
+
+function apiFetchUnifiedAgenda(username) {
+  // 1. Fetch Work Tasks (Existing Logic)
+  let workTasks = [];
+  try {
+     // Determine target for work tasks based on role/user
+     let target = username;
+     if (String(username).toUpperCase() === 'ANTONIA_VENTAS') target = "ANTONIA_VENTAS";
+
+     const workRes = apiFetchCombinedCalendarData(target);
+     if (workRes.success) {
+         // Filter out Personal Events to avoid duplication (fetched separately below)
+         workTasks = workRes.data.filter(t => t.CLIENTE !== "PERSONAL");
+     }
+  } catch(e) { console.error("Error fetching work tasks", e); }
+
+  // 2. Fetch Personal Events
+  let personalEvents = [];
+  try {
+     const sheet = findSheetSmart("AGENDA_PERSONAL");
+     if (sheet) {
+        const res = internalFetchSheetData("AGENDA_PERSONAL");
+        if(res.success) {
+            // Filter by user if possible, for now return all found
+            personalEvents = res.data.filter(r => !r.USUARIO || r.USUARIO === username);
+        }
+     } else {
+        // MOCK DATA FOR DEMO IF SHEET DOESN'T EXIST
+        const today = new Date();
+        const y = today.getFullYear();
+        const m = today.getMonth(); // 0-indexed
+        const d = today.getDate();
+
+        personalEvents = [
+            { ID: 'P-1', TITULO: 'Rutina Mañana', TIPO: 'PERSONAL', HORA_INICIO: '06:00', HORA_FIN: '07:00', DETALLES: 'Meditación y Café', FECHA: new Date(y, m, d), CLASIFICACION: 'PERSONAL' },
+            { ID: 'P-2', TITULO: 'Gimnasio', TIPO: 'PERSONAL', HORA_INICIO: '07:30', HORA_FIN: '08:30', DETALLES: 'Cardio', FECHA: new Date(y, m, d), CLASIFICACION: 'SALUD' },
+            { ID: 'P-3', TITULO: 'Comida', TIPO: 'COMIDA', HORA_INICIO: '14:00', HORA_FIN: '15:00', DETALLES: 'Pollo y Arroz', FECHA: new Date(y, m, d), CLASIFICACION: 'SALUD' }
+        ];
+     }
+  } catch(e) { console.error("Error fetching personal events", e); }
+
+  // 3. Fetch Habits
+  let habits = [];
+  try {
+      const sheet = findSheetSmart("HABITOS_LOG");
+      if (sheet) {
+         const res = internalFetchSheetData("HABITOS_LOG");
+         if (res.success) habits = res.data.filter(r => !r.USUARIO || r.USUARIO === username);
+      } else {
+         // MOCK DATA
+         habits = [
+             { ID: 'H1', HABITO: 'Leer 30min', META: 5, LOG_JSON: JSON.stringify([true, true, false, true, false, false, false]) },
+             { ID: 'H2', HABITO: 'Ejercicio', META: 4, LOG_JSON: JSON.stringify([false, true, true, false, false, false, false]) },
+             { ID: 'H3', HABITO: 'Meditar', META: 7, LOG_JSON: JSON.stringify([true, true, true, true, true, false, false]) }
+         ];
+      }
+  } catch(e) { console.error("Error fetching habits", e); }
+
+  return { success: true, workTasks: workTasks, personalEvents: personalEvents, habits: habits };
+}
+
+function apiSavePersonalEvent(eventData) {
+    // Ensure sheet exists
+    let sheet = findSheetSmart("AGENDA_PERSONAL");
+    if (!sheet) {
+        sheet = SS.insertSheet("AGENDA_PERSONAL");
+        sheet.appendRow(["ID", "USUARIO", "TITULO", "TIPO", "FECHA", "HORA_INICIO", "HORA_FIN", "DETALLES", "CLASIFICACION", "ESTATUS"]);
+    }
+    return internalBatchUpdateTasks("AGENDA_PERSONAL", [eventData]);
+}
+
+function apiSaveHabitLog(habitData) {
+    // Ensure sheet exists
+    let sheet = findSheetSmart("HABITOS_LOG");
+    if (!sheet) {
+        sheet = SS.insertSheet("HABITOS_LOG");
+        sheet.appendRow(["ID", "USUARIO", "HABITO", "META", "LOG_JSON", "FECHA_ACTUALIZACION"]);
+    }
+    // If saving a habit update, we might need to find the existing row.
+    // internalBatchUpdateTasks handles updates by ID/FOLIO.
+    return internalBatchUpdateTasks("HABITOS_LOG", [habitData]);
+}
+```
+
+### 19.17 Agente narrativo de cotizaciones con Gemini: `runQuoteMetricsAgent`, `apiGetLastAgentReport`, `_sendAgentEmail` (líneas 1730–1946)
+
+Este es el pipeline completo del "agente de IA" más elaborado del sistema: calcula métricas → aplica un motor de reglas propio → arma un prompt en español para Gemini → envía el reporte por correo con `MailApp` (un **tercer canal de notificación**, nativo de Google Workspace, distinto tanto del webhook de Make.com/Outlook §11.2 como de cualquier llamada a Gemini para transcripción). Se invoca automáticamente desde el trigger diario `autoUpdateQuoteMetrics` (§12) o manualmente desde la UI.
+
+```js
+function runQuoteMetricsAgent(params) {
+  try {
+    const p = params || {};
+    const now = new Date();
+    const month = (p.month !== undefined) ? parseInt(p.month) : (now.getMonth() + 1);
+    const year  = (p.year  !== undefined) ? parseInt(p.year)  : now.getFullYear();
+
+    // ── 1. OBTENER MÉTRICAS ────────────────────────────────────────
+    const mResult = apiFetchQuoteAgentMetrics({ month, year });
+    if (!mResult.success) return { success: false, message: 'No se pudieron obtener métricas: ' + mResult.message };
+    const m = mResult.metrics;
+
+    // ── 2. MOTOR DE REGLAS ─────────────────────────────────────────
+    const alerts = [];
+
+    // Regla 1: SLA por clasificación < 70% (con mínimo 3 casos)
+    ['A', 'AA', 'AAA'].forEach(k => {
+      const s = m.slaSummary[k];
+      if (s.count >= 3 && s.pctOk < 70) {
+        alerts.push({
+          type: 'SLA_BAJO',
+          severity: 'ALTA',
+          icon: '🔴',
+          mensaje: 'Clase ' + k + ': solo ' + s.pctOk + '% de cumplimiento SLA (' + s.ok + '/' + s.count + ' a tiempo, límite ' + s.slaLimit + ' días)'
+        });
+      }
+    });
+
+    // Regla 2: Cotizador con tasa de pérdida > 50% (con mínimo 3 cot.)
+    m.byCotizadorArr.forEach(c => {
+      if (c.total >= 3 && (c.perdidas / c.total) > 0.5) {
+        const pct = Math.round(c.perdidas / c.total * 100);
+        alerts.push({
+          type: 'ALTA_PERDIDA',
+          severity: 'MEDIA',
+          icon: '🟡',
+          mensaje: c.name + ': ' + pct + '% de cotizaciones perdidas este mes (' + c.perdidas + ' de ' + c.total + ')'
+        });
+      }
+    });
+
+    // Regla 3: Tasa de cierre global < 30% (con mínimo 5 cot.)
+    if (m.winLoss.total >= 5) {
+      const globalPct = Math.round(m.winLoss.ganada / m.winLoss.total * 100);
+      if (globalPct < 30) {
+        alerts.push({
+          type: 'CIERRE_BAJO',
+          severity: 'ALTA',
+          icon: '🔴',
+          mensaje: 'Tasa de cierre global muy baja: ' + globalPct + '% (' + m.winLoss.ganada + ' ganadas de ' + m.winLoss.total + ' terminadas)'
+        });
+      }
+    }
+
+    // Regla 4: AAA sin cierre definido (ni ganada ni perdida)
+    const aaaAbiertos = (m.byClasi && m.byClasi['AAA']) ? m.byClasi['AAA'].count - m.slaSummary.AAA.ok - m.slaSummary.AAA.fail + m.slaSummary.AAA.ok : 0;
+    m.aaaByClientArr.forEach(cl => {
+      const enProceso = cl.projects.filter(p => !p.isGanada && !p.isPerdida).length;
+      if (enProceso > 0) {
+        alerts.push({
+          type: 'AAA_SIN_RESULTADO',
+          severity: 'INFO',
+          icon: '🔵',
+          mensaje: 'Cliente ' + cl.cliente + ': ' + enProceso + ' proyecto(s) AAA terminados sin marcar GANADA/PERDIDA'
+        });
+      }
+    });
+
+    // ── 3. CONSTRUIR PROMPT PARA GEMINI ───────────────────────────
+    const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const monthName = MONTHS_ES[month - 1];
+    const top5 = m.byCotizadorArr.slice(0, 5);
+
+    const prompt = [
+      'Eres analista de ventas de Holtmont, empresa mexicana de construcción e ingeniería.',
+      'Redacta un reporte ejecutivo CONCISO (máx 180 palabras) en español profesional para el mes de ' + monthName + ' ' + year + '.',
+      '',
+      'DATOS DEL MES:',
+      '- Total cotizaciones terminadas: ' + m.totalCount,
+      '- Ganadas: ' + m.winLoss.ganada + ' | Perdidas: ' + m.winLoss.perdida + ' | % Cierre: ' + (m.winLoss.total > 0 ? Math.round(m.winLoss.ganada / m.winLoss.total * 100) : 0) + '%',
+      '',
+      'SLA por clasificación:',
+      '  Clase A  (límite 3d):  ' + m.slaSummary.A.count  + ' cot., ' + m.slaSummary.A.pctOk  + '% a tiempo, prom. ' + (m.slaSummary.A.avgDays  || 'N/D') + 'd',
+      '  Clase AA (límite 14d): ' + m.slaSummary.AA.count + ' cot., ' + m.slaSummary.AA.pctOk + '% a tiempo, prom. ' + (m.slaSummary.AA.avgDays || 'N/D') + 'd',
+      '  Clase AAA(límite 30d): ' + m.slaSummary.AAA.count+ ' cot., ' + m.slaSummary.AAA.pctOk+ '% a tiempo, prom. ' + (m.slaSummary.AAA.avgDays|| 'N/D') + 'd',
+      '',
+      'Top cotizadores:',
+      top5.map(c => '  ' + c.name + ': ' + c.total + ' cot., ' + c.ganadas + ' ganadas, ' + c.slaOk + ' SLA OK').join('\n'),
+      '',
+      alerts.length > 0
+        ? 'Alertas detectadas:\n' + alerts.map(a => '  ' + a.icon + ' ' + a.mensaje).join('\n')
+        : 'Sin alertas críticas este mes.',
+      '',
+      'Instrucciones: sé directo, sin saludos. Menciona lo más importante (desempeño general, mejor cotizador, punto débil) y termina con UNA recomendación concreta.'
+    ].join('\n');
+
+    // ── 4. LLAMAR A GEMINI ────────────────────────────────────────
+    const geminiResult = callGeminiAPI(prompt);
+    const geminiSummary = geminiResult.success ? geminiResult.text : '(Gemini no disponible: ' + geminiResult.message + ')';
+
+    // ── 5. ENVIAR EMAIL DE REPORTE ────────────────────────────────
+    const emailResult = _sendAgentEmail(m, alerts, geminiSummary, monthName, year);
+
+    // ── 6. GUARDAR ÚLTIMO REPORTE EN PROPIEDADES ──────────────────
+    const lastRun = {
+      timestamp  : now.getTime(),
+      timestampStr: Utilities.formatDate(now, 'America/Mexico_City', 'dd/MM/yyyy HH:mm'),
+      month, year,
+      alerts,
+      geminiSummary,
+      totalCount  : m.totalCount,
+      ganadas     : m.winLoss.ganada,
+      perdidas    : m.winLoss.perdida,
+      emailSent   : emailResult.success
+    };
+    PropertiesService.getScriptProperties().setProperty('LAST_AGENT_RUN', JSON.stringify(lastRun));
+    registrarLog('AGENT', 'RUN_COMPLETE', 'Agente ejecutado. Alertas: ' + alerts.length + '. Email: ' + (emailResult.success ? 'OK' : 'FALLO'));
+
+    return { success: true, lastRun };
+  } catch (e) {
+    console.error('runQuoteMetricsAgent Error: ' + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Devuelve el último reporte del agente (para mostrarlo en el panel) */
+function apiGetLastAgentReport() {
+  try {
+    const raw = PropertiesService.getScriptProperties().getProperty('LAST_AGENT_RUN') || '';
+    if (!raw) return { success: true, hasReport: false };
+    return { success: true, hasReport: true, lastRun: JSON.parse(raw) };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/* Genera y envía el email HTML del reporte */
+function _sendAgentEmail(m, alerts, geminiSummary, monthName, year) {
+  try {
+    // Destinatarios: ANTONIA_VENTAS + ADMIN
+    const recipients = [];
+    if (USER_DB['ANTONIA_VENTAS'] && USER_DB['ANTONIA_VENTAS'].email) recipients.push(USER_DB['ANTONIA_VENTAS'].email);
+    if (USER_DB['LUIS_CARLOS']    && USER_DB['LUIS_CARLOS'].email)    recipients.push(USER_DB['LUIS_CARLOS'].email);
+
+    if (recipients.length === 0) return { success: false, message: 'Sin destinatarios configurados.' };
+
+    const closePct = m.winLoss.total > 0 ? Math.round(m.winLoss.ganada / m.winLoss.total * 100) : 0;
+    const alertRows = alerts.length > 0
+      ? alerts.map(a => '<tr><td style="padding:6px 12px;">' + a.icon + '</td><td style="padding:6px 12px;color:#333;">' + a.mensaje + '</td><td style="padding:6px 12px;"><span style="background:' + (a.severity==='ALTA'?'#dc3545':a.severity==='MEDIA'?'#fd7e14':'#17a2b8') + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">' + a.severity + '</span></td></tr>').join('')
+      : '<tr><td colspan="3" style="padding:8px 12px;color:#28a745;">✅ Sin alertas críticas este mes</td></tr>';
+
+    const cotizRows = m.byCotizadorArr.slice(0, 8).map(c => {
+      const pct = c.total > 0 ? Math.round(c.ganadas / c.total * 100) : 0;
+      return '<tr style="border-bottom:1px solid #eee;"><td style="padding:5px 10px;">' + c.name + '</td><td style="text-align:center;padding:5px 10px;">' + c.total + '</td><td style="text-align:center;padding:5px 10px;color:#28a745;">' + c.ganadas + '</td><td style="text-align:center;padding:5px 10px;color:#dc3545;">' + c.perdidas + '</td><td style="text-align:center;padding:5px 10px;font-weight:bold;">' + pct + '%</td><td style="text-align:center;padding:5px 10px;">' + c.slaOk + ' / ' + c.slaFail + '</td></tr>';
+    }).join('');
+
+    const html = [
+      '<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;background:#fff;">',
+      '<div style="background:#1E3A5F;color:#fff;padding:24px;">',
+      '<h1 style="margin:0;font-size:22px;">📊 Reporte de Cotizaciones — ' + monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' ' + year + '</h1>',
+      '<p style="margin:4px 0 0;font-size:13px;opacity:0.8;">Generado automáticamente por el Agente de Métricas · Holtmont Workspace</p>',
+      '</div>',
+      '<div style="padding:24px;">',
+      // KPI cards
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #00d2ff;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#00d2ff;">' + m.totalCount + '</div><div style="font-size:12px;color:#666;">Terminadas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #28a745;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#28a745;">' + m.winLoss.ganada + '</div><div style="font-size:12px;color:#666;">✅ Ganadas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #dc3545;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#dc3545;">' + m.winLoss.perdida + '</div><div style="font-size:12px;color:#666;">❌ Perdidas</div></div>',
+      '<div style="flex:1;min-width:140px;background:#f8f9fa;border-top:4px solid #ffc107;padding:12px;border-radius:8px;text-align:center;"><div style="font-size:28px;font-weight:bold;color:#ffc107;">' + closePct + '%</div><div style="font-size:12px;color:#666;">🎯 % Cierre</div></div>',
+      '</div>',
+      // Gemini summary
+      '<div style="background:#f0f7ff;border-left:4px solid #00d2ff;padding:16px;border-radius:4px;margin-bottom:24px;">',
+      '<p style="font-size:12px;font-weight:bold;color:#00d2ff;margin:0 0 8px;">🤖 ANÁLISIS IA (Gemini)</p>',
+      '<p style="margin:0;color:#333;line-height:1.6;">' + geminiSummary.replace(/\n/g, '<br>') + '</p>',
+      '</div>',
+      // Alertas
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">⚠️ Alertas del Agente</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#f8f9fa;border-radius:8px;overflow:hidden;margin-bottom:24px;">',
+      alertRows,
+      '</table>',
+      // SLA
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">⏱️ SLA por Clasificación</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px;">',
+      '<thead><tr style="background:#1E3A5F;color:#fff;"><th style="padding:8px 12px;text-align:left;">Clase</th><th style="padding:8px 12px;text-align:center;">Total</th><th style="padding:8px 12px;text-align:center;">✅ A tiempo</th><th style="padding:8px 12px;text-align:center;">❌ Tarde</th><th style="padding:8px 12px;text-align:center;">% Cumpl.</th><th style="padding:8px 12px;text-align:center;">Prom. días</th></tr></thead>',
+      '<tbody>',
+      ['A','AA','AAA'].map(k => {
+        const s = m.slaSummary[k];
+        const color = s.pctOk >= 80 ? '#28a745' : s.pctOk >= 60 ? '#fd7e14' : '#dc3545';
+        return '<tr style="border-bottom:1px solid #eee;"><td style="padding:7px 12px;font-weight:bold;">' + k + ' (≤' + s.slaLimit + 'd)</td><td style="text-align:center;padding:7px 12px;">' + s.count + '</td><td style="text-align:center;padding:7px 12px;color:#28a745;">' + s.ok + '</td><td style="text-align:center;padding:7px 12px;color:#dc3545;">' + s.fail + '</td><td style="text-align:center;padding:7px 12px;font-weight:bold;color:' + color + ';">' + s.pctOk + '%</td><td style="text-align:center;padding:7px 12px;">' + (s.avgDays || 'N/D') + 'd</td></tr>';
+      }).join(''),
+      '</tbody></table>',
+      // Por cotizador
+      '<h3 style="color:#1E3A5F;margin-bottom:12px;">👤 Desempeño por Cotizador</h3>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;">',
+      '<thead><tr style="background:#1E3A5F;color:#fff;"><th style="padding:8px 10px;text-align:left;">Cotizador</th><th style="padding:8px 10px;text-align:center;">Total</th><th style="padding:8px 10px;text-align:center;">Ganadas</th><th style="padding:8px 10px;text-align:center;">Perdidas</th><th style="padding:8px 10px;text-align:center;">% Cierre</th><th style="padding:8px 10px;text-align:center;">SLA OK/Fail</th></tr></thead>',
+      '<tbody>' + cotizRows + '</tbody>',
+      '</table>',
+      '</div>',
+      '<div style="background:#f8f9fa;padding:12px 24px;font-size:11px;color:#999;border-top:1px solid #eee;">',
+      'Holtmont Workspace — Agente Automático de Métricas · ' + Utilities.formatDate(new Date(), 'America/Mexico_City', 'dd/MM/yyyy HH:mm'),
+      '</div></div>'
+    ].join('');
+
+    recipients.forEach(email => {
+      MailApp.sendEmail({
+        to: email,
+        subject: '📊 Reporte Cotizaciones ' + monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' ' + year + (alerts.length > 0 ? ' — ⚠️ ' + alerts.length + ' alerta(s)' : ''),
+        htmlBody: html
+      });
+    });
+
+    return { success: true, sentTo: recipients };
+  } catch (e) {
+    console.error('_sendAgentEmail Error: ' + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+```
+
+**Reglas del motor de alertas (ejecutan en este orden, todas pueden dispararse en la misma corrida):**
+
+| # | Regla | Umbral | Severidad |
+|---|---|---|---|
+| 1 | SLA bajo por clasificación | `pctOk < 70%` con `count >= 3` casos, por cada clase `A`/`AA`/`AAA` | 🔴 ALTA |
+| 2 | Cotizador con alta pérdida | `perdidas/total > 50%` con `total >= 3` cotizaciones | 🟡 MEDIA |
+| 3 | Cierre global bajo | Tasa de cierre `< 30%` con `total >= 5` cotizaciones terminadas | 🔴 ALTA |
+| 4 | AAA sin resultado | Cliente con proyectos clasificación `AAA` "terminados" pero sin marcar `GANADA` ni `PERDIDA` | 🔵 INFO |
+
+`_sendAgentEmail` envía el reporte HTML **solo** a `ANTONIA_VENTAS` y `LUIS_CARLOS` (sus correos en `USER_DB`) vía `MailApp.sendEmail` — este es el **único** punto del sistema que usa `MailApp` (correo nativo de Gmail/Workspace); todo lo demás relacionado a notificaciones pasa por el webhook de Make.com/Outlook (§11.2). Si ninguno de los dos tiene `email` configurado en `USER_DB`, la función retorna `{success: false, message: 'Sin destinatarios configurados.'}` sin lanzar excepción.
 
 ---
 
