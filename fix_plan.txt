@@ -1,0 +1,66 @@
+The bug is: if the frontend sends the number `1` or string `"1"` for `AVANCE` when the user intends it to mean "1%", `Math.abs(rawVal - 1) < 0.001` treats it as `100%` and moves it to TAREAS REALIZADAS.
+Wait, if the user types `1` in the `AVANCE` column in `index.html`, the frontend uses `v-model` on an `<input>` (not `type="number"`).
+`v-model` sends the STRING `"1"`.
+When the backend receives `"1"`, `typeof "1" === 'string'`, not `'number'`. So it is NOT evaluated as `100%`.
+HOWEVER, when the string `"1"` is written to Google Sheets using `.setValues()`, Google Sheets automatically converts it to the number `1` if the cell format is "Automatic" or "Number".
+THEN, the NEXT time Antonia reads or writes the sheet, the value read from Google Sheets via `.getValues()` is the NUMBER `1`.
+When it's the number `1`, `typeof rawVal === 'number'` is TRUE. `Math.abs(1 - 1) < 0.001` is TRUE.
+So it is marked as `100%`!
+
+BUT wait! The issue says: "cuando asigna una actividad, por alguna razón se pasa a tareas realizadas".
+If it moves immediately when she assigns it, she didn't read it twice! She assigned it, hit save, and it moved!
+If she hit save, it means `saveAllTrackerRows` sent the data.
+If she loaded the page, and the cell in Google Sheets was `1` natively (because she typed `1` directly in the sheet yesterday?), then it loads as `1`. She assigns it to someone, she saves it, and the backend sees `1`. Then it moves!
+
+But what if there is NO `1`? What if it's completely empty?
+What if `getColIdx('AVANCE')` is picking up something else? No, exact match.
+
+Wait, is there ANY OTHER BUG?
+Let's check `processQuoteRow`. No, doesn't move rows.
+
+What if she assigns it to a vendor, and `internalBatchUpdateTasks` for the VENDOR does NOT evaluate it as complete, but for Antonia it DOES?
+If `isComplete` relies on `ESTATUS` and `AVANCE`.
+Vendor and Antonia have EXACTLY the same data, EXCEPT for the deletions!
+```javascript
+                       const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
+                       Object.keys(st).forEach(k => {
+                           if (delKeys.includes(k.toUpperCase().trim())) delete st[k];
+                       });
+```
+Wait! This is the reverse sync `safeRevTasks`!
+When the reverse sync happens (when Vendor saves), it DELETES `ESTATUS` and `AVANCE` from the payload sent to Antonia!
+When the payload is sent to Antonia WITHOUT `ESTATUS` and `AVANCE`, `internalBatchUpdateTasks` for Antonia receives a task with NO `ESTATUS` and NO `AVANCE`.
+It updates the row in Antonia's sheet.
+THEN it evaluates `isComplete` on Antonia's row!
+Antonia's row retains its OLD `ESTATUS` and `AVANCE` in Google Sheets!
+If Antonia's row in Google Sheets had `ESTATUS = "ASIGNADO"` and `AVANCE = ""` ...
+Wait. If the vendor saves, it triggers reverse sync.
+What if Antonia assigns the activity, and she tells the vendor "I assigned it". Then the vendor opens their sheet.
+The vendor sees the activity. The vendor hits "Guardar Todo".
+When the vendor hits "Guardar Todo", `isAntonia` is false!
+`distributionTasks` has the vendor's row!
+The reverse sync logic runs!
+It checks if the vendor's row is done.
+If not done, it puts it in `antoniaReverseSyncTasks`.
+It DELETES `ESTATUS` and `AVANCE` from the reverse sync payload!
+It updates Antonia's row using `internalBatchUpdateTasks("ANTONIA_VENTAS", safeRevTasks, false)`.
+Antonia's row is updated.
+THEN, `internalBatchUpdateTasks` evaluates `isComplete` on Antonia's row.
+BUT Antonia's row hasn't changed its `ESTATUS` or `AVANCE`. So `isComplete` shouldn't change!
+UNLESS...
+Wait! What if Antonia's row had `ESTATUS = "EN CURSO"`, but `ESTATUS` is missing from the payload?
+`internalBatchUpdateTasks` doesn't overwrite it. So it remains "EN CURSO".
+
+Wait... look at the issue again:
+"En su tabla de Ventas cuando asigna una actividad, por alguna razón se pasa a tareas realizadas sin tener el 100%, sin embargo al vendedor que se le asignó si permanece en su tabla"
+"cuando asigna una actividad" means AT THE MOMENT of assigning. Not later when the vendor saves.
+
+Is there any OTHER way `isComplete` becomes `true`?
+```javascript
+                    const strictMatch = valStr === "100" || valStr === "100%" || valStr.toUpperCase() === "SI";
+```
+What if `valStr` is `"100"`?
+When does `valStr` become `"100"`?
+When the user types `100` into `CUMPLIMIENTO`? But there is no `CUMPLIMIENTO`.
+
+Let's look at `internalBatchUpdateTasks`.

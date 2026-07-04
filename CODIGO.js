@@ -2280,10 +2280,12 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       if (rowIndex === -1) {
           const tConcept = String(task['CONCEPTO'] || task['DESCRIPCION'] || task['TAREA'] || "").trim().toUpperCase().substring(0, 50);
           const tDate = String(task['FECHA'] || task['F. INICIO'] || "").trim();
+          const tCliente = String(task['CLIENTE'] || "").trim().toUpperCase();
 
           if (tConcept) {
              const conceptIdx = getColIdx('CONCEPTO') > -1 ? getColIdx('CONCEPTO') : getColIdx('DESCRIPCION');
              const dateIdx = getColIdx('FECHA') > -1 ? getColIdx('FECHA') : getColIdx('F. INICIO');
+             const clienteIdx = getColIdx('CLIENTE');
 
              if (conceptIdx > -1) {
                  for (let i = headerRowIndex + 1; i < values.length; i++) {
@@ -2310,7 +2312,13 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                      const isDateMatch = (cleanTDate === "" && cleanRowDate === "") ||
                                          ((cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate)));
 
-                     if (rowConcept === tConcept && isDateMatch) {
+                     let isClienteMatch = true;
+                     if (clienteIdx > -1 && tCliente) {
+                         const rowCliente = String(row[clienteIdx] || "").trim().toUpperCase();
+                         isClienteMatch = rowCliente === tCliente;
+                     }
+
+                     if (rowConcept === tConcept && isDateMatch && isClienteMatch) {
                          rowIndex = i;
                          console.warn(`[SYNC GATEKEEPER] Duplicado interceptado. Tarea '${tConcept}' asignada a fila existente ${rowIndex+1} ignorando Folio.`);
                          break;
@@ -2502,9 +2510,6 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                         const cleanVal = valStr.replace('%', '').replace(',', '.').trim();
                         const num = parseFloat(cleanVal);
                         if (!isNaN(num) && Math.abs(num - 100) < 0.01) {
-                            isComplete = true;
-                        } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.001) {
-                            // Handles Google Sheets native 100% (1.0) percentage formatting
                             isComplete = true;
                         }
                     }
@@ -6225,9 +6230,6 @@ function test_avance_100_bug() {
                     const cleanVal = valStr.replace('%', '').replace(',', '.').trim();
                     const num = parseFloat(cleanVal);
                     if (!isNaN(num) && Math.abs(num - 100) < 0.01) {
-                        isComplete = true;
-                    } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.001) {
-                        // Handles Google Sheets native 100% (1.0) percentage formatting
                         isComplete = true;
                     }
                 }

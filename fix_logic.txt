@@ -1,0 +1,77 @@
+To fix this, we need to handle the ambiguity.
+If `rawVal === 1`, it could be 100% or 1%.
+But wait! If the user types "1" in the frontend, they mean 1%.
+If they mean 100%, they should type "100" or "100%".
+
+How can we distinguish a native `1` meaning 100% from a native `1` meaning 1%?
+Unfortunately, `.getValues()` returns `1` for both if the cell is formatted as automatic/number.
+BUT we can use `getDisplayValues()`!
+If we use `getDisplayValues()`, 100% percentage format returns `"100%"`.
+1% number format returns `"1"`.
+But `internalBatchUpdateTasks` uses `.getValues()`, and changing it to `getDisplayValues()` everywhere would break a lot of things (dates, numbers, etc.).
+Wait! In `internalBatchUpdateTasks`, we already have `values` from `.getValues()`.
+
+What if we just CHANGE the `isComplete` logic?
+```javascript
+                        } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.001) {
+                            // Handles Google Sheets native 100% (1.0) percentage formatting
+                            isComplete = true;
+                        }
+```
+If we remove this `else if`, then native percentage 100% will NOT be archived immediately by `internalBatchUpdateTasks` if it's evaluated as the number `1`.
+Wait! If they type "100" in the frontend, it sends `"100"` or `100`.
+`100` evaluates to true: `Math.abs(100 - 100) < 0.01` is TRUE.
+If they type "100%", it sends `"100%"`. It evaluates to true.
+The ONLY case that breaks if we remove it is if they type `100%` DIRECTLY in Google Sheets, and `.getValues()` returns `1`.
+If they do that, it won't be archived until they type "HECHO" or update it from the frontend to "100".
+Is that acceptable?
+Yes, it's much better than 1% tasks being auto-archived immediately!
+
+Wait! We can be smarter!
+If `rawVal === 1`, we can check the DISPLAY VALUE of that specific cell!
+```javascript
+                        } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.001) {
+                            // Ambiguity: 1 could mean 100% (percentage format) or 1 (number format for 1%)
+                            // Check the display value to be sure!
+                            const displayVal = sheet.getRange(i + 1, idx + 1).getDisplayValue();
+                            if (displayVal === "100%" || displayVal === "100") {
+                                isComplete = true;
+                            }
+                        }
+```
+But `i` is the row index in `values`. `headerRowIndex` offset must be accounted for.
+Wait, `values` is the ENTIRE sheet `getDataRange()`.
+So `rowIndex` in `values` is `rowIndex + 1` in the sheet.
+We can check:
+```javascript
+                            const displayVal = sheet.getRange(values.indexOf(row) + 1, idx + 1).getDisplayValue();
+                            if (displayVal.includes("100") || displayVal.toUpperCase() === "SI") {
+                                isComplete = true;
+                            }
+```
+But `indexOf` might not work if objects are identical. `activeRows.forEach((row, activeI) => ...)`
+The actual sheet row is `headerRowIndex + 1 + activeI + 1`.
+Wait, `activeRows` is a slice. So the index in `values` is `headerRowIndex + 1 + activeI`.
+The sheet row is `headerRowIndex + 1 + activeI + 1`.
+Calling `getDisplayValue()` in a loop is extremely slow and will cause timeouts! (Google Apps Script quota).
+
+Is there a better way?
+What if we just REMOVE the `rawVal === 1` check?
+If they type `100%` in Google Sheets, `.getValues()` returns `1`.
+If we remove the check, it won't archive.
+But wait! If they type `100%` in Google Sheets, the frontend will show it as `1`!
+If the frontend shows it as `1`, they will see "1%"!
+Wait, if `.getValues()` returns `1`, the frontend receives `1`. The frontend does:
+```html
+<input v-model="row[h]" ...> %
+```
+It will display `1%`!
+So if they type `100%` in Google Sheets, the frontend will show `1%`!
+This means our frontend already has a bug where it doesn't support native percentage formatting properly!
+If the frontend doesn't support it, then users ARE NOT using native percentage formatting!
+Because if they did, they would see `1%` in the frontend when they typed `100%` in the sheet, and they would be confused.
+To fix this globally, they must be typing `100` in the sheet directly, or typing `100` in the frontend.
+If they type `100`, `.getValues()` returns `100`.
+`Math.abs(100 - 100) < 0.01` is true.
+So `100` works perfectly!
+We can safely REMOVE the `Math.abs(rawVal - 1) < 0.001` check!
