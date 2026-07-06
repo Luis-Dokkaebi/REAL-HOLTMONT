@@ -8161,7 +8161,13 @@ const filteredStaffTrackerData = computed(() => {
           });
 
           if (isCompleted) {
-              const requiredFiles = ['INFO CLIENTE', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT'];
+              let requiredFiles = ['INFO CLIENTE', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT'];
+
+              const isSalesTracker = headers.some(h => ['COTIZACION', 'F2', 'LAYOUT'].includes(String(h).toUpperCase().trim()));
+              if (!isSalesTracker) {
+                  requiredFiles = ['ARCHIVO'];
+              }
+
               for (const req of requiredFiles) {
                   // Check if this requirement is part of the current tracker's columns
                   const headerExists = headers.some(h => String(h).toUpperCase().trim() === req);
