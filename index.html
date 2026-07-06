@@ -1990,8 +1990,8 @@
                       <i class="fas fa-tasks me-2"></i>COTIZACIONES EN PROCESO
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
-                      :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                      @click="trackerSubView = 'HISTORY'">
+                      :class="activeTrackerTab === 'OPERATIVO' && trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('OPERATIVO'); trackerSubView = 'HISTORY'">
                       <i class="fas fa-history me-2"></i>COTIZACIONES ENVIADAS PERDIDAS
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
@@ -2018,8 +2018,8 @@
                       <i class="fas fa-tasks me-2"></i>OPERATIVO
                  </div>
                  <div class="cursor-pointer px-4 py-2 fw-bold"
-                      :class="trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
-                      @click="trackerSubView = 'HISTORY'">
+                      :class="activeTrackerTab === 'OPERATIVO' && trackerSubView === 'HISTORY' ? 'text-primary border-bottom border-primary border-3' : 'text-muted'"
+                      @click="switchTrackerTab('OPERATIVO'); trackerSubView = 'HISTORY'">
                       <i class="fas fa-history me-2"></i>HISTORIAL
                  </div>
              </template>
