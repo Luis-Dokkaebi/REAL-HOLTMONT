@@ -8168,6 +8168,8 @@ const filteredStaffTrackerData = computed(() => {
                   requiredFiles = ['ARCHIVO'];
               }
 
+              requiredFiles.push('CORREO', 'CARPETA');
+
               for (const req of requiredFiles) {
                   // Check if this requirement is part of the current tracker's columns
                   const headerExists = headers.some(h => String(h).toUpperCase().trim() === req);
