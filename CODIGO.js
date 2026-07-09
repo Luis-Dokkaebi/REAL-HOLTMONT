@@ -92,6 +92,17 @@ const INITIAL_DIRECTORY = [
     { name: "CESAR GOMEZ", dept: "GENERAL", type: "ESTANDAR" }
 ];
 
+
+const FULL_PROCESS_NAMES = {
+    "L": "Levantamiento",
+    "CD": "Calculo y Diseño",
+    "EP": "Elaboracion Presupuesto",
+    "CI": "Cotizacion Interna",
+    "EV": "Estrategia Ventas",
+    "CEC": "Cotizacion Enviada al cliente",
+    "RCC": "Revision de Cotizacion Cliente"
+};
+
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
 const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'F. ENTREGA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT', 'AVANCE'];
 
@@ -2781,6 +2792,16 @@ function internalUpdateTask(personName, taskData, username) {
                      for (let worker of workers) {
                          const cleanWorker = String(worker).replace(/\s*\(VENTAS\)/ig, "").trim();
                          const assignData = JSON.parse(JSON.stringify(distData));
+
+                         const stepName = FULL_PROCESS_NAMES[taskData._assignStep] || taskData._assignStep;
+                         const cIdx = Object.keys(assignData).find(k => k.toUpperCase().trim() === 'CONCEPTO' || k.toUpperCase().trim() === 'DESCRIPCION');
+                         if (cIdx && assignData[cIdx] && stepName) {
+                             const tag = ` [${stepName}]`;
+                             if (!String(assignData[cIdx]).endsWith(tag)) {
+                                 assignData[cIdx] = String(assignData[cIdx]) + tag;
+                             }
+                         }
+
                          assignData['ESTATUS'] = 'PENDIENTE';
                          assignData['AVANCE'] = '0%';
                          const tRes = internalBatchUpdateTasks(cleanWorker, [assignData]);
@@ -5339,6 +5360,16 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                      for (let worker of workers) {
                          const cleanWorker = String(worker).replace(/\s*\(VENTAS\)/ig, "").trim();
                          const assignData = JSON.parse(JSON.stringify(distData));
+
+                         const stepName = FULL_PROCESS_NAMES[taskData._assignStep] || taskData._assignStep;
+                         const cIdx = Object.keys(assignData).find(k => k.toUpperCase().trim() === 'CONCEPTO' || k.toUpperCase().trim() === 'DESCRIPCION');
+                         if (cIdx && assignData[cIdx] && stepName) {
+                             const tag = ` [${stepName}]`;
+                             if (!String(assignData[cIdx]).endsWith(tag)) {
+                                 assignData[cIdx] = String(assignData[cIdx]) + tag;
+                             }
+                         }
+
                          assignData['ESTATUS'] = 'PENDIENTE';
                          assignData['AVANCE'] = '0%';
                          internalBatchUpdateTasks(cleanWorker, [assignData]);
