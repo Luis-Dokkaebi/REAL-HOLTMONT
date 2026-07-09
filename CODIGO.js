@@ -2163,8 +2163,14 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
   }
   
   try {
-    const sheet = findSheetSmart(sheetName);
-    if (!sheet) return { success: false, message: "Hoja no encontrada: " + sheetName };
+    let sheet = findSheetSmart(sheetName);
+    if (!sheet) {
+        // FALLBACK AUTO-CREACIÓN: Si un usuario no ha ingresado y se le delega, creamos su hoja
+        sheet = SS.insertSheet(sheetName);
+        const hdrs = sheetName.toUpperCase().includes("(VENTAS)") ? DEFAULT_SALES_HEADERS : DEFAULT_TRACKER_HEADERS;
+        sheet.appendRow(hdrs);
+        sheet.getRange(1, 1, 1, hdrs.length).setFontWeight("bold").setBackground("#e6e6e6");
+    }
     const dataRange = sheet.getDataRange();
     let values = dataRange.getValues();
     if (values.length === 0) return { success: false, message: "Hoja vacía" };
