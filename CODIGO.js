@@ -2952,7 +2952,13 @@ function internalUpdateTask(personName, taskData, username) {
                              }
 
                              if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [safeSyncData]);
+                                 // Para hojas de VENTAS, permitimos que ESTATUS y AVANCE pasen (se reincorporan del original)
+                                 const safeVentasSyncData = Object.assign({}, syncData);
+                                 if (typeof syncToAntonia !== 'undefined' && syncToAntonia['MAP COT']) {
+                                     safeVentasSyncData['MAP COT'] = syncToAntonia['MAP COT'];
+                                     safeVentasSyncData['PROCESO_LOG'] = syncToAntonia['PROCESO_LOG'];
+                                 }
+                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [safeVentasSyncData]);
                              } else {
                                  const reverseFolio = safeSyncData['FOLIO'] || safeSyncData['ID'];
                                  if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
@@ -5575,10 +5581,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                if (String(personName).toUpperCase().includes("(VENTAS)")) {
                    const safeDistTasks = distributionTasks.map(t => {
                        let st = Object.assign({}, t);
-                       const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
-                       Object.keys(st).forEach(k => {
-                           if (delKeys.includes(k.toUpperCase().trim())) delete st[k];
-                       });
+                       // No eliminamos ESTATUS ni AVANCE en tareas de VENTAS para que se actualice la vista general.
                        const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
                        if (matchedSync) {
                            st['MAP COT'] = matchedSync['MAP COT'];
