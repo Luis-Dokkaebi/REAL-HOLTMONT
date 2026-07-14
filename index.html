@@ -40,7 +40,7 @@
     .table-excel th {
         background-color: #e6e6e6; color: #000; font-weight: 700; text-align: center;
         border: 1px solid #999; padding: 8px 4px; font-size: 11px !important; font-family: 'Arial', sans-serif !important;
-        position: sticky; top: 0; z-index: 20; white-space: nowrap; box-shadow: 0 1px 0 #999; text-transform: lowercase !important;
+        position: sticky; top: 0; z-index: 20; white-space: nowrap; box-shadow: 0 1px 0 #999; text-transform: none !important;
     }
     .table-excel td { border: 1px solid #b2b2b2 !important; padding: 0; margin: 0; height: 30px; vertical-align: middle; position: relative; font-family: 'Arial', sans-serif !important; font-size: 11px !important; text-transform: uppercase !important; }
 
@@ -63,12 +63,12 @@
 
     /* MINI DASHBOARD & KPI */
     .mini-table { width: auto !important; min-width: 0 !important; border: none; }
-    .mini-table th { padding: 5px 6px; font-size: 11px !important; font-family: 'Arial', sans-serif !important; height: auto; line-height: 1.2; border: 1px solid #999; text-align: center; white-space: nowrap; background-color: #e6e6e6; text-transform: lowercase !important; }
+    .mini-table th { padding: 5px 6px; font-size: 11px !important; font-family: 'Arial', sans-serif !important; height: auto; line-height: 1.2; border: 1px solid #999; text-align: center; white-space: nowrap; background-color: #e6e6e6; text-transform: none !important; }
     .mini-table td { height: auto; font-size: 11px !important; font-family: 'Arial', sans-serif !important; padding: 4px 6px; line-height: 1.2; border: 1px solid #ccc; text-transform: uppercase !important; }
     .mini-table .total-row td { background-color: #333; color: white; font-weight: bold; border-top: 2px solid #555 !important; text-transform: uppercase !important; font-size: 11px !important; font-family: 'Arial', sans-serif !important; }
 
     /* STANDARD TABLES (BOOTSTRAP) */
-    .table th { text-transform: lowercase !important; font-size: 11px !important; font-family: 'Arial', sans-serif !important; }
+    .table th { text-transform: none !important; font-size: 11px !important; font-family: 'Arial', sans-serif !important; }
     .table td, .table input, .table select { text-transform: uppercase !important; font-size: 11px !important; font-family: 'Arial', sans-serif !important; }
 
     /* DYNAMIC TRACKER FORM */
@@ -526,7 +526,7 @@
         text-align: center;
         font-weight: bold;
         color: #000;
-        text-transform: lowercase !important;
+        text-transform: none !important;
         font-family: 'Arial', sans-serif !important;
         font-size: 11px !important;
     }
@@ -7246,10 +7246,12 @@ const filteredStaffTrackerData = computed(() => {
       const getHeaderLabel = (h) => {
           const up = String(h).toUpperCase().trim();
           if (up === 'DIAS' && currentUsername.value === 'ANTONIA_VENTAS') return 'Días Finaliz. Cotiz';
-          if (up === 'CLASIFICACION') return 'CLASI';
-          if (up === 'FECHA ESTIMADA DE FIN') return 'FEC. EST. FIN';
-          if (up === 'HORA ESTIMADA DE FIN') return 'HR. EST. FIN';
-          return h;
+          if (up === 'CLASIFICACION') return 'Clasi';
+          if (up === 'FECHA ESTIMADA DE FIN') return 'Fec. Est. Fin';
+          if (up === 'HORA ESTIMADA DE FIN') return 'Hr. Est. Fin';
+
+          let str = String(h).toLowerCase();
+          return str.charAt(0).toUpperCase() + str.slice(1);
       };
       const isMediaColumn = (h) => ['F2','COTIZACION','COT','COTIZACIÓN','TIMEOUT','TIME OUT','LAYOUT','TIMELINE','INFO CLIENTE','CORREO','CARPETA','CORREOS','CARPETAS'].includes(String(h).toUpperCase());
       const getTrafficStyle = (row) => {
