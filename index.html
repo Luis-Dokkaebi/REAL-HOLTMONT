@@ -7014,9 +7014,9 @@ async function toggleVoiceRecording(btnElement) {
 
       // --- LOGICA GENERAL Y COMPUTED ---
       const salesStaff = computed(() => (config.value.directory || []).filter(p => p.dept === 'VENTAS' && p.name !== 'ANTONIA_VENTAS').map(p => p.name));
-      const allStaffList = computed(() => (config.value.directory || config.value.staff || []).map(p => p.name).filter((n, i, a) => a.indexOf(n) === i));
+      const allStaffList = computed(() => (config.value.directory || config.value.staff || []).map(p => p.name).filter((n, i, a) => a.indexOf(n) === i && n !== 'ANTONIA_VENTAS'));
       const filteredStaff = computed(() => config.value.staff.filter(p => p.dept === currentDept.value && p.name.toLowerCase().includes(searchQuery.value.toLowerCase())));
-      const filteredDirectory = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(staffSearch.value.toLowerCase()) && !selectedResponsables.value.includes(p.name)).slice(0,5));
+      const filteredDirectory = computed(() => (config.value.directory || config.value.staff).filter(p => p.name.toLowerCase().includes(staffSearch.value.toLowerCase()) && !selectedResponsables.value.includes(p.name) && p.name !== 'ANTONIA_VENTAS').slice(0,5));
       const pageTitle = computed(() => currentView.value);
       const currentDeptData = computed(() => config.value.departments[currentDept.value] || {});
 
