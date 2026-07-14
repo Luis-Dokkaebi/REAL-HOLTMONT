@@ -74,7 +74,7 @@ Este documento define el contexto técnico, las reglas de negocio y las "skills"
 ## 8. Quality Control en Pull Requests (submit)
 
 - **Mandatory Quality Checks:**
-  - Cada vez que uses la herramienta `submit` para hacer un Pull Request, **debes** incluir y responder las siguientes 5 preguntas de control de calidad en la descripción del PR:
+  - Cada vez que uses la herramienta `submit` para hacer un Pull Request, **debes** incluir y responder las siguientes 5 preguntas de control de calidad en la descripción del PR. **Además, todos los comentarios y descripciones del PR deben redactarse SIEMPRE en ESPAÑOL/SPANISH:**
     1. ¿Tiene un feedback loop que verifique el código generado?
     2. ¿Cómo se hace el rollback si falla?
     3. ¿Tiene observabilidad en producción?
