@@ -71,6 +71,16 @@ Este documento define el contexto técnico, las reglas de negocio y las "skills"
   - No implementes funciones con micrófonos, dado que GAS bloquea su uso.
   - Algunos elementos visuales (ej., ciertos botones o columnas en `PPC_FORM`) son meramente "mocks" estéticos y no deben acoplarse con persistencia de base de datos a menos que se solicite explícitamente.
 
+## 8. Quality Control en Pull Requests (submit)
+
+- **Mandatory Quality Checks:**
+  - Cada vez que uses la herramienta `submit` para hacer un Pull Request, **debes** incluir y responder las siguientes 5 preguntas de control de calidad en la descripción del PR:
+    1. ¿Tiene un feedback loop que verifique el código generado?
+    2. ¿Cómo se hace el rollback si falla?
+    3. ¿Tiene observabilidad en producción?
+    4. ¿Escala si el equipo crece?
+    5. ¿Tu equipo lo mantiene sin ti?
+  - Estas preguntas aseguran que los cambios introducidos sean seguros, mantenibles y sigan las mejores prácticas de ingeniería de software.
 
 ---
 ---
