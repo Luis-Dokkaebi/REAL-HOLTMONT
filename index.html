@@ -7249,6 +7249,7 @@ const filteredStaffTrackerData = computed(() => {
           if (up === 'CLASIFICACION') return 'Clasi';
           if (up === 'FECHA ESTIMADA DE FIN') return 'Fec. Est. Fin';
           if (up === 'HORA ESTIMADA DE FIN') return 'Hr. Est. Fin';
+          if (up === 'RESTRICCIONES') return 'Restricciones y Comentarios';
 
           let str = String(h).toLowerCase();
           return str.charAt(0).toUpperCase() + str.slice(1);
