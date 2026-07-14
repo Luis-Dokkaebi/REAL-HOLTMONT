@@ -609,7 +609,7 @@ function getSystemConfig(role, username) {
       staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ], 
       directory: fullDirectory,
       specialModules: [
-        { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: allDepts["PRESUPUESTOS"] ? allDepts["PRESUPUESTOS"].color : "#6f42c1", type: "mirror_staff", target: "ANTONIA PINEDA LOPEZ" },
+        { id: "MY_TRACKER", label: "Tracker", icon: "fa-table", color: allDepts["PRESUPUESTOS"] ? allDepts["PRESUPUESTOS"].color : "#6f42c1", type: "mirror_staff", target: "ANTONIA PINEDA LOPEZ" },
         ppcModuleMaster,
         ppcModuleWeekly
       ],
@@ -643,11 +643,11 @@ function getSystemConfig(role, username) {
     const staffName = u.staffName || u.label;
     const deptColor = (allDepts[u.dept] && allDepts[u.dept].color) || "#0d6efd";
     const modules = [
-        { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: deptColor, type: "mirror_staff", target: staffName },
+        { id: "MY_TRACKER", label: "Tracker", icon: "fa-table", color: deptColor, type: "mirror_staff", target: staffName },
         { id: "PPC_MASTER", label: "Agregar Actividad", icon: "fa-tasks", color: "#fd7e14", type: "ppc_native" }
     ];
     if (u.seller) {
-        modules.push({ id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: staffName + " (VENTAS)" });
+        modules.push({ id: "MY_SALES", label: "Cotizaciones", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: staffName + " (VENTAS)" });
     }
     return {
       departments: {},
