@@ -70,6 +70,7 @@
     /* STANDARD TABLES (BOOTSTRAP) */
     .table th { text-transform: none !important; font-size: 11px !important; font-family: 'Arial', sans-serif !important; }
     .table td, .table input, .table select { text-transform: uppercase !important; font-size: 11px !important; font-family: 'Arial', sans-serif !important; }
+    .table .text-normal-case, .text-normal-case { text-transform: none !important; }
 
     /* DYNAMIC TRACKER FORM */
     .dynamic-tracker { background-color: #f4f6f8 !important; color: #333; flex:1; display:flex; flex-direction:column; padding:0 !important; overflow-y:auto; }
@@ -1959,7 +1960,7 @@
                          </div>
                          <input v-else-if="isCol(h, ['ID','FOLIO'])" :value="row[h]" class="excel-input" readonly style="background-color:#f0f0f0; color:#555; text-align:center;">
                          <input v-else-if="isCol(h, ['ESTATUS','STATUS'])" v-model="row[h]" class="excel-input" style="font-weight:bold">
-                         <input v-else v-model="row[h]" class="excel-input">
+                         <input v-else v-model="row[h]" class="excel-input" :class="{'text-normal-case': String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')}">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveProjectRow(row)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                    </tr>
@@ -2647,8 +2648,8 @@
                              <div style="position:absolute; inset:0; display:flex; align-items:center; padding-left:4px; font-size:12px; pointer-events:none; color: #000 !important;">{{ formatDisplayDate(row[h]) }}</div>
                              <input type="date" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" :disabled="!isFieldEditable(h, row)" :value="toIsoDate(row[h])" @input="updateDateFromPicker($event, row, h)">
                          </div>
-                         <textarea v-else-if="(String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES') || String(h).toUpperCase().includes('RESTRICCION')) || (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP'))" v-model="row[h]" class="excel-textarea" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
-                         <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
+                         <textarea v-else-if="(String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES') || String(h).toUpperCase().includes('RESTRICCION')) || (String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP'))" v-model="row[h]" class="excel-textarea" :class="{'text-normal-case': String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')}" :readonly="!isFieldEditable(h, row)" rows="2" spellcheck="true"></textarea>
+                         <input v-else v-model="row[h]" :readonly="!isFieldEditable(h, row)" class="excel-input" :class="{'text-normal-case': String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')}" :spellcheck="currentUsername === 'ANTONIA_VENTAS'">
                       </td>
                       <td class="text-center" style="background:#f8f9fa"><button class="btn btn-link btn-sm p-0 text-success" @click="saveRow(row, $event)" :disabled="row._isSaving"><i class="fas" :class="row._isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i></button></td>
                    </tr>
@@ -2818,7 +2819,7 @@
                                     <div v-else-if="String(h).toUpperCase().includes('COMENTARIO') || String(h).toUpperCase().includes('PREVIOS') || String(h).toUpperCase().includes('OBSERVACIONES') || String(h).toUpperCase().includes('RESTRICCION')" class="text-start">
                                         <textarea v-model="row[h]" class="excel-textarea" rows="2" spellcheck="false" style="text-align:left;"></textarea>
                                     </div>
-                                    <div v-else-if="String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')" class="px-1" style="white-space:normal; overflow:hidden; text-align:left; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;" :title="row[h]">{{ row[h] }}</div>
+                                    <div v-else-if="String(h).toUpperCase() === 'CONCEPTO' || String(h).toUpperCase().includes('DESCRIP')" class="px-1 text-normal-case" style="white-space:normal; overflow:hidden; text-align:left; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;" :title="row[h]">{{ row[h] }}</div>
                                     <div v-else class="px-1" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:left;" :title="row[h]">{{ row[h] }}</div>
                                 </td>
                             </template>
@@ -4462,7 +4463,7 @@
                            <td><select v-model="ppcData.rutaCritica" class="excel-input" :style="{backgroundColor: ppcData.rutaCritica === 'SI' ? '#ffcccc' : ''}"><option value="NO">NO</option><option value="SI">SI</option></select></td>
                            <td><input v-model="ppcData.zona" class="excel-input" placeholder="Zona..."></td>
                            <td><select v-model="ppcData.especialidad" class="excel-input"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td>
-                           <td><input v-model="ppcData.concepto" class="excel-input" placeholder="Descripción..."></td>
+                           <td><input v-model="ppcData.concepto" class="excel-input text-normal-case" placeholder="Descripción..."></td>
                            <td><input v-model="ppcData.cuantReq" class="excel-input" placeholder="Req"></td>
                            <td><input v-model="ppcData.cuantReal" class="excel-input" placeholder="Real"></td>
                            <td style="position:relative;"><div class="chip-container" @click="$refs.chipInJ.focus()"><span v-for="(u,i) in selectedResponsables" :key="i" class="user-chip">{{u}}<i class="fas fa-times ms-1 text-danger" style="cursor:pointer" @click.stop="selectedResponsables.splice(i,1)"></i></span><input ref="chipInJ" v-model="staffSearch" style="border:none;outline:none;min-width:40px;font-size:12px;background:transparent;" placeholder="+"></div><ul class="list-group position-absolute w-100 shadow" style="z-index:100;max-height:150px;overflow:auto;top:100%;left:0" v-if="staffSearch"><li v-for="p in filteredDirectory" :key="p.name" class="list-group-item list-group-item-action small py-1" @click="addResponsable(p.name)">{{p.name}}</li></ul></td>
@@ -4523,7 +4524,7 @@
                            <td class="row-num">{{ idx + 1 }}<i v-if="item.saved" class="fas fa-check-circle text-success ms-1" title="Guardada"></i></td>
                            <td v-if="currentUsername === 'PREWORK_ORDER'"><input v-model="item.cliente" class="excel-input" placeholder="MB"></td>
                            <td><select v-model="item.especialidad" class="excel-input"><option value="" disabled>Sel...</option><option v-for="(d,k) in (config.allDepartments || config.departments)" :key="k" :value="k">{{d.label}}</option></select></td>
-                           <td><input v-model="item.concepto" class="excel-input" placeholder="Descripción..."></td>
+                           <td><input v-model="item.concepto" class="excel-input text-normal-case" placeholder="Descripción..."></td>
                            <td><select v-model="item.clasificacion" class="excel-input"><option value=""></option><option value="A">A</option><option value="AA">AA</option><option value="AAA">AAA</option></select></td>
                            <td><select v-model="item.prioridades" class="excel-input"><option value=""></option><option value="ALTA">ALTA</option><option value="MEDIA">MEDIA</option><option value="BAJA">BAJA</option></select></td>
                            <td><select v-model="item.riesgos" class="excel-input"><option value=""></option><option value="ALTO">ALTO</option><option value="MEDIO">MEDIO</option><option value="BAJO">BAJO</option></select></td>
