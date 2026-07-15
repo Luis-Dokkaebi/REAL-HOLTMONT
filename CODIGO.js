@@ -2298,11 +2298,13 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
           const tConcept = String(task['CONCEPTO'] || task['DESCRIPCION'] || task['TAREA'] || "").trim().toUpperCase().substring(0, 50);
           const tDate = String(task['FECHA'] || task['F. INICIO'] || "").trim();
           const tCliente = String(task['CLIENTE'] || "").trim().toUpperCase();
+          const tResponsable = String(task['RESPONSABLE'] || task['INVOLUCRADOS'] || task['VENDEDOR'] || task['ENCARGADO'] || task['ASIGNADO'] || "").trim().toUpperCase();
 
           if (tConcept) {
              const conceptIdx = getColIdx('CONCEPTO') > -1 ? getColIdx('CONCEPTO') : getColIdx('DESCRIPCION');
              const dateIdx = getColIdx('FECHA') > -1 ? getColIdx('FECHA') : getColIdx('F. INICIO');
              const clienteIdx = getColIdx('CLIENTE');
+             const responsableIdx = getColIdx('RESPONSABLE') > -1 ? getColIdx('RESPONSABLE') : (getColIdx('VENDEDOR') > -1 ? getColIdx('VENDEDOR') : getColIdx('INVOLUCRADOS'));
 
              if (conceptIdx > -1) {
                  for (let i = headerRowIndex + 1; i < values.length; i++) {
@@ -2335,7 +2337,13 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                          isClienteMatch = rowCliente === tCliente;
                      }
 
-                     if (rowConcept === tConcept && isDateMatch && isClienteMatch) {
+                     let isResponsableMatch = true;
+                     if (responsableIdx > -1 && tResponsable) {
+                         const rowResponsable = String(row[responsableIdx] || "").trim().toUpperCase();
+                         isResponsableMatch = rowResponsable === tResponsable;
+                     }
+
+                     if (rowConcept === tConcept && isDateMatch && isClienteMatch && isResponsableMatch) {
                          rowIndex = i;
                          console.warn(`[SYNC GATEKEEPER] Duplicado interceptado. Tarea '${tConcept}' asignada a fila existente ${rowIndex+1} ignorando Folio.`);
                          break;
@@ -6125,6 +6133,7 @@ function deduplicateAllSheets() {
     let folioIdx = -1;
     let conceptoIdx = -1;
     let fechaIdx = -1;
+    let responsableIdx = -1;
 
     // Buscar la fila de encabezados en las primeras 20 filas
     for (let r = 0; r < Math.min(20, data.length); r++) {
@@ -6138,6 +6147,7 @@ function deduplicateAllSheets() {
         folioIdx = fIdx;
         conceptoIdx = cIdx;
         fechaIdx = currentHeaders.findIndex(h => h === "FECHA" || h === "F. INICIO" || h.includes("FECHA"));
+        responsableIdx = currentHeaders.findIndex(h => h === "RESPONSABLE" || h === "INVOLUCRADOS" || h === "VENDEDOR" || h === "ENCARGADO" || h === "ASIGNADO");
         break;
       }
     }
@@ -6160,6 +6170,7 @@ function deduplicateAllSheets() {
       // ALWAYS check by concept + date FIRST to catch duplicates with DIFFERENT folios
       const concept = conceptoIdx > -1 ? row[conceptoIdx] : "";
       const dateRaw = fechaIdx > -1 ? row[fechaIdx] : "";
+      const responsableRaw = responsableIdx > -1 ? row[responsableIdx] : "";
 
       let dateStr = "";
       if (dateRaw instanceof Date) {
@@ -6170,9 +6181,10 @@ function deduplicateAllSheets() {
       }
 
       const conceptStr = String(concept).trim().toUpperCase().substring(0, 50);
+      const responsableStr = String(responsableRaw).trim().toUpperCase();
 
       if (conceptStr !== "") {
-          const comboKey = conceptStr + "|||" + dateStr;
+          const comboKey = conceptStr + "|||" + dateStr + "|||" + responsableStr;
           if (seenCombos.has(comboKey)) {
               isDuplicate = true;
           } else {
