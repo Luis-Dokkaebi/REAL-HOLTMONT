@@ -3340,7 +3340,10 @@ function apiSavePPCData(payload, activeUser) {
                  'DIAS_J': item.dias ? (item.dias.j ? "x" : "") : (item.DIAS_J || ""),
                  'DIAS_V': item.dias ? (item.dias.v ? "x" : "") : (item.DIAS_V || ""),
                  'DIAS_S': item.dias ? (item.dias.s ? "x" : "") : (item.DIAS_S || ""),
-                 'DIAS_D': item.dias ? (item.dias.d ? "x" : "") : (item.DIAS_D || "")
+                 'DIAS_D': item.dias ? (item.dias.d ? "x" : "") : (item.DIAS_D || ""),
+                 'APROBACION': 'PENDIENTE',
+                 'APROBADOR': activeUser,
+                 'NO_RECHAZOS': 0
           };
           
           // A. Persistencia en PPC Maestro (PPCV3)
