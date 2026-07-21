@@ -1,0 +1,81 @@
+<<<<<<< SEARCH
+                         <div v-else-if="isCol(h, ['ESTATUS','STATUS'])" style="width:100%; height:100%;">
+                             <div v-if="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100 w-100">
+                                  <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:2px 4px; border-bottom:1px solid #dee2e6;">
+                                      <div style="cursor:pointer; font-size:10px; font-weight:bold; text-align:center; white-space:normal; line-height:1.1; flex-grow:1; margin-right:4px;"
+                                           :style="getAntoniaStatusStyle(row[h])"
+                                           @click="openStatusSelector(row, h)">
+                                          {{ row[h] }}
+                                      </div>
+                                      <div style="cursor:pointer; padding:2px;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
+                                          <i class="fas fa-fire text-danger fa-lg"></i>
+                                      </div>
+                                  </div>
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; padding: 2px;">
+                                      <div class="hp-timeline-container" style="justify-content: center; padding: 0;">
+                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null" style="margin-right: 5px; width: 45px;">
+                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)" style="width: 20px; height: 20px; font-size: 8px;">
+                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
+                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'" style="width: 10px; height: 10px; font-size: 6px; bottom: -2px; right: -2px;">
+                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                                  </div>
+                                              </div>
+                                              <div class="hp-text" style="font-size: 7px; line-height: 1;">
+                                                  {{ step.id }}<br>
+                                                  <span class="hp-time" style="font-size: 7px;">{{ step.timeLabel }}</span>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                             </div>
+                             <div v-else style="position:relative; width:100%; height:100%;" @click="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS')) ? openStatusSelector(row, h) : null">
+                                 <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;">
+                                     <span v-if="String(row[h]).toUpperCase() === 'TERMINADA' || String(row[h]).toUpperCase() === 'HECHO' || String(row[h]).toUpperCase() === 'DONE'" class="badge rounded-pill" style="background-color: #d1fae5; color: #15803d; font-size: 10px;">Terminada</span>
+                                     <span v-else-if="String(row[h]).toUpperCase() === 'EN PROCESO' || String(row[h]).toUpperCase() === 'IN_PROGRESS'" class="badge rounded-pill" style="background-color: #f3f4f6; color: #4b5563; font-size: 10px;">En proceso</span>
+                                     <span v-else-if="String(row[h]).toUpperCase() === 'RETRASADA'" class="badge rounded-pill" style="background-color: #fee2e2; color: #b91c1c; font-size: 10px;">Retrasada</span>
+                                     <span v-else class="badge bg-light text-dark rounded-pill" style="font-size: 10px;">{{ row[h] }}</span>
+                                 </div>
+                                 <input v-if="currentUsername !== 'ANTONIA_VENTAS' && !(staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" v-model="row[h]" class="excel-input" style="font-weight:bold; opacity:0;">
+                             </div>
+                         </div>
+=======
+                         <div v-else-if="isCol(h, ['ESTATUS','STATUS'])" style="width:100%; height:100%;">
+                             <div v-if="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" class="d-flex flex-column h-100 w-100">
+                                  <div style="flex: 0 0 auto; display:flex; align-items:center; justify-content:space-between; padding:2px 4px; border-bottom:1px solid #dee2e6;">
+                                      <div style="cursor:pointer; font-size:10px; font-weight:bold; text-align:center; white-space:normal; line-height:1.1; flex-grow:1; margin-right:4px;"
+                                           :style="getAntoniaStatusStyle(row[h])"
+                                           @click="openStatusSelector(row, h)">
+                                          {{ row[h] }}
+                                      </div>
+                                      <div style="cursor:pointer; padding:2px;" @click="openHotPotatoModal(row)" title="Ver Papa Caliente">
+                                          <i class="fas fa-fire text-danger fa-lg"></i>
+                                      </div>
+                                  </div>
+                                  <div style="flex: 1 1 auto; display:flex; align-items:center; justify-content:center; background:#f8f9fa; padding: 2px;">
+                                      <div class="hp-timeline-container" style="justify-content: center; padding: 0;">
+                                          <div v-for="(step, sIdx) in getProcessTimeline(row)" :key="sIdx" class="hp-step" @click="step.isCurrent ? advanceProcess(row) : null" style="margin-right: 5px; width: 45px;">
+                                              <div class="hp-circle" :class="step.isDone ? 'green' : (step.isInProgress ? 'yellow' : 'red')" :title="getFullProcessName(step.id)" style="width: 20px; height: 20px; font-size: 8px;">
+                                                  <i v-if="step.isDone" class="fas fa-check"></i><i v-else-if="step.isInProgress" class="fas fa-user-clock"></i>
+                                                  <div class="hp-clock-icon" :class="step.isDone ? 'check-icon' : 'red-icon'" style="width: 10px; height: 10px; font-size: 6px; bottom: -2px; right: -2px;">
+                                                      <i class="fas" :class="step.isDone ? 'fa-check-circle' : 'fa-clock'"></i>
+                                                  </div>
+                                              </div>
+                                              <div class="hp-text" style="font-size: 7px; line-height: 1;">
+                                                  {{ step.id }}<br>
+                                                  <span class="hp-time" style="font-size: 7px;">{{ step.timeLabel }}</span>
+                                              </div>
+                                          </div>
+                                      </div>
+                                  </div>
+                             </div>
+                             <div v-else style="position:relative; width:100%; height:100%;" @click="currentUsername === 'ANTONIA_VENTAS' || (staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS')) ? openStatusSelector(row, h) : null">
+                                 <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none;">
+                                     <span v-if="String(row[h]).toUpperCase() === 'TERMINADA' || String(row[h]).toUpperCase() === 'HECHO' || String(row[h]).toUpperCase() === 'DONE'" class="badge rounded-pill" style="background-color: #d1fae5; color: #15803d; font-size: 10px;">Terminada</span>
+                                     <span v-else-if="String(row[h]).toUpperCase() === 'EN PROCESO' || String(row[h]).toUpperCase() === 'IN_PROGRESS'" class="badge rounded-pill" style="background-color: #f3f4f6; color: #4b5563; font-size: 10px;">En proceso</span>
+                                     <span v-else-if="String(row[h]).toUpperCase() === 'RETRASADA'" class="badge rounded-pill" style="background-color: #fee2e2; color: #b91c1c; font-size: 10px;">Retrasada</span>
+                                     <span v-else class="badge bg-light text-dark rounded-pill" style="font-size: 10px;">{{ row[h] }}</span>
+                                 </div>
+                                 <input v-if="currentUsername !== 'ANTONIA_VENTAS' && !(staffTracker && staffTracker.name && staffTracker.name.includes('VENTAS'))" v-model="row[h]" class="excel-input" style="font-weight:bold; opacity:0;">
+                             </div>
+                         </div>
+>>>>>>> REPLACE
