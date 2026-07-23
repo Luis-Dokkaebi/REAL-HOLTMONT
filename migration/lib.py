@@ -143,9 +143,11 @@ def parse_duration_days(value):
 
 
 def split_involucrados(raw):
+    """Separa un campo que puede traer varios nombres juntos, separados por
+    coma y/o salto de línea (ambos aparecen en el origen)."""
     if not raw:
         return []
-    text = str(raw)
+    text = str(raw).replace("\n", ",")
     parts = [p.strip() for p in text.split(",")]
     return [p for p in parts if p]
 

@@ -99,6 +99,14 @@ class MigrationBundle:
         self.system_log = []
         self.warnings = []
 
+    def register_person_field(self, raw):
+        """Registra cada nombre de un campo que puede traer uno o varios
+        (coma/salto de línea). Nunca registra el string compuesto tal cual
+        como si fuera una sola persona -- eso ensucia `people` con filas
+        basura tipo 'RAMIRO RODRIGUEZ, ALFONSO CORREA, TERESA GARZA'."""
+        for name in lib.split_involucrados(raw):
+            self.register_person(name)
+
     def register_person(self, nombre, departamento=None, tipo_hoja=None):
         if not nombre:
             return
@@ -146,7 +154,7 @@ def build_bundle(wb) -> MigrationBundle:
         if not t.get("folio"):
             t["folio"] = key
         if t.get("assignee_raw"):
-            bundle.register_person(t["assignee_raw"])
+            bundle.register_person_field(t["assignee_raw"])
         if key not in bundle.tasks:
             bundle.tasks[key] = t
         else:
@@ -171,7 +179,7 @@ def build_bundle(wb) -> MigrationBundle:
         bundle.ppc_borradores = lib.extract_ppc_borradores(wb["PPC_BORRADOR"])
         for b in bundle.ppc_borradores:
             if b.get("responsable_raw"):
-                bundle.register_person(b["responsable_raw"])
+                bundle.register_person_field(b["responsable_raw"])
 
     # --- 5. Ventas ----------------------------------------------------
     for name in VENTAS_SHEETS_ORDERED:
@@ -180,7 +188,7 @@ def build_bundle(wb) -> MigrationBundle:
         for q in lib.extract_quotes(wb[name], name):
             folio = q["folio"]
             if q.get("vendedor_raw"):
-                bundle.register_person(q["vendedor_raw"])
+                bundle.register_person_field(q["vendedor_raw"])
             if folio not in bundle.quotes:
                 bundle.quotes[folio] = q
             else:
@@ -209,13 +217,13 @@ def build_bundle(wb) -> MigrationBundle:
         bundle.personal_agenda = lib.extract_personal_agenda(wb[agenda_name])
         for a in bundle.personal_agenda:
             if a.get("usuario_raw"):
-                bundle.register_person(a["usuario_raw"])
+                bundle.register_person_field(a["usuario_raw"])
 
     if "HABITOS_LOG" in wb.sheetnames:
         bundle.habits_log = lib.extract_habits_log(wb["HABITOS_LOG"])
         for h in bundle.habits_log:
             if h.get("usuario_raw"):
-                bundle.register_person(h["usuario_raw"])
+                bundle.register_person_field(h["usuario_raw"])
 
     if "KPI_COTIZACIONES" in wb.sheetnames:
         bundle.kpi_cotizaciones = lib.extract_kpi_cotizaciones(wb["KPI_COTIZACIONES"])
