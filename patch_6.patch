@@ -1,0 +1,63 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -5518,8 +5518,10 @@
+           // Handle Reverse Sync (Vendor -> Antonia)
+           if (!isAntonia && distributionTasks.length > 0) {
+                const syncPayloads = [];
+-               let antDataFetched = false;
+-               let antDataRows = [];
++               let antVentasDataFetched = false;
++               let antVentasDataRows = [];
++               let antPinedaDataFetched = false;
++               let antPinedaDataRows = [];
+
+                distributionTasks.forEach(taskData => {
+                    const getTVal = (keys) => {
+@@ -5537,13 +5539,25 @@
+                    const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
+
+                    if (tFolio && isDone) {
+-                       if (!antDataFetched) {
+-                           const antData = internalFetchSheetData("ANTONIA_VENTAS");
+-                           if (antData.success && antData.data) antDataRows = antData.data;
+-                           antDataFetched = true;
++                       let targetRows = [];
++                       if (tFolio.startsWith("AV-")) {
++                           if (!antVentasDataFetched) {
++                               const antData = internalFetchSheetData("ANTONIA_VENTAS");
++                               if (antData.success && antData.data) antVentasDataRows = antData.data;
++                               antVentasDataFetched = true;
++                           }
++                           targetRows = antVentasDataRows;
++                       } else if (tFolio.startsWith("AP-")) {
++                           if (!antPinedaDataFetched) {
++                               const antData = internalFetchSheetData("ANTONIA PINEDA LOPEZ");
++                               if (antData.success && antData.data) antPinedaDataRows = antData.data;
++                               antPinedaDataFetched = true;
++                           }
++                           targetRows = antPinedaDataRows;
+                        }
++
+
+-                       const targetRow = antDataRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
++                       const targetRow = targetRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
+                        if (targetRow) {
+                            let log = [];
+                            try {
+@@ -5620,8 +5634,16 @@
+                });
+
+                if (syncPayloads.length > 0) {
+-                   internalBatchUpdateTasks("ANTONIA_VENTAS", syncPayloads, false);
++                   const avSyncPayloads = syncPayloads.filter(p => p.FOLIO.startsWith("AV-"));
++                   const apSyncPayloads = syncPayloads.filter(p => p.FOLIO.startsWith("AP-"));
++
++                   if (avSyncPayloads.length > 0) {
++                       internalBatchUpdateTasks("ANTONIA_VENTAS", avSyncPayloads, false);
++                   }
++                   if (apSyncPayloads.length > 0) {
++                       internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", apSyncPayloads, false);
++                   }
+                }
+
+                if (String(personName).toUpperCase().includes("(VENTAS)")) {
