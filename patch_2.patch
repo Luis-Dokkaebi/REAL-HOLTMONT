@@ -1,11 +1,13 @@
 --- CODIGO.js
 +++ CODIGO.js
-@@ -5244,7 +5244,7 @@
+@@ -5244,8 +5244,8 @@
            let needsHeal = false;
            tasks.forEach(t => {
                const folioVal = String(t['FOLIO'] || t['ID'] || "");
 -              if (folioVal.startsWith("AV-")) {
+-                  const numPart = folioVal.replace("AV-", "");
 +              if (folioVal.startsWith("AV-") || folioVal.startsWith("AP-")) {
-                   const numPart = folioVal.replace("AV-", "").replace("AP-", "");
++                  const numPart = folioVal.replace("AV-", "").replace("AP-", "");
                    const fid = parseInt(numPart);
                    if (!isNaN(fid) && fid > currentSeq) {
+                       currentSeq = fid;

@@ -2998,6 +2998,8 @@ function internalUpdateTask(personName, taskData, username) {
                                  const reverseFolio = safeSyncData['FOLIO'] || safeSyncData['ID'];
                                  if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
                                      internalBatchUpdateTasks("ANTONIA_VENTAS", [safeSyncData]);
+                                 } else if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AP-")) {
+                                     internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", [safeSyncData]);
                                  }
                              }
                          }
@@ -5244,8 +5246,8 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           let needsHeal = false;
           tasks.forEach(t => {
               const folioVal = String(t['FOLIO'] || t['ID'] || "");
-              if (folioVal.startsWith("AV-")) {
-                  const numPart = folioVal.replace("AV-", "");
+              if (folioVal.startsWith("AV-") || folioVal.startsWith("AP-")) {
+                  const numPart = folioVal.replace("AV-", "").replace("AP-", "");
                   const fid = parseInt(numPart);
                   if (!isNaN(fid) && fid > currentSeq) {
                       currentSeq = fid;
@@ -5516,8 +5518,10 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           // Handle Reverse Sync (Vendor -> Antonia)
           if (!isAntonia && distributionTasks.length > 0) {
                const syncPayloads = [];
-               let antDataFetched = false;
-               let antDataRows = [];
+               let antVentasDataFetched = false;
+               let antVentasDataRows = [];
+               let antPinedaDataFetched = false;
+               let antPinedaDataRows = [];
 
                distributionTasks.forEach(taskData => {
                    const getTVal = (keys) => {
@@ -5535,13 +5539,25 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
                    
                    if (tFolio && isDone) {
-                       if (!antDataFetched) {
-                           const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                           if (antData.success && antData.data) antDataRows = antData.data;
-                           antDataFetched = true;
+                       let targetRows = [];
+                       if (tFolio.startsWith("AV-")) {
+                           if (!antVentasDataFetched) {
+                               const antData = internalFetchSheetData("ANTONIA_VENTAS");
+                               if (antData.success && antData.data) antVentasDataRows = antData.data;
+                               antVentasDataFetched = true;
+                           }
+                           targetRows = antVentasDataRows;
+                       } else if (tFolio.startsWith("AP-")) {
+                           if (!antPinedaDataFetched) {
+                               const antData = internalFetchSheetData("ANTONIA PINEDA LOPEZ");
+                               if (antData.success && antData.data) antPinedaDataRows = antData.data;
+                               antPinedaDataFetched = true;
+                           }
+                           targetRows = antPinedaDataRows;
                        }
+
                        
-                       const targetRow = antDataRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
+                       const targetRow = targetRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
                        if (targetRow) {
                            let log = [];
                            try {
@@ -5620,7 +5636,15 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                });
                
                if (syncPayloads.length > 0) {
-                   internalBatchUpdateTasks("ANTONIA_VENTAS", syncPayloads, false);
+                   const avSyncPayloads = syncPayloads.filter(p => p.FOLIO.startsWith("AV-"));
+                   const apSyncPayloads = syncPayloads.filter(p => p.FOLIO.startsWith("AP-"));
+
+                   if (avSyncPayloads.length > 0) {
+                       internalBatchUpdateTasks("ANTONIA_VENTAS", avSyncPayloads, false);
+                   }
+                   if (apSyncPayloads.length > 0) {
+                       internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", apSyncPayloads, false);
+                   }
                }
                
                if (String(personName).toUpperCase().includes("(VENTAS)")) {
@@ -5639,6 +5663,7 @@ function apiSaveTrackerBatch(personName, tasks, username) {
 
                // Sincronización Reversa hacia Antonia (NO está completa si no termina en VENTAS ni está DONE)
                const antoniaReverseSyncTasks = [];
+               const antoniaPinedaReverseSyncTasks = [];
                distributionTasks.forEach(t => {
                    let existingTaskFolioRev = null;
                    Object.keys(t).forEach(k => {
@@ -5649,6 +5674,8 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    const reverseFolio = existingTaskFolioRev || t['FOLIO'] || t['ID'];
                    if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
                        antoniaReverseSyncTasks.push(t);
+                   } else if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AP-")) {
+                       antoniaPinedaReverseSyncTasks.push(t);
                    }
                });
                if (antoniaReverseSyncTasks.length > 0) {
@@ -5666,6 +5693,23 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                        return st;
                    });
                    internalBatchUpdateTasks("ANTONIA_VENTAS", safeRevTasks, false);
+               }
+
+               if (antoniaPinedaReverseSyncTasks.length > 0) {
+                   const safeRevTasksAP = antoniaPinedaReverseSyncTasks.map(t => {
+                       let st = Object.assign({}, t);
+                       const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
+                       Object.keys(st).forEach(k => {
+                           if (delKeys.includes(k.toUpperCase().trim())) delete st[k];
+                       });
+                       const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
+                       if (matchedSync) {
+                           st['MAP COT'] = matchedSync['MAP COT'];
+                           st['PROCESO_LOG'] = matchedSync['PROCESO_LOG'];
+                       }
+                       return st;
+                   });
+                   internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", safeRevTasksAP, false);
                }
 
                // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)
@@ -5764,6 +5808,73 @@ function apiFetchCombinedCalendarData(sheetName) {
   } catch(e) {
       return { success: false, message: e.toString() };
   }
+}
+
+/**
+ * UTILITY: Fuerza la sincronización inversa de tareas "AP-" (Antonia Pineda)
+ * que ya fueron marcadas como 100% completadas en las hojas de los responsables
+ * pero que no se han reflejado en su Tracker personal.
+ */
+function forceReverseSyncAntoniaPineda() {
+    const pinedaSheetName = "ANTONIA PINEDA LOPEZ";
+    const pinedaDataRes = internalFetchSheetData(pinedaSheetName);
+
+    if (!pinedaDataRes.success || !pinedaDataRes.data) {
+        console.error("No se pudo obtener la hoja de ANTONIA PINEDA LOPEZ");
+        return;
+    }
+
+    // Filtrar tareas que NO están al 100% en el tracker de Antonia
+    const pendingApTasks = pinedaDataRes.data.filter(t => {
+        const folio = t['FOLIO'] || t['ID'] || "";
+        const avanceRaw = String(t['AVANCE'] || t['AVANCE %'] || t['% AVANCE'] || "").replace(/%/g, '').trim();
+        const estatus = String(t['ESTATUS'] || t['STATUS'] || t['ESTADO']).toUpperCase().trim();
+
+        const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || parseFloat(avanceRaw) === 100;
+
+        return folio.startsWith("AP-") && !isDone;
+    });
+
+    if (pendingApTasks.length === 0) {
+        console.log("No hay tareas pendientes AP- que revisar.");
+        return;
+    }
+
+    const allStaffSheets = Object.values(USER_DB).map(u => u.staffName).filter(name => name && name !== "ANTONIA_VENTAS" && name !== pinedaSheetName);
+    // Agregar también las hojas de ventas
+    const allSheetsToScan = [...new Set([...allStaffSheets, ...allStaffSheets.map(s => s + " (VENTAS)")])];
+
+    const tasksToSync = [];
+
+    allSheetsToScan.forEach(sheetName => {
+        try {
+            const sheetRes = internalFetchSheetData(sheetName);
+            if (sheetRes.success && sheetRes.data) {
+                sheetRes.data.forEach(task => {
+                    const folio = task['FOLIO'] || task['ID'] || "";
+                    const avanceRaw = String(task['AVANCE'] || task['AVANCE %'] || task['% AVANCE'] || "").replace(/%/g, '').trim();
+                    const estatus = String(task['ESTATUS'] || task['STATUS'] || task['ESTADO']).toUpperCase().trim();
+                    const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || parseFloat(avanceRaw) === 100;
+
+                    if (folio.startsWith("AP-") && isDone) {
+                        // Verificar si existe en pendientes
+                        if (pendingApTasks.some(p => (p['FOLIO'] || p['ID']) === folio)) {
+                            tasksToSync.push(task);
+                        }
+                    }
+                });
+            }
+        } catch(e) {}
+    });
+
+    if (tasksToSync.length > 0) {
+        console.log("Sincronizando " + tasksToSync.length + " tareas hacia ANTONIA PINEDA LOPEZ");
+        // En lugar de "SISTEMA", procesar directamente los updates para que no cree la hoja "SISTEMA"
+        const syncPayloads = tasksToSync.map(t => {
+             return Object.assign({}, t); // Pass them through
+        });
+        internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", syncPayloads, false);
+    }
 }
 
 /**

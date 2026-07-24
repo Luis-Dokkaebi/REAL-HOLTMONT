@@ -1,0 +1,16 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -5871,8 +5871,11 @@
+     });
+
+     if (tasksToSync.length > 0) {
+         console.log("Sincronizando " + tasksToSync.length + " tareas hacia ANTONIA PINEDA LOPEZ");
+-        // Reutilizamos la función batchUpdate para simular la subida como "SISTEMA"
+-        apiSaveTrackerBatch("SISTEMA", tasksToSync, "SISTEMA");
++        // En lugar de "SISTEMA", procesar directamente los updates para que no cree la hoja "SISTEMA"
++        const syncPayloads = tasksToSync.map(t => {
++             return Object.assign({}, t); // Pass them through
++        });
++        internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", syncPayloads, false);
+     }
+ }

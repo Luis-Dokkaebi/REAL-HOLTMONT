@@ -67,9 +67,9 @@ const INITIAL_DIRECTORY = [
     { name: "EDGAR URIMAR LOPEZ MALDONADO", dept: "DISEÑO", type: "ESTANDAR" },
     // VENTAS
     { name: "ANTONIA_VENTAS", dept: "VENTAS", type: "VENTAS" },
-    { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "HIBRIDO" },
     { name: "RAMIRO RODRIGUEZ", dept: "VENTAS", type: "HIBRIDO" },
-    { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "ESTANDAR" },
+    { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "HIBRIDO" },
     // ELECTROMECANICA
     { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
     { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
@@ -91,6 +91,17 @@ const INITIAL_DIRECTORY = [
     { name: "DANIELA CASTRO", dept: "GENERAL", type: "ESTANDAR" },
     { name: "CESAR GOMEZ", dept: "GENERAL", type: "ESTANDAR" }
 ];
+
+
+const FULL_PROCESS_NAMES = {
+    "L": "Levantamiento",
+    "CD": "Calculo y Diseño",
+    "EP": "Elaboracion Presupuesto",
+    "CI": "Cotizacion Interna",
+    "EV": "Estrategia Ventas",
+    "CEC": "Cotizacion Enviada al cliente",
+    "RCC": "Revision de Cotizacion Cliente"
+};
 
 const DEFAULT_TRACKER_HEADERS = ['ID', 'ESPECIALIDAD', 'CONCEPTO', 'FECHA', 'RELOJ', 'AVANCE', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'CLASIFICACION', 'PRIORIDAD', 'FECHA_RESPUESTA'];
 const DEFAULT_SALES_HEADERS = ['FOLIO', 'CLIENTE', 'CONCEPTO', 'VENDEDOR', 'FECHA', 'F. ENTREGA', 'ESTATUS', 'COMENTARIOS', 'ARCHIVO', 'MONTO', 'F2', 'COTIZACION', 'TIMELINE', 'LAYOUT', 'AVANCE'];
@@ -598,7 +609,7 @@ function getSystemConfig(role, username) {
       staff: [ { name: "ANTONIA_VENTAS", dept: "VENTAS" } ],
       directory: fullDirectory,
       specialModules: [
-        { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: allDepts["PRESUPUESTOS"] ? allDepts["PRESUPUESTOS"].color : "#6f42c1", type: "mirror_staff", target: "ANTONIA PINEDA LOPEZ" },
+        { id: "MY_TRACKER", label: "Tracker", icon: "fa-table", color: allDepts["PRESUPUESTOS"] ? allDepts["PRESUPUESTOS"].color : "#6f42c1", type: "mirror_staff", target: "ANTONIA PINEDA LOPEZ" },
         ppcModuleMaster,
         ppcModuleWeekly
       ],
@@ -632,11 +643,11 @@ function getSystemConfig(role, username) {
     const staffName = u.staffName || u.label;
     const deptColor = (allDepts[u.dept] && allDepts[u.dept].color) || "#0d6efd";
     const modules = [
-        { id: "MY_TRACKER", label: "Mi Tabla", icon: "fa-table", color: deptColor, type: "mirror_staff", target: staffName },
+        { id: "MY_TRACKER", label: "Tracker", icon: "fa-table", color: deptColor, type: "mirror_staff", target: staffName },
         { id: "PPC_MASTER", label: "Agregar Actividad", icon: "fa-tasks", color: "#fd7e14", type: "ppc_native" }
     ];
     if (u.seller) {
-        modules.push({ id: "MY_SALES", label: "Ventas", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: staffName + " (VENTAS)" });
+        modules.push({ id: "MY_SALES", label: "Cotizaciones", icon: "fa-hand-holding-usd", color: "#0dcaf0", type: "mirror_staff", target: staffName + " (VENTAS)" });
     }
     return {
       departments: {},
@@ -900,6 +911,345 @@ function apiFetchAdminKPIs() {
     weeklyProductivity: weeklyProductivity
   };
 }
+
+
+/* ================================================================
+ * [TRACKER PRODUCTIVITY AGENT]
+ * ================================================================ */
+
+function apiFetchTrackerProductivityMetrics(params) {
+  try {
+    const p = params || {};
+    const now = new Date();
+    const targetMonth = (p.month !== undefined && p.month !== null) ? parseInt(p.month) : (now.getMonth() + 1);
+    const targetYear  = (p.year  !== undefined && p.year  !== null) ? parseInt(p.year)  : now.getFullYear();
+
+    // Directory lookup to filter only ESTANDAR and HIBRIDO and exclude VENTAS sheets
+    const allowedStaff = [];
+    const deptMap = {};
+    INITIAL_DIRECTORY.forEach(emp => {
+      if (emp.type === 'ESTANDAR' || emp.type === 'HIBRIDO') {
+        if (emp.name) {
+          const uName = emp.name.toUpperCase().trim();
+          allowedStaff.push(uName);
+          deptMap[uName] = emp.dept || 'SIN DEPT';
+        }
+      }
+    });
+
+    const deptStats = {};
+    const collabStats = {};
+    const priorityStats = { 'ALTA': 0, 'MEDIA': 0, 'BAJA': 0, 'SIN_PRIORIDAD': 0 };
+
+    let totalTasks = 0;
+    let onTimeTasks = 0;
+    let lateTasks = 0;
+    let tasksWithRestrictions = 0;
+    let tasksWithRisks = 0;
+    let totalDurationDays = 0;
+    let tasksWithDuration = 0;
+
+    // Helper Date Parser
+    const parseDate = (d) => {
+      if (!d) return null;
+      if (d instanceof Date) return isNaN(d.getTime()) ? null : d;
+      if (typeof d === 'number') return new Date(d);
+      const s = String(d).trim();
+      if (!s) return null;
+      if (s.includes('/')) {
+        const pts = s.split('/');
+        if (pts.length === 3) {
+          const yr = pts[2].length === 2 ? '20' + pts[2] : pts[2];
+          const dt = new Date(parseInt(yr), parseInt(pts[1]) - 1, parseInt(pts[0]));
+          return isNaN(dt.getTime()) ? null : dt;
+        }
+      }
+      const parsed = new Date(s);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    // Helper Duration
+    const getDurationDaysAndDates = (row, estimatedDateFallback) => {
+      // FECHA as Start Date
+      const startDate = parseDate(row['FECHA'] || row['F.INICIO'] || row['F. INICIO'] || null);
+
+      // End Date from Process Log or Estimated
+      let realEndDate = null;
+      try {
+        const logStr = String(row['PROCESO_LOG'] || row['proceso_log'] || '').trim();
+        if (logStr && logStr.startsWith('[')) {
+          const log = JSON.parse(logStr);
+          if (Array.isArray(log)) {
+            let lastEnd = null;
+            log.forEach(step => {
+              if (step.endTimestamp && step.status === 'DONE') {
+                if (!lastEnd || step.endTimestamp > lastEnd) lastEnd = step.endTimestamp;
+              }
+            });
+            if (lastEnd) realEndDate = new Date(lastEnd);
+          }
+        }
+      } catch (e) {}
+
+      const estimatedDate = parseDate(row['FECHA ESTIMADA DE FIN'] || row['FEC. EST. FIN'] || row['FECHA_RESPUESTA'] || estimatedDateFallback);
+
+      if (!realEndDate) realEndDate = new Date();
+
+      let isLate = false;
+      let durationDays = 0;
+
+      if (estimatedDate) {
+         // Comparing dates (ignoring time)
+         const rEnd = new Date(realEndDate.getFullYear(), realEndDate.getMonth(), realEndDate.getDate());
+         const estEnd = new Date(estimatedDate.getFullYear(), estimatedDate.getMonth(), estimatedDate.getDate());
+         isLate = rEnd > estEnd;
+      }
+
+      if (startDate && realEndDate) {
+        const diff = realEndDate.getTime() - startDate.getTime();
+        durationDays = diff < 0 ? 0 : Math.ceil(diff / (1000 * 60 * 60 * 24));
+      }
+
+      return { isLate, durationDays, realEndDate };
+    };
+
+    Object.keys(USER_DB).forEach(k => {
+      const u = USER_DB[k];
+      if (!u.staffName) return;
+      const uName = u.staffName.toUpperCase().trim();
+
+      // Filter out VENTAS and those not in allowedStaff
+      if (u.seller || k === 'ANTONIA_VENTAS' || !allowedStaff.includes(uName)) return;
+
+      const result = internalFetchSheetData(u.staffName);
+      if (!result.success) return;
+
+      const history = result.history || [];
+      const dept = deptMap[uName] || 'SIN DEPT';
+
+      history.forEach(row => {
+        // Date filtering based on Start Date or Estimated End Date
+        const startDate = parseDate(row['FECHA'] || row['F.INICIO'] || row['F. INICIO']);
+        const estimatedDate = parseDate(row['FECHA ESTIMADA DE FIN'] || row['FEC. EST. FIN'] || row['FECHA_RESPUESTA']);
+
+        const dateToUse = startDate || estimatedDate;
+        if (!dateToUse) return;
+
+        if ((dateToUse.getMonth() + 1) === targetMonth && dateToUse.getFullYear() === targetYear) {
+          totalTasks++;
+
+          const durStats = getDurationDaysAndDates(row, estimatedDate);
+
+          if (durStats.isLate) lateTasks++;
+          else onTimeTasks++;
+
+          if (durStats.durationDays > 0) {
+             totalDurationDays += durStats.durationDays;
+             tasksWithDuration++;
+          }
+
+          // Restrictions & Risks
+          const rest = String(row['RESTRICCIONES'] || '').trim().toUpperCase();
+          if (rest && rest !== 'NINGUNO' && rest !== 'NINGUNA' && rest !== 'NO') tasksWithRestrictions++;
+
+          const risk = String(row['RIESGO'] || '').trim().toUpperCase();
+          if (risk && risk !== 'BAJO' && risk !== 'NINGUNO' && risk !== 'NO' && risk !== '') tasksWithRisks++;
+
+          // Priorities
+          const prio = String(row['PRIORIDAD'] || '').trim().toUpperCase();
+          if (['ALTA', 'MEDIA', 'BAJA'].includes(prio)) {
+            priorityStats[prio]++;
+          } else {
+            priorityStats['SIN_PRIORIDAD']++;
+          }
+
+          // Dept Stats
+          if (!deptStats[dept]) deptStats[dept] = { count: 0, late: 0, onTime: 0 };
+          deptStats[dept].count++;
+          if (durStats.isLate) deptStats[dept].late++;
+          else deptStats[dept].onTime++;
+
+          // Collab Stats
+          if (!collabStats[uName]) collabStats[uName] = { name: uName, dept, count: 0, late: 0, onTime: 0, totalDuration: 0, durCount: 0 };
+          collabStats[uName].count++;
+          if (durStats.isLate) collabStats[uName].late++;
+          else collabStats[uName].onTime++;
+          if (durStats.durationDays > 0) {
+             collabStats[uName].totalDuration += durStats.durationDays;
+             collabStats[uName].durCount++;
+          }
+        }
+      });
+    });
+
+    const onTimePct = totalTasks > 0 ? Math.round((onTimeTasks / totalTasks) * 100) : 0;
+    const avgDuration = tasksWithDuration > 0 ? parseFloat((totalDurationDays / tasksWithDuration).toFixed(1)) : 0;
+    const restrictionsPct = totalTasks > 0 ? Math.round((tasksWithRestrictions / totalTasks) * 100) : 0;
+    const risksPct = totalTasks > 0 ? Math.round((tasksWithRisks / totalTasks) * 100) : 0;
+
+    const byCollabArr = Object.values(collabStats).sort((a,b) => b.count - a.count);
+    byCollabArr.forEach(c => {
+      c.avgDays = c.durCount > 0 ? parseFloat((c.totalDuration / c.durCount).toFixed(1)) : 0;
+      c.onTimePct = c.count > 0 ? Math.round((c.onTime / c.count) * 100) : 0;
+    });
+
+    const byDeptArr = Object.keys(deptStats).map(k => ({ dept: k, count: deptStats[k].count })).sort((a,b) => b.count - a.count);
+
+    return {
+      success: true,
+      metrics: {
+        totalTasks,
+        onTimeTasks,
+        lateTasks,
+        onTimePct,
+        avgDurationDays: avgDuration,
+        tasksWithRestrictions,
+        restrictionsPct,
+        tasksWithRisks,
+        risksPct,
+        priorityStats,
+        byCollabArr,
+        byDeptArr,
+        month: targetMonth,
+        year: targetYear
+      }
+    };
+
+  } catch (e) {
+    console.error("apiFetchTrackerProductivityMetrics Error: " + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+function runTrackerProductivityAgent(params) {
+  try {
+    const p = params || {};
+    const now = new Date();
+    const month = (p.month !== undefined) ? parseInt(p.month) : (now.getMonth() + 1);
+    const year  = (p.year  !== undefined) ? parseInt(p.year)  : now.getFullYear();
+    const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    const monthName = MONTHS[month - 1];
+
+    const mResult = apiFetchTrackerProductivityMetrics({ month, year });
+    if (!mResult.success) return { success: false, message: 'No se pudieron obtener métricas: ' + mResult.message };
+    const m = mResult.metrics;
+
+    // Rules
+    const alerts = [];
+    if (m.onTimePct < 80 && m.totalTasks > 0) {
+      alerts.push({ type: 'ENTREGAS_ATRASADAS', severity: 'ALTA', icon: '🔴', mensaje: 'Porcentaje de entregas a tiempo crítico: ' + m.onTimePct + '%' });
+    }
+    if (m.restrictionsPct > 20) {
+       alerts.push({ type: 'ALTAS_RESTRICCIONES', severity: 'MEDIA', icon: '🟡', mensaje: 'Alta proporción de tareas con restricciones: ' + m.restrictionsPct + '%' });
+    }
+    const topCollab = m.byCollabArr[0];
+    if (topCollab && topCollab.onTimePct < 50 && topCollab.count >= 5) {
+       alerts.push({ type: 'PRODUCTIVIDAD_COLAB', severity: 'ALTA', icon: '🔴', mensaje: 'Colaborador ' + topCollab.name + ' tiene ' + topCollab.onTimePct + '% a tiempo de ' + topCollab.count + ' tareas.' });
+    }
+
+    // Gemini
+    const mStr = JSON.stringify({
+      volumen_total: m.totalTasks,
+      a_tiempo_pct: m.onTimePct,
+      atrasadas: m.lateTasks,
+      promedio_dias_resolucion: m.avgDurationDays,
+      porcentaje_restricciones: m.restrictionsPct,
+      porcentaje_riesgos: m.risksPct,
+      prioridades: m.priorityStats,
+      top_colaboradores: m.byCollabArr.slice(0,3).map(c => ({ nombre: c.name, volumen: c.count, a_tiempo_pct: c.onTimePct, promedio_dias: c.avgDays }))
+    }, null, 2);
+
+    const prompt = 'Eres un Analista de Productividad y Operaciones Senior. Analiza las siguientes métricas del equipo correspondientes al mes de ' + monthName + '. Tu objetivo es redactar un reporte ejecutivo muy conciso (máximo 180 palabras) en español. Debes destacar el porcentaje de tareas entregadas a tiempo, identificar si hay un cuello de botella con las prioridades altas o restricciones, y mencionar al colaborador o departamento más productivo. Termina siempre con UNA recomendación operativa concreta para mejorar los tiempos de entrega.\n\nMétricas:\n' + mStr;
+
+    let geminiSummary = 'No se pudo generar reporte con IA.';
+    const gRes = callGeminiAPI(prompt);
+    if (gRes.success && gRes.text) {
+      geminiSummary = gRes.text;
+    }
+
+    const emailResult = _sendTrackerProductivityEmail(m, alerts, geminiSummary, monthName, year);
+
+    return {
+      success: true,
+      data: {
+        metrics: m,
+        alerts: alerts,
+        geminiReport: geminiSummary,
+        emailSent: emailResult.success
+      }
+    };
+  } catch(e) {
+    console.error('runTrackerProductivityAgent Error: ' + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
+function _sendTrackerProductivityEmail(m, alerts, geminiSummary, monthName, year) {
+  try {
+    const recipients = [];
+    if (USER_DB['LUIS_CARLOS']    && USER_DB['LUIS_CARLOS'].email)    recipients.push(USER_DB['LUIS_CARLOS'].email);
+    if (USER_DB['ADMIN_CONTROL'] && USER_DB['ADMIN_CONTROL'].email) recipients.push(USER_DB['ADMIN_CONTROL'].email);
+    if (USER_DB['JESUS_CANTU'] && USER_DB['JESUS_CANTU'].email) recipients.push(USER_DB['JESUS_CANTU'].email);
+
+    if (recipients.length === 0) return { success: false, message: 'Sin destinatarios configurados.' };
+
+    const alertRows = alerts.length > 0
+      ? alerts.map(a => '<tr><td style="padding:6px 12px;">' + a.icon + '</td><td style="padding:6px 12px;color:#333;">' + a.mensaje + '</td><td style="padding:6px 12px;"><span style="background:' + (a.severity==='ALTA'?'#dc3545':a.severity==='MEDIA'?'#fd7e14':'#17a2b8') + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;">' + a.severity + '</span></td></tr>').join('')
+      : '<tr><td colspan="3" style="padding:8px 12px;color:#28a745;">✅ Sin alertas críticas este mes</td></tr>';
+
+    const collabRows = m.byCollabArr.slice(0, 8).map(c => {
+      return '<tr style="border-bottom:1px solid #eee;"><td style="padding:5px 10px;">' + c.name + '</td><td style="text-align:center;padding:5px 10px;">' + c.count + '</td><td style="text-align:center;padding:5px 10px;color:' + (c.onTimePct >= 80 ? '#28a745' : '#dc3545') + ';">' + c.onTimePct + '%</td><td style="text-align:center;padding:5px 10px;">' + c.avgDays + '</td></tr>';
+    }).join('');
+
+    const html = [
+      '<div style="font-family:Arial,sans-serif;max-width:700px;margin:0 auto;background:#fff;">',
+      '<div style="background:#2c3e50;color:#fff;padding:24px;">',
+      '<h1 style="margin:0;font-size:22px;">📊 Reporte de Productividad — ' + monthName.charAt(0).toUpperCase() + monthName.slice(1) + ' ' + year + '</h1>',
+      '</div>',
+      '<div style="padding:24px;border:1px solid #eee;">',
+      '<h2 style="font-size:16px;color:#444;border-bottom:2px solid #2c3e50;padding-bottom:5px;">Resumen Ejecutivo (AI)</h2>',
+      '<div style="background:#f8f9fa;padding:15px;border-radius:6px;color:#333;font-size:14px;line-height:1.6;border-left:4px solid #3b82f6;">' + geminiSummary.replace(/\n/g, '<br>') + '</div>',
+      '<div style="display:flex;gap:15px;margin-top:24px;">',
+      '<div style="flex:1;background:#fff;border:1px solid #ddd;border-radius:8px;padding:15px;text-align:center;">',
+      '<div style="font-size:12px;color:#666;text-transform:uppercase;">Total Completadas</div>',
+      '<div style="font-size:24px;font-weight:bold;color:#333;margin-top:5px;">' + m.totalTasks + '</div>',
+      '</div>',
+      '<div style="flex:1;background:#fff;border:1px solid #ddd;border-radius:8px;padding:15px;text-align:center;">',
+      '<div style="font-size:12px;color:#666;text-transform:uppercase;">% A Tiempo</div>',
+      '<div style="font-size:24px;font-weight:bold;color:' + (m.onTimePct >= 80 ? '#28a745' : '#dc3545') + ';margin-top:5px;">' + m.onTimePct + '%</div>',
+      '</div>',
+      '<div style="flex:1;background:#fff;border:1px solid #ddd;border-radius:8px;padding:15px;text-align:center;">',
+      '<div style="font-size:12px;color:#666;text-transform:uppercase;">Promedio Días</div>',
+      '<div style="font-size:24px;font-weight:bold;color:#17a2b8;margin-top:5px;">' + m.avgDurationDays + ' d</div>',
+      '</div>',
+      '</div>',
+      '<h2 style="font-size:16px;color:#444;border-bottom:2px solid #2c3e50;padding-bottom:5px;margin-top:24px;">Alertas Operativas</h2>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fdfdfd;border:1px solid #eee;">',
+      alertRows,
+      '</table>',
+      '<h2 style="font-size:16px;color:#444;border-bottom:2px solid #2c3e50;padding-bottom:5px;margin-top:24px;">Top Colaboradores (Volumen)</h2>',
+      '<table style="width:100%;border-collapse:collapse;font-size:13px;">',
+      '<tr style="background:#f4f4f4;color:#555;"><th style="text-align:left;padding:8px 10px;">Nombre</th><th style="padding:8px 10px;">Volumen</th><th style="padding:8px 10px;">% A Tiempo</th><th style="padding:8px 10px;">Prom. Días</th></tr>',
+      collabRows,
+      '</table>',
+      '</div>',
+      '<div style="background:#f1f1f1;color:#777;text-align:center;padding:12px;font-size:11px;">Generado automáticamente por el Agente de Productividad Holtmont</div>',
+      '</div>'
+    ].join('');
+
+    MailApp.sendEmail({
+      to: recipients.join(','),
+      subject: '📊 Reporte Ejecutivo de Productividad - ' + monthName + ' ' + year,
+      htmlBody: html
+    });
+
+    return { success: true };
+  } catch(e) {
+    console.error('_sendTrackerProductivityEmail Error: ' + e.toString());
+    return { success: false, message: e.toString() };
+  }
+}
+
 
 function apiFetchTeamKPIData(username) {
   // MOCK DATA INJECTION
@@ -1824,8 +2174,14 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
   }
 
   try {
-    const sheet = findSheetSmart(sheetName);
-    if (!sheet) return { success: false, message: "Hoja no encontrada: " + sheetName };
+    let sheet = findSheetSmart(sheetName);
+    if (!sheet) {
+        // FALLBACK AUTO-CREACIÓN: Si un usuario no ha ingresado y se le delega, creamos su hoja
+        sheet = SS.insertSheet(sheetName);
+        const hdrs = sheetName.toUpperCase().includes("(VENTAS)") ? DEFAULT_SALES_HEADERS : DEFAULT_TRACKER_HEADERS;
+        sheet.appendRow(hdrs);
+        sheet.getRange(1, 1, 1, hdrs.length).setFontWeight("bold").setBackground("#e6e6e6");
+    }
     const dataRange = sheet.getDataRange();
     let values = dataRange.getValues();
     if (values.length === 0) return { success: false, message: "Hoja vacía" };
@@ -1941,10 +2297,14 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
       if (rowIndex === -1) {
           const tConcept = String(task['CONCEPTO'] || task['DESCRIPCION'] || task['TAREA'] || "").trim().toUpperCase().substring(0, 50);
           const tDate = String(task['FECHA'] || task['F. INICIO'] || "").trim();
+          const tCliente = String(task['CLIENTE'] || "").trim().toUpperCase();
+          const tResponsable = String(task['RESPONSABLE'] || task['INVOLUCRADOS'] || task['VENDEDOR'] || task['ENCARGADO'] || task['ASIGNADO'] || "").trim().toUpperCase();
 
           if (tConcept) {
              const conceptIdx = getColIdx('CONCEPTO') > -1 ? getColIdx('CONCEPTO') : getColIdx('DESCRIPCION');
              const dateIdx = getColIdx('FECHA') > -1 ? getColIdx('FECHA') : getColIdx('F. INICIO');
+             const clienteIdx = getColIdx('CLIENTE');
+             const responsableIdx = getColIdx('RESPONSABLE') > -1 ? getColIdx('RESPONSABLE') : (getColIdx('VENDEDOR') > -1 ? getColIdx('VENDEDOR') : getColIdx('INVOLUCRADOS'));
 
              if (conceptIdx > -1) {
                  for (let i = headerRowIndex + 1; i < values.length; i++) {
@@ -1971,7 +2331,19 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                      const isDateMatch = (cleanTDate === "" && cleanRowDate === "") ||
                                          ((cleanTDate !== "" && cleanRowDate !== "") && (cleanRowDate.includes(cleanTDate) || cleanTDate.includes(cleanRowDate)));
 
-                     if (rowConcept === tConcept && isDateMatch) {
+                     let isClienteMatch = true;
+                     if (clienteIdx > -1 && tCliente) {
+                         const rowCliente = String(row[clienteIdx] || "").trim().toUpperCase();
+                         isClienteMatch = rowCliente === tCliente;
+                     }
+
+                     let isResponsableMatch = true;
+                     if (responsableIdx > -1 && tResponsable) {
+                         const rowResponsable = String(row[responsableIdx] || "").trim().toUpperCase();
+                         isResponsableMatch = rowResponsable === tResponsable;
+                     }
+
+                     if (rowConcept === tConcept && isDateMatch && isClienteMatch && isResponsableMatch) {
                          rowIndex = i;
                          console.warn(`[SYNC GATEKEEPER] Duplicado interceptado. Tarea '${tConcept}' asignada a fila existente ${rowIndex+1} ignorando Folio.`);
                          break;
@@ -2164,9 +2536,6 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                         const num = parseFloat(cleanVal);
                         if (!isNaN(num) && Math.abs(num - 100) < 0.01) {
                             isComplete = true;
-                        } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.001) {
-                            // Handles Google Sheets native 100% (1.0) percentage formatting
-                            isComplete = true;
                         }
                     }
                 }
@@ -2284,6 +2653,10 @@ function apiUpdatePPCV3(taskData, username) {
 
 function internalUpdateTask(personName, taskData, username) {
     try {
+        // REGLA ESTRICTA: Redirigir siempre a ANTONIA PINEDA LOPEZ si alguien que no es ella manda a ANTONIA_VENTAS
+        if (String(personName).toUpperCase().trim() === "ANTONIA_VENTAS" && String(username).toUpperCase().trim() !== "ANTONIA_VENTAS") {
+            personName = "ANTONIA PINEDA LOPEZ";
+        }
         // GUARD: PPCV3 Inmutabilidad (Solo modificable por Weekly Plan)
         if (String(personName).trim().toUpperCase() === String(APP_CONFIG.ppcSheetName).trim().toUpperCase()) {
             return { success: false, message: "Operación no permitida: PPCV3 es de solo lectura desde esta vista." };
@@ -2326,7 +2699,11 @@ function internalUpdateTask(personName, taskData, username) {
         const isNewTask = !existingFolio;
         if (isNewTask) {
              // NEW TASK -> GENERATE ID for any user
-             let prefix = isAntonia ? "AV-" : generatePrefix(username || personName);
+             let prefixSource = username || personName;
+            if (String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ" && String(username).toUpperCase().trim() === "ANTONIA_VENTAS") {
+                prefixSource = "ANTONIA PINEDA LOPEZ";
+            }
+            let prefix = isAntonia ? "AV-" : generatePrefix(prefixSource);
              let seqKey = isAntonia ? 'ANTONIA_SEQ_V2' : prefix;
              const seqNum = generateNumericSequence(seqKey);
              taskData['FOLIO'] = prefix + seqNum;
@@ -2383,15 +2760,11 @@ function internalUpdateTask(personName, taskData, username) {
              if (taskData._removeWorker) {
                  const workerToRemove = taskData._removeWorker;
                  try {
-                     let targetSheet = workerToRemove;
-                     if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
-                         const potentialSheet = targetSheet + " (VENTAS)";
-                         if (findSheetSmart(potentialSheet)) targetSheet = potentialSheet;
-                     }
+                     let targetSheet = String(workerToRemove).replace(/\s*\(VENTAS\)/ig, "").trim();
                      const workerSheet = findSheetSmart(targetSheet);
                      if (workerSheet) {
-                         const targetId = String(taskData['FOLIO'] || taskData['ID']).toUpperCase().trim();
-                         if (targetId) {
+                         const targetId = String(existingFolio || taskData['FOLIO'] || taskData['ID'] || "").toUpperCase().trim();
+                         if (targetId && targetId !== "NULL") {
                              const data = workerSheet.getDataRange().getValues();
                              if (data.length > 0) {
                                  const sheetHeaders = data[0].map(h => String(h).toUpperCase().trim());
@@ -2425,11 +2798,22 @@ function internalUpdateTask(personName, taskData, username) {
                  try {
                      const workers = Array.isArray(taskData._assignToWorker) ? taskData._assignToWorker : [taskData._assignToWorker];
                      for (let worker of workers) {
+                         const cleanWorker = String(worker).replace(/\s*\(VENTAS\)/ig, "").trim();
                          const assignData = JSON.parse(JSON.stringify(distData));
+
+                         const stepName = FULL_PROCESS_NAMES[taskData._assignStep] || taskData._assignStep;
+                         const cIdx = Object.keys(assignData).find(k => k.toUpperCase().trim() === 'CONCEPTO' || k.toUpperCase().trim() === 'DESCRIPCION');
+                         if (cIdx && assignData[cIdx] && stepName) {
+                             const tag = ` [${stepName}]`;
+                             if (!String(assignData[cIdx]).endsWith(tag)) {
+                                 assignData[cIdx] = String(assignData[cIdx]) + tag;
+                             }
+                         }
+
                          assignData['ESTATUS'] = 'PENDIENTE';
                          assignData['AVANCE'] = '0%';
-                         const tRes = internalBatchUpdateTasks(worker, [assignData]);
-                         if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${worker}: ${tRes.message}`);
+                         const tRes = internalBatchUpdateTasks(cleanWorker, [assignData]);
+                         if (!tRes.success) registrarLog("ANTONIA", "DIST_FAIL", `Fallo envío a ${cleanWorker}: ${tRes.message}`);
                      }
                  } catch(e) {
                      registrarLog("ANTONIA", "DIST_ERROR", e.toString());
@@ -2592,12 +2976,30 @@ function internalUpdateTask(personName, taskData, username) {
                              }
 
                              // Sincronización general a Antonia independientemente del estado
+                             let safeSyncData = Object.assign({}, syncData);
+                             const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
+                             Object.keys(safeSyncData).forEach(k => {
+                                 if (delKeys.includes(k.toUpperCase().trim())) delete safeSyncData[k];
+                             });
+                             if (typeof syncToAntonia !== 'undefined' && syncToAntonia['MAP COT']) {
+                                 safeSyncData['MAP COT'] = syncToAntonia['MAP COT'];
+                                 safeSyncData['PROCESO_LOG'] = syncToAntonia['PROCESO_LOG'];
+                             }
+
                              if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                                 // Para hojas de VENTAS, permitimos que ESTATUS y AVANCE pasen (se reincorporan del original)
+                                 const safeVentasSyncData = Object.assign({}, syncData);
+                                 if (typeof syncToAntonia !== 'undefined' && syncToAntonia['MAP COT']) {
+                                     safeVentasSyncData['MAP COT'] = syncToAntonia['MAP COT'];
+                                     safeVentasSyncData['PROCESO_LOG'] = syncToAntonia['PROCESO_LOG'];
+                                 }
+                                 internalBatchUpdateTasks("ANTONIA_VENTAS", [safeVentasSyncData]);
                              } else {
-                                 const reverseFolio = syncData['FOLIO'] || syncData['ID'];
+                                 const reverseFolio = safeSyncData['FOLIO'] || safeSyncData['ID'];
                                  if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
-                                     internalBatchUpdateTasks("ANTONIA_VENTAS", [syncData]);
+                                     internalBatchUpdateTasks("ANTONIA_VENTAS", [safeSyncData]);
+                                 } else if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AP-")) {
+                                     internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", [safeSyncData]);
                                  }
                              }
                          }
@@ -2905,7 +3307,7 @@ function apiSavePPCData(payload, activeUser) {
           const taskData = {
                  'FOLIO': id,
                  'CONCEPTO': item.concepto || item.CONCEPTO,
-                 'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "Media",
+                 'CLASIFICACION': item.clasificacion || item.CLASIFICACION || "",
                  'AREA': item.especialidad || item.ESPECIALIDAD,
                  'INVOLUCRADOS': item.responsable || item.RESPONSABLE,
                  'FECHA': fechaStr,
@@ -4069,7 +4471,7 @@ function test_Generacion_MAP_COT() {
 
       registrarLog = function() {};
 
-      internalUpdateTask("ANGEL SALINAS (VENTAS)", {
+      internalUpdateTask("ANGEL SALINAS", {
           'FOLIO': 'AV-TEST-001',
           'AVANCE': '100%',
           'ESTATUS': 'DONE'
@@ -4168,7 +4570,7 @@ function test_Flujo_Completo_Delegacion_y_Sincronizacion() {
 
         // Paso 1 (Delegar) -> Simulado desde Frontend a internalUpdateTask
         const taskRow = Object.assign({}, dbAntonia[0]);
-        taskRow._assignToWorker = ["ANGEL SALINAS (VENTAS)"];
+        taskRow._assignToWorker = ["ANGEL SALINAS"];
         taskRow._assignStep = "CD";
         taskRow.PROCESO_LOG = JSON.stringify([{step: "CD", status: "IN_PROGRESS", assignee: "ANGEL SALINAS", timestamp: new Date().getTime()}]);
         taskRow["MAP COT"] = '⚪ L | 🔴 CD | ⚪ EP | ⚪ CI | ⚪ EV | ⚪ CEC | ⚪ RCC';
@@ -4844,8 +5246,8 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           let needsHeal = false;
           tasks.forEach(t => {
               const folioVal = String(t['FOLIO'] || t['ID'] || "");
-              if (folioVal.startsWith("AV-")) {
-                  const numPart = folioVal.replace("AV-", "");
+              if (folioVal.startsWith("AV-") || folioVal.startsWith("AP-")) {
+                  const numPart = folioVal.replace("AV-", "").replace("AP-", "");
                   const fid = parseInt(numPart);
                   if (!isNaN(fid) && fid > currentSeq) {
                       currentSeq = fid;
@@ -4877,7 +5279,15 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                            (cl !== "") ||
                            (v !== "" && !isVendedorDefault);
 
-        if (!hasContent && !taskData['FOLIO'] && !taskData['ID']) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
+        // Buscar de forma insensible a mayúsculas si existe un FOLIO o ID
+        let existingTaskFolio = null;
+        Object.keys(taskData).forEach(k => {
+            if ((k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') && taskData[k]) {
+                existingTaskFolio = taskData[k];
+            }
+        });
+
+        if (!hasContent && !existingTaskFolio) return; // SKIP EMPTY ROWS (Don't process, don't distribute)
 
         // CHECK FOR _tempId
         const tempIdKey = taskData['_tempId'];
@@ -4887,15 +5297,19 @@ function apiSaveTrackerBatch(personName, tasks, username) {
         }
 
         // Use robust locked generator to avoid duplicates during mass-inserts
-        if (!taskData['FOLIO'] && !taskData['ID'] && hasContent) {
-            let prefix = isAntonia ? "AV-" : generatePrefix(username || personName);
+        if (!existingTaskFolio && hasContent) {
+            let prefixSource = username || personName;
+            if (String(personName).toUpperCase().trim() === "ANTONIA PINEDA LOPEZ" && String(username).toUpperCase().trim() === "ANTONIA_VENTAS") {
+                prefixSource = "ANTONIA PINEDA LOPEZ";
+            }
+            let prefix = isAntonia ? "AV-" : generatePrefix(prefixSource);
             let seqKey = isAntonia ? 'ANTONIA_SEQ_V2' : prefix;
             const seqNum = generateNumericSequence(seqKey);
             taskData['FOLIO'] = prefix + seqNum;
         }
 
         if (isAntonia) {
-             if (taskData['FOLIO'] || taskData['ID']) {
+             if (existingTaskFolio || taskData['FOLIO']) {
                  // RESTRICTIONS FOR EXISTING TASKS
                  const allowedBase = ['FOLIO', 'ID', 'ESTATUS', 'MAP COT', 'PROCESO_LOG', 'PROCESO', 'STATUS', 'AVANCE', 'AVANCE %', '_rowIndex', 'VENDEDOR', 'RESPONSABLE', 'INVOLUCRADOS', 'ENCARGADO', 'CONCEPTO', 'DESCRIPCION', 'CLIENTE', 'COTIZACION', 'F2', 'LAYOUT', 'TIMELINE', 'AREA', 'CLASIFICACION', 'CLASI', 'DIAS', 'RELOJ', 'ESPECIALIDAD', 'ARCHIVO', 'ARCHIVOS', 'COMENTARIOS', 'PRIORIDAD', 'PRIORIDAD DE COTIZACION', 'PRIO. COT.', 'F. VISITA', 'F. INICIO', 'F. ENTREGA', 'FECHA VISITA', 'FECHA INICIO', 'DÍAS FINALIZ. COTIZ', 'DIAS FINALIZ. COTIZ', 'CORREO', 'CARPETA', 'INFO CLIENTE', 'CORREOS', 'CARPETAS', 'REQUISITOR'];
                  Object.keys(taskData).forEach(key => {
@@ -4912,15 +5326,11 @@ function apiSaveTrackerBatch(personName, tasks, username) {
              if (taskData._removeWorker) {
                  const workerToRemove = taskData._removeWorker;
                  try {
-                     let targetSheet = workerToRemove;
-                     if (!targetSheet.toUpperCase().includes("(VENTAS)")) {
-                         const potentialSheet = targetSheet + " (VENTAS)";
-                         if (findSheetSmart(potentialSheet)) targetSheet = potentialSheet;
-                     }
+                     let targetSheet = String(workerToRemove).replace(/\s*\(VENTAS\)/ig, "").trim();
                      const workerSheet = findSheetSmart(targetSheet);
                      if (workerSheet) {
-                         const targetId = String(taskData['FOLIO'] || taskData['ID']).toUpperCase().trim();
-                         if (targetId) {
+                         const targetId = String(existingTaskFolio || taskData['FOLIO'] || taskData['ID'] || "").toUpperCase().trim();
+                         if (targetId && targetId !== "NULL") {
                              const data = workerSheet.getDataRange().getValues();
                              if (data.length > 0) {
                                  const sheetHeaders = data[0].map(h => String(h).toUpperCase().trim());
@@ -4954,17 +5364,28 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                  try {
                      const workers = Array.isArray(taskData._assignToWorker) ? taskData._assignToWorker : [taskData._assignToWorker];
                      const stepTitle = taskData._assignStep;
-                     const folioStr = taskData["FOLIO"] || taskData["ID"] || "SIN-FOLIO";
+                     const folioStr = existingTaskFolio || taskData["FOLIO"] || taskData["ID"] || "SIN-FOLIO";
                      const clienteStr = taskData["CLIENTE"] || "Desconocido";
 
                      for (let worker of workers) {
+                         const cleanWorker = String(worker).replace(/\s*\(VENTAS\)/ig, "").trim();
                          const assignData = JSON.parse(JSON.stringify(distData));
+
+                         const stepName = FULL_PROCESS_NAMES[taskData._assignStep] || taskData._assignStep;
+                         const cIdx = Object.keys(assignData).find(k => k.toUpperCase().trim() === 'CONCEPTO' || k.toUpperCase().trim() === 'DESCRIPCION');
+                         if (cIdx && assignData[cIdx] && stepName) {
+                             const tag = ` [${stepName}]`;
+                             if (!String(assignData[cIdx]).endsWith(tag)) {
+                                 assignData[cIdx] = String(assignData[cIdx]) + tag;
+                             }
+                         }
+
                          assignData['ESTATUS'] = 'PENDIENTE';
                          assignData['AVANCE'] = '0%';
-                         internalBatchUpdateTasks(worker, [assignData]);
+                         internalBatchUpdateTasks(cleanWorker, [assignData]);
 
                          // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado
-                         const userEmail = findUserEmailByLabel(worker);
+                         const userEmail = findUserEmailByLabel(cleanWorker);
                          if (userEmail) {
                              const fInicio = new Date();
                              const fFin = new Date(fInicio.getTime() + (2 * 60 * 60 * 1000));
@@ -5055,7 +5476,13 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                                }
 
                                // INTEGRACIÓN OUTLOOK: Enviar evento al trabajador asignado a la fila
-                               const folioGen = t["FOLIO"] || t["ID"] || "SIN-FOLIO";
+                               let existingTaskFolioDist = null;
+                               Object.keys(t).forEach(k => {
+                                   if ((k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') && t[k]) {
+                                       existingTaskFolioDist = t[k];
+                                   }
+                               });
+                               const folioGen = existingTaskFolioDist || t["FOLIO"] || t["ID"] || "SIN-FOLIO";
                                const clienteGen = t["CLIENTE"] || "Desconocido";
                                const conceptoGen = t["CONCEPTO"] || t["DESCRIPCION"] || "Tarea";
 
@@ -5091,8 +5518,10 @@ function apiSaveTrackerBatch(personName, tasks, username) {
           // Handle Reverse Sync (Vendor -> Antonia)
           if (!isAntonia && distributionTasks.length > 0) {
                const syncPayloads = [];
-               let antDataFetched = false;
-               let antDataRows = [];
+               let antVentasDataFetched = false;
+               let antVentasDataRows = [];
+               let antPinedaDataFetched = false;
+               let antPinedaDataRows = [];
 
                distributionTasks.forEach(taskData => {
                    const getTVal = (keys) => {
@@ -5110,13 +5539,25 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                    const tFolio = String(getTVal(['FOLIO', 'ID'])).toUpperCase().trim();
 
                    if (tFolio && isDone) {
-                       if (!antDataFetched) {
-                           const antData = internalFetchSheetData("ANTONIA_VENTAS");
-                           if (antData.success && antData.data) antDataRows = antData.data;
-                           antDataFetched = true;
+                       let targetRows = [];
+                       if (tFolio.startsWith("AV-")) {
+                           if (!antVentasDataFetched) {
+                               const antData = internalFetchSheetData("ANTONIA_VENTAS");
+                               if (antData.success && antData.data) antVentasDataRows = antData.data;
+                               antVentasDataFetched = true;
+                           }
+                           targetRows = antVentasDataRows;
+                       } else if (tFolio.startsWith("AP-")) {
+                           if (!antPinedaDataFetched) {
+                               const antData = internalFetchSheetData("ANTONIA PINEDA LOPEZ");
+                               if (antData.success && antData.data) antPinedaDataRows = antData.data;
+                               antPinedaDataFetched = true;
+                           }
+                           targetRows = antPinedaDataRows;
                        }
 
-                       const targetRow = antDataRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
+
+                       const targetRow = targetRows.find(r => String(r['FOLIO'] || r['ID'] || "").toUpperCase().trim() === tFolio);
                        if (targetRow) {
                            let log = [];
                            try {
@@ -5195,23 +5636,80 @@ function apiSaveTrackerBatch(personName, tasks, username) {
                });
 
                if (syncPayloads.length > 0) {
-                   internalBatchUpdateTasks("ANTONIA_VENTAS", syncPayloads, false);
+                   const avSyncPayloads = syncPayloads.filter(p => p.FOLIO.startsWith("AV-"));
+                   const apSyncPayloads = syncPayloads.filter(p => p.FOLIO.startsWith("AP-"));
+
+                   if (avSyncPayloads.length > 0) {
+                       internalBatchUpdateTasks("ANTONIA_VENTAS", avSyncPayloads, false);
+                   }
+                   if (apSyncPayloads.length > 0) {
+                       internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", apSyncPayloads, false);
+                   }
                }
 
                if (String(personName).toUpperCase().includes("(VENTAS)")) {
-                   internalBatchUpdateTasks("ANTONIA_VENTAS", distributionTasks, false);
+                   const safeDistTasks = distributionTasks.map(t => {
+                       let st = Object.assign({}, t);
+                       // No eliminamos ESTATUS ni AVANCE en tareas de VENTAS para que se actualice la vista general.
+                       const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
+                       if (matchedSync) {
+                           st['MAP COT'] = matchedSync['MAP COT'];
+                           st['PROCESO_LOG'] = matchedSync['PROCESO_LOG'];
+                       }
+                       return st;
+                   });
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", safeDistTasks, false);
                }
 
                // Sincronización Reversa hacia Antonia (NO está completa si no termina en VENTAS ni está DONE)
                const antoniaReverseSyncTasks = [];
+               const antoniaPinedaReverseSyncTasks = [];
                distributionTasks.forEach(t => {
-                   const reverseFolio = t['FOLIO'] || t['ID'];
+                   let existingTaskFolioRev = null;
+                   Object.keys(t).forEach(k => {
+                       if ((k.toUpperCase().trim() === 'FOLIO' || k.toUpperCase().trim() === 'ID') && t[k]) {
+                           existingTaskFolioRev = t[k];
+                       }
+                   });
+                   const reverseFolio = existingTaskFolioRev || t['FOLIO'] || t['ID'];
                    if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
                        antoniaReverseSyncTasks.push(t);
+                   } else if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AP-")) {
+                       antoniaPinedaReverseSyncTasks.push(t);
                    }
                });
                if (antoniaReverseSyncTasks.length > 0) {
-                   internalBatchUpdateTasks("ANTONIA_VENTAS", antoniaReverseSyncTasks, false);
+                   const safeRevTasks = antoniaReverseSyncTasks.map(t => {
+                       let st = Object.assign({}, t);
+                       const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
+                       Object.keys(st).forEach(k => {
+                           if (delKeys.includes(k.toUpperCase().trim())) delete st[k];
+                       });
+                       const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
+                       if (matchedSync) {
+                           st['MAP COT'] = matchedSync['MAP COT'];
+                           st['PROCESO_LOG'] = matchedSync['PROCESO_LOG'];
+                       }
+                       return st;
+                   });
+                   internalBatchUpdateTasks("ANTONIA_VENTAS", safeRevTasks, false);
+               }
+
+               if (antoniaPinedaReverseSyncTasks.length > 0) {
+                   const safeRevTasksAP = antoniaPinedaReverseSyncTasks.map(t => {
+                       let st = Object.assign({}, t);
+                       const delKeys = ['ESTATUS', 'STATUS', 'ESTADO', 'AVANCE', 'AVANCE %', '% AVANCE', '%', 'CUMPLIMIENTO'];
+                       Object.keys(st).forEach(k => {
+                           if (delKeys.includes(k.toUpperCase().trim())) delete st[k];
+                       });
+                       const matchedSync = syncPayloads.find(sp => sp.FOLIO === st.FOLIO || sp.ID === st.FOLIO || sp.FOLIO === st.ID);
+                       if (matchedSync) {
+                           st['MAP COT'] = matchedSync['MAP COT'];
+                           st['PROCESO_LOG'] = matchedSync['PROCESO_LOG'];
+                       }
+                       return st;
+                   });
+                   internalBatchUpdateTasks("ANTONIA PINEDA LOPEZ", safeRevTasksAP, false);
                }
 
                // Handle Peer-to-Peer Sync (Vendor -> Other Vendor)
@@ -5310,6 +5808,70 @@ function apiFetchCombinedCalendarData(sheetName) {
   } catch(e) {
       return { success: false, message: e.toString() };
   }
+}
+
+/**
+ * UTILITY: Fuerza la sincronización inversa de tareas "AP-" (Antonia Pineda)
+ * que ya fueron marcadas como 100% completadas en las hojas de los responsables
+ * pero que no se han reflejado en su Tracker personal.
+ */
+function forceReverseSyncAntoniaPineda() {
+    const pinedaSheetName = "ANTONIA PINEDA LOPEZ";
+    const pinedaDataRes = internalFetchSheetData(pinedaSheetName);
+
+    if (!pinedaDataRes.success || !pinedaDataRes.data) {
+        console.error("No se pudo obtener la hoja de ANTONIA PINEDA LOPEZ");
+        return;
+    }
+
+    // Filtrar tareas que NO están al 100% en el tracker de Antonia
+    const pendingApTasks = pinedaDataRes.data.filter(t => {
+        const folio = t['FOLIO'] || t['ID'] || "";
+        const avanceRaw = String(t['AVANCE'] || t['AVANCE %'] || t['% AVANCE'] || "").replace(/%/g, '').trim();
+        const estatus = String(t['ESTATUS'] || t['STATUS'] || t['ESTADO']).toUpperCase().trim();
+
+        const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || parseFloat(avanceRaw) === 100;
+
+        return folio.startsWith("AP-") && !isDone;
+    });
+
+    if (pendingApTasks.length === 0) {
+        console.log("No hay tareas pendientes AP- que revisar.");
+        return;
+    }
+
+    const allStaffSheets = Object.values(USER_DB).map(u => u.staffName).filter(name => name && name !== "ANTONIA_VENTAS" && name !== pinedaSheetName);
+    // Agregar también las hojas de ventas
+    const allSheetsToScan = [...new Set([...allStaffSheets, ...allStaffSheets.map(s => s + " (VENTAS)")])];
+
+    const tasksToSync = [];
+
+    allSheetsToScan.forEach(sheetName => {
+        try {
+            const sheetRes = internalFetchSheetData(sheetName);
+            if (sheetRes.success && sheetRes.data) {
+                sheetRes.data.forEach(task => {
+                    const folio = task['FOLIO'] || task['ID'] || "";
+                    const avanceRaw = String(task['AVANCE'] || task['AVANCE %'] || task['% AVANCE'] || "").replace(/%/g, '').trim();
+                    const estatus = String(task['ESTATUS'] || task['STATUS'] || task['ESTADO']).toUpperCase().trim();
+                    const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || parseFloat(avanceRaw) === 100;
+
+                    if (folio.startsWith("AP-") && isDone) {
+                        // Verificar si existe en pendientes
+                        if (pendingApTasks.some(p => (p['FOLIO'] || p['ID']) === folio)) {
+                            tasksToSync.push(task);
+                        }
+                    }
+                });
+            }
+        } catch(e) {}
+    });
+
+    if (tasksToSync.length > 0) {
+        console.log("Sincronizando " + tasksToSync.length + " tareas hacia ANTONIA PINEDA LOPEZ");
+        // Reutilizamos la función batchUpdate para simular la subida como "SISTEMA"
+        apiSaveTrackerBatch("SISTEMA", tasksToSync, "SISTEMA");
+    }
 }
 
 /**
@@ -5679,6 +6241,7 @@ function deduplicateAllSheets() {
     let folioIdx = -1;
     let conceptoIdx = -1;
     let fechaIdx = -1;
+    let responsableIdx = -1;
 
     // Buscar la fila de encabezados en las primeras 20 filas
     for (let r = 0; r < Math.min(20, data.length); r++) {
@@ -5692,6 +6255,7 @@ function deduplicateAllSheets() {
         folioIdx = fIdx;
         conceptoIdx = cIdx;
         fechaIdx = currentHeaders.findIndex(h => h === "FECHA" || h === "F. INICIO" || h.includes("FECHA"));
+        responsableIdx = currentHeaders.findIndex(h => h === "RESPONSABLE" || h === "INVOLUCRADOS" || h === "VENDEDOR" || h === "ENCARGADO" || h === "ASIGNADO");
         break;
       }
     }
@@ -5714,6 +6278,7 @@ function deduplicateAllSheets() {
       // ALWAYS check by concept + date FIRST to catch duplicates with DIFFERENT folios
       const concept = conceptoIdx > -1 ? row[conceptoIdx] : "";
       const dateRaw = fechaIdx > -1 ? row[fechaIdx] : "";
+      const responsableRaw = responsableIdx > -1 ? row[responsableIdx] : "";
 
       let dateStr = "";
       if (dateRaw instanceof Date) {
@@ -5724,9 +6289,10 @@ function deduplicateAllSheets() {
       }
 
       const conceptStr = String(concept).trim().toUpperCase().substring(0, 50);
+      const responsableStr = String(responsableRaw).trim().toUpperCase();
 
       if (conceptStr !== "") {
-          const comboKey = conceptStr + "|||" + dateStr;
+          const comboKey = conceptStr + "|||" + dateStr + "|||" + responsableStr;
           if (seenCombos.has(comboKey)) {
               isDuplicate = true;
           } else {
@@ -5824,9 +6390,6 @@ function test_avance_100_bug() {
                     const cleanVal = valStr.replace('%', '').replace(',', '.').trim();
                     const num = parseFloat(cleanVal);
                     if (!isNaN(num) && Math.abs(num - 100) < 0.01) {
-                        isComplete = true;
-                    } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.001) {
-                        // Handles Google Sheets native 100% (1.0) percentage formatting
                         isComplete = true;
                     }
                 }

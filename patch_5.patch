@@ -1,0 +1,73 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -5836,6 +5836,70 @@
+       return { success: false, message: e.toString() };
+   }
+ }
++
++/**
++ * UTILITY: Fuerza la sincronización inversa de tareas "AP-" (Antonia Pineda)
++ * que ya fueron marcadas como 100% completadas en las hojas de los responsables
++ * pero que no se han reflejado en su Tracker personal.
++ */
++function forceReverseSyncAntoniaPineda() {
++    const pinedaSheetName = "ANTONIA PINEDA LOPEZ";
++    const pinedaDataRes = internalFetchSheetData(pinedaSheetName);
++
++    if (!pinedaDataRes.success || !pinedaDataRes.data) {
++        console.error("No se pudo obtener la hoja de ANTONIA PINEDA LOPEZ");
++        return;
++    }
++
++    // Filtrar tareas que NO están al 100% en el tracker de Antonia
++    const pendingApTasks = pinedaDataRes.data.filter(t => {
++        const folio = t['FOLIO'] || t['ID'] || "";
++        const avanceRaw = String(t['AVANCE'] || t['AVANCE %'] || t['% AVANCE'] || "").replace(/%/g, '').trim();
++        const estatus = String(t['ESTATUS'] || t['STATUS'] || t['ESTADO']).toUpperCase().trim();
++
++        const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || parseFloat(avanceRaw) === 100;
++
++        return folio.startsWith("AP-") && !isDone;
++    });
++
++    if (pendingApTasks.length === 0) {
++        console.log("No hay tareas pendientes AP- que revisar.");
++        return;
++    }
++
++    const allStaffSheets = Object.values(USER_DB).map(u => u.staffName).filter(name => name && name !== "ANTONIA_VENTAS" && name !== pinedaSheetName);
++    // Agregar también las hojas de ventas
++    const allSheetsToScan = [...new Set([...allStaffSheets, ...allStaffSheets.map(s => s + " (VENTAS)")])];
++
++    const tasksToSync = [];
++
++    allSheetsToScan.forEach(sheetName => {
++        try {
++            const sheetRes = internalFetchSheetData(sheetName);
++            if (sheetRes.success && sheetRes.data) {
++                sheetRes.data.forEach(task => {
++                    const folio = task['FOLIO'] || task['ID'] || "";
++                    const avanceRaw = String(task['AVANCE'] || task['AVANCE %'] || task['% AVANCE'] || "").replace(/%/g, '').trim();
++                    const estatus = String(task['ESTATUS'] || task['STATUS'] || task['ESTADO']).toUpperCase().trim();
++                    const isDone = estatus === 'HECHO' || estatus === 'TERMINADO' || estatus === 'FINALIZADO' || avanceRaw === '100' || parseFloat(avanceRaw) === 100;
++
++                    if (folio.startsWith("AP-") && isDone) {
++                        // Verificar si existe en pendientes
++                        if (pendingApTasks.some(p => (p['FOLIO'] || p['ID']) === folio)) {
++                            tasksToSync.push(task);
++                        }
++                    }
++                });
++            }
++        } catch(e) {}
++    });
++
++    if (tasksToSync.length > 0) {
++        console.log("Sincronizando " + tasksToSync.length + " tareas hacia ANTONIA PINEDA LOPEZ");
++        // Reutilizamos la función batchUpdate para simular la subida como "SISTEMA"
++        apiSaveTrackerBatch("SISTEMA", tasksToSync, "SISTEMA");
++    }
++}
+
+ /**
+  * API EXPORT TO PDF DIRECT (E2E)

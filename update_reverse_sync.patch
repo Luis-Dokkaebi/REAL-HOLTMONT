@@ -1,0 +1,29 @@
+--- CODIGO.js
++++ CODIGO.js
+@@ -2996,7 +2996,7 @@
+                                  internalBatchUpdateTasks("ANTONIA_VENTAS", [safeVentasSyncData]);
+                              } else {
+                                  const reverseFolio = safeSyncData['FOLIO'] || safeSyncData['ID'];
+-                                 if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
++                                 if (reverseFolio && (String(reverseFolio).toUpperCase().startsWith("AV-") || String(reverseFolio).toUpperCase().startsWith("AP-"))) {
+                                      internalBatchUpdateTasks("ANTONIA_VENTAS", [safeSyncData]);
+                                  }
+                              }
+@@ -5244,7 +5244,7 @@
+           let needsHeal = false;
+           tasks.forEach(t => {
+               const folioVal = String(t['FOLIO'] || t['ID'] || "");
+-              if (folioVal.startsWith("AV-")) {
++              if (folioVal.startsWith("AV-") || folioVal.startsWith("AP-")) {
+                   const numPart = folioVal.replace("AV-", "").replace("AP-", "");
+                   const fid = parseInt(numPart);
+                   if (!isNaN(fid) && fid > currentSeq) {
+@@ -5647,7 +5647,7 @@
+                        }
+                    });
+                    const reverseFolio = existingTaskFolioRev || t['FOLIO'] || t['ID'];
+-                   if (reverseFolio && String(reverseFolio).toUpperCase().startsWith("AV-")) {
++                   if (reverseFolio && (String(reverseFolio).toUpperCase().startsWith("AV-") || String(reverseFolio).toUpperCase().startsWith("AP-"))) {
+                        antoniaReverseSyncTasks.push(t);
+                    }
+                });
