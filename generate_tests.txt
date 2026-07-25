@@ -1,41 +1,41 @@
-# Pruebas Unitarias y de Integración Detalladas para la Migración
+# Pruebas Unitarias y de Integración Detalladas para la Migración (Python + Supabase)
 
-A continuación, se detalla una lista estructurada para pruebas manuales y automatizadas. Cada escenario incluye la precondición, los pasos exactos a seguir, y el resultado esperado según el código en `CODIGO.js`.
+A continuación, se detalla una lista estructurada para pruebas manuales y automatizadas enfocadas en el nuevo stack tecnológico. Cada escenario incluye la precondición, los pasos exactos a seguir, y el resultado esperado según la lógica de negocio migrada.
 
 ---
 
-## 1. Pruebas de Semáforo (Formato Condicional) para Clasificación de Tareas
-**Objetivo:** Validar la lógica de `applyTrafficLightToSheet` para las clases de SLA.
+## 1. Pruebas de Semáforo (Cálculo de SLAs) para Clasificación de Tareas
+**Objetivo:** Validar la lógica del backend (Python) para las alertas visuales y el cálculo de estado de los SLAs en la base de datos (Supabase).
 
 ### Escenario 1.1: Clasificación A (Límite 3 días)
-- **Precondición:** Se tiene una hoja habilitada para formato condicional (ej. `EDUARDO MANZANARES`) y no excluida (como `LOG_SISTEMA`).
+- **Precondición:** Se tiene una tabla/vista de tareas en el frontend conectada a la API.
 - **Pasos:**
-  1. Insertar una tarea y colocar "A" en la columna `CLASIFICACION`.
-  2. Colocar en `FECHA` la fecha de hoy.
-  3. Modificar la fecha de inicio (`FECHA`) para que simule tener **1 día** de antigüedad (hoy - 1).
-  4. Modificar la fecha a **2 días** de antigüedad (hoy - 2).
-  5. Modificar la fecha a **4 días** de antigüedad (hoy - 4).
+  1. Insertar una tarea mediante la API y asignar "A" en el campo `clasificacion`.
+  2. Establecer la fecha de inicio (`fecha`) como el día de hoy.
+  3. Modificar la fecha de inicio (via API o interfaz) para simular **1 día** de antigüedad (hoy - 1 día).
+  4. Modificar la fecha para simular **2 días** de antigüedad (hoy - 2).
+  5. Modificar la fecha para simular **4 días** de antigüedad (hoy - 4).
 - **Resultado Esperado:**
-  - En el paso 2 y 3, el fondo debe ser **Verde** (`#00FF00`).
-  - En el paso 4, el fondo debe ser **Amarillo** (`#FFFF00`).
-  - En el paso 5, el fondo debe ser **Rojo** (`#FF0000`).
+  - Tras los pasos 2 y 3, el endpoint debe retornar un estado de SLA que el frontend renderice como **Verde** (A tiempo).
+  - Tras el paso 4, el estado debe retornar un flag de alerta temprana, renderizándose **Amarillo** (Por vencer).
+  - Tras el paso 5, el estado debe marcar SLA incumplido, renderizándose **Rojo** (Vencido).
 
 ### Escenario 1.2: Clasificación AA (Límite 14 días)
-- **Precondición:** Misma que la anterior.
+- **Precondición:** Igual que arriba.
 - **Pasos:**
-  1. Insertar una tarea, poner "AA" en `CLASIFICACION`.
-  2. Modificar la fecha a **11 días** de antigüedad.
-  3. Modificar la fecha a **13 días** de antigüedad.
-  4. Modificar la fecha a **16 días** de antigüedad.
+  1. Asignar "AA" en `clasificacion`.
+  2. Establecer una fecha con **11 días** de antigüedad.
+  3. Establecer una fecha con **13 días** de antigüedad.
+  4. Establecer una fecha con **16 días** de antigüedad.
 - **Resultado Esperado:**
   - Paso 2: **Verde**.
-  - Paso 3: **Amarillo**.
+  - Paso 3: **Amarillo** (avisa días antes del límite 14).
   - Paso 4: **Rojo**.
 
 ### Escenario 1.3: Clasificación AAA (Límite 30 días)
-- **Precondición:** Misma que la anterior.
+- **Precondición:** Igual que arriba.
 - **Pasos:**
-  1. Insertar una tarea, poner "AAA" en `CLASIFICACION`.
+  1. Asignar "AAA" en `clasificacion`.
   2. Modificar la fecha a **24 días** de antigüedad.
   3. Modificar la fecha a **27 días** de antigüedad.
   4. Modificar la fecha a **32 días** de antigüedad.
@@ -46,243 +46,206 @@ A continuación, se detalla una lista estructurada para pruebas manuales y autom
 
 ---
 
-## 2. Pruebas de Permisos de Ruteo y Tablas de Ventas (La Ley de Antonia)
-**Objetivo:** Validar que `internalUpdateTask` y `apiSaveTrackerBatch` protegen correctamente las hojas `(VENTAS)` y a Antonia.
+## 2. Pruebas de Permisos de Ruteo y Vistas de Ventas (La Ley de Antonia)
+**Objetivo:** Validar que los endpoints (Python) y los roles de seguridad (Row Level Security - RLS en Supabase) aíslan las ventas exclusivas de Antonia y protegen los dashboards.
 
 ### Escenario 2.1: ANTONIA_VENTAS manda tarea a un vendedor
-- **Precondición:** Iniciar sesión o simular flujo con `currentUsername.value = 'ANTONIA_VENTAS'`.
+- **Precondición:** Iniciar sesión con el usuario autenticado como `ANTONIA_VENTAS`.
 - **Pasos:**
-  1. Seleccionar a `EDUARDO MANZANARES (VENTAS)` en el dropdown de involucrados.
-  2. Crear y guardar la tarea.
-- **Resultado Esperado:** La tarea aparece en la pestaña de `EDUARDO MANZANARES (VENTAS)`. El ruteo respeta el sufijo `(VENTAS)`.
+  1. Seleccionar a un vendedor (ej. `EDUARDO MANZANARES`) en el campo responsable, especificando el contexto de `VENTAS`.
+  2. Enviar el POST a la API para crear la tarea/cotización.
+- **Resultado Esperado:** La tarea se guarda íntegra en Supabase y aparece exitosamente en la vista o dashboard de ventas de `EDUARDO MANZANARES`. El backend autoriza y respeta este ruteo por el rol de Antonia.
 
-### Escenario 2.2: Otro usuario intenta mandar tarea a un vendedor
-- **Precondición:** Iniciar sesión con un usuario común o administrador, por ejemplo `LUIS_CARLOS`.
+### Escenario 2.2: Otro usuario intenta mandar tarea al contexto de ventas
+- **Precondición:** Iniciar sesión con un rol diferente (ej. un administrador o empleado operativo como `LUIS_CARLOS`).
 - **Pasos:**
-  1. Modificar manualmente (o si existe el bug en frontend) y mandar como destino `EDUARDO MANZANARES (VENTAS)`.
-  2. Enviar el payload de guardado al backend.
-- **Resultado Esperado:** El backend de GAS, vía regex `.replace(/\s*\(VENTAS\)/ig, "")`, interceptará y purgará el sufijo. La tarea se escribirá obligatoriamente en el tracker general `EDUARDO MANZANARES` y NO en la hoja de ventas.
+  1. Modificar el payload para intentar asignar la tarea al contexto de ventas de otro empleado.
+  2. Ejecutar el POST.
+- **Resultado Esperado:** El backend interceptará la petición, ignorará/limpiará el contexto de ventas, y asignará la tarea obligatoriamente a la tabla o vista de **Operaciones/Tracker general** del empleado, impidiendo que contamine el pipeline de ventas.
 
-### Escenario 2.3: Alguien intenta enviar tareas generales a Toñita Ventas
-- **Precondición:** Iniciar sesión como `EDUARDO MANZANARES`.
+### Escenario 2.3: Alguien intenta enviar tareas generales al core de Ventas
+- **Precondición:** Iniciar sesión como `EDUARDO MANZANARES` (operativo).
 - **Pasos:**
-  1. Seleccionar de involucrado o escribir manualmente como destino `ANTONIA_VENTAS`.
-  2. Enviar payload de guardado al backend.
-- **Resultado Esperado:** El sistema detecta que no eres Toñita y que estás intentando mandar a su core de ventas. Redirigirá la tarea forzosamente a la hoja `ANTONIA PINEDA LOPEZ` (Tracker personal). La tarea generada usará un prefijo `AP-` y no `AV-`.
+  1. Seleccionar como responsable a `ANTONIA_VENTAS`.
+  2. Enviar la tarea.
+- **Resultado Esperado:** El backend de Python sabe que "Nadie manda tareas al core de cotizaciones". Muta automáticamente el `user_id` de destino hacia el perfil personal de `ANTONIA PINEDA LOPEZ` (su tracker operativo). El folio auto-generado nacerá con el prefijo personal `AP-`, descartando el prefijo maestro de ventas `AV-`.
 
 ---
 
 ## 3. Pruebas de Generación de Folios y Prefijos Personalizados
-**Objetivo:** Validar el generador de iniciales `generatePrefix` de `CODIGO.js`.
+**Objetivo:** Validar el generador de secuencias en Python asociado a transacciones en Supabase.
 
-### Escenario 3.1: Usuarios Hardcodeados
-- **Precondición:** Llamar al flujo de guardado de nueva fila desde la UI para cada usuario.
+### Escenario 3.1: Comprobación de Usuarios Configurables
 - **Pasos y Resultados Esperados:**
-  1. Crear tarea como `JAIME OLIVO`. Validar en la celda correspondiente que el folio empiece con **`JO-`**.
-  2. Crear tarea como `JESUS CANTU`. Validar que el folio empiece con **`JC-`**.
-  3. Crear tarea como `LUIS CARLOS` o `ADMINISTRADOR`. Validar que el folio empiece con **`LC-`**.
-  4. Crear tarea como `ANTONIA VENTAS`. Validar que el folio empiece con **`AV-`**.
-  5. Crear tarea como `RAMIRO RODRIGUEZ`. Validar que el folio empiece con **`RR-`**.
-  6. Crear tarea como `SEBASTIAN PADILLA`. Validar que el folio empiece con **`SP-`**.
-  7. Crear tarea como `TERESA GARZA`. Validar que el folio empiece con **`TG-`**.
+  1. Crear nueva tarea para `JAIME OLIVO` -> El backend genera el folio **`JO-`** + [Secuencia única en Supabase].
+  2. Crear nueva tarea para `JESUS CANTU` -> Folio **`JC-`** + [Seq].
+  3. Crear nueva tarea para `LUIS CARLOS` -> Folio **`LC-`** + [Seq].
+  4. Crear nueva tarea para `ANTONIA VENTAS` -> Folio **`AV-`** + [Seq].
+  5. Crear nueva tarea para `RAMIRO RODRIGUEZ` -> Folio **`RR-`** + [Seq].
+  6. Crear nueva tarea para `SEBASTIAN PADILLA` -> Folio **`SP-`** + [Seq].
+  7. Crear nueva tarea para `TERESA GARZA` -> Folio **`TG-`** + [Seq].
 
-### Escenario 3.2: Generación de Prefijos Genéricos (Fallbacks)
-- **Precondición:** Añadir a `DB_DIRECTORY` un usuario que no esté en la lista hardcodeada. Ej: `MIGUEL GALLARDO`.
+### Escenario 3.2: Comprobación Dinámica (Fallbacks)
 - **Pasos:**
-  1. Guardar una tarea nueva como `MIGUEL GALLARDO`.
-- **Resultado Esperado:** Toma las iniciales dinámicamente y el folio inicia con **`MG-`**.
-- **Pasos Alternativos:**
-  1. Si no se provee nombre, o hay error, la función `generatePrefix` debe retornar de forma segura **`PPC-`**.
+  1. Crear un usuario nuevo `MIGUEL GALLARDO` en Supabase Auth y mandarle una tarea.
+  2. Enviar una petición a la API con un empleado en blanco o no reconocido.
+- **Resultados Esperados:**
+  1. El backend de Python extraerá la 1ra letra del nombre y la 1ra del apellido, creando el folio **`MG-`** + [Seq].
+  2. Si el sistema no reconoce el nombre, asignará el folio genérico seguro **`PPC-`** + [Seq].
 
 ---
 
-## 4. Pruebas de Gatekeeper, Duplicidad y Auto-Archivado
-**Objetivo:** Validar resiliencia ante race conditions (múltiples clicks) y que el sistema envíe a "TAREAS REALIZADAS" correctamente.
+## 4. Pruebas de Concurrencia, Gatekeeper y Auto-Archivado
+**Objetivo:** Validar las transacciones ACID de Supabase (PostgreSQL) y las reglas de negocio de cierre.
 
-### Escenario 4.1: Protección Frontend y Backend (Anti-Duplicación)
-- **Precondición:** Estar en un tracker como `JAIME OLIVO`.
+### Escenario 4.1: Protección Anti-Spam (Race Conditions)
+- **Precondición:** Preparar un script para enviar peticiones concurrentes a la API.
 - **Pasos:**
-  1. Crear una tarea nueva llenando el formulario (pero NO presionar guardar todavía).
-  2. Modificar el DOM o la función de frontend para enviar 5 peticiones simultáneas idénticas a `apiSaveTrackerBatch`.
+  1. Enviar 5 peticiones POST idénticas de "Nueva Tarea" (con el mismo `idempotency_key` o `temp_id`) simultáneamente.
 - **Resultado Esperado:**
-  1. El frontend debe bloquear más llamadas después del primer clic gracias al flag reactivo `isSubmitting`.
-  2. Incluso si la llamada pasa, las peticiones concurrentes viajan con el mismo `_tempId`. El `CacheService` de Google Apps Script bloqueará todas las demás y solo insertará 1 sola fila en Google Sheets.
+  1. La base de datos (o la capa de caché/Redis en Python) utilizará la clave de idempotencia o bloqueos transaccionales (Locks) para aceptar solo la primera petición, respondiendo con éxito (200/201).
+  2. Las 4 peticiones restantes serán descartadas (o retornarán el mismo recurso ya creado), garantizando que solo exista 1 registro en Supabase.
 
-### Escenario 4.2: Gatekeeper Fallback (Recuperación de Fila sin ID)
-- **Precondición:** Insertar una tarea en la hoja, pero deliberadamente borrar su FOLIO en Google Sheets (para simular pérdida de datos).
+### Escenario 4.2: Upsert / Fallback Orgánico
+- **Precondición:** Se tiene un registro en la base de datos sin un FOLIO explícito (o un sistema externo envía datos parciales).
 - **Pasos:**
-  1. Desde el frontend, enviar una actualización (ej. un comentario nuevo).
-- **Resultado Esperado:** `internalBatchUpdateTasks` no hallará el folio. Se activará el "Fallback robusto", detectando que la tarea que llega tiene el mismo `CONCEPTO`, misma `FECHA` y mismo `RESPONSABLE`. En lugar de crear una tarea idéntica, el backend sobreescribirá la fila correcta. Además, respetará si es necesario asignar un folio nuevo a esa fila reparada sin dañar el historial.
+  1. Enviar un payload de actualización (PUT/PATCH) enviando: Concepto exacto, Cliente exacto y Fecha exacta, sin incluir un ID primario.
+- **Resultado Esperado:** El backend realizará una consulta de validación cruzada. Al detectar coincidencia exacta de esos tres parámetros, ejecutará un UPDATE sobre la fila existente en Supabase en lugar de ejecutar un INSERT, evitando la duplicidad.
 
-### Escenario 4.3: Auto-Archivado Tareas Realizadas (100% bug fix)
-- **Precondición:** Tener una tarea activa y pendiente en cualquier tracker (ej. `JAIME OLIVO`).
+### Escenario 4.3: Auto-Archivado (Estado de Completado)
+- **Precondición:** Tarea en estado `ASIGNADA`, Avance: 0.
 - **Pasos:**
-  1. En Google Sheets, escribir el número `1` nativamente en la celda de AVANCE. (Esto es evaluado en el background de GAS).
-  2. En el frontend, llenar un campo con el string `"100%"`.
-  3. Cambiar el ESTATUS a `HECHO`, o el CUMPLIMIENTO a `SI`.
-  4. Enviar un guardado.
-- **Resultado Esperado:** La fila se extrae de las filas activas y se inserta al fondo de la hoja de Sheets, específicamente debajo del separador oscuro que dicta `TAREAS REALIZADAS`.
+  1. Enviar PATCH con el avance a `100` (entero).
+  2. Enviar PATCH con el avance a `"100%"` (string).
+  3. Enviar PATCH con el estatus a `DONE` o `HECHO`.
+- **Resultado Esperado:** En los tres casos, el backend actualiza el estado de la tarea a `completado` o activa un flag `is_archived = true` en Supabase. Las vistas (Views) operativas filtrarán automáticamente esta fila, mostrándola únicamente en los endpoints de "Historial" o "Tareas Realizadas".
 
 ---
 
-## 5. Pruebas de Distribución Lateral (El Papa Caliente) y Reverse Sync
-**Objetivo:** Asegurar el tracking sincronizado bidireccional entre la maestra Antonia y el personal, conservando la información.
+## 5. Pruebas de Distribución Lateral (El Papa Caliente) y Sincronización Bidireccional
+**Objetivo:** Validar el motor de workflows basado en estados (BPM) de Python.
 
-### Escenario 5.1: Delegación "Papa Caliente" desde Toñita
-- **Precondición:** Crear una tarea en `ANTONIA_VENTAS` que tenga folio `AV-2025`.
+### Escenario 5.1: Delegación "Papa Caliente"
+- **Precondición:** `ANTONIA_VENTAS` tiene una cotización maestra registrada `AV-5050`.
 - **Pasos:**
-  1. En el frontend (Tracker de Toñita), usar la función de delegación para mandar la fase de "Calculo y Diseño (CD)" al trabajador `ANGEL SALINAS`.
+  1. Vía la API, delega la fase "Cálculo y Diseño (CD)" al usuario `ANGEL SALINAS`.
 - **Resultado Esperado:**
-  1. El ESTATUS original en `ANTONIA_VENTAS` sigue su curso y el visualizador `MAP COT` cambia el circulito de `⚪ CD` a `🔴 CD`.
-  2. En la hoja de `ANGEL SALINAS` aparece una fila con la tarea, y en el `CONCEPTO` se agrega al final la marca `[Calculo y Diseño]`.
+  1. La tabla maestra de la cotización actualiza un campo JSONB o array de estados marcando la fase CD como `PENDIENTE` (lo que el frontend dibuja rojo 🔴).
+  2. El backend genera una sub-tarea o registro relacionado, asignado a `ANGEL SALINAS`, agregándole automáticamente la marca `[Calculo y Diseño]` en su descripción.
 
-### Escenario 5.2: Reverse Sync desde el trabajador a Toñita
-- **Precondición:** Continuar desde el paso anterior. `ANGEL SALINAS` está viendo la tarea `AV-2025` en su tracker.
+### Escenario 5.2: Sync Inverso (Reverse Sync)
+- **Precondición:** (Sigue de arriba). Angel tiene la sub-tarea activa.
 - **Pasos:**
-  1. Angel marca la tarea como `100%` y sube los archivos a las columnas `COTIZACION` o `ARCHIVO`.
-  2. Guarda la tarea.
+  1. Angel envía un PATCH marcando su sub-tarea al 100% y adjunta una URL del Storage (bucket) para el campo de cotización.
 - **Resultado Esperado:**
-  1. La tarea se archiva en la hoja de `ANGEL SALINAS`.
-  2. Simultáneamente, GAS realiza el *Reverse Sync*: localiza la hoja `ANTONIA_VENTAS`, inserta el archivo `COTIZACION` en la celda correcta, el `PROCESO_LOG` de Antonia actualiza esa etapa a "DONE", y el circulito `MAP COT` de CD cambia automáticamente a verde (`🟢 CD`).
+  1. Su sub-tarea queda archivada/completada.
+  2. Un Trigger en Supabase (o un background task en Python) detecta la finalización, localiza el registro padre `AV-5050`, inyecta la URL del archivo en la cotización maestra, y actualiza el estado de la fase CD a `COMPLETADO` (lo que el frontend dibuja verde 🟢).
 
-### Escenario 5.3: Prevención de Cierre Prematuro
-- **Precondición:** Durante el *Reverse Sync* de la tarea `AV-2025`...
+### Escenario 5.3: Prevención de Cierre Prematuro (Master Lock)
+- **Precondición:** Durante el *Reverse Sync* de la tarea `AV-5050`.
 - **Pasos:**
-  1. Angel había marcado ESTATUS "DONE" y AVANCE "100".
-- **Resultado Esperado:** El backend **debe interceptar y borrar** las variables de `ESTATUS` y `AVANCE` del payload (borrado case-insensitive, ver `AGENTS.md`) *antes* de aplicarlas a `ANTONIA_VENTAS`. Esto previene que una tarea parcial de Angel Salinas cierre el 100% de la venta global que maneja Toñita.
+  1. Angel envía el payload con estado `DONE` y avance `100`.
+- **Resultado Esperado:** El backend de Python **bloquea y desecha** del payload los campos genéricos de estatus global. Aplica el completado solo a la "fase" asignada, impidiendo que el 100% de la sub-tarea sobreescriba el porcentaje total de la oportunidad de ventas principal en la DB.
 
 ---
 
-## 6. Pruebas del Agente de Métricas (Dashboard KPIs y AI)
-**Objetivo:** Validar los scripts automáticos de reporte.
+## 6. Pruebas del Agente KPI, IA y Notificaciones
+**Objetivo:** Confirmar el cierre del ciclo de reportes y workers programados.
 
-### Escenario 6.1: Cierre Terminal y Contabilidad de Métricas
-- **Precondición:** En la hoja `ANTONIA_VENTAS`, poner un estatus terminal a una cotización activa (ej. `PERDIDA X PRECIO`).
+### Escenario 6.1: Contabilidad de Métricas en Base de Datos
+- **Precondición:** Cotización activa.
 - **Pasos:**
-  1. Ir a la UI administrativa de métricas (`runQuoteMetricsAgent`) o simular el `autoUpdateQuoteMetrics`.
-- **Resultado Esperado:** La cotización debe ser leída correctamente del historial (TAREAS REALIZADAS) y contabilizada en el bucket de "Perdidas", restándose de la Tasa de Cierre global.
+  1. Antonia envía PATCH con estatus terminal `PERDIDA X PRECIO`.
+  2. Consultar el endpoint de análisis de métricas.
+- **Resultado Esperado:** Las vistas materializadas o agregaciones (SQL) en Supabase contabilizan el registro inmediatamente bajo el bucket de "Perdidas", actualizando en tiempo real la Tasa de Cierre global.
 
-### Escenario 6.2: Gemini Integration Context
-- **Precondición:** El dashboard de Toñita.
+### Escenario 6.2: Gemini Integration Context (Worker en Python)
+- **Precondición:** Se ejecuta la tarea programada (cronjob/Celery) de reporte mensual.
 - **Pasos:**
-  1. Realizar una llamada de métricas para generar reporte.
-- **Resultado Esperado:** El sistema debe agrupar todas las SLAs fallidas y efectivas, enviar este payload al Prompt de la IA, y si `GEMINI_API_KEY` es válido, retornar un texto de ~180 palabras que incluya una "recomendación operativa".
+  1. El worker invoca la función de reportes.
+- **Resultado Esperado:** El script en Python ejecuta la consulta agregada (agrupando SLAs, ganadas/perdidas), envía el payload JSON a la API de Gemini, y guarda el resumen (180 palabras y recomendación) en la base de datos o lo despacha directo por correo.
 
-### Escenario 6.3: Envío Webhook (Make.com - Outlook) Correcto
-- **Precondición:** Disparar un guardado en cualquier Tracker donde se asigne a un "nuevo" `RESPONSABLE` que no estaba antes (ej. asignarle tarea general a `JEHU MARTINEZ`).
+### Escenario 6.3: Webhooks y Formato UTC
+- **Precondición:** Creación de tarea nueva asignada a un usuario.
 - **Pasos:**
-  1. Revisar los logs o intercepciones HTTP del Webhook enviado a Make.com.
+  1. Revisar los logs del worker asíncrono o la tabla de auditoría en Supabase.
 - **Resultado Esperado:**
-  - Si Jehu tiene su email corporativo definido en `USER_DB`, el payload se manda.
-  - La fecha `fechaInicio` enviada **DEBE** contener `.toISOString()`, formato `YYYY-MM-DDTHH:mm:ss.sssZ` para que Make.com y Outlook preserven la zona horaria (UTC) intacta.
+  - El sistema detecta el cambio e invoca el Webhook hacia Make.com/Outlook.
+  - La fecha del evento (`fechaInicio`) se serializa estrictamente en formato ISO 8601 (`YYYY-MM-DDTHH:mm:ss.sssZ`), asegurando que las zonas horarias no se corrompan entre la base de datos PostgreSQL (UTC) y el cliente final de correo.
 
 ---
 
 ## 7. Pruebas de Sitios, Proyectos y Work Orders
-**Objetivo:** Validar la arquitectura de base de datos relacional jerárquica y el autogenerador especial de folios Work Order.
+**Objetivo:** Validar la integridad referencial en Supabase y generadores de ID.
 
-### Escenario 7.1: Alta de Nuevo Sitio y Subproyectos Automáticos
-- **Precondición:** Usar el formulario de "Nuevo Sitio" desde el frontend.
+### Escenario 7.1: Alta de Nuevo Sitio y Proyectos Hijos
+- **Precondición:** Llamar al endpoint `POST /api/sitios`.
 - **Pasos:**
-  1. Ingresar "PLANTA MERCEDES BENZ" como cliente/sitio.
-  2. Enviar el payload a `apiSaveSite`.
+  1. Enviar payload con nombre "PLANTA MERCEDES BENZ".
 - **Resultado Esperado:**
-  1. En `DB_SITIOS` se crea el registro con un `ID_SITIO` único (ej. `SITE-170...`).
-  2. El trigger `apiCreateStandardStructure` debe dispararse y crear automáticamente en `DB_PROYECTOS` los 10 subproyectos requeridos (NAVE, AMPLIACION, PPC INTERNO, PPC PREOPERATIVO, PPC CLIENTE, DOCUMENTOS, etc.) enlazados al `ID_SITIO`.
+  1. Se crea el registro en la tabla `sitios` con su UUID primary key.
+  2. Un script en backend (o trigger de Supabase) genera inmediatamente 10 registros en la tabla `proyectos` vinculados a ese `sitio_id` (NAVE, AMPLIACION, PPC INTERNO, etc.).
 
 ### Escenario 7.2: Generador de Folios Work Order (WO)
-- **Precondición:** Rol `WORKORDER_USER` logueado.
-- **Pasos:**
-  1. Llenar form asignando cliente "MERCEDES BENZ" y departamento "ELECTROMECANICA".
-  2. Guardar la tarea (via `apiSavePPCData`).
-- **Resultado Esperado:** El folio generado no debe ser el clásico PPC-. Debe invocar `generateWorkOrderFolio` y devolver la estructura: `[SECUENCIA] [INICIALES CLIENTE] [ABREVIATURA DEPT] [DDMMYY]` (ej. `0001MB Electro 150524`).
+- **Pasos:** Enviar payload de tarea desde el perfil `WORKORDER_USER`.
+- **Resultado Esperado:** Python llama a un secuenciador atómico en base de datos. El folio se genera con la nomenclatura: `[SECUENCIA] [INICIALES CLIENTE] [ABREVIATURA DEPT] [DDMMYY]` (ej. `0001MB Electro 150524`).
 
 ---
 
-## 8. Pruebas del Directorio Corporativo (CRUD de Empleados)
-**Objetivo:** Validar que los administradores pueden añadir o dar de baja personal sin romper el sistema, y que el directorio en duro hace fallback con la DB.
+## 8. Pruebas del Directorio y Gestión de Usuarios (Supabase Auth)
+**Objetivo:** Sincronizar roles de sistema con la infraestructura relacional.
 
-### Escenario 8.1: Alta de Usuario HÍBRIDO (Ej. Nuevo Presupuestador)
-- **Precondición:** Administrador interactuando con la DB de Directorio.
-- **Pasos:**
-  1. Añadir usuario "PEDRO PICAPIEDRA", Departamento "PRESUPUESTOS", Tipo "HIBRIDO" a través de `apiAddEmployee`.
+### Escenario 8.1: Alta de Usuario HÍBRIDO
+- **Pasos:** Administrador invoca `POST /api/users` para "PEDRO PICAPIEDRA", departamento "PRESUPUESTOS", rol "HIBRIDO".
 - **Resultado Esperado:**
-  1. El usuario se anota en `DB_DIRECTORY`.
-  2. El sistema automáticamente inserta (si no existen) DOS pestañas en el backend de Sheets: `PEDRO PICAPIEDRA` (con `DEFAULT_TRACKER_HEADERS`) y `PEDRO PICAPIEDRA (VENTAS)` (con `DEFAULT_SALES_HEADERS`).
+  1. El usuario se registra en `auth.users` y en la tabla pública de perfiles.
+  2. El rol híbrido le otorga permisos RLS para consultar/escribir en endpoints tanto de "Operaciones" como de "Ventas".
 
-### Escenario 8.2: Resincronización del Directorio (`apiResyncDirectory`)
-- **Precondición:** El administrador fuerza el botón de resincronización de base de datos.
-- **Pasos:**
-  1. Llamar a `apiResyncDirectory()`.
+---
+
+## 9. Pruebas de Archivos (Supabase Storage)
+**Objetivo:** Limitar payloads e ingesta de memoria.
+
+### Escenario 9.1: Límite de Tamaño de Bucket
+- **Pasos:** Enviar a la API un archivo PDF de 40 MB mediante subida directa o Multipart form.
 - **Resultado Esperado:**
-  1. El backend mapea el hardcode `INITIAL_DIRECTORY` contra las hojas de cálculo.
-  2. Renombra automáticamente las hojas si hubo errores de tipeo de RH (Ej. cambiar "SAIRA" a "ZAIRA YAZMIN AGUILAR AGUILON").
-  3. No borra las hojas existentes, solo crea las faltantes.
+  1. El bucket de Supabase Storage o el middleware de Python (FastAPI/Fastify/etc) rechaza la petición con código 413 (Payload Too Large), validando el límite máximo estricto de 35MB, evitando que el servidor OOM (Out Of Memory).
 
 ---
 
-## 9. Pruebas de Subida de Archivos y Límites
-**Objetivo:** Evitar que Google Sites (Iframe) colapse por payloads pesados (Crash OOM) en conversiones a Base64.
+## 10. Pruebas del Agente "Tracker Productivity"
+**Objetivo:** Ejecución de queries analíticas sobre perfiles operativos.
 
-### Escenario 9.1: Prevención Payload Excesivo (Limite 35MB)
-- **Precondición:** Seleccionar subir un archivo a una tarea activa.
-- **Pasos:**
-  1. En el frontend, adjuntar un archivo (PDF o Imagen) de 40 Megabytes.
-  2. O adjuntar un audio a Gemini que pese más de 35MB.
-- **Resultado Esperado:** Antes de llamar a `FileReader.readAsDataURL()`, el frontend debe validar `file.size` y emitir una alerta, cortando el proceso inmediatamente para evitar la caída de la aplicación.
+### Escenario 10.1: Filtro RLS / Operativo
+- **Pasos:** Invocar el endpoint de reporte mensual de productividad.
+- **Resultado Esperado:** La consulta de Python filtra forzosamente a través de un `WHERE role IN ('ESTANDAR', 'HIBRIDO')`, ignorando por completo perfiles exclusivos de `VENTAS`. El reporte se compila y evalúa las alertas pre-configuradas (SLA < 80% éxito).
 
 ---
 
-## 10. Pruebas del Agente "Tracker Productivity" (Productividad Mensual)
-**Objetivo:** Validar el segundo agente de Inteligencia Artificial que analiza el volumen de los trackings operativos, distinto al agente de Cotizaciones.
+## 11. Pruebas del Gestor Documental
+**Objetivo:** Organización jerárquica virtual o física de Storage.
 
-### Escenario 10.1: Seguridad y Filtro de Vendedores
-- **Precondición:** Usuario "ADMIN" llama al reporte mensual.
-- **Pasos:**
-  1. Ejecutar el Agente de Productividad.
-- **Resultado Esperado:**
-  1. El código (`apiFetchTrackerProductivityMetrics`) **debe excluir explícitamente** todas las tablas de ventas (sufijos `(VENTAS)` y `ANTONIA_VENTAS`), evaluando *únicamente* personal "ESTANDAR" e "HIBRIDO".
-  2. Se deben contabilizar alertas operativas si el % de entregas a tiempo cae bajo el 80% o si las tareas presentan más de 20% de restricciones documentadas.
-  3. Gemini Flash debe despachar el correo estructurado.
+### Escenario 11.1: Archivo Automático
+- **Pasos:** Se sube un archivo adjunto a un registro de Cotización.
+- **Resultado Esperado:** El backend extrae el año, mes y cliente. Guarda o mueve la referencia del archivo en Supabase Storage simulando/aplicando la ruta: `cotizaciones/2025/MAYO/MERCEDES BENZ/file.pdf`.
 
 ---
 
-## 11. Pruebas del "Smart Archiver" (Banco de Cotizaciones en Drive)
-**Objetivo:** Verificar que el sistema empaquete y organice archivos estáticos automáticamente en Google Drive por Año, Mes y Cliente.
+## 12. Pruebas de Agenda Personal
+**Objetivo:** Aislamiento de datos en la DB.
 
-### Escenario 11.1: Guardado desde Antonia Ventas
-- **Precondición:** En la hoja `ANTONIA_VENTAS` existe una fila con un documento adjunto válido de Google Drive en la columna "COTIZACION" o "ARCHIVO".
-- **Pasos:**
-  1. Antonia hace cualquier guardado o edición que dispare la sincronización, o se llama manualmente a `runFullArchivingBatch()`.
-- **Resultado Esperado:**
-  1. El código extrae la fecha de inicio de la tarea y el nombre del cliente.
-  2. En el directorio raíz de "Banco de Cotizaciones", la rutina verifica/crea la ruta `Año -> Mes -> Cliente` (ej. `2025/05 - MAYO/MERCEDES BENZ`).
-  3. El script invoca a `DriveApp` y *mueve físicamente* el archivo de la carpeta "Uploads" desordenada hacia su directorio final estricto.
+### Escenario 12.1: Segregación RLS (Row Level Security)
+- **Pasos:** Consultar la tabla de `agenda_personal` u obtener el panel unificado.
+- **Resultado Esperado:** El backend retorna las tareas laborales y personales. Las tareas con `tipo = "PERSONAL"` tienen una política RLS estricta en Supabase, previniendo que Agentes KPI o reportes globales lean, sumen o procesen información privada (ej. ir al gimnasio).
 
 ---
 
-## 12. Pruebas de la Agenda Personal (Integración Holtzar)
-**Objetivo:** Comprobar que los "Hábitos" y eventos privados no colapsen los reportes corporativos y carguen bien en el Dashboard.
-
-### Escenario 12.1: Agrupación en el Dashboard
-- **Precondición:** Un usuario tiene eventos asignados en el Tracker de trabajo y en `AGENDA_PERSONAL`.
-- **Pasos:**
-  1. El usuario abre el layout del Dashboard / Planner semanal.
-- **Resultado Esperado:**
-  1. La función `apiFetchUnifiedAgenda` combina las tareas laborales (filtradas) con los eventos extraídos de `AGENDA_PERSONAL` y `HABITOS_LOG`.
-  2. Las tareas personales traen forzosamente el flag `CLIENTE: "PERSONAL"`.
-  3. Estas tareas no saltan al reporte corporativo.
-
----
-
-## 13. Pruebas de Cronjobs Automáticos (El Contador Diario)
-**Objetivo:** Comprobar que el cronjob de madrugada no rompa el formato de fechas y actualice correctamente el reloj de las tareas.
+## 13. Pruebas de Cronjobs (Contador Diario de SLAs)
+**Objetivo:** Tareas en background programadas.
 
 ### Escenario 13.1: Actualización de Días Transcurridos
-- **Precondición:** Se tienen tareas asignadas en cualquier hoja de ventas con fechas de inicio de hace 5 días.
-- **Pasos:**
-  1. Disparar el Trigger manual de `incrementarContadorDias()`.
+- **Pasos:** Ejecutar manualmente o esperar la ejecución nocturna del Job de Python (ej. Celery/APScheduler o pg_cron).
 - **Resultado Esperado:**
-  1. El script lee la columna `FECHA` (o F. INICIO) y le resta `TODAY()`.
-  2. La columna `DIAS` se sobreescribe con el número de días netos exactos (ej. 5).
-  3. Se vuelve a llamar a `applyTrafficLightToSheet` para refrescar colores, garantizando que todo el mapa del Dashboard cambie automáticamente al amanecer si los SLAs se vencieron mientras nadie usaba el sistema.
+  1. El script recalcula la diferencia de días (`CURRENT_DATE - fecha_inicio`).
+  2. Actualiza la columna `dias_transcurridos` en la tabla de tareas.
+  3. Esto alimenta en cascada las vistas del frontend para que rendericen los semáforos correctos al empezar la jornada.
