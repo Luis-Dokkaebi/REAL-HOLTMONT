@@ -249,3 +249,53 @@ A continuación, se detalla una lista estructurada para pruebas manuales y autom
   1. El script recalcula la diferencia de días (`CURRENT_DATE - fecha_inicio`).
   2. Actualiza la columna `dias_transcurridos` en la tabla de tareas.
   3. Esto alimenta en cascada las vistas del frontend para que rendericen los semáforos correctos al empezar la jornada.
+
+---
+
+## 14. Pruebas de Validaciones Estrictas (Completitud de Tareas)
+**Objetivo:** Evitar que los usuarios "cierren" tareas sin haber completado los entregables requeridos en la plataforma.
+
+### Escenario 14.1: Validación de Cierre en Tablas de Ventas
+- **Pasos:** En el tracker de ventas (ej. `EDUARDO MANZANARES (VENTAS)`), intentar marcar el estatus como `HECHO` (o avance 100%) sin haber adjuntado un archivo en la columna `COTIZACION` o haber dejado vacío `INFO CLIENTE`.
+- **Resultado Esperado:** La API (o middleware en Python) debe retornar un Error HTTP 400 (Bad Request). El frontend mostrará una alerta indicando que no se puede completar una oportunidad sin la documentación y data requerida (F2, Layout, etc.).
+
+### Escenario 14.2: Validación de Cierre en Tablas Generales
+- **Pasos:** En una tabla de operaciones, intentar marcar la tarea como 100% sin llenar la columna `ARCHIVO` (si la tarea lo exige).
+- **Resultado Esperado:** Al igual que el escenario anterior, el backend debe prevenir que el registro pase a estado `completado` o `is_archived = true` hasta que el usuario suba la evidencia al Storage y la adjunte.
+
+---
+
+## 15. Pruebas de Data Fallbacks y Normalización
+**Objetivo:** Garantizar que no entren strings sucios (basura o minúsculas) que rompan los queries relacionales.
+
+### Escenario 15.1: Limpieza Inteligente de Inputs
+- **Pasos:** Enviar vía API un payload donde el campo `concepto` viene en minúsculas y con espacios en blanco extras (ej. `   mantenimiento eléctrico  `).
+- **Resultado Esperado:** El backend en Python debe aplicar *trimming* y forzar a mayúsculas (`.upper().strip()`) antes de guardar en Supabase. El registro debe quedar idéntico al estándar visual.
+
+### Escenario 15.2: Dropdown Fallbacks
+- **Pasos:** Mandar un POST/PATCH enviando `estatus = ""` (vacío), un valor inventado en `cumplimiento = "TAL_VEZ"` o en `clasificacion = "Z"`.
+- **Resultado Esperado:** El backend debe aplicar las reglas de fallback estricto: forzar `estatus = 'PENDIENTE'`, `cumplimiento = 'NO'`, y si la clasificación es inválida, forzar la menor o retornar un error de validación 422 (Unprocessable Entity). Esto previene que se corrompan los cálculos de SLA.
+
+---
+
+## 16. Pruebas de Trazabilidad y Auditoría (System Logs)
+**Objetivo:** Asegurar que si algo sale mal en producción, exista un historial que el administrador pueda revisar para hacer "debugging".
+
+### Escenario 16.1: Auditoría de Eventos
+- **Pasos:**
+  1. Que un empleado "X" inicie sesión, suba un archivo y asigne una tarea a un compañero "Y".
+  2. Consultar la tabla de `system_logs` (o la herramienta de observabilidad de backend).
+- **Resultado Esperado:** Deben existir registros inmutables estampados con la fecha UTC donde se detallen las acciones exactas: `[LOGIN]`, `[UPLOAD_FILE]`, `[ASSIGN_TASK]`, acompañados del UUID del usuario que lo ejecutó y el Folio de la tarea alterada.
+
+---
+
+## 17. Pruebas de Renderizado Basado en Rol (UI y Accesos)
+**Objetivo:** Validar que cada perfil visualiza únicamente los módulos y reportes que le corresponden.
+
+### Escenario 17.1: Protección de Dashboards Directivos
+- **Pasos:** Un usuario de tipo `ESTANDAR` o de `VENTAS` intenta consultar (GET) la ruta del "Tracker Productivity Dashboard" o el "Admin KPI".
+- **Resultado Esperado:** El endpoint de Python, apoyado en el rol del JWT o en políticas RLS, debe rechazar la conexión con un HTTP 403 (Forbidden) o 401 (Unauthorized).
+
+### Escenario 17.2: Configuración Especial de UI para ANTONIA_VENTAS
+- **Pasos:** `ANTONIA_VENTAS` se loguea en la plataforma.
+- **Resultado Esperado:** El backend de configuración (`getSystemConfig` migrado) devuelve un JSON estructurado que le inyecta las vistas especiales ("PPC Maestro" y "Planeación Semanal"). Además, la vista del tracker se llamará "Tracker" y sus reportes de ventas se llamarán "Cotizaciones", garantizando la experiencia de usuario personalizada tal como funcionaba antes.
