@@ -1,46 +1,177 @@
-Pruebas Unitarias y de Integración sugeridas para la Migración:
+# Pruebas Unitarias y de Integración Detalladas para la Migración
 
-1. Pruebas de Semáforo (Formato Condicional) para Clasificación de Tareas:
-   - Validar que para la clase "A", la regla asigne color verde (<2 días), amarillo (2-3 días) y rojo (>3 días).
-   - Validar que para la clase "AA", la regla asigne color verde (<12 días), amarillo (12-15 días) y rojo (>15 días).
-   - Validar que para la clase "AAA", la regla asigne color verde (<25 días), amarillo (25-30 días) y rojo (>30 días).
-   - Verificar que al cambiar la fecha de inicio, o dejar una tarea pendiente por X días, los colores se actualicen correctamente en la hoja (reglas generadas vía `applyTrafficLightToSheet`).
-   - Comprobar que estas reglas se apliquen a hojas válidas y se omitan hojas excluidas como `LOG_SISTEMA`, `DATOS`, etc.
+A continuación, se detalla una lista estructurada para pruebas manuales y automatizadas. Cada escenario incluye la precondición, los pasos exactos a seguir, y el resultado esperado según el código en `CODIGO.js`.
 
-2. Pruebas de Permisos de Ruteo y Tablas de Ventas (Ley de Antonia):
-   - Verificar que solo el usuario "ANTONIA_VENTAS" pueda mandar tareas a las tablas con sufijo "(VENTAS)" (ej. "EDUARDO MANZANARES (VENTAS)").
-   - Verificar que si otro usuario intenta asignar a "(VENTAS)", el código automáticamente remueva el sufijo "(VENTAS)" para redirigirlo a la tabla normal de operaciones (Tracker).
-   - Verificar que si cualquier usuario (salvo ella misma) intenta mandar algo a "ANTONIA_VENTAS", se rutee automáticamente a "ANTONIA PINEDA LOPEZ".
-   - Verificar que si "ANTONIA_VENTAS" manda una tarea a "ANTONIA PINEDA LOPEZ", el folio que reciba tenga su prefijo correspondiente y no falle.
+---
 
-3. Pruebas de Generación de Folios y Prefijos (Folios Personalizados):
-   - Verificar que "JAIME OLIVO" genere el prefijo "JO-".
-   - Verificar que "JESUS CANTU" genere el prefijo "JC-".
-   - Verificar que "LUIS CARLOS" genere el prefijo "LC-".
-   - Verificar que "ANTONIA VENTAS" genere el prefijo "AV-".
-   - Verificar que "RAMIRO RODRIGUEZ" genere "RR-".
-   - Verificar que "SEBASTIAN PADILLA" genere "SP-".
-   - Verificar que "TERESA GARZA" genere "TG-".
-   - Verificar que cualquier otro nombre se base en las iniciales de su nombre y primer apellido, o devuelva "PPC-" si falla.
-   - Comprobar que el número de secuencia autoincremental no se duplique incluso ante escrituras concurrentes (LockService + ScriptProperties).
+## 1. Pruebas de Semáforo (Formato Condicional) para Clasificación de Tareas
+**Objetivo:** Validar la lógica de `applyTrafficLightToSheet` para las clases de SLA.
 
-4. Pruebas de Sincronización y Gatekeeper (Evitar Duplicados):
-   - Crear una fila y simular múltiples clicks en el botón de guardar: verificar que el `_tempId` y el `CacheService` impiden la inserción de duplicados en la hoja de destino.
-   - Actualizar una fila enviando un "CONCEPTO", "FECHA" y "CLIENTE" exacto (pero sin FOLIO) y validar que el Gatekeeper encuentre la fila y la actualice, en lugar de insertar una nueva.
-   - Completar una tarea (100%, DONE o CUMPLIMIENTO = SI): verificar que la fila se mueva automáticamente a la sección "TAREAS REALIZADAS" (Auto-archivado) usando el formato numérico 1 en porcentaje y strings de "100%".
+### Escenario 1.1: Clasificación A (Límite 3 días)
+- **Precondición:** Se tiene una hoja habilitada para formato condicional (ej. `EDUARDO MANZANARES`) y no excluida (como `LOG_SISTEMA`).
+- **Pasos:**
+  1. Insertar una tarea y colocar "A" en la columna `CLASIFICACION`.
+  2. Colocar en `FECHA` la fecha de hoy.
+  3. Modificar la fecha de inicio (`FECHA`) para que simule tener **1 día** de antigüedad (hoy - 1).
+  4. Modificar la fecha a **2 días** de antigüedad (hoy - 2).
+  5. Modificar la fecha a **4 días** de antigüedad (hoy - 4).
+- **Resultado Esperado:**
+  - En el paso 2 y 3, el fondo debe ser **Verde** (`#00FF00`).
+  - En el paso 4, el fondo debe ser **Amarillo** (`#FFFF00`).
+  - En el paso 5, el fondo debe ser **Rojo** (`#FF0000`).
 
-5. Pruebas de Distribución "Papa Caliente" (Delegación e Involucrados):
-   - Cuando Antonia delega una etapa ("CD") a "ANGEL SALINAS", verificar que la fila `MAP COT` se actualice de ⚪ a 🔴 en la hoja principal, y se asigne con prefijo `[Calculo y Diseño]` en su concepto.
-   - Cuando Angel Salinas marca la tarea como `DONE` al 100%, verificar el Reverse Sync: la tarea en la tabla de `ANTONIA_VENTAS` se actualiza de 🔴 a 🟢, y si es el último involucrado de esa etapa, pasa la fase en el "Papa Caliente".
-   - Si la tarea tiene prefijo `AV-`, la sincronización lateral se manda siempre como respaldo a "ANTONIA_VENTAS".
-   - Verificar que el ruteo lateral elimina propiedades de finalización (`ESTATUS`, `AVANCE`) antes de mandarlas de vuelta (para no auto-cerrar prematuramente la tarea maestra).
+### Escenario 1.2: Clasificación AA (Límite 14 días)
+- **Precondición:** Misma que la anterior.
+- **Pasos:**
+  1. Insertar una tarea, poner "AA" en `CLASIFICACION`.
+  2. Modificar la fecha a **11 días** de antigüedad.
+  3. Modificar la fecha a **13 días** de antigüedad.
+  4. Modificar la fecha a **16 días** de antigüedad.
+- **Resultado Esperado:**
+  - Paso 2: **Verde**.
+  - Paso 3: **Amarillo**.
+  - Paso 4: **Rojo**.
 
-6. Pruebas de Cierre de Cotizaciones y Motor KPI (Agente AI):
-   - Al marcar una cotización "AV-" como "PERDIDA X PRECIO", el estado en `ANTONIA_VENTAS` debe preservarse.
-   - En el reporte mensual, las reglas del Agente KPI deben procesar las tareas "GANADAS" vs "PERDIDAS", evaluar el SLA por Clasi (A, AA, AAA), y que un SLA fallido active alertas rojas o amarillas.
-   - Verificar la llamada a la API de Gemini, comprobando que si se ingresan cotizaciones reales o tests, Gemini retorne un resumen conciso usando el context de `ANTONIA_VENTAS`.
-   - Comprobar que el cronjob (`autoUpdateQuoteMetrics`) a las 7AM no lance excepciones por datos vacíos o celdas faltantes.
+### Escenario 1.3: Clasificación AAA (Límite 30 días)
+- **Precondición:** Misma que la anterior.
+- **Pasos:**
+  1. Insertar una tarea, poner "AAA" en `CLASIFICACION`.
+  2. Modificar la fecha a **24 días** de antigüedad.
+  3. Modificar la fecha a **27 días** de antigüedad.
+  4. Modificar la fecha a **32 días** de antigüedad.
+- **Resultado Esperado:**
+  - Paso 2: **Verde**.
+  - Paso 3: **Amarillo**.
+  - Paso 4: **Rojo**.
 
-7. Pruebas de Notificaciones por Webhook (Outlook / Make.com):
-   - Asegurar que cuando se asigna una nueva fila a "SEBASTIAN PADILLA" desde el dashboard principal, la carga para Outlook se mande en formato ISO 8601 (incluyendo los milisegundos).
-   - Verificar que si el usuario no tiene email configurado en `USER_DB`, el código lo tolere en silencio sin bloquear la inserción en el Sheets.
+---
+
+## 2. Pruebas de Permisos de Ruteo y Tablas de Ventas (La Ley de Antonia)
+**Objetivo:** Validar que `internalUpdateTask` y `apiSaveTrackerBatch` protegen correctamente las hojas `(VENTAS)` y a Antonia.
+
+### Escenario 2.1: ANTONIA_VENTAS manda tarea a un vendedor
+- **Precondición:** Iniciar sesión o simular flujo con `currentUsername.value = 'ANTONIA_VENTAS'`.
+- **Pasos:**
+  1. Seleccionar a `EDUARDO MANZANARES (VENTAS)` en el dropdown de involucrados.
+  2. Crear y guardar la tarea.
+- **Resultado Esperado:** La tarea aparece en la pestaña de `EDUARDO MANZANARES (VENTAS)`. El ruteo respeta el sufijo `(VENTAS)`.
+
+### Escenario 2.2: Otro usuario intenta mandar tarea a un vendedor
+- **Precondición:** Iniciar sesión con un usuario común o administrador, por ejemplo `LUIS_CARLOS`.
+- **Pasos:**
+  1. Modificar manualmente (o si existe el bug en frontend) y mandar como destino `EDUARDO MANZANARES (VENTAS)`.
+  2. Enviar el payload de guardado al backend.
+- **Resultado Esperado:** El backend de GAS, vía regex `.replace(/\s*\(VENTAS\)/ig, "")`, interceptará y purgará el sufijo. La tarea se escribirá obligatoriamente en el tracker general `EDUARDO MANZANARES` y NO en la hoja de ventas.
+
+### Escenario 2.3: Alguien intenta enviar tareas generales a Toñita Ventas
+- **Precondición:** Iniciar sesión como `EDUARDO MANZANARES`.
+- **Pasos:**
+  1. Seleccionar de involucrado o escribir manualmente como destino `ANTONIA_VENTAS`.
+  2. Enviar payload de guardado al backend.
+- **Resultado Esperado:** El sistema detecta que no eres Toñita y que estás intentando mandar a su core de ventas. Redirigirá la tarea forzosamente a la hoja `ANTONIA PINEDA LOPEZ` (Tracker personal). La tarea generada usará un prefijo `AP-` y no `AV-`.
+
+---
+
+## 3. Pruebas de Generación de Folios y Prefijos Personalizados
+**Objetivo:** Validar el generador de iniciales `generatePrefix` de `CODIGO.js`.
+
+### Escenario 3.1: Usuarios Hardcodeados
+- **Precondición:** Llamar al flujo de guardado de nueva fila desde la UI para cada usuario.
+- **Pasos y Resultados Esperados:**
+  1. Crear tarea como `JAIME OLIVO`. Validar en la celda correspondiente que el folio empiece con **`JO-`**.
+  2. Crear tarea como `JESUS CANTU`. Validar que el folio empiece con **`JC-`**.
+  3. Crear tarea como `LUIS CARLOS` o `ADMINISTRADOR`. Validar que el folio empiece con **`LC-`**.
+  4. Crear tarea como `ANTONIA VENTAS`. Validar que el folio empiece con **`AV-`**.
+  5. Crear tarea como `RAMIRO RODRIGUEZ`. Validar que el folio empiece con **`RR-`**.
+  6. Crear tarea como `SEBASTIAN PADILLA`. Validar que el folio empiece con **`SP-`**.
+  7. Crear tarea como `TERESA GARZA`. Validar que el folio empiece con **`TG-`**.
+
+### Escenario 3.2: Generación de Prefijos Genéricos (Fallbacks)
+- **Precondición:** Añadir a `DB_DIRECTORY` un usuario que no esté en la lista hardcodeada. Ej: `MIGUEL GALLARDO`.
+- **Pasos:**
+  1. Guardar una tarea nueva como `MIGUEL GALLARDO`.
+- **Resultado Esperado:** Toma las iniciales dinámicamente y el folio inicia con **`MG-`**.
+- **Pasos Alternativos:**
+  1. Si no se provee nombre, o hay error, la función `generatePrefix` debe retornar de forma segura **`PPC-`**.
+
+---
+
+## 4. Pruebas de Gatekeeper, Duplicidad y Auto-Archivado
+**Objetivo:** Validar resiliencia ante race conditions (múltiples clicks) y que el sistema envíe a "TAREAS REALIZADAS" correctamente.
+
+### Escenario 4.1: Protección Frontend y Backend (Anti-Duplicación)
+- **Precondición:** Estar en un tracker como `JAIME OLIVO`.
+- **Pasos:**
+  1. Crear una tarea nueva llenando el formulario (pero NO presionar guardar todavía).
+  2. Modificar el DOM o la función de frontend para enviar 5 peticiones simultáneas idénticas a `apiSaveTrackerBatch`.
+- **Resultado Esperado:**
+  1. El frontend debe bloquear más llamadas después del primer clic gracias al flag reactivo `isSubmitting`.
+  2. Incluso si la llamada pasa, las peticiones concurrentes viajan con el mismo `_tempId`. El `CacheService` de Google Apps Script bloqueará todas las demás y solo insertará 1 sola fila en Google Sheets.
+
+### Escenario 4.2: Gatekeeper Fallback (Recuperación de Fila sin ID)
+- **Precondición:** Insertar una tarea en la hoja, pero deliberadamente borrar su FOLIO en Google Sheets (para simular pérdida de datos).
+- **Pasos:**
+  1. Desde el frontend, enviar una actualización (ej. un comentario nuevo).
+- **Resultado Esperado:** `internalBatchUpdateTasks` no hallará el folio. Se activará el "Fallback robusto", detectando que la tarea que llega tiene el mismo `CONCEPTO`, misma `FECHA` y mismo `RESPONSABLE`. En lugar de crear una tarea idéntica, el backend sobreescribirá la fila correcta. Además, respetará si es necesario asignar un folio nuevo a esa fila reparada sin dañar el historial.
+
+### Escenario 4.3: Auto-Archivado Tareas Realizadas (100% bug fix)
+- **Precondición:** Tener una tarea activa y pendiente en cualquier tracker (ej. `JAIME OLIVO`).
+- **Pasos:**
+  1. En Google Sheets, escribir el número `1` nativamente en la celda de AVANCE. (Esto es evaluado en el background de GAS).
+  2. En el frontend, llenar un campo con el string `"100%"`.
+  3. Cambiar el ESTATUS a `HECHO`, o el CUMPLIMIENTO a `SI`.
+  4. Enviar un guardado.
+- **Resultado Esperado:** La fila se extrae de las filas activas y se inserta al fondo de la hoja de Sheets, específicamente debajo del separador oscuro que dicta `TAREAS REALIZADAS`.
+
+---
+
+## 5. Pruebas de Distribución Lateral (El Papa Caliente) y Reverse Sync
+**Objetivo:** Asegurar el tracking sincronizado bidireccional entre la maestra Antonia y el personal, conservando la información.
+
+### Escenario 5.1: Delegación "Papa Caliente" desde Toñita
+- **Precondición:** Crear una tarea en `ANTONIA_VENTAS` que tenga folio `AV-2025`.
+- **Pasos:**
+  1. En el frontend (Tracker de Toñita), usar la función de delegación para mandar la fase de "Calculo y Diseño (CD)" al trabajador `ANGEL SALINAS`.
+- **Resultado Esperado:**
+  1. El ESTATUS original en `ANTONIA_VENTAS` sigue su curso y el visualizador `MAP COT` cambia el circulito de `⚪ CD` a `🔴 CD`.
+  2. En la hoja de `ANGEL SALINAS` aparece una fila con la tarea, y en el `CONCEPTO` se agrega al final la marca `[Calculo y Diseño]`.
+
+### Escenario 5.2: Reverse Sync desde el trabajador a Toñita
+- **Precondición:** Continuar desde el paso anterior. `ANGEL SALINAS` está viendo la tarea `AV-2025` en su tracker.
+- **Pasos:**
+  1. Angel marca la tarea como `100%` y sube los archivos a las columnas `COTIZACION` o `ARCHIVO`.
+  2. Guarda la tarea.
+- **Resultado Esperado:**
+  1. La tarea se archiva en la hoja de `ANGEL SALINAS`.
+  2. Simultáneamente, GAS realiza el *Reverse Sync*: localiza la hoja `ANTONIA_VENTAS`, inserta el archivo `COTIZACION` en la celda correcta, el `PROCESO_LOG` de Antonia actualiza esa etapa a "DONE", y el circulito `MAP COT` de CD cambia automáticamente a verde (`🟢 CD`).
+
+### Escenario 5.3: Prevención de Cierre Prematuro
+- **Precondición:** Durante el *Reverse Sync* de la tarea `AV-2025`...
+- **Pasos:**
+  1. Angel había marcado ESTATUS "DONE" y AVANCE "100".
+- **Resultado Esperado:** El backend **debe interceptar y borrar** las variables de `ESTATUS` y `AVANCE` del payload (borrado case-insensitive, ver `AGENTS.md`) *antes* de aplicarlas a `ANTONIA_VENTAS`. Esto previene que una tarea parcial de Angel Salinas cierre el 100% de la venta global que maneja Toñita.
+
+---
+
+## 6. Pruebas del Agente de Métricas (Dashboard KPIs y AI)
+**Objetivo:** Validar los scripts automáticos de reporte.
+
+### Escenario 6.1: Cierre Terminal y Contabilidad de Métricas
+- **Precondición:** En la hoja `ANTONIA_VENTAS`, poner un estatus terminal a una cotización activa (ej. `PERDIDA X PRECIO`).
+- **Pasos:**
+  1. Ir a la UI administrativa de métricas (`runQuoteMetricsAgent`) o simular el `autoUpdateQuoteMetrics`.
+- **Resultado Esperado:** La cotización debe ser leída correctamente del historial (TAREAS REALIZADAS) y contabilizada en el bucket de "Perdidas", restándose de la Tasa de Cierre global.
+
+### Escenario 6.2: Gemini Integration Context
+- **Precondición:** El dashboard de Toñita.
+- **Pasos:**
+  1. Realizar una llamada de métricas para generar reporte.
+- **Resultado Esperado:** El sistema debe agrupar todas las SLAs fallidas y efectivas, enviar este payload al Prompt de la IA, y si `GEMINI_API_KEY` es válido, retornar un texto de ~180 palabras que incluya una "recomendación operativa".
+
+### Escenario 6.3: Envío Webhook (Make.com - Outlook) Correcto
+- **Precondición:** Disparar un guardado en cualquier Tracker donde se asigne a un "nuevo" `RESPONSABLE` que no estaba antes (ej. asignarle tarea general a `JEHU MARTINEZ`).
+- **Pasos:**
+  1. Revisar los logs o intercepciones HTTP del Webhook enviado a Make.com.
+- **Resultado Esperado:**
+  - Si Jehu tiene su email corporativo definido en `USER_DB`, el payload se manda.
+  - La fecha `fechaInicio` enviada **DEBE** contener `.toISOString()`, formato `YYYY-MM-DDTHH:mm:ss.sssZ` para que Make.com y Outlook preserven la zona horaria (UTC) intacta.
