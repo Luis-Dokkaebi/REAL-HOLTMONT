@@ -175,3 +175,114 @@ A continuación, se detalla una lista estructurada para pruebas manuales y autom
 - **Resultado Esperado:**
   - Si Jehu tiene su email corporativo definido en `USER_DB`, el payload se manda.
   - La fecha `fechaInicio` enviada **DEBE** contener `.toISOString()`, formato `YYYY-MM-DDTHH:mm:ss.sssZ` para que Make.com y Outlook preserven la zona horaria (UTC) intacta.
+
+---
+
+## 7. Pruebas de Sitios, Proyectos y Work Orders
+**Objetivo:** Validar la arquitectura de base de datos relacional jerárquica y el autogenerador especial de folios Work Order.
+
+### Escenario 7.1: Alta de Nuevo Sitio y Subproyectos Automáticos
+- **Precondición:** Usar el formulario de "Nuevo Sitio" desde el frontend.
+- **Pasos:**
+  1. Ingresar "PLANTA MERCEDES BENZ" como cliente/sitio.
+  2. Enviar el payload a `apiSaveSite`.
+- **Resultado Esperado:**
+  1. En `DB_SITIOS` se crea el registro con un `ID_SITIO` único (ej. `SITE-170...`).
+  2. El trigger `apiCreateStandardStructure` debe dispararse y crear automáticamente en `DB_PROYECTOS` los 10 subproyectos requeridos (NAVE, AMPLIACION, PPC INTERNO, PPC PREOPERATIVO, PPC CLIENTE, DOCUMENTOS, etc.) enlazados al `ID_SITIO`.
+
+### Escenario 7.2: Generador de Folios Work Order (WO)
+- **Precondición:** Rol `WORKORDER_USER` logueado.
+- **Pasos:**
+  1. Llenar form asignando cliente "MERCEDES BENZ" y departamento "ELECTROMECANICA".
+  2. Guardar la tarea (via `apiSavePPCData`).
+- **Resultado Esperado:** El folio generado no debe ser el clásico PPC-. Debe invocar `generateWorkOrderFolio` y devolver la estructura: `[SECUENCIA] [INICIALES CLIENTE] [ABREVIATURA DEPT] [DDMMYY]` (ej. `0001MB Electro 150524`).
+
+---
+
+## 8. Pruebas del Directorio Corporativo (CRUD de Empleados)
+**Objetivo:** Validar que los administradores pueden añadir o dar de baja personal sin romper el sistema, y que el directorio en duro hace fallback con la DB.
+
+### Escenario 8.1: Alta de Usuario HÍBRIDO (Ej. Nuevo Presupuestador)
+- **Precondición:** Administrador interactuando con la DB de Directorio.
+- **Pasos:**
+  1. Añadir usuario "PEDRO PICAPIEDRA", Departamento "PRESUPUESTOS", Tipo "HIBRIDO" a través de `apiAddEmployee`.
+- **Resultado Esperado:**
+  1. El usuario se anota en `DB_DIRECTORY`.
+  2. El sistema automáticamente inserta (si no existen) DOS pestañas en el backend de Sheets: `PEDRO PICAPIEDRA` (con `DEFAULT_TRACKER_HEADERS`) y `PEDRO PICAPIEDRA (VENTAS)` (con `DEFAULT_SALES_HEADERS`).
+
+### Escenario 8.2: Resincronización del Directorio (`apiResyncDirectory`)
+- **Precondición:** El administrador fuerza el botón de resincronización de base de datos.
+- **Pasos:**
+  1. Llamar a `apiResyncDirectory()`.
+- **Resultado Esperado:**
+  1. El backend mapea el hardcode `INITIAL_DIRECTORY` contra las hojas de cálculo.
+  2. Renombra automáticamente las hojas si hubo errores de tipeo de RH (Ej. cambiar "SAIRA" a "ZAIRA YAZMIN AGUILAR AGUILON").
+  3. No borra las hojas existentes, solo crea las faltantes.
+
+---
+
+## 9. Pruebas de Subida de Archivos y Límites
+**Objetivo:** Evitar que Google Sites (Iframe) colapse por payloads pesados (Crash OOM) en conversiones a Base64.
+
+### Escenario 9.1: Prevención Payload Excesivo (Limite 35MB)
+- **Precondición:** Seleccionar subir un archivo a una tarea activa.
+- **Pasos:**
+  1. En el frontend, adjuntar un archivo (PDF o Imagen) de 40 Megabytes.
+  2. O adjuntar un audio a Gemini que pese más de 35MB.
+- **Resultado Esperado:** Antes de llamar a `FileReader.readAsDataURL()`, el frontend debe validar `file.size` y emitir una alerta, cortando el proceso inmediatamente para evitar la caída de la aplicación.
+
+---
+
+## 10. Pruebas del Agente "Tracker Productivity" (Productividad Mensual)
+**Objetivo:** Validar el segundo agente de Inteligencia Artificial que analiza el volumen de los trackings operativos, distinto al agente de Cotizaciones.
+
+### Escenario 10.1: Seguridad y Filtro de Vendedores
+- **Precondición:** Usuario "ADMIN" llama al reporte mensual.
+- **Pasos:**
+  1. Ejecutar el Agente de Productividad.
+- **Resultado Esperado:**
+  1. El código (`apiFetchTrackerProductivityMetrics`) **debe excluir explícitamente** todas las tablas de ventas (sufijos `(VENTAS)` y `ANTONIA_VENTAS`), evaluando *únicamente* personal "ESTANDAR" e "HIBRIDO".
+  2. Se deben contabilizar alertas operativas si el % de entregas a tiempo cae bajo el 80% o si las tareas presentan más de 20% de restricciones documentadas.
+  3. Gemini Flash debe despachar el correo estructurado.
+
+---
+
+## 11. Pruebas del "Smart Archiver" (Banco de Cotizaciones en Drive)
+**Objetivo:** Verificar que el sistema empaquete y organice archivos estáticos automáticamente en Google Drive por Año, Mes y Cliente.
+
+### Escenario 11.1: Guardado desde Antonia Ventas
+- **Precondición:** En la hoja `ANTONIA_VENTAS` existe una fila con un documento adjunto válido de Google Drive en la columna "COTIZACION" o "ARCHIVO".
+- **Pasos:**
+  1. Antonia hace cualquier guardado o edición que dispare la sincronización, o se llama manualmente a `runFullArchivingBatch()`.
+- **Resultado Esperado:**
+  1. El código extrae la fecha de inicio de la tarea y el nombre del cliente.
+  2. En el directorio raíz de "Banco de Cotizaciones", la rutina verifica/crea la ruta `Año -> Mes -> Cliente` (ej. `2025/05 - MAYO/MERCEDES BENZ`).
+  3. El script invoca a `DriveApp` y *mueve físicamente* el archivo de la carpeta "Uploads" desordenada hacia su directorio final estricto.
+
+---
+
+## 12. Pruebas de la Agenda Personal (Integración Holtzar)
+**Objetivo:** Comprobar que los "Hábitos" y eventos privados no colapsen los reportes corporativos y carguen bien en el Dashboard.
+
+### Escenario 12.1: Agrupación en el Dashboard
+- **Precondición:** Un usuario tiene eventos asignados en el Tracker de trabajo y en `AGENDA_PERSONAL`.
+- **Pasos:**
+  1. El usuario abre el layout del Dashboard / Planner semanal.
+- **Resultado Esperado:**
+  1. La función `apiFetchUnifiedAgenda` combina las tareas laborales (filtradas) con los eventos extraídos de `AGENDA_PERSONAL` y `HABITOS_LOG`.
+  2. Las tareas personales traen forzosamente el flag `CLIENTE: "PERSONAL"`.
+  3. Estas tareas no saltan al reporte corporativo.
+
+---
+
+## 13. Pruebas de Cronjobs Automáticos (El Contador Diario)
+**Objetivo:** Comprobar que el cronjob de madrugada no rompa el formato de fechas y actualice correctamente el reloj de las tareas.
+
+### Escenario 13.1: Actualización de Días Transcurridos
+- **Precondición:** Se tienen tareas asignadas en cualquier hoja de ventas con fechas de inicio de hace 5 días.
+- **Pasos:**
+  1. Disparar el Trigger manual de `incrementarContadorDias()`.
+- **Resultado Esperado:**
+  1. El script lee la columna `FECHA` (o F. INICIO) y le resta `TODAY()`.
+  2. La columna `DIAS` se sobreescribe con el número de días netos exactos (ej. 5).
+  3. Se vuelve a llamar a `applyTrafficLightToSheet` para refrescar colores, garantizando que todo el mapa del Dashboard cambie automáticamente al amanecer si los SLAs se vencieron mientras nadie usaba el sistema.
