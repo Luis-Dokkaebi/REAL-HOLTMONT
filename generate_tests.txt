@@ -1,0 +1,46 @@
+Pruebas Unitarias y de Integración sugeridas para la Migración:
+
+1. Pruebas de Semáforo (Formato Condicional) para Clasificación de Tareas:
+   - Validar que para la clase "A", la regla asigne color verde (<2 días), amarillo (2-3 días) y rojo (>3 días).
+   - Validar que para la clase "AA", la regla asigne color verde (<12 días), amarillo (12-15 días) y rojo (>15 días).
+   - Validar que para la clase "AAA", la regla asigne color verde (<25 días), amarillo (25-30 días) y rojo (>30 días).
+   - Verificar que al cambiar la fecha de inicio, o dejar una tarea pendiente por X días, los colores se actualicen correctamente en la hoja (reglas generadas vía `applyTrafficLightToSheet`).
+   - Comprobar que estas reglas se apliquen a hojas válidas y se omitan hojas excluidas como `LOG_SISTEMA`, `DATOS`, etc.
+
+2. Pruebas de Permisos de Ruteo y Tablas de Ventas (Ley de Antonia):
+   - Verificar que solo el usuario "ANTONIA_VENTAS" pueda mandar tareas a las tablas con sufijo "(VENTAS)" (ej. "EDUARDO MANZANARES (VENTAS)").
+   - Verificar que si otro usuario intenta asignar a "(VENTAS)", el código automáticamente remueva el sufijo "(VENTAS)" para redirigirlo a la tabla normal de operaciones (Tracker).
+   - Verificar que si cualquier usuario (salvo ella misma) intenta mandar algo a "ANTONIA_VENTAS", se rutee automáticamente a "ANTONIA PINEDA LOPEZ".
+   - Verificar que si "ANTONIA_VENTAS" manda una tarea a "ANTONIA PINEDA LOPEZ", el folio que reciba tenga su prefijo correspondiente y no falle.
+
+3. Pruebas de Generación de Folios y Prefijos (Folios Personalizados):
+   - Verificar que "JAIME OLIVO" genere el prefijo "JO-".
+   - Verificar que "JESUS CANTU" genere el prefijo "JC-".
+   - Verificar que "LUIS CARLOS" genere el prefijo "LC-".
+   - Verificar que "ANTONIA VENTAS" genere el prefijo "AV-".
+   - Verificar que "RAMIRO RODRIGUEZ" genere "RR-".
+   - Verificar que "SEBASTIAN PADILLA" genere "SP-".
+   - Verificar que "TERESA GARZA" genere "TG-".
+   - Verificar que cualquier otro nombre se base en las iniciales de su nombre y primer apellido, o devuelva "PPC-" si falla.
+   - Comprobar que el número de secuencia autoincremental no se duplique incluso ante escrituras concurrentes (LockService + ScriptProperties).
+
+4. Pruebas de Sincronización y Gatekeeper (Evitar Duplicados):
+   - Crear una fila y simular múltiples clicks en el botón de guardar: verificar que el `_tempId` y el `CacheService` impiden la inserción de duplicados en la hoja de destino.
+   - Actualizar una fila enviando un "CONCEPTO", "FECHA" y "CLIENTE" exacto (pero sin FOLIO) y validar que el Gatekeeper encuentre la fila y la actualice, en lugar de insertar una nueva.
+   - Completar una tarea (100%, DONE o CUMPLIMIENTO = SI): verificar que la fila se mueva automáticamente a la sección "TAREAS REALIZADAS" (Auto-archivado) usando el formato numérico 1 en porcentaje y strings de "100%".
+
+5. Pruebas de Distribución "Papa Caliente" (Delegación e Involucrados):
+   - Cuando Antonia delega una etapa ("CD") a "ANGEL SALINAS", verificar que la fila `MAP COT` se actualice de ⚪ a 🔴 en la hoja principal, y se asigne con prefijo `[Calculo y Diseño]` en su concepto.
+   - Cuando Angel Salinas marca la tarea como `DONE` al 100%, verificar el Reverse Sync: la tarea en la tabla de `ANTONIA_VENTAS` se actualiza de 🔴 a 🟢, y si es el último involucrado de esa etapa, pasa la fase en el "Papa Caliente".
+   - Si la tarea tiene prefijo `AV-`, la sincronización lateral se manda siempre como respaldo a "ANTONIA_VENTAS".
+   - Verificar que el ruteo lateral elimina propiedades de finalización (`ESTATUS`, `AVANCE`) antes de mandarlas de vuelta (para no auto-cerrar prematuramente la tarea maestra).
+
+6. Pruebas de Cierre de Cotizaciones y Motor KPI (Agente AI):
+   - Al marcar una cotización "AV-" como "PERDIDA X PRECIO", el estado en `ANTONIA_VENTAS` debe preservarse.
+   - En el reporte mensual, las reglas del Agente KPI deben procesar las tareas "GANADAS" vs "PERDIDAS", evaluar el SLA por Clasi (A, AA, AAA), y que un SLA fallido active alertas rojas o amarillas.
+   - Verificar la llamada a la API de Gemini, comprobando que si se ingresan cotizaciones reales o tests, Gemini retorne un resumen conciso usando el context de `ANTONIA_VENTAS`.
+   - Comprobar que el cronjob (`autoUpdateQuoteMetrics`) a las 7AM no lance excepciones por datos vacíos o celdas faltantes.
+
+7. Pruebas de Notificaciones por Webhook (Outlook / Make.com):
+   - Asegurar que cuando se asigna una nueva fila a "SEBASTIAN PADILLA" desde el dashboard principal, la carga para Outlook se mande en formato ISO 8601 (incluyendo los milisegundos).
+   - Verificar que si el usuario no tiene email configurado en `USER_DB`, el código lo tolere en silencio sin bloquear la inserción en el Sheets.
