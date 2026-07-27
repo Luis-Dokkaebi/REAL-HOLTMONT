@@ -183,6 +183,12 @@ def load_to_supabase_rest(bundle, project_url, service_key):
     db.upsert("habits_log", habits_rows)
 
     db.upsert("kpi_cotizaciones", bundle.kpi_cotizaciones)
+
+    plan_rows = [{**p, "responsable_id": people_ids.get(p.get("responsable_raw"))}
+                  for p in bundle.plan_semanal]
+    db.upsert("plan_semanal", plan_rows)
+
+    db.upsert("catalogos", bundle.catalogos, on_conflict="tipo,valor")
     db.upsert("system_log", bundle.system_log)
 
     print("\nMigración completada vía REST.")

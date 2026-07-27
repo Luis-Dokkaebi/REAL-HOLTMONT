@@ -34,9 +34,9 @@ import lib
 # ---------------------------------------------------------------------------
 
 SKIP_SHEETS = {
+    # sin datos reales: plantillas sueltas y tablas pivote calculadas
     "Copia de Personal", "Copia de hojaformato 3", "Copia de hojaformato2", "Holtmont",
-    "DASHBOARD RAMIRO RODRIGUEZ", "PPCV3",
-    "Construcción", "Coordinador HVAC", "Electromecanica", "Limpieza",
+    "DASHBOARD RAMIRO RODRIGUEZ",
 }
 
 VENTAS_SHEETS_ORDERED = [
@@ -47,6 +47,8 @@ VENTAS_SHEETS_ORDERED = [
     "Alfonso Correa (VENTAS)", "Juan Jose Sanchez (VENTAS)", "Edgar Lopez (VENTAS)",
     "ALEJANDRO MENDEZ (VENTAS)", "ANTONIA_VENTAS PAPA CALIENTE DE",
     "ANTONIA_VENTAS BANCO DE COTIZAC", "ANTONIA_VENTAS RESUMEN EJECUTIV",
+    # ventas por departamento (esquema legacy con MONTO / RELOJ / LLAMADA AL CLIENTE)
+    "Construcción", "Coordinador HVAC", "Electromecanica", "Limpieza",
 ]
 
 WO_SHEETS = {
@@ -60,12 +62,22 @@ WO_SHEETS = {
 EXPLICIT_SHEETS = {
     "DB_DIRECTORY", "DB_SITIOS", "DB_PROYECTOS", "PPC_BORRADOR", "DB_BANCO_DATOS",
     "LOG_SISTEMA", "HABITOS_LOG", "KPI_COTIZACIONES", "PPCV4",
+    "PPCV3",   # Plan de Trabajo Semanal -> plan_semanal
+    "Datos",   # catálogos de listas desplegables -> catalogos
 }
 
 # folios con generador de secuencia propio (WORKORDER_SEQ, ANTONIA_SEQ, etc.) son
 # globales por diseño; un folio puramente numérico corto es un ID legacy que solo
 # es único dentro de su propia hoja.
 _GLOBAL_FOLIO_PREFIXES = ("PPC-", "AV-", "TG-", "WO-", "SITE-", "PROJ-")
+
+
+def is_composite_sheet_name(name):
+    """La app llegó a crear hojas cuyo nombre son varios nombres pegados
+    (p. ej. 'EDGAR LOPEZ\n EDUARDO TERAN'). No corresponden a una persona real
+    y su contenido está duplicado de los trackers individuales, así que se
+    ignoran. Solo son válidas las hojas de una persona o '<PERSONA> (VENTAS)'."""
+    return ("\n" in name) or ("," in name)
 
 
 def compute_dedupe_key(folio, source_sheet, row_index):
@@ -96,6 +108,8 @@ class MigrationBundle:
         self.personal_agenda = []
         self.habits_log = []
         self.kpi_cotizaciones = []
+        self.plan_semanal = []
+        self.catalogos = []
         self.system_log = []
         self.warnings = []
 
@@ -143,6 +157,7 @@ def build_bundle(wb) -> MigrationBundle:
         and name not in WO_SHEETS
         and name not in EXPLICIT_SHEETS
         and name.strip() != "AGENDA_PERSONAL"
+        and not is_composite_sheet_name(name)
     ]
 
     def ingest_task(t):
@@ -228,6 +243,15 @@ def build_bundle(wb) -> MigrationBundle:
     if "KPI_COTIZACIONES" in wb.sheetnames:
         bundle.kpi_cotizaciones = lib.extract_kpi_cotizaciones(wb["KPI_COTIZACIONES"])
 
+    if "PPCV3" in wb.sheetnames:
+        bundle.plan_semanal = lib.extract_plan_semanal(wb["PPCV3"])
+        for p in bundle.plan_semanal:
+            if p.get("responsable_raw"):
+                bundle.register_person_field(p["responsable_raw"])
+
+    if "Datos" in wb.sheetnames:
+        bundle.catalogos = lib.extract_catalogos(wb["Datos"])
+
     if "LOG_SISTEMA" in wb.sheetnames:
         bundle.system_log = lib.extract_system_log(wb["LOG_SISTEMA"])
 
@@ -249,6 +273,8 @@ def summarize(bundle: MigrationBundle):
     print(f"personal_agenda:      {len(bundle.personal_agenda)}")
     print(f"habits_log:           {len(bundle.habits_log)}")
     print(f"kpi_cotizaciones:     {len(bundle.kpi_cotizaciones)}")
+    print(f"plan_semanal:         {len(bundle.plan_semanal)}")
+    print(f"catalogos:            {len(bundle.catalogos)}")
     print(f"system_log:           {len(bundle.system_log)}")
 
     unmatched_assignees = sum(

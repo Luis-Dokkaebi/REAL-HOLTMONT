@@ -213,7 +213,8 @@ def extract_people(ws):
 # En varias hojas plantilla (nunca usadas) quedaron restos de listas de
 # validación de datos pegados justo en la columna "Concepto" (p. ej. ALEXIS
 # TORRES, fila 3/5: 'Restricciones' / 'Prioridades' sueltos). No son tareas.
-_JUNK_CONCEPTOS = {"concepto", "restricciones", "prioridades", "folio"}
+_JUNK_CONCEPTOS = {"concepto", "restricciones", "prioridades", "folio",
+                    "tareas realizadas"}  # separador de sección dentro de la hoja, no es una tarea
 
 # nombres normalizados de encabezado -> campo canónico de `tasks`
 TRACKER_COLMAP = {
@@ -477,6 +478,19 @@ QUOTES_COLMAP = {
     "proceso log": "proceso_log",
     "map cot": "map_cot",
     "monto": "monto",
+    # DEFAULT_SALES_HEADERS (CODIGO.js) que antes caían al jsonb `extra`
+    "archivo": "archivo",
+    "fecha": "fecha",
+    # columnas propias de hojas de vendedor
+    "comentario": "comentario",          # singular, distinto de COMENTARIOS
+    "estatus 2": "estatus_2",
+    "timeout": "timeline",               # errata de 'TIMELINE' en Juan Jose Sanchez (VENTAS)
+    # columnas de las hojas de ventas por departamento
+    "fecha envio": "fecha_envio",
+    "dias 2": "dias_2",
+    "llamada al cliente": "llamada_cliente",
+    "reloj": "reloj",
+    "completada": "completada",
 }
 
 
@@ -524,9 +538,131 @@ def extract_quotes(ws, sheet_name):
             "proceso_log": clean_text(mapped.get("proceso_log")),
             "map_cot": clean_text(mapped.get("map_cot")),
             "monto": parse_number(mapped.get("monto")),
+            "archivo": clean_text(mapped.get("archivo")),
+            "fecha": parse_date(mapped.get("fecha")),
+            "comentario": clean_text(mapped.get("comentario")),
+            "estatus_2": clean_text(mapped.get("estatus_2")),
+            "fecha_envio": parse_date(mapped.get("fecha_envio")),
+            "dias_2": (lambda v: int(v) if v is not None else None)(parse_duration_days(mapped.get("dias_2"))),
+            "llamada_cliente": clean_text(mapped.get("llamada_cliente")),
+            "reloj": parse_time_text(mapped.get("reloj")),
+            "completada": mapped.get("completada") if isinstance(mapped.get("completada"), bool) else None,
             "source_sheet": sheet_name,
             "extra": extra or None,
         })
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 6b. PPCV3 -> plan_semanal ("Plan de Trabajo Semanal")
+#
+# Esta hoja NO se puede leer por nombre de encabezado: el bloque útil empieza
+# después de un resumen estadístico, y los 7 días de la semana comparten un
+# solo encabezado combinado ("DÍAS DE LA SEMANA"). Se lee por posición.
+# ---------------------------------------------------------------------------
+
+_PLAN_DIAS = ["L", "M", "X", "J", "V", "S", "D"]
+# índices de columna en la hoja PPCV3
+_PLAN_IDX = {
+    "id": 0, "ruta_critica": 1, "zona": 2, "especialidad": 3, "descripcion": 4,
+    "cuant_req": 5, "cuant_real": 6, "responsable": 7, "contratista": 8,
+    "dias_start": 9, "dias_end": 16, "cumplimiento": 16, "nota_cnc": 17,
+}
+
+
+def extract_plan_semanal(ws, sheet_name="PPCV3"):
+    rows = sheet_rows(ws)
+    # el encabezado real es la fila cuya primera celda es 'ID' y la segunda 'Ruta critica'
+    hidx = None
+    for i, r in enumerate(rows):
+        if r and normalize_header(r[0]) == "id" and len(r) > 1 and normalize_header(r[1]).startswith("ruta"):
+            hidx = i
+            break
+    if hidx is None:
+        return []
+
+    out = []
+    for r in rows[hidx + 1:]:
+        if not r or all(c in (None, "") for c in r):
+            continue
+
+        def cell(key):
+            idx = _PLAN_IDX[key]
+            return r[idx] if idx < len(r) else None
+
+        id_origen = clean_text(cell("id"))
+        descripcion = clean_text(cell("descripcion"))
+        if not id_origen and not descripcion:
+            continue
+
+        # los IDs numéricos vienen como float (17.0) -> normalizar a entero
+        if id_origen and id_origen.replace(".", "", 1).isdigit() and id_origen.endswith(".0"):
+            id_origen = id_origen[:-2]
+
+        dias = []
+        for offset, dia in enumerate(_PLAN_DIAS):
+            idx = _PLAN_IDX["dias_start"] + offset
+            if idx >= _PLAN_IDX["dias_end"]:
+                break
+            val = r[idx] if idx < len(r) else None
+            if clean_text(val):
+                dias.append(dia)
+
+        responsable = clean_text(cell("responsable"))
+        out.append({
+            "id_origen": id_origen,
+            "task_folio": id_origen if (id_origen or "").startswith("PPC-") else None,
+            "ruta_critica": clean_text(cell("ruta_critica")),
+            "zona": clean_text(cell("zona")),
+            "especialidad": clean_text(cell("especialidad")),
+            "descripcion": descripcion,
+            "cuantificacion_req": clean_text(cell("cuant_req")),
+            "cuantificacion_real": parse_number(cell("cuant_real")),
+            "responsable_raw": responsable.upper() if responsable else None,
+            "contratista": clean_text(cell("contratista")),
+            "dias": dias or None,
+            "cumplimiento": clean_text(cell("cumplimiento")),
+            "nota_cnc": clean_text(cell("nota_cnc")),
+            "source_sheet": sheet_name,
+        })
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 6c. Hoja `Datos` -> catalogos (valores de las listas desplegables)
+# ---------------------------------------------------------------------------
+
+_CATALOGO_TIPOS = {
+    "area": "AREA",
+    "cliente": "CLIENTE",
+    "vendedor": "VENDEDOR",
+    "clasificacion": "CLASIFICACION",
+    "estatus": "ESTATUS",
+    "estatus cot": "ESTATUS_COT",
+}
+
+
+def extract_catalogos(ws):
+    rows = sheet_rows(ws)
+    hidx = find_header_row(rows)
+    if hidx is None:
+        return []
+    header = [normalize_header(h) for h in rows[hidx]]
+    seen = set()
+    out = []
+    for row in rows[hidx + 1:]:
+        for col_idx, key in enumerate(header):
+            tipo = _CATALOGO_TIPOS.get(key)
+            if not tipo:
+                continue
+            valor = clean_text(row[col_idx]) if col_idx < len(row) else None
+            if not valor:
+                continue
+            dedupe = (tipo, valor.upper())
+            if dedupe in seen:
+                continue
+            seen.add(dedupe)
+            out.append({"tipo": tipo, "valor": valor})
     return out
 
 
