@@ -2182,8 +2182,15 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         sheet.appendRow(hdrs);
         sheet.getRange(1, 1, 1, hdrs.length).setFontWeight("bold").setBackground("#e6e6e6");
     }
+    // Filas tocadas en esta llamada, para replicarlas a Supabase al final.
+    const _touchedRows = [];
     const dataRange = sheet.getDataRange();
     let values = dataRange.getValues();
+    // getValues() devuelve 1 (no "100%") cuando una celda tiene formato de
+    // PORCENTAJE al 100%, lo cual es indistinguible de un 1 en formato numérico
+    // (que significa 1%). El valor mostrado sí los distingue, y se usa abajo en
+    // el auto-archivado para no dejar tareas terminadas fuera de "TAREAS REALIZADAS".
+    const displayValues = dataRange.getDisplayValues();
     if (values.length === 0) return { success: false, message: "Hoja vacía" };
     
     const headerRowIndex = findHeaderRow(values);
@@ -2392,6 +2399,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         }
 
         singleRowIndex = rowIndex;
+        _touchedRows.push({ row: values[rowIndex], index: rowIndex });
         modified = true;
       } 
       else {
@@ -2480,6 +2488,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
               const statusIdx = getColIdx('ESTATUS');
               if(statusIdx > -1 && !newRow[statusIdx]) newRow[statusIdx] = 'ASIGNADO';
               rowsToAppend.push(newRow);
+              _touchedRows.push({ row: newRow, index: -1 });
           }
       }
     });
@@ -2515,8 +2524,10 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
         const newActiveRows = [];
         const movedRows = [];
         
-        activeRows.forEach(row => {
+        activeRows.forEach((row, localIdx) => {
             let isComplete = false;
+            // posición real de esta fila dentro de values/displayValues
+            const absRowIdx = headerRowIndex + 1 + localIdx;
 
             const valEstatus = estatusIdx > -1 ? String(row[estatusIdx] || "").toUpperCase().trim() : "";
             const doneStatuses = ['HECHO', 'TERMINADO', 'FINALIZADO', 'REALIZADO', 'COMPLETADO', 'DONE'];
@@ -2531,6 +2542,17 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                     const strictMatch = valStr === "100" || valStr === "100%" || valStr.toUpperCase() === "SI";
                     if (strictMatch) {
                         isComplete = true;
+                    } else if (typeof rawVal === 'number' && Math.abs(rawVal - 1) < 0.0001) {
+                        // Ambigüedad de Google Sheets: el número 1 es "100%" si la celda
+                        // tiene formato de porcentaje, o "1" (=1%) si es formato numérico.
+                        // Solo el valor mostrado permite distinguirlos; sin esto, una tarea
+                        // marcada al 100% desde la hoja nunca se archivaba.
+                        const shownRow = displayValues[absRowIdx];
+                        const shown = (shownRow && shownRow[idx] != null) ? String(shownRow[idx]).trim() : "";
+                        const shownNum = parseFloat(shown.replace('%', '').replace(',', '.'));
+                        if (!isNaN(shownNum) && Math.abs(shownNum - 100) < 0.01) {
+                            isComplete = true;
+                        }
                     } else if (valStr) {
                         const cleanVal = valStr.replace('%', '').replace(',', '.').trim();
                         const num = parseFloat(cleanVal);
@@ -2549,6 +2571,7 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
                    }
                 }
                 movedRows.push(row);
+                _touchedRows.push({ row: row, index: absRowIdx });
                 rowsMoved = true;
             } else {
                 newActiveRows.push(row);
@@ -2618,6 +2641,15 @@ function internalBatchUpdateTasks(sheetName, tasksArray, useOwnLock = true) {
     }
     
     SpreadsheetApp.flush();
+
+    // Espejo en Supabase. Aislado a propósito: si falla, el guardado en Sheets
+    // ya ocurrió y la respuesta a la app no cambia.
+    try {
+        SupabaseSync.syncRows(sheetName, values[headerRowIndex] || [], _touchedRows);
+    } catch (syncErr) {
+        console.error('SupabaseSync (no bloqueante): ' + syncErr.toString());
+    }
+
     return { success: true, moved: rowsMoved };
   } catch (e) {
     console.error(e);
@@ -6299,5 +6331,371 @@ function test_avance_100_bug() {
         Logger.log("✔ TEST PASADO: El bug del 100% ha sido corregido correctamente.");
     } else {
         Logger.log("❌ TEST FALLIDO.");
+    }
+}
+
+
+// ============================================================================
+// SINCRONIZACIÓN CON SUPABASE (escritura doble)
+//
+// Cada escritura que hace la app en Sheets se replica a Supabase. Sheets sigue
+// siendo la fuente de verdad; Supabase es un espejo en vivo. Esto permite migrar
+// el backend por partes sin detener la operación.
+//
+// Principio innegociable: si Supabase falla (sin red, credenciales vencidas,
+// esquema distinto), la app NO se rompe. Todo va envuelto en try/catch y el
+// resultado del guardado en Sheets nunca depende de esta sincronización.
+//
+// Configuración (una sola vez, desde el editor de Apps Script):
+//     apiSetSupabaseConfig('https://xxxxx.supabase.co', 'service_role_key')
+// Las credenciales viven en PropertiesService, NUNCA en el código.
+// ============================================================================
+
+const SUPABASE_PROPS = {
+    URL: 'SUPABASE_URL',
+    KEY: 'SUPABASE_SERVICE_KEY',
+    ENABLED: 'SUPABASE_SYNC_ENABLED'
+};
+
+/**
+ * Guarda las credenciales de Supabase y activa la sincronización.
+ * Ejecutar UNA VEZ desde el editor de Apps Script.
+ */
+function apiSetSupabaseConfig(url, serviceKey) {
+    if (!url || !serviceKey) {
+        return { success: false, message: 'Faltan url o serviceKey' };
+    }
+    const props = PropertiesService.getScriptProperties();
+    props.setProperty(SUPABASE_PROPS.URL, String(url).replace(/\/+$/, ''));
+    props.setProperty(SUPABASE_PROPS.KEY, String(serviceKey));
+    props.setProperty(SUPABASE_PROPS.ENABLED, 'true');
+    return { success: true, message: 'Supabase configurado y sincronización activada' };
+}
+
+/** Prende o apaga la sincronización sin borrar las credenciales. */
+function apiToggleSupabaseSync(enabled) {
+    PropertiesService.getScriptProperties()
+        .setProperty(SUPABASE_PROPS.ENABLED, enabled ? 'true' : 'false');
+    return { success: true, enabled: !!enabled };
+}
+
+/** Estado actual, sin exponer la llave. */
+function apiGetSupabaseStatus() {
+    const props = PropertiesService.getScriptProperties();
+    const url = props.getProperty(SUPABASE_PROPS.URL);
+    const key = props.getProperty(SUPABASE_PROPS.KEY);
+    return {
+        success: true,
+        configurado: !!(url && key),
+        habilitado: props.getProperty(SUPABASE_PROPS.ENABLED) === 'true',
+        url: url || null
+    };
+}
+
+const SupabaseSync = {
+
+    _cache: null,
+
+    _config: function () {
+        if (this._cache) return this._cache;
+        const props = PropertiesService.getScriptProperties();
+        this._cache = {
+            url: props.getProperty(SUPABASE_PROPS.URL),
+            key: props.getProperty(SUPABASE_PROPS.KEY),
+            enabled: props.getProperty(SUPABASE_PROPS.ENABLED) === 'true'
+        };
+        return this._cache;
+    },
+
+    isEnabled: function () {
+        const c = this._config();
+        return !!(c.enabled && c.url && c.key);
+    },
+
+    // --- helpers de normalización -------------------------------------------
+
+    /** Fecha de Sheets -> 'yyyy-MM-dd'. Descarta los 1899/1900 que Sheets usa como "vacío". */
+    _toDate: function (v) {
+        if (v === null || v === undefined || v === '') return null;
+        if (v instanceof Date) {
+            const y = v.getFullYear();
+            if (y <= 1900) return null;
+            return Utilities.formatDate(v, SS.getSpreadsheetTimeZone(), 'yyyy-MM-dd');
+        }
+        const s = String(v).trim();
+        if (!s || s === '-') return null;
+        // dd/MM/yy o dd/MM/yyyy
+        const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/);
+        if (m) {
+            let yy = parseInt(m[3], 10);
+            if (yy < 100) yy += 2000;
+            if (yy <= 1900) return null;
+            const mm = ('0' + m[2]).slice(-2);
+            const dd = ('0' + m[1]).slice(-2);
+            return yy + '-' + mm + '-' + dd;
+        }
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+        return null;
+    },
+
+    _toTime: function (v) {
+        if (v === null || v === undefined || v === '') return null;
+        if (v instanceof Date) return Utilities.formatDate(v, SS.getSpreadsheetTimeZone(), 'HH:mm:ss');
+        const s = String(v).trim();
+        return /^\d{1,2}:\d{2}(:\d{2})?$/.test(s) ? s : null;
+    },
+
+    _toText: function (v) {
+        if (v === null || v === undefined) return null;
+        if (v instanceof Date) return Utilities.formatDate(v, SS.getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+        const s = String(v).trim();
+        return s === '' ? null : s;
+    },
+
+    _toNumber: function (v) {
+        if (v === null || v === undefined || v === '') return null;
+        if (typeof v === 'number') return v;
+        const n = parseFloat(String(v).replace('%', '').replace(/,/g, '').trim());
+        return isNaN(n) ? null : n;
+    },
+
+    /**
+     * AVANCE a escala 0-100. Igual que en la migración de Python: la hoja mezcla
+     * '0%' (texto), 100 (ya en porcentaje) y 1 (=100%, formato porcentaje).
+     */
+    _toAvance: function (v) {
+        const n = this._toNumber(v);
+        if (n === null) return 0;
+        if (n >= 0 && n <= 1) return Math.round(n * 10000) / 100;
+        return Math.round(n * 100) / 100;
+    },
+
+    /**
+     * Misma llave de deduplicación que migration/migrate.py, para que una fila
+     * actualizada en Sheets caiga sobre la fila que ya existe en Supabase en vez
+     * de duplicarla.
+     */
+    _dedupeKey: function (folio, sheetName, rowIndex) {
+        const f = folio ? String(folio).trim() : '';
+        if (f) {
+            const prefixes = ['PPC-', 'AV-', 'TG-', 'WO-', 'SITE-', 'PROJ-'];
+            for (let i = 0; i < prefixes.length; i++) {
+                if (f.indexOf(prefixes[i]) === 0) return { key: f, sintetico: false };
+            }
+            if (/^\d{10,}(\.0)?$/.test(f)) return { key: f, sintetico: false };
+            return { key: sheetName + '::' + f, sintetico: false };
+        }
+        return { key: sheetName + '::ROW' + rowIndex, sintetico: true };
+    },
+
+    _isVentasSheet: function (sheetName) {
+        const up = String(sheetName).toUpperCase();
+        if (up === 'ANTONIA_VENTAS' || up.indexOf('(VENTAS)') > -1) return true;
+        return ['CONSTRUCCIÓN', 'COORDINADOR HVAC', 'ELECTROMECANICA', 'LIMPIEZA'].indexOf(up) > -1;
+    },
+
+    /** Hojas que no se replican desde esta ruta (tienen estructura propia). */
+    _isSkipped: function (sheetName) {
+        const up = String(sheetName).toUpperCase();
+        if (['PPCV3', 'DATOS', 'PPC_BORRADOR', 'DB_BANCO_DATOS'].indexOf(up) > -1) return true;
+        if (up === APP_CONFIG.logSheetName || up === APP_CONFIG.draftSheetName) return true;
+        if (up.indexOf('DB_') === 0) return true;
+        if (up.indexOf('COPIA DE') === 0 || up.indexOf('DASHBOARD') === 0) return true;
+        // hojas cuyo nombre son varios nombres pegados: no son de una persona real
+        if (String(sheetName).indexOf('\n') > -1 || String(sheetName).indexOf(',') > -1) return true;
+        return false;
+    },
+
+    // --- llamada HTTP -------------------------------------------------------
+
+    _post: function (table, rows, onConflict) {
+        const c = this._config();
+        let url = c.url + '/rest/v1/' + table;
+        if (onConflict) url += '?on_conflict=' + encodeURIComponent(onConflict);
+        const resp = UrlFetchApp.fetch(url, {
+            method: 'post',
+            contentType: 'application/json',
+            headers: {
+                'apikey': c.key,
+                'Authorization': 'Bearer ' + c.key,
+                'Prefer': 'resolution=merge-duplicates,return=minimal'
+            },
+            payload: JSON.stringify(rows),
+            muteHttpExceptions: true
+        });
+        const code = resp.getResponseCode();
+        if (code >= 300) {
+            throw new Error('Supabase ' + table + ' HTTP ' + code + ': ' + resp.getContentText().substring(0, 400));
+        }
+        return true;
+    },
+
+    // --- construcción de filas ---------------------------------------------
+
+    _colFinder: function (headers) {
+        const norm = headers.map(function (h) {
+            return String(h || '').toUpperCase().replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        });
+        return function () {
+            for (let a = 0; a < arguments.length; a++) {
+                const idx = norm.indexOf(arguments[a]);
+                if (idx > -1) return idx;
+            }
+            return -1;
+        };
+    },
+
+    _buildTaskRow: function (sheetName, row, find, rowIndex) {
+        const g = function (idx) { return idx > -1 && idx < row.length ? row[idx] : null; };
+
+        const folioRaw = this._toText(g(find('FOLIO', 'ID')));
+        const concepto = this._toText(g(find('CONCEPTO', 'DESCRIPCION', 'DESCRIPCIÓN DE LA ACTIVIDAD')));
+        if (!concepto) return null;                       // fila sin contenido real
+        if (concepto.toUpperCase() === 'TAREAS REALIZADAS') return null;   // separador de sección
+        // Sin folio no hay forma estable de identificar la fila: una llave
+        // sintética generada aquí no coincidiría con la que produjo la migración
+        // inicial y crearía duplicados. La app ya autogenera folio a toda fila
+        // nueva, así que esto solo excluye filas legacy incompletas.
+        if (!folioRaw) return null;
+
+        const dk = this._dedupeKey(folioRaw, sheetName, rowIndex);
+        return {
+            folio: folioRaw || dk.key,
+            dedupe_key: dk.key,
+            folio_sintetico: dk.sintetico,
+            assignee_raw: String(sheetName).trim().toUpperCase(),
+            departamento: this._toText(g(find('ALTA', 'ESPECIALIDAD'))),
+            fecha_alta: this._toDate(g(find('FECHA', 'FECHA DE ALTA'))),
+            hora_alta: this._toTime(g(find('HORA'))),
+            clasificacion: this._toText(g(find('CLASIFICACION', 'CLASIFICACIÓN'))),
+            concepto: concepto,
+            avance: this._toAvance(g(find('AVANCE', 'AVANCE %'))),
+            fecha_estimada_fin: this._toDate(g(find('FECHA ESTIMADA DE FIN'))),
+            hora_estimada_fin: this._toTime(g(find('HORA ESTIMADA DE FIN'))),
+            reloj: this._toText(g(find('RELOJ'))),
+            restricciones: this._toText(g(find('RESTRICCIONES'))),
+            prioridad: this._toText(g(find('PRIORIDADES', 'PRIORIDAD'))),
+            riesgos: this._toText(g(find('RIESGOS'))),
+            fecha_respuesta: this._toDate(g(find('FECHA RESPUESTA', 'FECHA_RESPUESTA'))),
+            correo: this._toText(g(find('CORREO'))),
+            carpeta: this._toText(g(find('CARPETA', 'ARCHIVO', 'ARCHIVOS'))),
+            cumplimiento: this._toText(g(find('CUMPLIMIENTO'))),
+            comentarios: this._toText(g(find('COMENTARIOS'))),
+            status: this._toText(g(find('STATUS', 'ESTATUS'))) || 'PENDIENTE',
+            source_sheet: sheetName
+        };
+    },
+
+    _buildQuoteRow: function (sheetName, row, find) {
+        const g = function (idx) { return idx > -1 && idx < row.length ? row[idx] : null; };
+        const folio = this._toText(g(find('FOLIO')));
+        if (!folio) return null;
+        return {
+            folio: folio,
+            area: this._toText(g(find('AREA'))),
+            cliente: this._toText(g(find('CLIENTE'))),
+            concepto: this._toText(g(find('CONCEPTO'))),
+            clasificacion: this._toText(g(find('CLASIFICACION', 'CLASIFICACIÓN'))),
+            vendedor_raw: this._toText(g(find('VENDEDOR'))),
+            f_visita: this._toDate(g(find('F. VISITA', 'FECHA VISITA'))),
+            f_inicio: this._toDate(g(find('F. INICIO', 'FECHA INICIO', 'FECHA DE INICIO'))),
+            f_entrega: this._toDate(g(find('F. ENTREGA'))),
+            avance: this._toAvance(g(find('AVANCE'))),
+            estatus: this._toText(g(find('ESTATUS'))),
+            comentarios: this._toText(g(find('COMENTARIOS'))),
+            comentario: this._toText(g(find('COMENTARIO'))),
+            estatus_2: this._toText(g(find('ESTATUS 2'))),
+            requisitor: this._toText(g(find('REQUISITOR'))),
+            prioridad_cot: this._toText(g(find('PRIO. COT.', 'PRIORIDAD DE COTIZACION'))),
+            info_cliente: this._toText(g(find('INFO CLIENTE'))),
+            f2: this._toText(g(find('F2'))),
+            cotizacion: this._toText(g(find('COTIZACION', 'COTIZACIÓN'))),
+            timeline: this._toText(g(find('TIMELINE', 'TIMEOUT'))),
+            layout: this._toText(g(find('LAYOUT'))),
+            proceso: this._toText(g(find('PROCESO'))),
+            proceso_log: this._toText(g(find('PROCESO_LOG'))),
+            map_cot: this._toText(g(find('MAP COT'))),
+            monto: this._toNumber(g(find('MONTO'))),
+            archivo: this._toText(g(find('ARCHIVO'))),
+            fecha: this._toDate(g(find('FECHA'))),
+            llamada_cliente: this._toText(g(find('LLAMADA AL CLIENTE'))),
+            reloj: this._toText(g(find('RELOJ'))),
+            source_sheet: sheetName
+        };
+    },
+
+    // --- punto de entrada ---------------------------------------------------
+
+    /**
+     * Replica en Supabase las filas que acaban de escribirse en la hoja.
+     * `touchedRows` son arreglos de celdas alineados con `headers`.
+     * Nunca lanza: cualquier error se registra y se ignora.
+     */
+    syncRows: function (sheetName, headers, touchedRows) {
+        try {
+            if (!this.isEnabled()) return { synced: 0, skipped: 'deshabilitado' };
+            if (this._isSkipped(sheetName)) return { synced: 0, skipped: 'hoja excluida' };
+            if (!touchedRows || !touchedRows.length) return { synced: 0 };
+
+            const find = this._colFinder(headers);
+            const esVentas = this._isVentasSheet(sheetName);
+            const payload = [];
+
+            for (let i = 0; i < touchedRows.length; i++) {
+                const entry = touchedRows[i];
+                const row = entry.row || entry;
+                const rowIndex = (entry.index === undefined) ? i : entry.index;
+                const built = esVentas
+                    ? this._buildQuoteRow(sheetName, row, find)
+                    : this._buildTaskRow(sheetName, row, find, rowIndex);
+                if (built) payload.push(built);
+            }
+
+            if (!payload.length) return { synced: 0 };
+
+            if (esVentas) {
+                this._post('quotes', payload, 'folio');
+            } else {
+                this._post('tasks', payload, 'dedupe_key');
+            }
+            return { synced: payload.length };
+
+        } catch (e) {
+            // Nunca propagar: Sheets ya guardó y la app debe seguir funcionando.
+            console.error('SupabaseSync.syncRows(' + sheetName + '): ' + e.toString());
+            try {
+                PropertiesService.getScriptProperties()
+                    .setProperty('SUPABASE_LAST_ERROR',
+                        Utilities.formatDate(new Date(), SS.getSpreadsheetTimeZone(), 'yyyy-MM-dd HH:mm') +
+                        ' | ' + sheetName + ' | ' + e.toString().substring(0, 300));
+            } catch (ignored) {}
+            return { synced: 0, error: e.toString() };
+        }
+    }
+};
+
+/**
+ * Prueba de humo: verifica credenciales y conectividad contra Supabase
+ * sin escribir nada. Ejecutar desde el editor de Apps Script.
+ */
+function test_supabaseConnection() {
+    const status = apiGetSupabaseStatus();
+    if (!status.configurado) {
+        Logger.log('❌ Sin configurar. Ejecuta apiSetSupabaseConfig(url, serviceKey) primero.');
+        return;
+    }
+    const c = SupabaseSync._config();
+    try {
+        const resp = UrlFetchApp.fetch(c.url + '/rest/v1/tasks?select=folio&limit=1', {
+            method: 'get',
+            headers: { 'apikey': c.key, 'Authorization': 'Bearer ' + c.key },
+            muteHttpExceptions: true
+        });
+        Logger.log('HTTP ' + resp.getResponseCode());
+        Logger.log(resp.getResponseCode() === 200
+            ? '✔ Conexión OK. Sincronización ' + (status.habilitado ? 'ACTIVADA' : 'DESACTIVADA')
+            : '❌ ' + resp.getContentText().substring(0, 300));
+    } catch (e) {
+        Logger.log('❌ Error de red: ' + e.toString());
     }
 }
