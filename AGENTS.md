@@ -2,6 +2,42 @@
 
 Este documento define el contexto técnico, las reglas de negocio y las "skills" que los agentes de IA (y desarrolladores) deben utilizar al interactuar con el código base del sistema Holtmont. Al trabajar en este repositorio, debes adherirte estrictamente a estas pautas para evitar romper funcionalidades críticas.
 
+---
+
+## ⚠️ REGLA 0 — OBLIGATORIA PARA TODO AGENTE (leer antes que nada)
+
+> **Todo agente de IA (Claude, Codex, Cursor, Jules, Copilot, Gemini, cualquiera) y todo
+> desarrollador humano DEBE cumplir [`RESTRICCIONES_EXTREMAS.md`](RESTRICCIONES_EXTREMAS.md).**
+> Es vinculante y aplica aunque nadie te lo recuerde en el prompt.
+
+**Antes de reportar cualquier trabajo como terminado, DEBES ejecutar y pegar la salida real:**
+
+```bash
+node tests/gas/run_tests.js    # suite del backend GAS
+node check_html2.js            # sintaxis del frontend monolítico
+node test_departments.js       # si tocaste USER_DB o INITIAL_DIRECTORY
+```
+
+**Las cinco obligaciones no negociables:**
+
+1. **Ejecutar las pruebas siempre**, en toda tarea que toque código. "Es un cambio de una línea" no es excepción.
+2. **Escribir la prueba que falta**: comportamiento nuevo → prueba unitaria; bug corregido → prueba que fallaba antes; regla de negocio → escenario Gherkin.
+3. **No tocar las puertas**: prohibido bajar umbrales o añadir `skip`, `.only()`, `eslint-disable`, `--no-verify` o `continue-on-error` para que algo pase (*Directiva Cero*).
+4. **Reportar con honestidad**: si una prueba falla, dilo con la salida literal. Nunca afirmes que las pruebas pasan sin haberlas corrido.
+5. **Responder las 5 preguntas de calidad** (§8) en todo PR, en español y con respuestas concretas.
+
+**Por qué:** el dueño de este repositorio no lee línea por línea el código que generas — es una
+decisión deliberada para aprovechar tu productividad. Y aquí **no hay entorno de staging**:
+`CODIGO.js` corre contra la hoja de cálculo real de la empresa. Eres la última revisión antes de
+producción. Si no corres las pruebas, no ahorras tiempo: gastas la confianza de alguien más.
+
+> ⚠️ **Estado actual:** este repositorio todavía **no tiene suite automatizada**. Los 37 archivos
+> `test_*.js` de la raíz son diagnósticos manuales, no pruebas. La tarea de mayor prioridad es
+> portar `tests/gas/` desde `HOLTMONT-PYTHON` (87 pruebas contra este mismo `CODIGO.js`).
+> Ver [`RESTRICCIONES_EXTREMAS.md`](RESTRICCIONES_EXTREMAS.md) §4.
+
+---
+
 ## 1. Dominio del Stack Tecnológico (GAS + Vue.js Monolítico)
 
 - **Backend (Google Apps Script - GAS):**
@@ -52,6 +88,11 @@ Este documento define el contexto técnico, las reglas de negocio y las "skills"
   - Los usuarios en `USER_DB` están mapeados a sus correos corporativos reales (`@holtmont.com`). Verifica esto antes de probar integraciones.
 
 ## 6. Testing Local y Verificaciones
+
+> **Obligatorio, no opcional.** Los umbrales, la línea base medida y las 10 restricciones completas
+> (unitarias, Gherkin, cobertura, mutación, métricas, seguridad, determinismo, contratos, rollback)
+> están en [`RESTRICCIONES_EXTREMAS.md`](RESTRICCIONES_EXTREMAS.md). Ningún trabajo se reporta como
+> terminado sin haber corrido las verificaciones y pegado su salida real.
 
 - **Mocking Local:**
   - Las funciones en `CODIGO.js` deben probarse creando stubs para los servicios de GAS (ej. `SpreadsheetApp`, `CacheService`, `PropertiesService`).
