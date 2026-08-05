@@ -429,24 +429,52 @@ Esto importa decirlo claro porque **su presencia se confunde con cobertura**. Un
 archivos que empiezan con `test_` aparenta estar probado. No lo está. Es la peor combinación
 posible: cero protección real, más la falsa tranquilidad de que hay algo.
 
-### La ruta más corta: portar la suite que ya existe
+### ⚠️ Segundo hallazgo: `check_html2.js` no verifica nada
 
-`HOLTMONT-PYTHON` tiene `tests/gas/` — **87 pruebas que ya corren contra este mismo `CODIGO.js`**,
-con mocks de GAS, salida en tabla y código de salida 0/1. Prueba el semáforo, el ruteo VENTAS, el
-gatekeeper, el reverse sync, las métricas y el contrato frontend ↔ backend.
+`AGENTS.md` §6 recomendaba `node check_html2.js` como verificación de sintaxis del frontend.
+**No sirve para eso.** Se le inyectó JavaScript sintácticamente inválido a `index.html` a propósito
+y el script **siguió saliendo con código 0**.
 
-Pasos, en orden:
+Es la misma clase de defecto que una prueba que no asevera nada: un informe en pantalla disfrazado
+de garantía. Y es peor que no tener nada, porque estaba escrito en las instrucciones que leen los
+agentes — llevaban tiempo "verificando" contra una red que no existía.
 
-1. Copiar `tests/gas/` completo desde `HOLTMONT-PYTHON`.
-2. Añadir a `package.json`:
-   ```json
-   { "scripts": { "test": "node tests/gas/run_tests.js" } }
-   ```
-3. Correrlo y **anotar aquí el resultado real**. Si fallan pruebas, es porque los dos `CODIGO.js`
-   divergieron: cada fallo es un hallazgo legítimo, no un problema de la suite.
-4. Rescatar de los 37 `test_*.js` los casos que aún valgan, convertirlos en pruebas de la suite y
-   **borrar el resto**.
-5. Conectar la puerta 3 (§7).
+Reemplazado por **`tests/verificar_sintaxis.js`**, que parsea `CODIGO.js` y cada bloque `<script>`
+de los HTML con `acorn`, devuelve **1** cuando algo no parsea e indica la línea. Verificado en las
+tres direcciones: código sano → 0; `index.html` roto → 1 con línea; `CODIGO.js` roto → 1.
+
+### Sobre portar la suite de `HOLTMONT-PYTHON`: medido, y no es copiar-pegar
+
+`HOLTMONT-PYTHON` tiene `tests/gas/` con 87 pruebas contra *su* `CODIGO.js`. Se copiaron aquí y se
+corrieron contra el `CODIGO.js` de este repositorio. Resultado real:
+
+> **54 pasan · 33 fallan**
+
+Los 33 fallos **no** significan que este repositorio esté roto. Se reparten en dos grupos que hay
+que separar antes de sacar conclusiones:
+
+| Grupo | Fallos | Qué significa |
+| --- | --- | --- |
+| Bloque 8 (Supabase) y bloque 7 (`api_service.js`) | ~18 | Features que **no existen aquí**: `mirrorBatch`, `normalizeStatus`, `computeDedupeKey` y el adaptador Python. Estas pruebas **no aplican** a este repositorio |
+| Bloques 1, 2, 4, 5, 6 | ~15 | Features que **sí existen aquí**, pero la suite invoca otra estructura de funciones |
+
+Comprobación concreta del segundo grupo: la Ley de Antonia **sí está implementada** en este
+repositorio — la purga `replace(/\s*\(VENTAS\)/ig, "")` aparece **16 veces** en `CODIGO.js`, contra
+3 en el de `HOLTMONT-PYTHON`. Los fallos 2.2x y 2.3x son de acoplamiento de la prueba a una
+estructura distinta, no de una regla ausente.
+
+**Conclusión:** los dos `CODIGO.js` divergieron de verdad y adaptar la suite es trabajo real, no un
+`cp -r`. Por eso **no se comitea una suite en rojo**: 33 pruebas fallando que nadie mira son
+exactamente el problema de los 37 `test_*.js` de la raíz, otra vez.
+
+### Plan, en orden
+
+1. ✅ **Gate de sintaxis real** (`tests/verificar_sintaxis.js`) y `npm test`.
+2. ✅ **Puerta 3 conectada** con lo que hoy verifica de verdad (§7).
+3. ⬜ **Adaptar** los bloques 1, 2, 4, 5 y 6 de la suite a la estructura de este `CODIGO.js`.
+   Empezar por el bloque 2 (Ley de Antonia): es la regla que más dinero cuesta si se rompe.
+4. ⬜ **Descartar** los bloques 7 y 8: prueban features que este repositorio no tiene.
+5. ⬜ **Rescatar** de los 37 `test_*.js` los casos que aún valgan y **borrar el resto**.
 
 ### Regla del trinquete
 

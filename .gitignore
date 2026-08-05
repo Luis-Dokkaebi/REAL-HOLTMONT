@@ -1,2 +1,5 @@
 node_modules/
 node_modules/
+
+# Dependencias de las verificaciones (RESTRICCIONES_EXTREMAS.md).
+node_modules/

@@ -1,4 +1,11 @@
 {
+  "name": "real-holtmont",
+  "private": true,
+  "scripts": {
+    "test": "node tests/verificar_sintaxis.js && node test_departments.js",
+    "sintaxis": "node tests/verificar_sintaxis.js",
+    "organigrama": "node test_departments.js"
+  },
   "dependencies": {
     "acorn": "^8.16.0",
     "jsdom": "^29.1.1"

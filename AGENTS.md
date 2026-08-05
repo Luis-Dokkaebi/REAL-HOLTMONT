@@ -13,10 +13,13 @@ Este documento define el contexto técnico, las reglas de negocio y las "skills"
 **Antes de reportar cualquier trabajo como terminado, DEBES ejecutar y pegar la salida real:**
 
 ```bash
-node tests/gas/run_tests.js    # suite del backend GAS
-node check_html2.js            # sintaxis del frontend monolítico
-node test_departments.js       # si tocaste USER_DB o INITIAL_DIRECTORY
+npm test                             # sintaxis (CODIGO.js + index.html) + organigrama
+node tests/verificar_sintaxis.js     # solo sintaxis, indica la línea del error
+node test_departments.js             # si tocaste USER_DB o INITIAL_DIRECTORY
 ```
+
+⚠️ **`check_html2.js` no verifica nada:** sale con código 0 incluso con JavaScript
+inválido. No lo uses como prueba (ver §6).
 
 **Las cinco obligaciones no negociables:**
 
@@ -98,8 +101,10 @@ producción. Si no corres las pruebas, no ahorras tiempo: gastas la confianza de
   - Las funciones en `CODIGO.js` deben probarse creando stubs para los servicios de GAS (ej. `SpreadsheetApp`, `CacheService`, `PropertiesService`).
 - **Scripts de Verificación:**
   - Siempre debes ejecutar las pruebas pertinentes tras modificaciones:
-    - Directorio y Departamentos: `node test_departments.js`
-    - Sintaxis y Lógica de Frontend: `node check_html2.js` (si `check_html.js` falla por errores de parseo o compatibilidad, utiliza `check_html2.js` como respaldo funcional).
+    - Directorio y Departamentos: `node test_departments.js` (tiene `process.exit(1)`: falla de verdad)
+    - Sintaxis de `CODIGO.js` e `index.html`: **`node tests/verificar_sintaxis.js`**
+  - ⚠️ **NO uses `check_html.js` ni `check_html2.js` como verificación.** Se les inyectó JavaScript sintácticamente inválido a propósito y **siguieron saliendo con código 0**. Son informes en pantalla, no pruebas: dan tranquilidad sin dar protección. `tests/verificar_sintaxis.js` los reemplaza y sí devuelve 1, indicando además la línea del error.
+  - **Atajo:** `npm test` corre sintaxis + organigrama.
 
 ## 7. Homogeneidad de UI / CSS Estricto
 
