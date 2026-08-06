@@ -70,9 +70,9 @@ const INITIAL_DIRECTORY = [
     { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "HIBRIDO" },
     { name: "RAMIRO RODRIGUEZ", dept: "VENTAS", type: "HIBRIDO" },
     { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "HIBRIDO" },
+    { name: "MIGUEL GALLARDO", dept: "VENTAS", type: "HIBRIDO" },
     // ELECTROMECANICA
     { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
     // HVAC
     { name: "ROLANDO MORENO", dept: "HVAC", type: "ESTANDAR" },
     { name: "EMILIANO ARREDONDO GOMEZ", dept: "HVAC", type: "ESTANDAR" },
@@ -240,7 +240,7 @@ const USER_DB = {
   "JUANY_RODRIGUEZ": { pass: "juany2814", role: "STAFF_USER", label: "Juana Maria Rodriguez Juarez", email: "", staffName: "JUANA MARIA RODRIGUEZ JUAREZ", dept: "FINANZAS", seller: false },
   "EDUARDO_BENITEZ": { pass: "eduardo1188", role: "STAFF_USER", label: "Eduardo Israel Benitez Garcia", email: "", staffName: "EDUARDO BENITEZ", dept: "LIMPIEZA", seller: false },
   "ROLANDO_MORENO": { pass: "rolando7508", role: "STAFF_USER", label: "Jesus Rolando Moreno Perez", email: "", staffName: "ROLANDO MORENO", dept: "HVAC", seller: false },
-  "MIGUEL_GALLARDO": { pass: "miguel5120", role: "STAFF_USER", label: "Miguel Angel Gallardo Jaramillo", email: "", staffName: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", seller: false },
+  "MIGUEL_GALLARDO": { pass: "miguel5120", role: "STAFF_USER", label: "Miguel Angel Gallardo Jaramillo", email: "", staffName: "MIGUEL GALLARDO", dept: "VENTAS", seller: true },
   "JEHU_MARTINEZ": { pass: "jehu6696", role: "STAFF_USER", label: "Jehu Arsenio Martinez Montes", email: "", staffName: "JEHU MARTINEZ", dept: "ELECTROMECANICA", seller: false },
   "RICARDO_MENDO": { pass: "ricardo9414", role: "STAFF_USER", label: "Ricardo Alonso Mendo Morales", email: "", staffName: "RICARDO MENDO", dept: "CONSTRUCCION", seller: false },
   "CARLOS_MENDEZ": { pass: "carlos2250", role: "STAFF_USER", label: "Carlos Mendez Urbina", email: "", staffName: "CARLOS MENDEZ", dept: "CALIDAD", seller: false },
