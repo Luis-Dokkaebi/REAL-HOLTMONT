@@ -260,8 +260,10 @@ const USER_DB = {
   "ROCIO_CASTRO": { pass: "rocio3947", role: "STAFF_USER", label: "Rocio Castro Covarrubias", email: "", staffName: "ROCIO ABIGAIL CASTRO COVARRUBIAS", dept: "FINANZAS", seller: false },
   "GERALDINE_MARTINEZ": { pass: "geraldine5279", role: "STAFF_USER", label: "Geraldine Marie Martinez Hernandez", email: "", staffName: "GERALDINE MARTINEZ HERNANDEZ", dept: "PRECIOS UNITARIOS", seller: false },
   "CESAR_EDUARDO_GARCIA": { pass: "cesar7052", role: "STAFF_USER", label: "Cesar Eduardo Garcia Avalos", email: "", staffName: "CESAR EDUARDO GARCIA AVALOS", dept: "CONSTRUCCION", seller: false },
-  "ANTONIO_SALAZAR": { pass: "antonio1234", role: "STAFF_USER", label: "Antonio Salazar", email: "", staffName: "ANTONIO SALAZAR", dept: "GENERAL", seller: false },
-  "CESAR_GOMEZ": { pass: "cesar1234", role: "STAFF_USER", label: "Cesar Gomez", email: "", staffName: "CESAR GOMEZ", dept: "GENERAL", seller: false }
+  "ANTONIO_SALAZAR": { pass: "antonio1234", role: "STAFF_USER", label: "Antonio Salazar", email: "", staffName: "ANTONIO SALAZAR", dept: "GENERAL", seller: false }
+  // CESAR_GOMEZ: baja (2026-08). CREDENCIALES.md ya lo listaba como eliminado y
+  // el codigo se habia quedado atras. Sigue en INITIAL_DIRECTORY porque el
+  // organigrama lo registra en GENERAL; lo que se retira es su acceso.
 };
 
 /* SERVICIO HTML */
