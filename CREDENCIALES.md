@@ -40,8 +40,8 @@
 | `EDUARDO_MANZANARES` | `eduardo6234` | STAFF_USER | DOBLE | VENTAS | Eduardo Manzanares Sanchez |
 | `RAMIRO_RODRIGUEZ` | `ramiro9233` | STAFF_USER | DOBLE | VENTAS | Ramiro Rodriguez Escalante |
 | `SEBASTIAN_PADILLA` | `sebastian9385` | STAFF_USER | DOBLE | VENTAS | Erick Sebastian Padilla Carrillo |
+| `MIGUEL_GALLARDO` | `miguel5120` | STAFF_USER | DOBLE | VENTAS | Miguel Angel Gallardo Jaramillo |
 | `JEHU_MARTINEZ` | `jehu6696` | STAFF_USER | TRACKER | ELECTROMECANICA | Jehu Arsenio Martinez Montes |
-| `MIGUEL_GALLARDO` | `miguel5120` | STAFF_USER | TRACKER | ELECTROMECANICA | Miguel Angel Gallardo Jaramillo |
 | `ROLANDO_MORENO` | `rolando7508` | STAFF_USER | TRACKER | HVAC | Jesus Rolando Moreno Perez |
 | `EMILIANO_AREDON` | `emiliano4187` | STAFF_USER | TRACKER | HVAC | Emiliano Arredondo Gomez |
 | `INGE_OLIVO` | `inge2469` | STAFF_USER | TRACKER | CONSTRUCCION | Jaime Antonio Olivo Guerrero |
