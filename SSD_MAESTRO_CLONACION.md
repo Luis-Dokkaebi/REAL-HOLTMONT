@@ -439,7 +439,7 @@ Particularidad de diseño: `apiFetchUnifiedAgenda(username)` (Anexo A §19.16) *
 | `RAMIRO_RODRIGUEZ` | `STAFF_USER` (+ en `restrictedUsers`) | Ramiro Rodriguez Escalante | RAMIRO RODRIGUEZ | VENTAS | Sí |
 | `SEBASTIAN_PADILLA` | `STAFF_USER` (+ en `restrictedUsers`) | Erick Sebastian Padilla Carrillo | SEBASTIAN PADILLA | VENTAS | Sí |
 | `JEHU_MARTINEZ` | `STAFF_USER` | Jehu Arsenio Martinez Montes | JEHU MARTINEZ | ELECTROMECANICA | No |
-| `MIGUEL_GALLARDO` | `STAFF_USER` | Miguel Angel Gallardo Jaramillo | MIGUEL GALLARDO | ELECTROMECANICA | No |
+| `MIGUEL_GALLARDO` | `STAFF_USER` | Miguel Angel Gallardo Jaramillo | MIGUEL GALLARDO | VENTAS | Sí |
 | `ROLANDO_MORENO` | `STAFF_USER` | Jesus Rolando Moreno Perez | ROLANDO MORENO | HVAC | No |
 | `EMILIANO_AREDON` | `STAFF_USER` | Emiliano Arredondo Gomez | EMILIANO ARREDONDO GOMEZ | HVAC | No |
 | `INGE_OLIVO` | `STAFF_USER` | Jaime Antonio Olivo Guerrero | JAIME OLIVO | CONSTRUCCION | No — **nombre de usuario `INGE_OLIVO` distinto de `JAIME_OLIVO` (cuenta `ADMIN_CONTROL`), pero mismo `staffName` "JAIME OLIVO"**: dos cuentas de login diferentes apuntan al mismo tracker |
@@ -492,9 +492,9 @@ const INITIAL_DIRECTORY = [
     { name: "EDUARDO MANZANARES", dept: "VENTAS", type: "HIBRIDO" },
     { name: "RAMIRO RODRIGUEZ", dept: "VENTAS", type: "HIBRIDO" },
     { name: "SEBASTIAN PADILLA", dept: "VENTAS", type: "HIBRIDO" },
+    { name: "MIGUEL GALLARDO", dept: "VENTAS", type: "HIBRIDO" },
     // ELECTROMECANICA
     { name: "JEHU MARTINEZ", dept: "ELECTROMECANICA", type: "ESTANDAR" },
-    { name: "MIGUEL GALLARDO", dept: "ELECTROMECANICA", type: "ESTANDAR" },
     // HVAC
     { name: "ROLANDO MORENO", dept: "HVAC", type: "ESTANDAR" },
     { name: "EMILIANO ARREDONDO GOMEZ", dept: "HVAC", type: "ESTANDAR" },
