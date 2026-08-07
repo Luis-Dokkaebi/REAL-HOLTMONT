@@ -1,0 +1,69 @@
+# ---------------------------------------------------------------------------
+# PUERTA 3 — la unica que un agente no puede saltarse.
+#
+# Este repositorio corre contra la hoja de calculo REAL de la empresa: no hay
+# staging. Por eso la puerta existe aunque la cobertura todavia sea minima.
+#
+# Para que sirva de verdad hacen falta dos cosas MAS, que se configuran en
+# GitHub y no en el repositorio (ver RESTRICCIONES_EXTREMAS.md seccion 10):
+#
+#   1. Rama `main` protegida, sin push directo.
+#   2. El job `restricciones` marcado como *required status check*.
+#
+# ALCANCE HONESTO DE HOY: esta puerta verifica sintaxis, organigrama y
+# secretos. NO verifica reglas de negocio -- eso llega cuando se adapte la
+# suite GAS (seccion 4). Un gate modesto que bloquea de verdad vale mas que
+# uno ambicioso que nadie ejecuta, pero no hay que confundir uno con otro.
+# ---------------------------------------------------------------------------
+name: Restricciones Extremas
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  restricciones:
+    name: Restricciones GAS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # gitleaks necesita el historial completo
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Instalar dependencias
+        run: npm install
+
+      # ------------------------------------------------------------------
+      # R5 · Sintaxis — puerta real, con codigo de salida 1.
+      #
+      # OJO: `check_html2.js` NO sirve para esto. Se le inyecto JavaScript
+      # invalido a proposito en index.html y siguio saliendo con codigo 0.
+      # Es un informe, no una prueba. tests/verificar_sintaxis.js si falla.
+      # ------------------------------------------------------------------
+      - name: R5 · Sintaxis de CODIGO.js e index.html
+        run: node tests/verificar_sintaxis.js
+
+      # ------------------------------------------------------------------
+      # R1 · Organigrama — este si tiene process.exit(1), verificado.
+      # ------------------------------------------------------------------
+      - name: R1 · Directorio y departamentos
+        run: node test_departments.js
+
+      # ------------------------------------------------------------------
+      # R7 · Seguridad
+      # ------------------------------------------------------------------
+      - name: R7 · Secretos
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
