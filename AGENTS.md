@@ -145,3 +145,20 @@ A continuación, se definen los "Skills" accionables que los agentes de IA (como
 **Reglas a seguir:**
 - **Verificación de Organigrama:** Ejecuta `node test_departments.js` si tocas `USER_DB` o `INITIAL_DIRECTORY`.
 - **Syntax Check Frontend:** Ejecuta `node check_html2.js` para asegurar que las modificaciones en `index.html` no contengan errores de sintaxis catastróficos.
+
+---
+
+## 8. Protocolo de Entrega de PR (Mandatorio)
+
+Para cada `submit` (Pull Request), el agente o desarrollador **DEBE** incluir en la descripción del envío las respuestas a las siguientes 5 preguntas de control de calidad:
+
+1.  **¿Tiene un feedback loop que verifique el código generado?**
+    *   *Ejemplo: Uso de scripts de prueba locales como `test_departments.js` o `check_html2.js`.*
+2.  **¿Cómo se hace el rollback si falla?**
+    *   *Ejemplo: Restauración de archivos específicos con `restore_file` o reversión completa con `reset_all` antes del commit final.*
+3.  **¿Tiene observabilidad en producción?**
+    *   *Ejemplo: Registro de logs mediante la función `registrarLog()` en `CODIGO.js`.*
+4.  **¿Escala si el equipo crece?**
+    *   *Ejemplo: Uso de arquitectura modular, Design Tokens y variables de entorno que no dependan de un único desarrollador.*
+5.  **¿Tu equipo lo mantiene sin ti?**
+    *   *Ejemplo: Documentación exhaustiva en `AGENTS.md` y `SDD_HOLTMONT_WORKSPACE.md` para que otros agentes o humanos puedan seguir el hilo.*
